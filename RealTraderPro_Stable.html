@@ -3178,7 +3178,17 @@ async function renderNews() {
       <button onclick="setNewsTab('market')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='market'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='market'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='market'?'#38bdf8':'#2d3f52'};">Market</button>
     </div>
     <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">${chips}</div>
-    ${cards}${emptyHtml}`;
+    ${cards}${emptyHtml}
+    <div style="margin-top:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
+        <div style="font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;">NSE Announcements</div>
+        <button onclick="nseNewsCache=null;nseNewsCacheTime=0;renderNSENews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
+      </div>
+      <div id="nseAnnouncementsBox" style="background:linear-gradient(145deg,#111827,#1a2332);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:6px 8px;">
+        <div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading...</div>
+      </div>
+    </div>`;
+  renderNSENews();
 }
 
 function setNewsFilter(sym) {
@@ -3189,6 +3199,65 @@ function setNewsFilter(sym) {
 function setNewsTab(t) {
   newsActiveTab = t;
   renderNews();
+}
+
+// ======================================
+// NSE CORPORATE ANNOUNCEMENTS
+// ======================================
+let nseNewsCache = null;
+let nseNewsCacheTime = 0;
+const NSE_CACHE_MS = 5 * 60 * 1000; // 5 min cache
+
+async function fetchNSEAnnouncements() {
+  try {
+    if (nseNewsCache && (Date.now() - nseNewsCacheTime) < NSE_CACHE_MS) {
+      return nseNewsCache;
+    }
+    const apiUrl = localStorage.getItem("customAPI") || API;
+    const r = await fetch(apiUrl + "?type=nse");
+    if (!r.ok) return [];
+    const data = await r.json();
+    if (data.ok && data.items && data.items.length > 0) {
+      nseNewsCache = data.items;
+      nseNewsCacheTime = Date.now();
+      return data.items;
+    }
+    return [];
+  } catch(e) {
+    return [];
+  }
+}
+
+async function renderNSENews() {
+  const el = document.getElementById("nseAnnouncementsBox");
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading NSE announcements...</div>';
+  const items = await fetchNSEAnnouncements();
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">No announcements found. Market may be closed.</div>';
+    return;
+  }
+  // Sort: high priority first
+  const sorted = [...items].sort(function(a, b) {
+    const p = { high: 0, medium: 1, low: 2 };
+    return (p[a.priority] || 2) - (p[b.priority] || 2);
+  });
+  el.innerHTML = sorted.map(function(item) {
+    const timeStr = item.time ? item.time.replace(/ \+\d{4}/, "").trim() : "";
+    const linkHtml = item.link
+      ? '<a href="' + item.link + '" target="_blank" style="font-size:9px;color:#38bdf8;text-decoration:none;margin-left:auto;white-space:nowrap;">View &gt;&gt;</a>'
+      : '';
+    return '<div style="display:flex;align-items:stretch;gap:0;border-bottom:1px solid rgba(255,255,255,0.05);padding:8px 4px;">' +
+      '<div style="width:3px;min-width:3px;border-radius:2px;background:' + (item.color || "#9e9e9e") + ';margin-right:10px;"></div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4;">' + item.news + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">' +
+          '<span style="font-size:10px;color:#4b6280;">' + timeStr + '</span>' +
+          linkHtml +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join("");
 }
 
 // ======================================
