@@ -2181,6 +2181,7 @@ async function batchFetchStocks(symbols, isIndex=false){
 // ── FETCH WITH 3-URL FALLBACK ──
 async function fetchFull(sym,isIndex=false){
   let key=sym, symbol=isIndex?sym:sym+".NS";
+  let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
 
   const urls=[
@@ -2191,7 +2192,7 @@ async function fetchFull(sym,isIndex=false){
 
   async function tryOne(apiUrl){
     try{
-      let r=await fetch(`${apiUrl}?s=${symbol}`);
+      let r=await fetch(`${apiUrl}?s=${encodedSymbol}`);
       let j=await r.json();
       if(j.error||!j.chart||!j.chart.result) return null;
       return j.chart.result[0].meta;
