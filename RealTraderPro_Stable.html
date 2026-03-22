@@ -218,7 +218,6 @@ body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
   </div>
   <!-- hidden file inputs -->
   <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
-  <input type="file" id="restoreInput" accept=".json" style="display:none;" onchange="handleRestore(event)">
   <div id="historyList"></div>
   <div id="historyCalendar" style="display:none;"></div>
 </div>
@@ -555,7 +554,7 @@ body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
 </div><!-- end mainApp -->
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbwcPV1xWFigY_twn5Xeg5MHyI3xPg2EtIehKaJpZ_-5iFgCS_0M0D2Zha_ML2MJOebO6g/exec";
+const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -1876,27 +1875,41 @@ function backupData(){
 }
 
 function triggerRestore(){
-  document.getElementById("restoreInput").click();
+  // Remove old input if exists
+  const old=document.getElementById("restoreInput");
+  if(old) old.remove();
+  // Create fresh file input each time (fixes Chrome security block)
+  const inp=document.createElement("input");
+  inp.type="file";
+  inp.accept=".json";
+  inp.id="restoreInput";
+  inp.style.display="none";
+  inp.onchange=handleRestore;
+  document.body.appendChild(inp);
+  inp.click();
 }
 
 function handleRestore(event){
   const file=event.target.files[0];
-  if(!file) return;
-  if(!confirm("This will replace existing data. Continue?")) return;
+  if(!file){ event.target.remove(); return; }
+  if(!confirm("This will replace existing data. Continue?")){ event.target.remove(); return; }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
       const data=JSON.parse(e.target.result);
-      if(data.wl)   { wl=data.wl;     localStorage.setItem("wl",JSON.stringify(wl)); }
-      if(data.h)    { h=data.h;       localStorage.setItem("h",JSON.stringify(h)); }
-      if(data.hist) { hist=data.hist; localStorage.setItem("hist",JSON.stringify(hist)); }
+      if(data.wl)    { wl=data.wl;       localStorage.setItem("wl",JSON.stringify(wl)); }
+      if(data.h)     { h=data.h;         localStorage.setItem("h",JSON.stringify(h)); }
+      if(data.hist)  { hist=data.hist;   localStorage.setItem("hist",JSON.stringify(hist)); }
       if(data.alerts){ alerts=data.alerts; localStorage.setItem("alerts",JSON.stringify(alerts)); }
       if(data.groups){ groups=data.groups; localStorage.setItem("groups",JSON.stringify(groups)); }
-      event.target.value="";
-      showPopup("Data restored! Reloading...");
+      if(data.journal){ journal=data.journal; localStorage.setItem("journal",JSON.stringify(journal)); }
+      if(data.targets){ targets=data.targets; localStorage.setItem("targets",JSON.stringify(targets)); }
+      event.target.remove();
+      showPopup("\u2705 Data restored! Reloading...");
       setTimeout(()=>location.reload(),1500);
     }catch(err){
-      showPopup("Invalid backup file");
+      showPopup("\u274C Invalid backup file");
+      event.target.remove();
     }
   };
   reader.readAsText(file);
