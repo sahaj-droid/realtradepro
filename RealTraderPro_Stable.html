@@ -102,20 +102,36 @@ body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
 .icon-svg svg { width:100%;height:100%; }
 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0f1a;} ::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px;}
+
+/* -- FLASH PRICE TICKER -- */
+body.light #priceTicker{background:#1e293b;border-bottom:1px solid #334155;}
+body.light .ticker-item{border-right-color:#334155;}
+body.light .ticker-sym{color:#94a3b8;}
+body.light .ticker-price{color:#e2e8f0;}
+#priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
+#priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
+#priceTicker .ticker-track:hover{animation-play-state:paused;}
+@keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker-item{display:inline-flex;align-items:center;gap:4px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;border-right:1px solid #1e2d3d;}
+.ticker-sym{color:#94a3b8;font-weight:700;}
+.ticker-price{color:#e2e8f0;}
+.ticker-up{color:#22c55e;}
+.ticker-dn{color:#ef4444;}
+
 </style>
 </head>
 <body>
 
-<!-- ══ LOADER ══ -->
+<!-- == LOADER == -->
 <div id="loaderOverlay">
   <div class="spinner"></div>
   <div id="loaderMsg" style="font-size:13px;color:#38bdf8;font-family:'Rajdhani',sans-serif;">Loading...</div>
 </div>
 
-<!-- ══ ALERT POPUP ══ -->
-<div id="alertPopup">&#9679; <span id="alertMsg"></span></div>
+<!-- == ALERT POPUP == -->
+<div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
 
-<!-- ══ MAIN APP ══ -->
+<!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
 <!-- HEADER -->
@@ -153,6 +169,14 @@ body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
 <div style="background:#0f1e33;border-bottom:1px solid #1e2d3d;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;">
   <div id="marketStatus" style="font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;">Checking...</div>
   <div id="liveClock" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">--:--:--</div>
+</div>
+
+
+<!-- FLASH PRICE TICKER -->
+<div id="priceTicker" style="display:none;">
+  <div class="ticker-track" id="tickerTrack">
+    <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
+  </div>
 </div>
 
 <!-- SEARCH + SUGGESTIONS -->
@@ -308,7 +332,13 @@ body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
     </div>
   </div>
 
-  <div style="text-align:center;font-size:10px;color:#4b6280;padding:8px;">REAL TRADER PRO  -  v2.0</div>
+  <!-- FEATURE GUIDE ACCORDION -->
+  <div class="card" id="featureGuideCard">
+    <div style="font-size:12px;color:#38bdf8;font-weight:700;margin-bottom:8px;letter-spacing:0.5px;">FEATURE GUIDE</div>
+    <div id="featureGuideList"></div>
+  </div>
+
+  <div style="text-align:center;font-size:10px;color:#4b6280;padding:8px;">REAL TRADER PRO  -  v2.1</div>
 </div>
 
 <!-- ERROR BANNER -->
@@ -560,7 +590,7 @@ let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 let currentTradeType="CNC"; // CNC or MIS
 
-// ── INDIAN NUMBER FORMAT ──
+// -- INDIAN NUMBER FORMAT --
 function inr(n){
   if(isNaN(n)) return '₹0';
   const abs=Math.abs(n);
@@ -650,7 +680,7 @@ function renderHolidays(){
   el.innerHTML=html;
 }
 
-// ── TRADE TYPE ──
+// -- TRADE TYPE --
 function setTradeType(t){
   currentTradeType=t;
   ['CNC','MIS'].forEach(x=>{
@@ -664,7 +694,7 @@ function setTradeType(t){
   updateTaxCalc();
 }
 
-// ── TAX CALCULATOR ──
+// -- TAX CALCULATOR --
 function updateTaxCalc(){
   const p=parseFloat(document.getElementById("m-price")?.value)||0;
   const q=parseInt(document.getElementById("m-qty")?.value)||0;
@@ -700,7 +730,7 @@ function updateTaxCalc(){
   document.getElementById("tc-breakeven").innerText=inr(breakeven);
 }
 
-// ── HOLDING DAYS COUNTER ──
+// -- HOLDING DAYS COUNTER --
 function holdingDays(buyDate){
   if(!buyDate) return null;
   const buy=new Date(buyDate);
@@ -717,7 +747,7 @@ function holdingDaysLabel(days){
   return `${Math.floor(days/365)}yr ${Math.floor((days%365)/30)}mo`;
 }
 
-// ── LAST UPDATED TIMESTAMP ──
+// -- LAST UPDATED TIMESTAMP --
 let lastUpdatedMap={};
 
 function timeAgo(ts){
@@ -728,7 +758,7 @@ function timeAgo(ts){
   return `${Math.floor(diff/3600)}h ago`;
 }
 
-// ── PRICE ALERT SOUND ──
+// -- PRICE ALERT SOUND --
 function playAlertSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -747,7 +777,7 @@ function playAlertSound(){
   }catch(e){}
 }
 
-// ── LOCAL STORAGE LOAD ──
+// -- LOCAL STORAGE LOAD --
 try{wl=JSON.parse(localStorage.getItem("wl"))||wl;}catch(e){}
 try{h=JSON.parse(localStorage.getItem("h"))||[];}catch(e){}
 try{hist=JSON.parse(localStorage.getItem("hist"))||[];}catch(e){}
@@ -806,9 +836,9 @@ const POPULAR_STOCKS=[
 ];
 
 
-// ══════════════════════════════════════
+// ======================================
 // LOADER
-// ══════════════════════════════════════
+// ======================================
 function showLoader(msg="Loading..."){
   document.getElementById("loaderMsg").innerText=msg;
   document.getElementById("loaderOverlay").style.display="flex";
@@ -817,9 +847,9 @@ function hideLoader(){
   document.getElementById("loaderOverlay").style.display="none";
 }
 
-// ══════════════════════════════════════
+// ======================================
 // WATCHLIST GROUPS
-// ══════════════════════════════════════
+// ======================================
 function renderGroupTabs(){
   const bar=document.getElementById("groupTabs");
   let html=`<button class="group-btn ${currentGroup==='ALL'?'active':''}" onclick="filterGroup('ALL')" id="grp-ALL">All</button>`;
@@ -876,19 +906,20 @@ function addToGroup(sym){
   }
 }
 
-// ══════════════════════════════════════
+// ======================================
 // THEME
-// ══════════════════════════════════════
+// ======================================
 function toggleTheme(){
   isDark=!isDark;
   document.body.classList.toggle("light",!isDark);
-  document.getElementById("themeBtn").innerText=isDark?"DARK":"LIGHT";
+  const tb=document.getElementById("themeBtn");
+  tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
   localStorage.setItem("theme",isDark?"dark":"light");
 }
 
-// ══════════════════════════════════════
+// ======================================
 // SEARCH SUGGESTIONS
-// ══════════════════════════════════════
+// ======================================
 function showSuggestions(val){
   val=val.toUpperCase().trim();
   const box=document.getElementById("suggestionBox");
@@ -903,9 +934,9 @@ function selectSuggestion(sym){ document.getElementById("searchBox").value=sym; 
 function hideSuggestions(){ document.getElementById("suggestionBox").style.display="none"; }
 document.addEventListener("click",e=>{if(!e.target.closest("#searchSection"))hideSuggestions();});
 
-// ══════════════════════════════════════
+// ======================================
 // POPUP & ERROR (once per session)
-// ══════════════════════════════════════
+// ======================================
 let errorShownThisSession = false;
 
 function showPopup(msg,duration=3000){
@@ -922,9 +953,9 @@ function showError(msg){
   setTimeout(()=>{document.getElementById("errorBanner").style.display="none";},8000);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // MARKET STATUS (Zero API  -  IST time based)
-// ══════════════════════════════════════
+// ======================================
 function getMarketStatus(){
   const now = new Date();
   // Convert to IST (UTC+5:30)
@@ -949,9 +980,9 @@ function updateMarketStatus(){
   el.style.color=s.color;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // TRADE JOURNAL
-// ══════════════════════════════════════
+// ======================================
 let journal = [];
 try{ journal=JSON.parse(localStorage.getItem("journal"))||[]; }catch(e){}
 
@@ -1010,9 +1041,9 @@ function deleteJournal(idx){
   renderJournal();
 }
 
-// ══════════════════════════════════════
+// ======================================
 // TARGET PRICE PER STOCK
-// ══════════════════════════════════════
+// ======================================
 let targets = {};
 try{ targets=JSON.parse(localStorage.getItem("targets"))||{}; }catch(e){}
 
@@ -1055,10 +1086,10 @@ function getTargetBadge(sym, price){
   return '<div style="font-size:9px;color:#f59e0b;font-weight:700;margin-top:1px;">T: ₹'+t+' ('+( pct>0?'+':'')+pct+'%)</div>';
 }
 
-// ══════════════════════════════════════
-// ══════════════════════════════════════
+// ======================================
+// ======================================
 // ADD / REMOVE STOCK
-// ══════════════════════════════════════
+// ======================================
 async function addStock(sym){
   sym=sym.toUpperCase().trim();
   if(!sym) return;
@@ -1102,9 +1133,9 @@ function confirmRemove(){
   doRemoveStock(sym);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // RENDER WATCHLIST
-// ══════════════════════════════════════
+// ======================================
 async function renderWL(){
   // filter by group
   let displayList=wl;
@@ -1168,9 +1199,9 @@ async function renderWL(){
   }
 }
 
-// ══════════════════════════════════════
+// ======================================
 // RENDER GAINERS/LOSERS (Indices tab)
-// ══════════════════════════════════════
+// ======================================
 async function renderIndices(){
   const el=document.getElementById("indices");
   // Show from cache immediately  -  no API call
@@ -1237,9 +1268,9 @@ function renderGainersFromCache(){
   html+=`</div>`;
   el.innerHTML=html;
 }
-// ══════════════════════════════════════
+// ======================================
 // UPDATE HEADER INDICES
-// ══════════════════════════════════════
+// ======================================
 async function updateHeaderIndices(){
   for(let i of indicesList){
     // Always use cache if available, else fetch (market open or closed)
@@ -1264,9 +1295,9 @@ async function updateHeaderIndices(){
   }
 }
 
-// ══════════════════════════════════════
+// ======================================
 // UPDATE PRICES
-// ══════════════════════════════════════
+// ======================================
 async function updatePrices(){
   for(let s of wl){
     let d=await fetchFull(s);if(!d) continue;
@@ -1283,11 +1314,12 @@ async function updatePrices(){
     if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
   }
   updateHeaderIndices();
+  updatePriceTicker();
 }
 
-// ══════════════════════════════════════
+// ======================================
 // PIE CHART (Portfolio Diversity)
-// ══════════════════════════════════════
+// ======================================
 const PIE_COLORS=['#38bdf8','#22c55e','#f59e0b','#ef4444','#a78bfa','#fb7185','#34d399','#fbbf24','#60a5fa','#f472b6','#4ade80','#facc15'];
 
 function drawPieChart(){
@@ -1352,9 +1384,9 @@ function drawPieChart(){
   document.getElementById("pieLegend").innerHTML=legendHtml;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // RENDER HOLDINGS
-// ══════════════════════════════════════
+// ======================================
 async function renderHold(){
   let html="";
   for(let x of h){
@@ -1412,9 +1444,9 @@ async function renderHold(){
   drawPieChart();
 }
 
-// ══════════════════════════════════════
+// ======================================
 // PORTFOLIO DASHBOARD
-// ══════════════════════════════════════
+// ======================================
 function updatePortfolioDashboard(){
   let ti=0,cv=0;
   h.forEach(s=>{ti+=s.price*s.qty;cv+=s.ltp?s.ltp*s.qty:s.price*s.qty;});
@@ -1433,9 +1465,9 @@ function updatePortfolioDashboard(){
   document.getElementById("combinedPL").style.color=totPL>=0?"#22c55e":"#ef4444";
 }
 
-// ══════════════════════════════════════
+// ======================================
 // LIVE CLOCK (IST)
-// ══════════════════════════════════════
+// ======================================
 function startClock(){
   function tick(){
     const now=new Date();
@@ -1449,9 +1481,9 @@ function startClock(){
   tick(); setInterval(tick,1000);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // HISTORY  -  LIST + CALENDAR
-// ══════════════════════════════════════
+// ======================================
 let histView='list';
 
 function setHistView(v){
@@ -1505,9 +1537,9 @@ function renderHist(){
   if(el) el.innerHTML=html||(hist.length===0?`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No history yet</div>`:"");
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FUNDAMENTALS (day-cached, from Yahoo meta)
-// ══════════════════════════════════════
+// ======================================
 async function fetchFundamentals(sym){
   // v2 key  -  clears old cache that had missing/undefined fields
   const DAY_KEY='fundCache2_'+sym;
@@ -1734,11 +1766,11 @@ function confirmTrade(){
   }
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE 1: 52W HIGH/LOW INDICATOR
-// ══════════════════════════════════════
+// ======================================
 
-// ── DAY BAR (inline visual) ──
+// -- DAY BAR (inline visual) --
 function buildDayBar(d){
   if(!d||!d.regularMarketDayHigh||!d.regularMarketDayLow) return '';
   const lo=d.regularMarketDayLow, hi=d.regularMarketDayHigh, cur=d.regularMarketPrice;
@@ -1747,7 +1779,7 @@ function buildDayBar(d){
   return '<div style="margin:1px 0;"><div style="display:flex;justify-content:space-between;font-size:9px;color:#64748b;"><span>L:'+lo.toFixed(0)+'</span><span>H:'+hi.toFixed(0)+'</span></div><div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-top:2px;"><div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div><div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:5px;background:white;border-radius:1px;"></div></div></div>';
 }
 
-// ── 52W BAR (inline visual) ──
+// -- 52W BAR (inline visual) --
 function build52WBar(d){
   if(!d||!d.fiftyTwoWeekHigh||!d.fiftyTwoWeekLow) return '';
   const lo=d.fiftyTwoWeekLow, hi=d.fiftyTwoWeekHigh, cur=d.regularMarketPrice;
@@ -1765,16 +1797,16 @@ function get52WLabel(d){
   return '<span style="color:#4b6280;font-size:9px;">'+String.fromCharCode(8595)+fromHi+'% from H</span>';
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE 2: STOCK NEWS
-// ══════════════════════════════════════
+// ======================================
 function openNews(sym){
   window.open(`https://news.google.com/search?q=${sym}+NSE+stock&hl=en-IN&gl=IN&ceid=IN:en`);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE 3: TOP GAINERS / LOSERS
-// ══════════════════════════════════════
+// ======================================
 function renderTopMovers(){
   const stocks = wl.map(s=>{
     const d=cache[s]?.data; if(!d) return null;
@@ -1811,9 +1843,9 @@ function renderTopMovers(){
   return html;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE 4: HOLDINGS CSV IMPORT
-// ══════════════════════════════════════
+// ======================================
 function triggerCSVImport(){
   document.getElementById("csvImportInput").click();
 }
@@ -1855,9 +1887,9 @@ function handleCSVImport(event){
   reader.readAsText(file);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE 5: BACKUP & RESTORE (JSON)
-// ══════════════════════════════════════
+// ======================================
 function backupData(){
   const data={
     wl, h, hist, alerts, groups,
@@ -1905,19 +1937,19 @@ function handleRestore(event){
       if(data.journal){ journal=data.journal; localStorage.setItem("journal",JSON.stringify(journal)); }
       if(data.targets){ targets=data.targets; localStorage.setItem("targets",JSON.stringify(targets)); }
       event.target.remove();
-      showPopup("\u2705 Data restored! Reloading...");
+      showPopup("Data restored! Reloading...");
       setTimeout(()=>location.reload(),1500);
     }catch(err){
-      showPopup("\u274C Invalid backup file");
+      showPopup("Invalid backup file");
       event.target.remove();
     }
   };
   reader.readAsText(file);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE: PRICE RANGE BAR (Day High-Low)
-// ══════════════════════════════════════
+// ======================================
 function getPriceRangeBar(d){
   if(!d||!d.regularMarketDayHigh||!d.regularMarketDayLow) return '';
   const lo=d.regularMarketDayLow, hi=d.regularMarketDayHigh, cur=d.regularMarketPrice;
@@ -1935,9 +1967,9 @@ function getPriceRangeBar(d){
   </div>`;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE: AVG vs CMP BAR (Holdings)
-// ══════════════════════════════════════
+// ======================================
 function getAvgVsCMPBar(avg, cmp){
   const isAbove = cmp >= avg;
   const diff = Math.abs(cmp - avg);
@@ -1952,18 +1984,18 @@ function getAvgVsCMPBar(avg, cmp){
   </div>`;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // FEATURE: SETTINGS
-// ══════════════════════════════════════
+// ======================================
 let dupWarnEnabled = true;
 let refreshInterval = null;
 
 try{ dupWarnEnabled = localStorage.getItem("dupWarn") !== "false"; }catch(e){}
 
 
-// ══════════════════════════════════════
+// ======================================
 // EXPORT CSV (History)
-// ══════════════════════════════════════
+// ======================================
 function exportCSV(){
   if(!hist||hist.length===0){ showPopup('No history to export'); return; }
   const rows=['Type,Symbol,TradeType,BuyPrice,SellPrice,Qty,PnL,Date,BuyDate'];
@@ -1992,9 +2024,9 @@ function exportCSV(){
   showPopup('CSV exported!');
 }
 
-// ══════════════════════════════════════
+// ======================================
 // P&L CALENDAR (History)
-// ══════════════════════════════════════
+// ======================================
 // Calendar state
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelDay=null;
 
@@ -2073,7 +2105,7 @@ function renderCalendar(){
   html+=`<div style="display:flex;gap:10px;margin-top:8px;justify-content:center;">
     <span style="font-size:9px;color:#22c55e;">+ Profit day</span>
     <span style="font-size:9px;color:#ef4444;">- Loss day</span>
-    <span style="font-size:9px;color:#38bdf8;">■ Buy only</span>
+    <span style="font-size:9px;color:#38bdf8;">Buy only</span>
   </div>`;
 
   // Selected day trades
@@ -2103,9 +2135,9 @@ function renderCalendar(){
   el.innerHTML=html;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // TERTIARY API EDIT (Settings)
-// ══════════════════════════════════════
+// ======================================
 function startAPI3Edit(){
   const inp=document.getElementById('set-api3-input');
   if(inp) inp.value=localStorage.getItem('customAPI3')||'';
@@ -2118,9 +2150,9 @@ function cancelAPI3Edit(){
 }
 
 
-// ══════════════════════════════════════
+// ======================================
 // BATCH FETCH (parallel, single API call)
-// ══════════════════════════════════════
+// ======================================
 // Normalize GAS batch item -> app cache format
 function normalizeBatchItem(gasData){
   // GAS returns: {price, prevClose, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
@@ -2178,7 +2210,7 @@ async function batchFetchStocks(symbols, isIndex=false){
   await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
 }
 
-// ── FETCH WITH 3-URL FALLBACK ──
+// -- FETCH WITH 3-URL FALLBACK --
 async function fetchFull(sym,isIndex=false){
   let key=sym, symbol=isIndex?sym:sym+".NS";
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
@@ -2322,9 +2354,9 @@ function clearAllData(){
 }
 
 
-// ══════════════════════════════════════
+// ======================================
 // TAP ACTION PANEL SYSTEM
-// ══════════════════════════════════════
+// ======================================
 function toggleActions(sym){
   var panel=document.getElementById('act-'+sym);
   if(!panel) return;
@@ -2344,10 +2376,10 @@ document.addEventListener('click',function(e){
   }
 });
 
-// ══════════════════════════════════════
+// ======================================
 // SORT
-// ══════════════════════════════════════
-// ── CHART ──
+// ======================================
+// -- CHART --
 function getTVSymbol(sym){
   if(sym==="^NSEI") return "NIFTY";
   if(sym==="^BSESN") return "SENSEX";
@@ -2364,7 +2396,7 @@ function chart(sym,isIndex){
   window.open("https://www.tradingview.com/chart/?symbol="+exchange+":"+finalSym);
 }
 
-// ── ALERT MODAL ──
+// -- ALERT MODAL --
 var currentAlertSym="";
 function setAlert(sym){
   currentAlertSym=sym;
@@ -2386,7 +2418,7 @@ function confirmAlert(){
   showPopup("Alert set: "+currentAlertSym+" @ Rs."+price);
 }
 
-// ── CHECK ALERTS ──
+// -- CHECK ALERTS --
 function checkAlerts(sym,currentPrice){
   var updated=false;
   alerts.forEach(function(a){
@@ -2406,9 +2438,9 @@ function sortAZ(){wl.sort((a,b)=>azAsc?a.localeCompare(b):b.localeCompare(a));az
 function sortPrice(){wl.sort((a,b)=>{let pa=cache[a]?.data?.regularMarketPrice||0,pb=cache[b]?.data?.regularMarketPrice||0;return priceAsc?pa-pb:pb-pa;});priceAsc=!priceAsc;renderWL();}
 function sortPercent(){wl.sort((a,b)=>{let da=cache[a]?.data,db=cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return percentAsc?pa-pb:pb-pa;});percentAsc=!percentAsc;renderWL();}
 
-// ══════════════════════════════════════
+// ======================================
 // TAB
-// ══════════════════════════════════════
+// ======================================
 function tab(t){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove("active"));
   document.getElementById(t).classList.add("active");
@@ -2420,18 +2452,18 @@ function tab(t){
   if(t==="history")renderHist();
   if(t==="indices")renderIndices();
   if(t==="alerts")renderAlerts();
-  if(t==="settings")loadSettingsUI();
+  if(t==="settings"){loadSettingsUI();renderFeatureGuide();}
   if(t==="journal")renderJournal();
   if(t==="holidays")renderHolidays();
   if(t==="news")renderNews();
 }
 
 
-// ══════════════════════════════════════
+// ======================================
 // GAS HISTORY FETCH (RSI/MACD/Inside Bar)
 // ?type=history&s=SBIN.NS&range=30d&interval=1d
 // Day-cached per stock
-// ══════════════════════════════════════
+// ======================================
 async function fetchHistory(sym, range='30d', interval='1d'){
   const DAY_KEY='histData_'+sym+'_'+range;
   const today=new Date().toISOString().split('T')[0];
@@ -2464,9 +2496,9 @@ async function fetchHistory(sym, range='30d', interval='1d'){
   return null;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // TECHNICAL INDICATORS
-// ══════════════════════════════════════
+// ======================================
 
 // RSI (14-period)
 function calcRSI(closes, period=14){
@@ -2507,7 +2539,7 @@ function calcMACD(closes){
   const ema26=calcEMA(closes,26);
   if(!ema12||!ema26) return null;
   const macdLine=parseFloat((ema12-ema26).toFixed(2));
-  // Signal line needs 9-period EMA of MACD — simplified: use last 9 MACD values
+  // Signal line needs 9-period EMA of MACD - simplified: use last 9 MACD values
   // For single value output, return current MACD and trend
   const ema12prev=calcEMA(closes.slice(0,-1),12);
   const ema26prev=calcEMA(closes.slice(0,-1),26);
@@ -2534,7 +2566,7 @@ function detectNarrowRange(highs, lows, threshold=1.5){
   return range<threshold;
 }
 
-// Volume Breakout (uses existing cache — 0 API)
+// Volume Breakout (uses existing cache  -  0 API)
 function checkVolumeBreakout(sym){
   const d=cache[sym]?.data;
   if(!d) return null;
@@ -2546,17 +2578,17 @@ function checkVolumeBreakout(sym){
   return null;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // TECHNICAL ALERTS CHECK
-// ══════════════════════════════════════
+// ======================================
 async function checkTechnicalAlerts(sym){
-  // 1. Volume Breakout (0 API — cache only)
+  // 1. Volume Breakout (0 API  -  cache only)
   const vb=checkVolumeBreakout(sym);
   if(vb){
     const KEY='vbAlert_'+sym+'_'+new Date().toISOString().split('T')[0];
     if(!sessionStorage.getItem(KEY)){
       sessionStorage.setItem(KEY,'1');
-      showPopup('Volume Breakout: '+sym+' — '+vb.ratio+'x avg volume', 5000);
+      showPopup('Volume Breakout: '+sym+'  -  '+vb.ratio+'x avg volume', 5000);
     }
   }
 
@@ -2596,10 +2628,10 @@ async function checkTechnicalAlerts(sym){
 
   if(insideBar&&!alerted.insideBar){
     alerted.insideBar=true;
-    showPopup('Inside Bar: '+sym+' — Consolidation detected', 5000);
+    showPopup('Inside Bar: '+sym+'  -  Consolidation detected', 5000);
   } else if(narrowRange&&!alerted.narrowRange){
     alerted.narrowRange=true;
-    showPopup('Narrow Range: '+sym+' — Breakout watch', 5000);
+    showPopup('Narrow Range: '+sym+'  -  Breakout watch', 5000);
   }
 
   sessionStorage.setItem(ALERT_KEY,JSON.stringify(alerted));
@@ -2612,9 +2644,283 @@ async function runAllTechnicalAlerts(){
   }
 }
 
-// ══════════════════════════════════════
+// ======================================
 // APP START (after PIN)
-// ══════════════════════════════════════
+// ======================================
+
+// ======================================
+// FLASH PRICE TICKER (header scroll bar)
+// ======================================
+function updatePriceTicker() {
+  const bar = document.getElementById('priceTicker');
+  const track = document.getElementById('tickerTrack');
+  if(!bar || !track) return;
+
+  // Collect all cached prices: indices + watchlist
+  const items = [];
+
+  // Indices first
+  const idxMap = {'^NSEI':'NIFTY 50','^BSESN':'SENSEX','^NSEBANK':'BANKNIFTY'};
+  Object.entries(idxMap).forEach(([sym,label]) => {
+    const d = cache[sym]?.data;
+    if(!d) return;
+    const price = d.regularMarketPrice;
+    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
+    const chg = prev ? price - prev : 0;
+    const pct = prev ? (chg/prev*100) : 0;
+    items.push({sym:label, price, chg, pct});
+  });
+
+  // Watchlist stocks
+  wl.forEach(sym => {
+    const d = cache[sym]?.data;
+    if(!d) return;
+    const price = d.regularMarketPrice;
+    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
+    const chg = prev ? price - prev : 0;
+    const pct = prev ? (chg/prev*100) : 0;
+    items.push({sym, price, chg, pct});
+  });
+
+  if(items.length === 0) { bar.style.display='none'; return; }
+
+  bar.style.display = 'flex';
+
+  // Build ticker items (duplicated for seamless loop)
+  const buildItem = (item) => {
+    const up = item.chg >= 0;
+    const arrowSvg = up
+      ? '<svg viewBox="0 0 10 10" width="7" height="7" style="display:inline-block;vertical-align:middle;"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>'
+      : '<svg viewBox="0 0 10 10" width="7" height="7" style="display:inline-block;vertical-align:middle;"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>';
+    const cls = up ? 'ticker-up' : 'ticker-dn';
+    const sign = up ? '+' : '';
+    const chgStr = (up?'+':'')+inr(Math.abs(item.chg));
+    return `<span class="ticker-item">
+      <span class="ticker-sym">${item.sym}</span>
+      <span class="ticker-price">${inr(item.price)}</span>
+      <span class="${cls}">${arrowSvg}${chgStr} (${sign}${item.pct.toFixed(2)}%)</span>
+    </span>`;
+  };
+
+  const html = items.map(buildItem).join('');
+  // Duplicate for seamless infinite scroll
+  track.innerHTML = html + html;
+
+  // Adjust animation speed based on item count (more items = longer duration)
+  const duration = Math.max(25, items.length * 4);
+  track.style.animation = `tickerScroll ${duration}s linear infinite`;
+}
+
+
+// ======================================
+// ======================================
+// FEATURE DATA (single source of truth)
+// To add/remove features: edit FEATURE_DATA only
+// Accordion + PDF both auto-update
+// ======================================
+const FEATURE_DATA = [
+  {cat:"HEADER", color:"#38bdf8", items:[
+    {name:"NIFTY / SENSEX / BANKNIFTY", desc:"Live index prices + % change. Tap = detail modal. Indian format (24.5k). Auto-refresh."},
+    {name:"Theme Button", desc:"Dark/Light mode toggle. Instantly applies across full app."},
+    {name:"Refresh Button", desc:"Manual cache clear + fresh price fetch for all stocks."},
+    {name:"Alert Button", desc:"Opens Alerts tab directly from header."},
+    {name:"Holiday Button", desc:"NSE market holidays 2025 + 2026 list."},
+    {name:"Flash Price Ticker", desc:"Scrolling bar: BANKNIFTY 53,427 - +155 (+0.12%) for all watchlist + indices. Hover = pause."}
+  ]},
+  {cat:"WATCHLIST", color:"#60a5fa", items:[
+    {name:"Search Box", desc:"334 preloaded NSE stocks with suggestions. Enter = add to watchlist."},
+    {name:"Sort: A-Z / Price / %", desc:"Toggle sort by name, price high-low, or % change."},
+    {name:"Groups", desc:"Create custom groups (PSU, IT, Green). Filter tabs auto-appear."},
+    {name:"ACT Button", desc:"Opens action panel: BUY / SELL / CHART / NEWS / ALERT / TARGET."},
+    {name:"Day Bar", desc:"Visual Day High-Low range bar with CMP position marker."},
+    {name:"52W Bar", desc:"52-week High-Low bar. Label: ** Near 52W High / !! Near 52W Low."},
+    {name:"CMP Flash", desc:"Live price with green/red flash animation on change."},
+    {name:"Remove (X)", desc:"Remove stock from watchlist with confirmation."}
+  ]},
+  {cat:"HOLDINGS", color:"#4ade80", items:[
+    {name:"Portfolio Summary", desc:"Investment, Current Value, Unrealized P&L, Return%, Realized P&L, Total P&L."},
+    {name:"Pie Chart", desc:"Donut chart for portfolio diversity - % allocation per stock."},
+    {name:"Card Layout", desc:"Row 1: Symbol + badge + CMP + P&L. Row 2: Qty + Avg + Holding days. Row 3: Avg bar + buttons."},
+    {name:"AVG Down Calc", desc:"Two modes: Add Qty (new avg preview) + Target Avg (exact qty needed)."},
+    {name:"Edit Holding", desc:"Change avg price, qty, buy date anytime."},
+    {name:"Holding Days", desc:"Auto-calculated: 45d / 2mo 3d format."}
+  ]},
+  {cat:"HISTORY", color:"#a78bfa", items:[
+    {name:"Trade List", desc:"BUY + SELL trades with symbol, type badge, prices, qty, date, P&L."},
+    {name:"CNC / MIS Badge", desc:"Trade type shown on every history card."},
+    {name:"Tax Calculator", desc:"Brokerage 0.15%, STT, Exchange charges, GST, break-even price."},
+    {name:"P&L Calendar", desc:"Monthly calendar view. Green/red days. Tap date = filter trades."},
+    {name:"Export CSV", desc:"Full trade history as CSV download."},
+    {name:"Backup JSON", desc:"Complete app data (watchlist, holdings, history, alerts) as JSON."},
+    {name:"Restore JSON", desc:"Restore from backup - works across devices via GitHub Pages."}
+  ]},
+  {cat:"LIVE PRICES", color:"#fb7185", items:[
+    {name:"GAS Proxy", desc:"Google Apps Script proxies Yahoo Finance API - bypasses CORS."},
+    {name:"NSE to BSE Fallback", desc:"If NSE (.NS) fails, auto-retry with BSE (.BO) symbol."},
+    {name:"3 URL Fallback", desc:"Primary > Secondary > Tertiary GAS URLs - zero downtime."},
+    {name:"Batch Fetch", desc:"All watchlist stocks in one GAS call (parallel processing)."},
+    {name:"Cache System", desc:"8s default. Prevents unnecessary API calls. Configurable in Settings."},
+    {name:"Auto Refresh", desc:"30s default interval. Configurable (min 10s)."},
+    {name:"Pull to Refresh", desc:"Mobile: swipe down to force refresh."}
+  ]},
+  {cat:"TECHNICAL ALERTS", color:"#f59e0b", items:[
+    {name:"RSI (14)", desc:"Oversold alert below 30. Overbought alert above 70. 30d OHLCV data."},
+    {name:"MACD (12,26,9)", desc:"Bullish cross (signal line crossover) and Bearish cross detection."},
+    {name:"Inside Bar", desc:"Current candle inside previous candle range - consolidation signal."},
+    {name:"Narrow Range", desc:"Smallest range in last 7 bars - breakout watch signal."},
+    {name:"Volume Breakout", desc:"Volume 1.5x above 20-day avg (cache-based, 0 extra API calls)."},
+    {name:"Day H/L Alert", desc:"Price within 0.5% of day High or Low - auto chime + popup."},
+    {name:"Auto Run", desc:"Runs for all watchlist stocks on app open + every manual refresh."}
+  ]},
+  {cat:"STOCK DETAIL", color:"#34d399", items:[
+    {name:"Price Data", desc:"Open, Prev Close, Day High, Day Low, 52W High, 52W Low."},
+    {name:"Fundamentals", desc:"P/E TTM, Forward P/E, EPS TTM, Forward EPS, Mkt Cap, Book Value, Volume, Div Yield."},
+    {name:"Technicals (30d)", desc:"RSI(14), MACD(12,26,9), Inside Bar, Narrow Range - live calculated."},
+    {name:"Earnings + Dividends", desc:"Next earnings date + Ex-dividend date (day-cached from Yahoo)."},
+    {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
+  ]},
+  {cat:"NEWS", color:"#38bdf8", items:[
+    {name:"Live RSS Feed", desc:"Google News RSS via GAS proxy. Real-time. GitHub Pages only."},
+    {name:"Stock Filter", desc:"Fetches top 5 watchlist stocks. 5 min cache to save GAS quota."},
+    {name:"Tabs", desc:"All / Corporate / Market filter tabs."},
+    {name:"Stock Chips", desc:"Filter by individual stock (watchlist-based chips)."},
+    {name:"Sentiment Engine", desc:"Keyword-based: Positive / Negative / Neutral badge per news."},
+    {name:"Smart Summary", desc:"Auto-generated one-line summary based on news keywords."},
+    {name:"Read Link", desc:"Opens original article in new tab."}
+  ]},
+  {cat:"ALERTS + TARGETS", color:"#fbbf24", items:[
+    {name:"Price Alerts", desc:"Set above/below trigger per stock. Chime sound when hit."},
+    {name:"Triggered Log", desc:"List of already-triggered alerts with time."},
+    {name:"Target Price", desc:"Set target per stock. Auto-removes from list when price reached."},
+    {name:"Day H/L Alert", desc:"Auto alert when price within 0.5% of day high or low (session)."}
+  ]},
+  {cat:"GAINERS / LOSERS", color:"#c4b5fd", items:[
+    {name:"Top Gainers", desc:"Top 10 gainers from 334 preloaded stocks. Symbol + Price + %."},
+    {name:"Top Losers", desc:"Top 10 losers same list."},
+    {name:"Background Preload", desc:"Silently fetches 80 stocks 1.5s after app open."},
+    {name:"Manual Refresh", desc:"Force fresh batch fetch from Gainers tab."}
+  ]},
+  {cat:"JOURNAL", color:"#94a3b8", items:[
+    {name:"Entry Types", desc:"NOTE / BUY / SELL / WATCH - four trade diary entry types."},
+    {name:"Stock Tag", desc:"Optional stock symbol linked to each journal entry."},
+    {name:"Timestamp", desc:"Auto date+time on every entry."},
+    {name:"History View", desc:"Chronological list of all past entries."}
+  ]},
+  {cat:"SETTINGS", color:"#60a5fa", items:[
+    {name:"3 API URLs", desc:"Primary + Secondary + Tertiary GAS endpoints for fallback."},
+    {name:"Auto Refresh", desc:"Configure interval in seconds (default 30s, min 10s)."},
+    {name:"Cache Time", desc:"Configure in ms (default 8000ms = 8s)."},
+    {name:"Duplicate Warning", desc:"Toggle warning when same stock added twice."},
+    {name:"Danger Zone", desc:"Clear Holdings / History / Alerts individually with confirmation."},
+    {name:"Import CSV", desc:"Bulk import holdings from CSV file."},
+    {name:"Backup + Restore", desc:"JSON export/import for cross-device data sync."}
+  ]},
+  {cat:"TECHNICAL DETAILS", color:"#4b6280", items:[
+    {name:"No Frameworks", desc:"Pure HTML + Tailwind CSS + Vanilla JS. Zero dependencies."},
+    {name:"Single File", desc:"Entire app in one RealTraderPro_Stable.html file."},
+    {name:"localStorage", desc:"All data stored locally. No server, no account, no cost."},
+    {name:"SVG Icons", desc:"All icons are inline SVG - no emoji, no fonts needed. Android Chrome safe."},
+    {name:"Indian Number Format", desc:"Rs 1,23,456.78 format via inr() function."},
+    {name:"charset=UTF-8", desc:"Meta tag ensures correct rendering on all devices."},
+    {name:"Market Status", desc:"Open / Pre-open / Closed / Weekend via IST time - zero API."},
+    {name:"Day-cached Data", desc:"Fundamentals + History cached daily in localStorage."}
+  ]}
+];
+
+// ======================================
+// FEATURE GUIDE ACCORDION + PDF
+// ======================================
+function renderFeatureGuide(){
+  const el = document.getElementById("featureGuideList");
+  if(!el) return;
+
+  // Count total features
+  const totalFeatures = FEATURE_DATA.reduce((s,f)=>s+f.items.length,0);
+
+  // Header: count + Download PDF button
+  const headerHtml =
+    "<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;\">" +
+    "<span style=\"font-size:10px;color:#4b6280;\">" + FEATURE_DATA.length + " categories  |  " + totalFeatures + " features</span>" +
+    "<button onclick=\"downloadFeaturePDF()\" style=\"background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Rajdhani\',sans-serif;\">" +
+    "Download PDF</button></div>";
+
+  let accordionHtml = "";
+  FEATURE_DATA.forEach((f,i) => {
+    const id = "fg"+i;
+    accordionHtml +=
+      "<div style=\"border-bottom:1px solid #1e2d3d;margin-bottom:2px;\">" +
+      "<div onclick=\"var c=document.getElementById('" + id + "');var isOpen=c.style.display!=='none';c.style.display=isOpen?'none':'block';this.querySelector('.fga').style.transform=isOpen?'rotate(0deg)':'rotate(90deg)'\"" +
+      " style=\"display:flex;justify-content:space-between;align-items:center;padding:7px 0;cursor:pointer;\">" +
+      "<span style=\"font-size:11px;font-weight:700;color:" + f.color + ";\">" + f.cat + "</span>" +
+      "<svg class=\"fga\" viewBox=\"0 0 10 10\" width=\"8\" height=\"8\" fill=\"#4b6280\" style=\"transition:transform 0.2s;flex-shrink:0;\"><polygon points=\"3,2 7,5 3,8\"/></svg>" +
+      "</div>" +
+      "<div id=\"" + id + "\" style=\"display:none;padding:0 0 8px 8px;\">" +
+      f.items.map(it =>
+        "<div style=\"display:flex;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03)\">" +
+        "<span style=\"font-size:10px;font-weight:700;color:" + f.color + ";min-width:100px;flex-shrink:0;\">" + it.name + "</span>" +
+        "<span style=\"font-size:10px;color:#94a3b8;line-height:1.4;\">" + it.desc + "</span>" +
+        "</div>"
+      ).join("") +
+      "</div></div>";
+  });
+
+  el.innerHTML = headerHtml + accordionHtml;
+}
+
+function downloadFeaturePDF(){
+  const totalFeatures = FEATURE_DATA.reduce((s,f)=>s+f.items.length,0);
+  const today = new Date();
+  const dateStr = today.getDate()+"/"+(today.getMonth()+1)+"/"+today.getFullYear();
+
+  let tableRows = "";
+  FEATURE_DATA.forEach(f => {
+    // Category header row
+    tableRows += "<tr><td colspan=\"3\" style=\"background:#1e3a5f;color:#60a5fa;font-weight:700;font-size:12px;padding:6px 8px;letter-spacing:0.5px;\">" + f.cat + "</td></tr>";
+    // Feature rows
+    f.items.forEach((it,i) => {
+      const bg = i%2===0 ? "#0f1e33" : "#111827";
+      tableRows += "<tr style=\"background:" + bg + ";\">" +
+        "<td style=\"width:8px;background:" + f.color + ";\"></td>" +
+        "<td style=\"padding:5px 8px;color:#e2e8f0;font-weight:700;font-size:11px;white-space:nowrap;\">" + it.name + "</td>" +
+        "<td style=\"padding:5px 8px;color:#94a3b8;font-size:11px;line-height:1.4;\">" + it.desc + "</td>" +
+        "</tr>";
+    });
+  });
+
+  const html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\">" +
+    "<title>Real Trader Pro - Feature Guide</title>" +
+    "<style>" +
+    "body{background:#0a0f1a;color:#e2e8f0;font-family:Arial,sans-serif;margin:0;padding:20px;}" +
+    "table{width:100%;border-collapse:collapse;margin-top:12px;}" +
+    "td{vertical-align:top;border-bottom:1px solid #1e2d3d;}" +
+    ".header{background:linear-gradient(90deg,#0f1e33,#1e3a5f);padding:16px 20px;border-radius:10px;margin-bottom:16px;}" +
+    ".header h1{margin:0;font-size:20px;color:#38bdf8;letter-spacing:1px;}" +
+    ".header p{margin:4px 0 0;font-size:11px;color:#4b6280;}" +
+    ".stats{display:flex;gap:16px;margin-top:8px;}" +
+    ".stat{background:#0a1628;padding:6px 12px;border-radius:6px;font-size:11px;color:#60a5fa;font-weight:700;}" +
+    "@media print{body{background:#fff;color:#000;} td{color:#000 !important;border-bottom:1px solid #ccc;} .header{background:#f0f4f8;} .header h1{color:#1e3a8a;} .header p{color:#475569;} .stat{background:#e2e8f0;color:#1e3a8a;} tr[style*=\"background:#0f1e33\"]{background:#f8fafc !important;} tr[style*=\"background:#111827\"]{background:#ffffff !important;} td[style*=\"color:#e2e8f0\"]{color:#1a202c !important;} td[style*=\"color:#94a3b8\"]{color:#475569 !important;} tr td:first-child{display:none;} td[style*=\"background:#1e3a5f\"]{background:#dbeafe !important;color:#1e3a8a !important;}}" +
+    "</style></head><body>" +
+    "<div class=\"header\">" +
+    "<h1>REAL TRADER PRO - Feature Reference Guide</h1>" +
+    "<p>Version 2.1  |  " + dateStr + "  |  Sahaj Personal Trading App</p>" +
+    "<div class=\"stats\">" +
+    "<span class=\"stat\">" + totalFeatures + "+ Features</span>" +
+    "<span class=\"stat\">0 Frameworks</span>" +
+    "<span class=\"stat\">1 HTML File</span>" +
+    "<span class=\"stat\">0 Monthly Cost</span>" +
+    "</div></div>" +
+    "<table>" + tableRows + "</table>" +
+    "<div style=\"text-align:center;font-size:10px;color:#4b6280;margin-top:16px;padding:10px;border-top:1px solid #1e2d3d;\">" +
+    "Real Trader Pro  |  Pure HTML + Tailwind CSS + Vanilla JS  |  GAS + Yahoo Finance" +
+    "</div></body></html>";
+
+  const w = window.open("","_blank","width=900,height=700");
+  if(!w){ showPopup("Popup blocked! Allow popups for this site."); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); }, 500);
+}
+
 async function startApp(){
   updateMarketStatus();
   startClock();
@@ -2629,6 +2935,7 @@ async function startApp(){
   hideLoader();
   renderWL();
   updateHeaderIndices();
+  updatePriceTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
   // Background: preload POPULAR_STOCKS for Gainers tab (no loader shown)
@@ -2639,14 +2946,14 @@ async function startApp(){
   },1500);
 }
 
-// ══════════════════════════════════════
+// ======================================
 // AUTO REFRESH & MANUAL
-// ══════════════════════════════════════
+// ======================================
 setInterval(()=>{updatePrices();},30000);
 
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
-  btn.style.opacity="0.4";btn.style.pointerEvents="none";btn.innerText="...";
+  btn.style.opacity="0.4";btn.style.pointerEvents="none";btn.innerHTML="...";
   showLoader("Refreshing...");
   cache={};
   await Promise.all([
@@ -2655,8 +2962,9 @@ async function manualRefresh(){
   ]);
   hideLoader();
   renderWL();updatePrices();
+  updatePriceTicker();
   setTimeout(()=>runAllTechnicalAlerts(),2000);
-  btn.style.opacity="1";btn.style.pointerEvents="auto";btn.innerText="Refresh";
+  btn.style.opacity="1";btn.style.pointerEvents="auto";btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>';
   showPopup("Refreshed!");
 }
 
@@ -2666,10 +2974,12 @@ document.addEventListener('touchend',e=>{let diff=e.changedTouches[0].clientY-to
 
 
 
-// ══════════════════════════════════════
+// ======================================
 // SMART NEWS ENGINE
-// ══════════════════════════════════════
+// ======================================
 let newsCache = null;
+let newsCacheTime = 0;
+const NEWS_CACHE_MS = 5 * 60 * 1000; // 5 min cache
 let newsCacheDate = '';
 
 // Keyword sentiment engine
@@ -2717,47 +3027,102 @@ function smartSummaryTemplate(text, sym, sentiment) {
   return sym + '  -  Track this announcement for portfolio impact.';
 }
 
-// Mock news items (will be replaced by real GAS RSS fetch)
-function getMockNews() {
+// -- LIVE NEWS FETCH via GAS --
+async function fetchLiveNews(sym) {
+  const apiUrl = localStorage.getItem("customAPI") || API;
+  const cleanSym = sym.replace(".NS","").replace(".BO","");
+  try {
+    const r = await fetch(`${apiUrl}?type=news&s=${encodeURIComponent(cleanSym)}`);
+    if(!r.ok) return [];
+    const j = await r.json();
+    if(j.news && j.news.length > 0) return j.news;
+  } catch(e) {
+    console.warn("News fetch failed for "+sym+":", e.message);
+  }
+  return [];
+}
+
+function timeAgo(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff/60000);
+    if(mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins/60);
+    if(hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs/24) + 'd ago';
+  } catch(e) { return ''; }
+}
+
+async function loadAllNews() {
+  // Use cache if fresh
+  if(newsCache && (Date.now() - newsCacheTime < NEWS_CACHE_MS)) return newsCache;
+  
+  // Fetch for top watchlist stocks (max 5 to avoid GAS quota)
+  const symsToFetch = wl.slice(0,5);
+  if(symsToFetch.length === 0) { newsCache=[]; newsCacheTime=Date.now(); return []; }
+  
+  const results = await Promise.all(symsToFetch.map(s => fetchLiveNews(s)));
+  const allItems = [];
+  
+  symsToFetch.forEach((sym, i) => {
+    (results[i]||[]).forEach(item => {
+      allItems.push({
+        sym: sym,
+        source: 'LIVE',
+        type: detectNewsType(item.title),
+        time: timeAgo(item.date),
+        title: item.title,
+        link: item.link
+      });
+    });
+  });
+  
+  // Sort by time (most recent first)  -  best effort
+  newsCache = allItems.length > 0 ? allItems : getFallbackNews();
+  newsCacheTime = Date.now();
+  return newsCache;
+}
+
+function detectNewsType(title) {
+  const t = title.toLowerCase();
+  if(t.includes('board')||t.includes('agm')||t.includes('result')||t.includes('dividend')||
+     t.includes('buyback')||t.includes('record date')||t.includes('split')||
+     t.includes('merger')||t.includes('disclosure')||t.includes('intimation')) return 'corporate';
+  return 'market';
+}
+
+function getFallbackNews() {
+  const isLocal = location.protocol === 'file:';
+  const msg = isLocal
+    ? 'Open via GitHub Pages to load live news. Local file cannot call GAS API.'
+    : 'No news found. Check API connection or try refreshing.';
   return [
-    {sym:'SBIN', source:'NSE', type:'corporate', time:'2h ago',
-     title:'State Bank of India  -  Board Meeting on 15 Apr 2026 to consider Q3 FY26 Results'},
-    {sym:'RELIANCE', source:'NSE', type:'corporate', time:'4h ago',
-     title:'Reliance Industries  -  Interim Dividend Rs 9 per share, Record Date 28 Mar 2026'},
-    {sym:'TCS', source:'NSE', type:'corporate', time:'6h ago',
-     title:'TCS  -  Buyback of equity shares at Rs 4500, aggregating Rs 17000 Cr'},
-    {sym:'OLECTRA', source:'BSE', type:'corporate', time:'1d ago',
-     title:'Olectra Greentech  -  Insider Trading Disclosure: Promoter acquired 50000 shares'},
-    {sym:'RATEGAIN', source:'NSE', type:'corporate', time:'1d ago',
-     title:'RateGain Travel  -  Q3 Results: Revenue up 28% YoY, Dividend Rs 2 declared'},
-    {sym:'SBIN', source:'ET', type:'market', time:'3h ago',
-     title:'SBI eyes Rs 25000 Cr fundraise via infra bonds in FY27, board approval likely'},
-    {sym:'OLECTRA', source:'MC', type:'market', time:'5h ago',
-     title:'Olectra loses BEST Mumbai bus order to PMI Electro Mobility, stock under pressure'},
-    {sym:'RELIANCE', source:'BS', type:'market', time:'8h ago',
-     title:'Reliance Jio files for 5G spectrum in 6 new circles  -  aggressive expansion'},
-    {sym:'RATEGAIN', source:'ET', type:'market', time:'1d ago',
-     title:'RateGain partners with 3 hotel chains in Middle East, international revenue to jump 40%'},
-    {sym:'TCS', source:'MC', type:'market', time:'1d ago',
-     title:'TCS bags $500M deal from European banking major for core banking transformation'},
+    {sym:'INFO', source:'APP', type:'market', time:'', title: msg, link:''},
   ];
 }
 
 let newsActiveFilter = 'ALL';
 let newsActiveTab = 'all';
 
-function renderNews() {
+async function renderNews() {
   const el = document.getElementById('news');
   if(!el) return;
 
-  // Build watchlist-based filter chips
+  // Show loading state
   const chipSyms = ['ALL', ...wl.slice(0,8)];
   const chips = chipSyms.map(s =>
     `<button class="group-btn${newsActiveFilter===s?' active':''}" onclick="setNewsFilter('${s}')">${s==='ALL'?'All':s}</button>`
   ).join('');
 
-  // Get news data (mock for now)
-  const allNews = getMockNews();
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:#38bdf8;">Live News</div>
+      <button onclick="newsCache=null;newsCacheTime=0;renderNews()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
+    </div>
+    <div style="text-align:center;color:#38bdf8;padding:20px;font-size:12px;">Fetching live news...</div>`;
+
+  const allNews = await loadAllNews();
 
   // Filter
   let filtered = allNews.filter(n => {
@@ -2767,10 +3132,8 @@ function renderNews() {
     return true;
   });
 
-  // Sentiment colors
   const sentColors = {positive:'#22c55e', negative:'#ef4444', neutral:'#f59e0b'};
-  const sentIcons = {positive:'&#9650;', negative:'&#9660;', neutral:'&#9679;'};
-  const srcColors = {NSE:'#60a5fa', BSE:'#a78bfa', ET:'#fbbf24', MC:'#c4b5fd', BS:'#4ade80'};
+  const sentIcons = {positive:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>', negative:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>', neutral:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>'};
   const borderColors = {positive:'#22c55e', negative:'#ef4444', neutral:'#f59e0b'};
 
   const cards = filtered.map(n => {
@@ -2778,10 +3141,11 @@ function renderNews() {
     const tag = getNewsTag(n.title);
     const summary = smartSummaryTemplate(n.title, n.sym, sent);
     const tagHtml = tag ? `<span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(56,189,248,0.1);color:#38bdf8;">${tag.label}</span>` : '';
+    const linkHtml = n.link ? `<a href="${n.link}" target="_blank" style="font-size:9px;color:#38bdf8;text-decoration:none;">Read &gt;&gt;</a>` : '';
     return `<div style="background:linear-gradient(145deg,#111827,#1a2332);border:1px solid rgba(255,255,255,0.06);border-left:3px solid ${borderColors[sent]||'#f59e0b'};border-radius:10px;padding:10px 12px;margin-bottom:8px;">
       <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
         <span style="background:#1e3a5f;color:#38bdf8;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${n.sym}</span>
-        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#0f1e33;color:${srcColors[n.source]||'#94a3b8'};">${n.source}</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#0f1e33;color:#4ade80;">LIVE</span>
         <span style="font-size:9px;color:#4b6280;margin-left:auto;">${n.time}</span>
       </div>
       <div style="font-size:11px;font-weight:600;color:#e2e8f0;line-height:1.5;margin-bottom:6px;">${n.title}</div>
@@ -2794,27 +3158,26 @@ function renderNews() {
           <span style="font-size:10px;font-weight:700;color:${sentColors[sent]||'#f59e0b'};">${sentIcons[sent]} ${sent.charAt(0).toUpperCase()+sent.slice(1)}</span>
           ${tagHtml}
         </div>
-        <span style="font-size:9px;padding:2px 8px;border-radius:4px;background:#1e2d3d;color:#94a3b8;">${n.type==='corporate'?'NSE/BSE':'Market News'}</span>
+        ${linkHtml}
       </div>
     </div>`;
   }).join('');
 
   const emptyHtml = filtered.length === 0
-    ? `<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No news for selected filter</div>`
+    ? `<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No news found. Try refreshing.</div>`
     : '';
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:700;color:#38bdf8;">Smart News</div>
-      <button onclick="renderNews()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>
+      <div style="font-size:13px;font-weight:700;color:#38bdf8;">Live News</div>
+      <button onclick="newsCache=null;newsCacheTime=0;renderNews()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
     </div>
     <div style="display:flex;gap:5px;margin-bottom:8px;">
-      <button onclick="setNewsTab('all',this)" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='all'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='all'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='all'?'#38bdf8':'#2d3f52'};">All</button>
-      <button onclick="setNewsTab('corporate',this)" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='corporate'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='corporate'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='corporate'?'#38bdf8':'#2d3f52'};">Corporate</button>
-      <button onclick="setNewsTab('market',this)" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='market'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='market'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='market'?'#38bdf8':'#2d3f52'};">Market</button>
+      <button onclick="setNewsTab('all')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='all'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='all'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='all'?'#38bdf8':'#2d3f52'};">All</button>
+      <button onclick="setNewsTab('corporate')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='corporate'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='corporate'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='corporate'?'#38bdf8':'#2d3f52'};">Corporate</button>
+      <button onclick="setNewsTab('market')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='market'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='market'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='market'?'#38bdf8':'#2d3f52'};">Market</button>
     </div>
     <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">${chips}</div>
-    <div style="font-size:9px;color:#4b6280;text-align:center;margin-bottom:8px;padding:4px;background:#0a1628;border-radius:6px;">Note: Demo data shown. Real RSS feed via GAS will be integrated after GAS update.</div>
     ${cards}${emptyHtml}`;
 }
 
@@ -2828,9 +3191,9 @@ function setNewsTab(t) {
   renderNews();
 }
 
-// ══════════════════════════════════════
+// ======================================
 // AVERAGING CALCULATOR
-// ══════════════════════════════════════
+// ======================================
 let _acSym='', _acAvg=0, _acQty=0, _acCmp=0, _acMode='buy';
 
 function openAvgCalc(sym, avgPrice, qty, cmp){
@@ -2967,9 +3330,9 @@ function calcTargetQty(){
     </div>`;
 }
 
-// ══════════════════════════════════════
+// ======================================
 // INIT
-// ══════════════════════════════════════
+// ======================================
 startApp();
 </script>
 </body>
