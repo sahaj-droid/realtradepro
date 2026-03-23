@@ -1323,7 +1323,8 @@ async function updateHeaderIndices(){
     }
     if(ce){
       const adiff=Math.abs(diff);
-      const diffStr=adiff>=1000?(adiff/1000).toFixed(2)+'k':adiff.toFixed(2);
+      // Indian rupee format with commas
+      const diffStr='₹'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
       ce.innerText=(diff>=0?'+':'-')+diffStr+' ('+(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%)';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
@@ -1576,8 +1577,8 @@ function renderHist(){
 // FUNDAMENTALS (day-cached, from Yahoo meta)
 // ======================================
 async function fetchFundamentals(sym){
-  // v3 key - clears stale cache with missing fields
-  const DAY_KEY='fundCache3_'+sym;
+  // v4 key - uses quote endpoint for richer data
+  const DAY_KEY='fundCache4_'+sym;
   const today=new Date().toISOString().split('T')[0];
   try{
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
@@ -1592,32 +1593,42 @@ async function fetchFundamentals(sym){
     return dt.getDate()+' '+months[dt.getMonth()]+' '+dt.getFullYear();
   }
   function safe(v){ return (v===undefined||v===null||v!==v)?null:v; }
-  let d=await fetchFull(sym,false);
-  if(!d) d=cache[sym]&&cache[sym].data;
+  // Try quote endpoint first (richer data), fallback to chart meta
+  let d = null;
+  try {
+    const apiUrl = localStorage.getItem('customAPI')||API;
+    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`);
+    const j = await r.json();
+    if(j && !j.error && j.price) d = j;
+  } catch(e){}
+  // Fallback to fetchFull meta
+  if(!d) d = await fetchFull(sym, false);
+  if(!d) d = cache[sym]&&cache[sym].data;
+
   let pe='--',eps='--',mktCap='--',volume='--';
   let divYield='--',forwardPE='--',bookValue='--',forwardEps='--',earningsDate='--',exDivDate='--';
   if(d){
-    var pe_v=safe(d.trailingPE);
-    if(pe_v!==null&&!isNaN(pe_v)) pe=parseFloat(pe_v).toFixed(2);
-    var eps_v=safe(d.epsTrailingTwelveMonths);
+    var pe_v=safe(d.trailingPE||d.pe);
+    if(pe_v!==null&&!isNaN(pe_v)&&pe_v>0) pe=parseFloat(pe_v).toFixed(2);
+    var eps_v=safe(d.epsTrailingTwelveMonths||d.eps);
     if(eps_v!==null&&!isNaN(eps_v)) eps='₹'+parseFloat(eps_v).toFixed(2);
-    var cap_v=safe(d.marketCap);
+    var cap_v=safe(d.marketCap||d.mktCap);
     if(cap_v!==null&&!isNaN(cap_v)) mktCap=fmtCap(cap_v);
-    var vol_v=safe(d.regularMarketVolume)||safe(d.averageDailyVolume3Month);
+    var vol_v=safe(d.regularMarketVolume||d.volume||d.averageDailyVolume3Month);
     if(vol_v) volume=fmtVol(vol_v);
-    var dy=safe(d.dividendYield)||safe(d.trailingAnnualDividendYield);
+    var dy=safe(d.dividendYield||d.trailingAnnualDividendYield);
     if(dy!==null&&!isNaN(dy)&&dy>0){
       divYield=(dy>1?dy:(dy*100)).toFixed(2)+'%';
     }
-    var fpe=safe(d.forwardPE)||safe(d.priceEpsCurrentYear)||safe(d.forwardEps&&d.regularMarketPrice?d.regularMarketPrice/d.forwardEps:null);
+    var fpe=safe(d.forwardPE||d.priceEpsCurrentYear);
     if(fpe!==null&&!isNaN(fpe)&&fpe>0&&fpe<1000) forwardPE=parseFloat(fpe).toFixed(2);
     var bv=safe(d.bookValue);
     if(bv!==null&&!isNaN(bv)&&bv>0) bookValue='₹'+parseFloat(bv).toFixed(2);
-    var feps=safe(d.epsForward)||safe(d.epsCurrentYear);
+    var feps=safe(d.epsForward||d.epsCurrentYear);
     if(feps!==null&&!isNaN(feps)) forwardEps='₹'+parseFloat(feps).toFixed(2);
-    var ets=safe(d.earningsTimestamp)||safe(d.earningsTimestampStart)||safe(d.earningsTimestampEnd);
+    var ets=safe(d.earningsTimestamp||d.earningsTimestampStart||d.earningsTimestampEnd);
     if(ets!==null&&ets>0) earningsDate=fmtDate(ets);
-    var exd=safe(d.exDividendDate)||safe(d.dividendDate);
+    var exd=safe(d.exDividendDate||d.dividendDate);
     if(exd!==null&&exd>0) exDivDate=fmtDate(exd);
   }
   const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate};
@@ -1629,21 +1640,21 @@ async function openDetail(sym,isIndex){
   let d=await fetchFull(sym,isIndex);if(!d)return;
   document.getElementById("d-title").innerText=sym;
   document.getElementById("d-body").innerHTML=`
-    <div style="display:flex;flex-direction:column;gap:4px;">
-      <div style="background:#0a1628;border-radius:8px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;">OPEN</div><div style="font-size:13px;font-weight:600;white-space:nowrap;">\u20b9${(d.regularMarketOpen||d.chartPreviousClose||0).toFixed(2)}</div></div>
-        <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;">PREV CLOSE</div><div style="font-size:13px;font-weight:600;white-space:nowrap;">\u20b9${d.chartPreviousClose.toFixed(2)}</div></div>
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen||0).toFixed(2)}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:8px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;">DAY HIGH</div><div style="font-size:13px;font-weight:600;color:#22c55e;white-space:nowrap;">\u20b9${d.regularMarketDayHigh.toFixed(2)}</div></div>
-        <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;">DAY LOW</div><div style="font-size:13px;font-weight:600;color:#ef4444;white-space:nowrap;">\u20b9${d.regularMarketDayLow.toFixed(2)}</div></div>
+      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:8px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;">52W HIGH</div><div style="font-size:13px;font-weight:600;color:#22c55e;white-space:nowrap;">\u20b9${d.fiftyTwoWeekHigh.toFixed(2)}</div></div>
-        <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;">52W LOW</div><div style="font-size:13px;font-weight:600;color:#ef4444;white-space:nowrap;">\u20b9${d.fiftyTwoWeekLow.toFixed(2)}</div></div>
+      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
       </div>
     </div>
     <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
@@ -1651,7 +1662,7 @@ async function openDetail(sym,isIndex){
     <div id="bulkSection" style="margin-top:8px;"></div>
     <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
     <div id="bbSection" style="margin-top:8px;"></div>
-    <button onclick="chart('${sym.replace('^','')}')" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
+    <button onclick="chart('${sym}',${isIndex?true:false})" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
   document.getElementById("detailModal").classList.remove("hidden");
   if(!isIndex) renderCircuit(sym, d);
   if(!isIndex) renderBulkDeals(sym);
@@ -1668,26 +1679,26 @@ async function openDetail(sym,isIndex){
       const exd_v=fund.exDivDate||'--';
       fs.innerHTML=`
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS</div>
-        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px;">
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">P/E (TTM)</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
-            <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">FORWARD P/E</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
+        <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">EPS (TTM)</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
-            <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">FORWARD EPS</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">MKT CAP</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
-            <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">BOOK VALUE</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">BOOK VALUE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">VOLUME</div><div style="font-size:12px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
-            <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">DIV YIELD</div><div style="font-size:12px;font-weight:700;white-space:nowrap;color:${dy_v!=='--'?'#22c55e':'#e2e8f0'};">${dy_v}</div></div>
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DIV YIELD</div><div style="font-size:11px;font-weight:700;white-space:nowrap;color:${dy_v!=='--'?'#22c55e':'#e2e8f0'};">${dy_v}</div></div>
           </div>
         </div>
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">DIVIDENDS & EARNINGS</div>
@@ -1757,31 +1768,35 @@ async function openDetail(sym,isIndex){
 function renderCircuit(sym, d) {
   const cs = document.getElementById("circuitSection");
   if (!cs) return;
-  // Yahoo gives priceHigh/priceLow for circuit on Indian stocks
-  const uch = d.regularMarketDayHigh || null;
-  const lcl = d.regularMarketDayLow  || null;
-  // Circuit limit = typically ±5%, ±10%, ±20% of prev close
-  const pc  = d.chartPreviousClose || 0;
+  const pc = d.chartPreviousClose || 0;
   if (!pc) { cs.innerHTML = ''; return; }
-  const pct = pc > 0 ? (((d.regularMarketPrice || pc) - pc) / pc * 100) : 0;
-  // Detect if near circuit (within 0.5%)
-  const nearUC = uch && Math.abs((d.regularMarketPrice - uch) / uch) < 0.005;
-  const nearLC = lcl && Math.abs((d.regularMarketPrice - lcl) / lcl) < 0.005;
-  const ucColor = nearUC ? '#22c55e' : '#4b6280';
-  const lcColor = nearLC ? '#ef4444' : '#4b6280';
+  const cmp = d.regularMarketPrice || pc;
+  const pct = ((cmp - pc) / pc * 100);
+  // NSE circuit bands: 2%, 5%, 10%, 20%
+  let band = 5;
+  const absPct = Math.abs(pct);
+  if(absPct > 15) band = 20;
+  else if(absPct > 8) band = 10;
+  else if(absPct <= 2.1) band = 2;
+  const uch = parseFloat((pc * (1 + band/100)).toFixed(2));
+  const lcl = parseFloat((pc * (1 - band/100)).toFixed(2));
+  const nearUC = Math.abs((cmp - uch) / uch) < 0.01;
+  const nearLC = Math.abs((cmp - lcl) / lcl) < 0.01;
+  const ucColor = nearUC ? '#22c55e' : pct > 0 ? '#38bdf8' : '#4b6280';
+  const lcColor = nearLC ? '#ef4444' : pct < 0 ? '#f97316' : '#4b6280';
   const ucBorder = nearUC ? 'border:1px solid rgba(34,197,94,0.4);' : '';
   const lcBorder = nearLC ? 'border:1px solid rgba(239,68,68,0.4);' : '';
   cs.innerHTML = `
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">CIRCUIT LIMITS (Day)</div>
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">CIRCUIT LIMITS (±${band}% of Prev Close ₹${pc.toFixed(2)})</div>
     <div style="display:flex;gap:4px;">
       <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;${ucBorder}">
         <div style="font-size:9px;color:#4b6280;">UPPER CIRCUIT</div>
-        <div style="font-size:12px;font-weight:700;color:${ucColor};">\u20b9${uch ? uch.toFixed(2) : '--'}</div>
+        <div style="font-size:12px;font-weight:700;color:${ucColor};">₹${uch}</div>
         ${nearUC ? '<div style="font-size:9px;color:#22c55e;font-weight:700;">!! Near UC</div>' : ''}
       </div>
       <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;${lcBorder}">
         <div style="font-size:9px;color:#4b6280;">LOWER CIRCUIT</div>
-        <div style="font-size:12px;font-weight:700;color:${lcColor};">\u20b9${lcl ? lcl.toFixed(2) : '--'}</div>
+        <div style="font-size:12px;font-weight:700;color:${lcColor};">₹${lcl}</div>
         ${nearLC ? '<div style="font-size:9px;color:#ef4444;font-weight:700;">!! Near LC</div>' : ''}
       </div>
     </div>`;
@@ -2526,11 +2541,19 @@ function getTVSymbol(sym){
   return sym;
 }
 function chart(sym,isIndex){
-  isIndex=isIndex||false;
+  isIndex=(isIndex===true||isIndex==='true'||false);
   var finalSym=sym, exchange="NSE";
-  if(isIndex){
-    finalSym=getTVSymbol(sym);
-    if(finalSym==="SENSEX") exchange="BSE";
+  var indexMap={
+    "^NSEI":"NIFTY","^BSESN":"SENSEX","^NSEBANK":"BANKNIFTY",
+    "NSEI":"NIFTY","BSESN":"SENSEX","NSEBANK":"BANKNIFTY",
+    "NIFTY":"NIFTY","SENSEX":"SENSEX","BANKNIFTY":"BANKNIFTY"
+  };
+  if(indexMap[sym]){
+    finalSym=indexMap[sym];
+    exchange=finalSym==="SENSEX"?"BSE":"NSE";
+  } else if(isIndex){
+    finalSym=getTVSymbol(sym)||sym;
+    exchange=finalSym==="SENSEX"?"BSE":"NSE";
   }
   window.open("https://www.tradingview.com/chart/?symbol="+exchange+":"+finalSym);
 }
@@ -2732,6 +2755,7 @@ let _bbSym='', _bbRange='1M', _bbInterval='daily';
 
 async function renderBollinger(sym){
   _bbSym=sym;
+  _bbRange='1M'; _bbInterval='daily'; // reset period on new stock open
   const bs=document.getElementById('bbSection');
   if(!bs) return;
   bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
@@ -2747,7 +2771,11 @@ async function renderBollinger(sym){
   const hist=await fetchHistory(sym, range, interval);
 
   if(!hist||!hist.close||hist.close.length<20){
-    bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Not enough data for Bollinger Bands</div>`;
+    const isLocal = location.protocol === 'file:';
+    bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:8px;">
+      <div style="color:#f59e0b;font-weight:700;margin-bottom:3px;">${isLocal?'Open via GitHub Pages':'Not enough data'}</div>
+      <div style="color:#4b6280;font-size:9px;">${isLocal?'Local file cannot call GAS API':'Need 20+ candles for BB calculation'}</div>
+    </div>`;
     return;
   }
 
