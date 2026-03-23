@@ -1957,6 +1957,7 @@ function confirmTrade(){
     let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
     localStorage.setItem("h",JSON.stringify(h));
+    triggerAutoSync();
     closeModal(); renderHold(); return;
   }
 
@@ -1966,6 +1967,7 @@ function confirmTrade(){
     hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:currentTradeType});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
+    triggerAutoSync();
     closeModal(); renderHold(); return;
   }
 
@@ -2675,7 +2677,11 @@ function tab(t){
   if(t==="history")renderHist();
   if(t==="indices")renderIndices();
   if(t==="alerts")renderAlerts();
-  if(t==="settings"){loadSettingsUI();renderFeatureGuide();}
+  if(t==="settings"){loadSettingsUI();renderFeatureGuide();
+    const lsd=document.getElementById('lastSyncDisplay');
+    const lts=localStorage.getItem('lastCloudSync');
+    if(lsd&&lts){ const dt=new Date(parseInt(lts)); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
+  }
   if(t==="journal")renderJournal();
   if(t==="holidays")renderHolidays();
   if(t==="earningscal"){ renderEarningsCalendar(); }
@@ -3262,6 +3268,8 @@ async function startApp(){
   setInterval(updateMarketStatus,60000);
   renderGroupTabs();
   showLoader("Loading...");
+  // Pull cloud data first (sync)
+  await pullFromCloud();
   // Watchlist: batch fetch | Indices: individual (^ symbols)
   await Promise.all([
     batchFetchStocks(wl),
@@ -4081,6 +4089,124 @@ function refreshEarningsCal() {
     showPopup('Earnings data updated');
   });
 }
+
+// ======================================
+// CLOUD SYNC via GAS + Google Sheet
+// Keys: wl, h, hist, groups
+// ======================================
+var _syncInProgress = false;
+var _syncDebounceTimer = null;
+var _lastSyncTime = 0;
+
+function getSyncAPI() {
+  return localStorage.getItem('customAPI') || API;
+}
+
+// Save one key to cloud
+async function cloudSave(key, data) {
+  try {
+    const api = getSyncAPI();
+    const encoded = encodeURIComponent(JSON.stringify(data));
+    const url = `${api}?type=syncSave&key=${key}&data=${encoded}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    return j.ok === true;
+  } catch(e) { return false; }
+}
+
+// Load one key from cloud
+async function cloudLoad(key) {
+  try {
+    const api = getSyncAPI();
+    const r = await fetch(`${api}?type=syncLoad&key=${key}`);
+    const j = await r.json();
+    if (j.ok && j.data) return JSON.parse(j.data);
+    return null;
+  } catch(e) { return null; }
+}
+
+// Debounced auto-save (waits 2s after last change)
+function triggerAutoSync() {
+  if (_syncDebounceTimer) clearTimeout(_syncDebounceTimer);
+  _syncDebounceTimer = setTimeout(() => pushToCloud(false), 2000);
+}
+
+// Push all data to cloud
+async function pushToCloud(showMsg = true) {
+  if (_syncInProgress) return;
+  _syncInProgress = true;
+  const syncBtn = document.getElementById('syncStatusBtn');
+  if (syncBtn) { syncBtn.innerText = 'Syncing...'; syncBtn.style.color = '#f59e0b'; }
+  try {
+    await Promise.all([
+      cloudSave('wl', wl),
+      cloudSave('h', h),
+      cloudSave('hist', hist),
+      cloudSave('groups', groups)
+    ]);
+    _lastSyncTime = Date.now();
+    localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
+    if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
+    if (showMsg) showPopup('Cloud sync complete ✓');
+    setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
+  } catch(e) {
+    if (syncBtn) { syncBtn.innerText = 'Sync Failed'; syncBtn.style.color = '#ef4444'; }
+    if (showMsg) showPopup('Sync failed - check API');
+  }
+  _syncInProgress = false;
+}
+
+// Pull all data from cloud (on app open)
+async function pullFromCloud() {
+  const syncBtn = document.getElementById('syncStatusBtn');
+  if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
+  try {
+    const [cwl, ch, chist, cgroups] = await Promise.all([
+      cloudLoad('wl'),
+      cloudLoad('h'),
+      cloudLoad('hist'),
+      cloudLoad('groups')
+    ]);
+
+    let changed = false;
+
+    if (cwl && Array.isArray(cwl) && cwl.length > 0) {
+      // Merge: cloud wins if cloud has more stocks
+      if (cwl.length >= wl.length) {
+        wl = cwl;
+        localStorage.setItem('wl', JSON.stringify(wl));
+        changed = true;
+      }
+    }
+    if (ch && Array.isArray(ch)) {
+      h = ch;
+      localStorage.setItem('h', JSON.stringify(h));
+      changed = true;
+    }
+    if (chist && Array.isArray(chist)) {
+      hist = chist;
+      localStorage.setItem('hist', JSON.stringify(hist));
+      changed = true;
+    }
+    if (cgroups && typeof cgroups === 'object') {
+      groups = cgroups;
+      localStorage.setItem('groups', JSON.stringify(groups));
+      changed = true;
+    }
+
+    if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
+    setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
+
+    if (changed) {
+      renderGroupTabs();
+      renderWL();
+      showPopup('Data loaded from cloud ✓');
+    }
+  } catch(e) {
+    if (syncBtn) { syncBtn.innerText = 'Sync Error'; syncBtn.style.color = '#ef4444'; }
+  }
+}
+
 // ======================================
 // INIT
 // ======================================
