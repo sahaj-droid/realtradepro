@@ -2378,7 +2378,7 @@ function normalizeBatchItem(gasData){
   return {
     regularMarketPrice:       gasData.price,
     chartPreviousClose:       gasData.prevClose,
-    regularMarketOpen:        gasData.open,
+    regularMarketOpen: (gasData.open != null ? gasData.open : gasData.price),
     regularMarketDayHigh:     gasData.high,
     regularMarketDayLow:      gasData.low,
     fiftyTwoWeekHigh:         gasData.week52High,
