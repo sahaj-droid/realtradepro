@@ -27,21 +27,56 @@ body.light #alertPopup { background:#dbeafe; border:1px solid #2563eb; color:#1e
 body.light .group-btn { background:#e2e8f0; border:1px solid #cbd5e0; color:#475569; }
 body.light .group-btn.active { background:#dbeafe; border-color:#2563eb; color:#2563eb; }
 body.light .sort-btn:hover { background:#cbd5e0; color:#1a202c; }
-/* Light mode text overrides */
-body.light span, body.light div, body.light b { color:inherit; }
-body.light .card span[style*="color:#4b6280"] { color:#64748b !important; }
-body.light .card div[style*="color:#4b6280"] { color:#64748b !important; }
-body.light .card div[style*="color:#94a3b8"] { color:#475569 !important; }
+/* ===== LIGHT MODE: COMPREHENSIVE INLINE STYLE OVERRIDES ===== */
+/* Background overrides - all dark bg colors */
+body.light [style*="background:#0a1628"] { background:#e8eef5 !important; }
+body.light [style*="background:#111827"] { background:#f1f5f9 !important; }
+body.light [style*="background:#1e2d3d"] { background:#dde6f0 !important; }
+body.light [style*="background:#0f1e33"] { background:#ffffff !important; }
+body.light [style*="background:#0a0f1a"] { background:#f8fafc !important; }
+body.light [style*="background:#0f2a40"] { background:#dbeafe !important; }
+body.light [style*="background:#1e3a5f"] { background:#bfdbfe !important; }
+body.light [style*="background:linear-gradient(145deg,#111827"] { background:#f1f5f9 !important; }
+body.light [style*="background:linear-gradient(145deg,#0f1e33"] { background:#e8f0fe !important; }
+/* Text color overrides */
 body.light [style*="color:#e2e8f0"] { color:#1a202c !important; }
 body.light [style*="color:#f1f5f9"] { color:#1a202c !important; }
 body.light [style*="color:#cbd5e1"] { color:#334155 !important; }
-body.light [style*="background:#0a1628"] { background:#e2e8f0 !important; }
-body.light [style*="background:#111827"] { background:#f1f5f9 !important; }
-body.light [style*="background:#1e2d3d"] { background:#e2e8f0 !important; }
-body.light [style*="background:#0f1e33"] { background:#ffffff !important; }
-body.light [style*="background:#0a0f1a"] { background:#f8fafc !important; }
+body.light [style*="color:#94a3b8"] { color:#475569 !important; }
+body.light [style*="color:#4b6280"] { color:#64748b !important; }
+body.light [style*="color:#2d3f52"] { color:#94a3b8 !important; }
+/* Border overrides */
+body.light [style*="border:1px solid #1e3a5f"] { border-color:#93c5fd !important; }
+body.light [style*="border:1px solid #2d3f52"] { border-color:#cbd5e0 !important; }
+body.light [style*="border-bottom:1px solid #1e2d3d"] { border-bottom-color:#e2e8f0 !important; }
+body.light [style*="border:1px solid rgba(255,255,255,0.06)"] { border-color:#cbd5e0 !important; }
+/* Divider line overrides */
+body.light [style*="background:#1e2d3d"][style*="width:1px"] { background:#cbd5e0 !important; }
+body.light [style*="background:#1e3a5f"][style*="height:8px"] { background:#bfdbfe !important; }
+/* Modal and panel overrides */
+body.light [style*="background:#0f1e33"][style*="border-radius:16px"] { background:#ffffff !important; border-color:#93c5fd !important; }
+/* Button overrides */
+body.light [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
+body.light [style*="background:#1e3a5f"][style*="color:#93c5fd"] { background:#dbeafe !important; color:#1d4ed8 !important; }
+body.light [style*="background:#0a1628"][style*="color:#6ee7b7"] { background:#d1fae5 !important; color:#065f46 !important; }
+body.light [style*="background:#0a1628"][style*="color:#fde68a"] { background:#fef3c7 !important; color:#92400e !important; }
+body.light [style*="background:#0a1628"][style*="color:#f9a8d4"] { background:#fce7f3 !important; color:#9d174d !important; }
+/* Specific component overrides */
+body.light .wl-actions-panel { background:#e8f0fe !important; border-top-color:#cbd5e0 !important; }
 body.light #loaderOverlay { background:rgba(240,244,248,0.9); }
 body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
+/* News cards in light mode */
+body.light [style*="background:linear-gradient(145deg,#111827,#1a2332)"] { background:linear-gradient(145deg,#ffffff,#f8fafc) !important; border-color:#e2e8f0 !important; }
+/* Ticker light mode already handled separately */
+/* News tab light mode specific fixes */
+body.light #news [style*="color:#38bdf8"] { color:#1d4ed8 !important; }
+body.light #news [style*="background:#0a1628"] { background:#f0f7ff !important; }
+body.light #news [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e2e8f0 !important; }
+body.light #news [style*="color:#e2e8f0"] { color:#1a202c !important; }
+body.light #news [style*="color:#94a3b8"] { color:#475569 !important; }
+body.light #news [style*="color:#4b6280"] { color:#64748b !important; }
+body.light #news .group-btn { background:#e2e8f0 !important; color:#475569 !important; border-color:#cbd5e0 !important; }
+body.light #news .group-btn.active { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
 
 .tab { display:none }
 .tab.active { display:block }
@@ -1237,8 +1272,8 @@ function renderGainersFromCache(){
     return;
   }
 
-  const gainers=[...results].sort((a,b)=>b.pct-a.pct).slice(0,10);
-  const losers=[...results].sort((a,b)=>a.pct-b.pct).slice(0,10);
+  const gainers=[...results].filter(x=>x.pct>=0).sort((a,b)=>b.pct-a.pct).slice(0,10);
+  const losers=[...results].filter(x=>x.pct<=0).sort((a,b)=>a.pct-b.pct).slice(0,10);
 
   let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <span style="font-size:12px;font-weight:700;color:#22c55e;letter-spacing:0.5px;">TOP GAINERS</span>${refreshBtn}
@@ -1250,7 +1285,7 @@ function renderGainersFromCache(){
     html+=`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<gainers.length-1?"1px solid rgba(255,255,255,0.04)":"none"}">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+₹${gdiff} (+${s.pct.toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+₹${gdiff} (+${Math.abs(s.pct).toFixed(2)}%)</span>
     </div>`;
   });
   html+=`</div>`;
@@ -1262,7 +1297,7 @@ function renderGainersFromCache(){
     html+=`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<losers.length-1?"1px solid rgba(255,255,255,0.04)":"none"}">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-₹${ldiff} (${s.pct.toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-₹${ldiff} (-${Math.abs(s.pct).toFixed(2)}%)</span>
     </div>`;
   });
   html+=`</div>`;
@@ -1427,7 +1462,7 @@ async function renderHold(){
         </div>
         <div style="text-align:right;">
           <div style="font-size:10px;color:#4b6280;">HELD</div>
-          <div style="font-size:13px;font-weight:700;color:#94a3b8;">${days!==null?holdingDaysLabel(days):'--'}</div>
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;">${days!==null?holdingDaysLabel(days):(x.buyDate?holdingDaysLabel(0):'Add date')}</div>
         </div>
       </div>
       <!-- Row 3: CMP vs Avg Bar | AVGv | EDIT | SELL -->
@@ -1541,8 +1576,8 @@ function renderHist(){
 // FUNDAMENTALS (day-cached, from Yahoo meta)
 // ======================================
 async function fetchFundamentals(sym){
-  // v2 key  -  clears old cache that had missing/undefined fields
-  const DAY_KEY='fundCache2_'+sym;
+  // v3 key - clears stale cache with missing fields
+  const DAY_KEY='fundCache3_'+sym;
   const today=new Date().toISOString().split('T')[0];
   try{
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
@@ -1574,8 +1609,8 @@ async function fetchFundamentals(sym){
     if(dy!==null&&!isNaN(dy)&&dy>0){
       divYield=(dy>1?dy:(dy*100)).toFixed(2)+'%';
     }
-    var fpe=safe(d.forwardPE)||safe(d.priceEpsCurrentYear);
-    if(fpe!==null&&!isNaN(fpe)&&fpe>0) forwardPE=parseFloat(fpe).toFixed(2);
+    var fpe=safe(d.forwardPE)||safe(d.priceEpsCurrentYear)||safe(d.forwardEps&&d.regularMarketPrice?d.regularMarketPrice/d.forwardEps:null);
+    if(fpe!==null&&!isNaN(fpe)&&fpe>0&&fpe<1000) forwardPE=parseFloat(fpe).toFixed(2);
     var bv=safe(d.bookValue);
     if(bv!==null&&!isNaN(bv)&&bv>0) bookValue='₹'+parseFloat(bv).toFixed(2);
     var feps=safe(d.epsForward)||safe(d.epsCurrentYear);
@@ -1615,10 +1650,12 @@ async function openDetail(sym,isIndex){
     <div id="circuitSection" style="margin-top:8px;"></div>
     <div id="bulkSection" style="margin-top:8px;"></div>
     <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
+    <div id="bbSection" style="margin-top:8px;"></div>
     <button onclick="chart('${sym.replace('^','')}')" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
   document.getElementById("detailModal").classList.remove("hidden");
   if(!isIndex) renderCircuit(sym, d);
   if(!isIndex) renderBulkDeals(sym);
+  if(!isIndex) renderBollinger(sym);
   if(!isIndex){
     const fund=await fetchFundamentals(sym);
     const fs=document.getElementById("fundamentalsSection");
@@ -2567,7 +2604,7 @@ function tab(t){
 // Day-cached per stock
 // ======================================
 async function fetchHistory(sym, range='30d', interval='1d'){
-  const DAY_KEY='histData_'+sym+'_'+range;
+  const DAY_KEY='histData_'+sym+'_'+range+'_'+interval;
   const today=new Date().toISOString().split('T')[0];
   try{
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
@@ -2666,6 +2703,111 @@ function detectNarrowRange(highs, lows, threshold=1.5){
   const n=highs.length;
   const range=((highs[n-1]-lows[n-1])/lows[n-1]*100);
   return range<threshold;
+}
+
+// Bollinger Bands (20, 2)
+function calcBollinger(closes, period=20, mult=2){
+  if(!closes||closes.length<period) return null;
+  const slice=closes.slice(-period);
+  const ma=slice.reduce((a,b)=>a+b,0)/period;
+  const variance=slice.reduce((a,b)=>a+Math.pow(b-ma,2),0)/period;
+  const sd=Math.sqrt(variance);
+  const upper=parseFloat((ma+mult*sd).toFixed(2));
+  const lower=parseFloat((ma-mult*sd).toFixed(2));
+  const width=parseFloat(((upper-lower)/ma*100).toFixed(2));
+  const price=closes[closes.length-1];
+  const pctB=parseFloat(((price-lower)/(upper-lower)*100).toFixed(1));
+  let signal='Neutral';
+  if(pctB<10) signal='Oversold';
+  else if(pctB>90) signal='Overbought';
+  else if(width<3) signal='Squeeze';
+  return {
+    upper, ma:parseFloat(ma.toFixed(2)), lower,
+    width, pctB, signal, price:parseFloat(price.toFixed(2))
+  };
+}
+
+// Render Bollinger Band section in Stock Detail Modal
+let _bbSym='', _bbRange='1M', _bbInterval='daily';
+
+async function renderBollinger(sym){
+  _bbSym=sym;
+  const bs=document.getElementById('bbSection');
+  if(!bs) return;
+  bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
+
+  // Period → range+interval params for GAS
+  const rangeMap={
+    '1M':  {range:'30d',  interval:'1d'},
+    '3M':  {range:'90d',  interval:'1d'},
+    '6M':  {range:'180d', interval:'1d'},
+    '1Y':  {range:'365d', interval:'1wk'}
+  };
+  const {range, interval}=rangeMap[_bbRange]||rangeMap['1M'];
+  const hist=await fetchHistory(sym, range, interval);
+
+  if(!hist||!hist.close||hist.close.length<20){
+    bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Not enough data for Bollinger Bands</div>`;
+    return;
+  }
+
+  const closes=hist.close.filter(v=>v!=null);
+  const bb=calcBollinger(closes);
+  if(!bb){ bs.innerHTML=''; return; }
+
+  const signalColor=bb.signal==='Oversold'?'#22c55e':bb.signal==='Overbought'?'#ef4444':bb.signal==='Squeeze'?'#f59e0b':'#94a3b8';
+  const pctBColor=bb.pctB<10?'#22c55e':bb.pctB>90?'#ef4444':'#38bdf8';
+
+  // Visual position bar: where price sits between lower and upper
+  const barPct=Math.min(100,Math.max(0,bb.pctB));
+
+  bs.innerHTML=`
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (20,2)</div>
+    <div style="display:flex;gap:4px;margin-bottom:6px;">
+      ${['1M','3M','6M','1Y'].map(p=>`
+        <button onclick="setBBPeriod('${p}')" id="bb-btn-${p}"
+          style="flex:1;padding:4px 0;border-radius:6px;border:1px solid ${p===_bbRange?'#38bdf8':'#1e3a5f'};
+          background:${p===_bbRange?'rgba(56,189,248,0.15)':'#0a1628'};
+          color:${p===_bbRange?'#38bdf8':'#4b6280'};font-size:10px;font-weight:700;cursor:pointer;
+          font-family:'Rajdhani',sans-serif;">${p}</button>
+      `).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:6px;">
+      <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">UPPER BAND</div><div style="font-size:12px;font-weight:700;color:#ef4444;white-space:nowrap;">₹${bb.upper}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MA (20)</div><div style="font-size:12px;font-weight:700;color:#38bdf8;white-space:nowrap;">₹${bb.ma}</div></div>
+      </div>
+      <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">LOWER BAND</div><div style="font-size:12px;font-weight:700;color:#22c55e;white-space:nowrap;">₹${bb.lower}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">BAND WIDTH</div><div style="font-size:12px;font-weight:700;color:#e2e8f0;white-space:nowrap;">${bb.width}%</div></div>
+      </div>
+      <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">%B VALUE</div><div style="font-size:12px;font-weight:700;white-space:nowrap;color:${pctBColor};">${bb.pctB}%</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">SIGNAL</div><div style="font-size:12px;font-weight:700;white-space:nowrap;color:${signalColor};">${bb.signal}</div></div>
+      </div>
+    </div>
+    <div style="background:#0a1628;border-radius:6px;padding:8px 10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:9px;color:#22c55e;">Lower ₹${bb.lower}</span>
+        <span style="font-size:9px;color:#94a3b8;">Price Position</span>
+        <span style="font-size:9px;color:#ef4444;">Upper ₹${bb.upper}</span>
+      </div>
+      <div style="background:#1e3a5f;border-radius:4px;height:8px;position:relative;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;height:100%;width:33.3%;background:rgba(34,197,94,0.2);"></div>
+        <div style="position:absolute;right:0;top:0;height:100%;width:33.3%;background:rgba(239,68,68,0.2);"></div>
+        <div style="position:absolute;top:50%;left:${barPct}%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#38bdf8;box-shadow:0 0 4px #38bdf8;"></div>
+      </div>
+      <div style="text-align:center;margin-top:4px;font-size:9px;color:#94a3b8;">MA ₹${bb.ma} | ${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</div>
+    </div>`;
+}
+
+function setBBPeriod(p){
+  _bbRange=p;
+  _bbInterval=(p==='1Y')?'weekly':'daily';
+  renderBollinger(_bbSym);
 }
 
 // Volume Breakout (uses existing cache  -  0 API)
@@ -3174,13 +3316,21 @@ async function loadAllNews() {
         source: 'LIVE',
         type: detectNewsType(item.title),
         time: timeAgo(item.date),
+        _rawDate: item.date,
         title: item.title,
         link: item.link
       });
     });
   });
   
-  // Sort by time (most recent first)  -  best effort
+  // Sort by date: most recent first
+  allItems.sort((a, b) => {
+    try {
+      const da = new Date(a._rawDate || 0).getTime();
+      const db = new Date(b._rawDate || 0).getTime();
+      return db - da;
+    } catch(e) { return 0; }
+  });
   newsCache = allItems.length > 0 ? allItems : getFallbackNews();
   newsCacheTime = Date.now();
   return newsCache;
@@ -3346,7 +3496,7 @@ async function renderNSENews() {
   el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading NSE announcements...</div>';
   const items = await fetchNSEAnnouncements();
   if (!items || items.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">No announcements found. Market may be closed.</div>';
+    el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">NSE feed not available.<br><span style="font-size:10px;">NSE may be blocking requests. Try Refresh.</span></div>';
     return;
   }
   // Sort: high priority first
@@ -3503,7 +3653,7 @@ function calcAvg(){
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${rColor(newRecovery)};">${newRecovery>0?'+':''}${newRecovery.toFixed(2)}%</span>
     </div>
     <div style="text-align:center;font-size:12px;font-weight:700;padding:6px;border-radius:6px;background:${better?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.12)'};color:${better?'#22c55e':'#ef4444'};">
-      ${better?'Averaging will help recovery!':': Buying above current avg'}
+      ${better?'Averaging will help recovery!':'Buying above current avg'}
     </div>`;
 }
 
