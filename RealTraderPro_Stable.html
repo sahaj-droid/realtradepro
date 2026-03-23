@@ -357,6 +357,21 @@ body.light .ticker-price{color:#e2e8f0;}
     <button id="dupToggleBtn" onclick="toggleDupWarn()" style="background:#166534;color:#86efac;border:none;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
   </div>
 
+
+  <!-- CLOUD SYNC -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:8px;font-weight:700;">CLOUD SYNC <span style="color:#22c55e;font-size:9px;">2-Device Sync via Google Sheet</span></div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:8px;line-height:1.5;">Watchlist, Holdings, History auto-syncs across all devices using same GitHub Pages URL.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button onclick="pushToCloud(true)" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Upload to Cloud</button>
+      <button onclick="pullFromCloud(true)" style="flex:1;background:#1a3320;color:#86efac;border:1px solid #166534;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Download from Cloud</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <button id="syncStatusBtn" onclick="pushToCloud(true)" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Sync Now</button>
+      <span style="font-size:10px;color:#4b6280;">Last: <span id="lastSyncDisplay">--</span></span>
+    </div>
+  </div>
+
   <!-- DANGER ZONE  -  Separate buttons -->
   <div class="card">
     <div style="font-size:11px;color:#ef4444;margin-bottom:8px;font-weight:700;">! DANGER ZONE</div>
@@ -4146,6 +4161,8 @@ async function pushToCloud(showMsg = true) {
     ]);
     _lastSyncTime = Date.now();
     localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
+    const lsd2 = document.getElementById('lastSyncDisplay');
+    if (lsd2) { const dt=new Date(_lastSyncTime); lsd2.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
     if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
     if (showMsg) showPopup('Cloud sync complete ✓');
     setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
@@ -4156,8 +4173,8 @@ async function pushToCloud(showMsg = true) {
   _syncInProgress = false;
 }
 
-// Pull all data from cloud (on app open)
-async function pullFromCloud() {
+// Pull all data from cloud (on app open or manual)
+async function pullFromCloud(showMsg = false) {
   const syncBtn = document.getElementById('syncStatusBtn');
   if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
   try {
@@ -4170,40 +4187,45 @@ async function pullFromCloud() {
 
     let changed = false;
 
+    // Cloud always wins on pull (both manual and auto)
     if (cwl && Array.isArray(cwl) && cwl.length > 0) {
-      // Merge: cloud wins if cloud has more stocks
-      if (cwl.length >= wl.length) {
-        wl = cwl;
-        localStorage.setItem('wl', JSON.stringify(wl));
-        changed = true;
-      }
+      wl = cwl;
+      localStorage.setItem('wl', JSON.stringify(wl));
+      changed = true;
     }
-    if (ch && Array.isArray(ch)) {
+    if (ch && Array.isArray(ch) && ch.length > 0) {
       h = ch;
       localStorage.setItem('h', JSON.stringify(h));
       changed = true;
     }
-    if (chist && Array.isArray(chist)) {
+    if (chist && Array.isArray(chist) && chist.length > 0) {
       hist = chist;
       localStorage.setItem('hist', JSON.stringify(hist));
       changed = true;
     }
-    if (cgroups && typeof cgroups === 'object') {
+    if (cgroups && typeof cgroups === 'object' && Object.keys(cgroups).length > 0) {
       groups = cgroups;
       localStorage.setItem('groups', JSON.stringify(groups));
       changed = true;
     }
 
+    _lastSyncTime = Date.now();
+    localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
+    const lsd = document.getElementById('lastSyncDisplay');
+    if (lsd) { const dt=new Date(_lastSyncTime); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
     if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
     setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
 
     if (changed) {
       renderGroupTabs();
       renderWL();
-      showPopup('Data loaded from cloud ✓');
+      if (showMsg) showPopup('Data loaded from cloud ✓');
+    } else {
+      if (showMsg) showPopup('Cloud: no new data');
     }
   } catch(e) {
     if (syncBtn) { syncBtn.innerText = 'Sync Error'; syncBtn.style.color = '#ef4444'; }
+    if (showMsg) showPopup('Cloud load error');
   }
 }
 
