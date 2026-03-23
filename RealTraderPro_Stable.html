@@ -196,7 +196,7 @@ body.light .ticker-price{color:#e2e8f0;}
     <button onclick="toggleTheme()" id="themeBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg></button>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
     <button onclick="tab('alerts')" style="background:#1e2d3d;border:1px solid #2d3f52;color:#fde68a;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg></button>
-    <button onclick="tab('holidays')" style="background:#1e2d3d;border:1px solid #2d3f52;color:#94a3b8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+    <button onclick="tab('earningscal')" style="background:#1e2d3d;border:1px solid #2d3f52;color:#f59e0b;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
   </div>
 </div>
 
@@ -386,6 +386,13 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <div id="journal" class="tab p-3 space-y-[5px]"></div>
 <div id="holidays" class="tab p-3 space-y-[5px]"></div>
+<div id="earningscal" class="tab p-3 space-y-[5px]">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:13px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;">EARNINGS CALENDAR</span>
+    <button onclick="refreshEarningsCal()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>
+  </div>
+  <div id="earningsCalContent"><div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">Loading...</div></div>
+</div>
 <div id="news" class="tab p-3"></div>
 
 <!-- JOURNAL ADD MODAL -->
@@ -1214,6 +1221,12 @@ async function renderWL(){
             <div style="font-size:10px;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':''}₹${Math.abs(diff).toFixed(2)}</div>
           </div>
         </div>
+        <!-- ROW 3: Sparkline (7d trend) -->
+        <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
+          <div style="flex-shrink:0;min-width:68px;font-size:8px;color:#4b6280;">7D TREND</div>
+          <div style="flex:1;" id="spark-${s}"><svg width="100%" height="18" viewBox="0 0 100 18"><line x1="0" y1="9" x2="100" y2="9" stroke="#2d3f52" stroke-width="1" stroke-dasharray="2"/></svg></div>
+          <div style="flex-shrink:0;min-width:76px;"></div>
+        </div>
       </div>
       <!-- ACTION PANEL (tap ACT to open) -->
       <div class="wl-actions-panel" id="act-${s}">
@@ -1229,8 +1242,54 @@ async function renderWL(){
   const watchlistDiv=document.getElementById("watchlist");
   if(html){
     watchlistDiv.innerHTML=html;
+    // Render sparklines after cards are in DOM
+    const showSpark = localStorage.getItem('showSparkline') !== 'false';
+    if(showSpark) setTimeout(()=>renderAllSparklines(), 50);
   } else {
     watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${currentGroup!=='ALL'?'No stocks in this group':'Type stock name in search box (Press Enter)'}</div>`;
+  }
+}
+
+
+// ======================================
+// SPARKLINE: 7-day price line for watchlist
+// ======================================
+async function renderSparkline(sym) {
+  const el = document.getElementById('spark-' + sym);
+  if (!el) return;
+  try {
+    const hist = await fetchHistory(sym, '7d', '1d');
+    if (!hist || !hist.close || hist.close.length < 2) return;
+    const closes = hist.close.filter(v => v != null);
+    if (closes.length < 2) return;
+    const minV = Math.min(...closes);
+    const maxV = Math.max(...closes);
+    const range = maxV - minV || 1;
+    const W = 100, H = 18, pad = 2;
+    const pts = closes.map((v, i) => {
+      const x = pad + (i / (closes.length - 1)) * (W - pad * 2);
+      const y = H - pad - ((v - minV) / range) * (H - pad * 2);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+    const isUp = closes[closes.length - 1] >= closes[0];
+    const col = isUp ? '#22c55e' : '#ef4444';
+    const fillPts = pts[0].split(',')[0] + ',' + H + ' ' + pts.join(' ') + ' ' + pts[pts.length-1].split(',')[0] + ',' + H;
+    el.innerHTML = '<svg width="100%" height="18" viewBox="0 0 100 18" preserveAspectRatio="none">' +
+      '<polygon points="' + fillPts + '" fill="' + col + '" opacity="0.12"/>' +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '</svg>';
+  } catch(e) {}
+}
+
+async function renderAllSparklines() {
+  const showSpark = localStorage.getItem('showSparkline') !== 'false';
+  if (!showSpark) return;
+  let displayList = wl;
+  if (currentGroup !== 'ALL' && groups[currentGroup]) {
+    displayList = wl.filter(s => groups[currentGroup].includes(s));
+  }
+  for (const s of displayList) {
+    renderSparkline(s);
   }
 }
 
@@ -1253,7 +1312,7 @@ async function refreshGainers(){
 }
 
 function renderGainersFromCache(){
-  const el=document.getElementById("indices");
+  const el=document.getElementById("gmovers")||document.getElementById("indices");
   const allStocks=[...new Set([...POPULAR_STOCKS])]; // preloaded stocks only for gainers
   const results=allStocks.map(s=>{
     const d=cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
@@ -1662,11 +1721,13 @@ async function openDetail(sym,isIndex){
     <div id="bulkSection" style="margin-top:8px;"></div>
     <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
     <div id="bbSection" style="margin-top:8px;"></div>
+    <div id="smartAlertSection" style="margin-top:8px;"></div>
     <button onclick="chart('${sym}',${isIndex?true:false})" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
   document.getElementById("detailModal").classList.remove("hidden");
   if(!isIndex) renderCircuit(sym, d);
   if(!isIndex) renderBulkDeals(sym);
   if(!isIndex) renderBollinger(sym);
+  if(!isIndex) renderSmartAlertSuggestions(sym, d);
   if(!isIndex){
     const fund=await fetchFundamentals(sym);
     const fs=document.getElementById("fundamentalsSection");
@@ -2617,6 +2678,7 @@ function tab(t){
   if(t==="settings"){loadSettingsUI();renderFeatureGuide();}
   if(t==="journal")renderJournal();
   if(t==="holidays")renderHolidays();
+  if(t==="earningscal"){ renderEarningsCalendar(); }
   if(t==="news")renderNews();
 }
 
@@ -3742,6 +3804,283 @@ function calcTargetQty(){
     </div>`;
 }
 
+
+// ======================================
+// STOCK SCREENER
+// ======================================
+let screenerSource = 'watchlist'; // 'watchlist' | 'popular' | 'cached'
+let screenerFilters = new Set();
+
+function gainersSubTab(tab) {
+  document.getElementById('gmovers').style.display = tab === 'movers' ? 'block' : 'none';
+  document.getElementById('gscreener').style.display = tab === 'screener' ? 'block' : 'none';
+  const mb = document.getElementById('gsub-movers');
+  const sb = document.getElementById('gsub-screener');
+  if(mb){ mb.style.background = tab==='movers'?'#1e3a5f':'#0f172a'; mb.style.color = tab==='movers'?'#38bdf8':'#94a3b8'; mb.style.borderColor = tab==='movers'?'#2d5a8e':'#1e2d3d'; }
+  if(sb){ sb.style.background = tab==='screener'?'#1e3a5f':'#0f172a'; sb.style.color = tab==='screener'?'#38bdf8':'#94a3b8'; sb.style.borderColor = tab==='screener'?'#2d5a8e':'#1e2d3d'; }
+  if(tab === 'screener') renderScreener();
+}
+
+function screenerToggleFilter(f) {
+  if(screenerFilters.has(f)) screenerFilters.delete(f);
+  else screenerFilters.add(f);
+  renderScreener();
+}
+
+function screenerSetSource(s) {
+  screenerSource = s;
+  renderScreener();
+}
+
+function renderScreener() {
+  const el = document.getElementById('gscreener');
+  if (!el) return;
+
+  // Source stocks
+  let sourceStocks = [];
+  if (screenerSource === 'watchlist') sourceStocks = [...wl];
+  else if (screenerSource === 'popular') sourceStocks = [...POPULAR_STOCKS];
+  else sourceStocks = Object.keys(cache).filter(k => cache[k]&&cache[k].data);
+
+  // Filter chips HTML
+  const filters = [
+    {id:'pct3up', label:'+3% Today', color:'#22c55e'},
+    {id:'pct3dn', label:'-3% Today', color:'#ef4444'},
+    {id:'near52h', label:'Near 52W High', color:'#f59e0b'},
+    {id:'near52l', label:'Near 52W Low', color:'#38bdf8'},
+    {id:'volbkout', label:'Vol Breakout', color:'#a78bfa'},
+  ];
+
+  let html = '';
+
+  // Source selector
+  const srcBtns = ['watchlist','popular','cached'].map(s => {
+    const active = screenerSource === s;
+    const labels = {watchlist:'Watchlist', popular:'Popular', cached:'All Cached'};
+    return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':'#1e2d3d'};background:${active?'#1e3a5f':'#0f172a'};color:${active?'#38bdf8':'#4b6280'};">${labels[s]}</button>`;
+  }).join('');
+  html += `<div style="display:flex;gap:4px;margin-bottom:8px;">${srcBtns}</div>`;
+
+  // Filter chips
+  html += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">`;
+  filters.forEach(f => {
+    const active = screenerFilters.has(f.id);
+    html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:'#1e2d3d'};background:${active?f.color+'22':'#0f172a'};color:${active?f.color:'#4b6280'};">${f.label}</button>`;
+  });
+  html += `</div>`;
+
+  // Apply filters
+  let results = sourceStocks.map(sym => {
+    const d = cache[sym]&&cache[sym].data;
+    if (!d || !d.chartPreviousClose || !d.regularMarketPrice) return null;
+    const price = d.regularMarketPrice;
+    const prev = d.chartPreviousClose;
+    const pct = ((price - prev) / prev * 100) || 0;
+    const hi52 = d.fiftyTwoWeekHigh || 0;
+    const lo52 = d.fiftyTwoWeekLow || 0;
+    const vol = d.regularMarketVolume || 0;
+    const avgVol = d.averageDailyVolume3Month || d.averageDailyVolume10Day || 0;
+    return {sym, price, pct, hi52, lo52, vol, avgVol};
+  }).filter(Boolean);
+
+  if (screenerFilters.size > 0) {
+    results = results.filter(r => {
+      let pass = true;
+      if (screenerFilters.has('pct3up') && r.pct < 3) pass = false;
+      if (screenerFilters.has('pct3dn') && r.pct > -3) pass = false;
+      if (screenerFilters.has('near52h') && r.hi52 > 0 && (r.hi52 - r.price) / r.hi52 * 100 > 3) pass = false;
+      if (screenerFilters.has('near52l') && r.lo52 > 0 && (r.price - r.lo52) / r.lo52 * 100 > 3) pass = false;
+      if (screenerFilters.has('volbkout') && (!r.avgVol || r.vol < r.avgVol * 1.5)) pass = false;
+      return pass;
+    });
+  }
+
+  // Sort by abs pct change
+  results.sort((a,b) => Math.abs(b.pct) - Math.abs(a.pct));
+
+  const noFilter = screenerFilters.size === 0;
+  if (results.length === 0 || (noFilter && results.length === 0)) {
+    html += `<div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">`;
+    html += noFilter ? 'Select filters above to screen stocks' : 'No stocks match selected filters';
+    html += `</div>`;
+  } else {
+    const showList = noFilter ? [] : results.slice(0, 30);
+    if (noFilter) {
+      html += `<div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">Select filters above to screen stocks</div>`;
+    } else {
+      html += `<div style="font-size:10px;color:#94a3b8;margin-bottom:6px;font-weight:700;">${showList.length} stocks matched</div>`;
+      html += `<div style="background:#111827;border-radius:8px;overflow:hidden;">`;
+      showList.forEach((r, i) => {
+        const pctCol = r.pct >= 0 ? '#22c55e' : '#ef4444';
+        const pctStr = (r.pct >= 0 ? '+' : '') + r.pct.toFixed(2) + '%';
+        const near52h = r.hi52 > 0 && (r.hi52 - r.price) / r.hi52 * 100 <= 3;
+        const near52l = r.lo52 > 0 && (r.price - r.lo52) / r.lo52 * 100 <= 3;
+        const volBk = r.avgVol > 0 && r.vol >= r.avgVol * 1.5;
+        let badges = '';
+        if (near52h) badges += `<span style="font-size:8px;background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 4px;border-radius:3px;margin-left:3px;">52H</span>`;
+        if (near52l) badges += `<span style="font-size:8px;background:rgba(56,189,248,0.2);color:#38bdf8;padding:1px 4px;border-radius:3px;margin-left:3px;">52L</span>`;
+        if (volBk) badges += `<span style="font-size:8px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 4px;border-radius:3px;margin-left:3px;">VOL</span>`;
+        html += `<div onclick="openDetail('${r.sym}',false)" style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:7px 10px;gap:6px;border-bottom:${i<showList.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
+          <div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${r.sym}</span>${badges}</div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${r.price.toFixed(2)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${pctCol};text-align:right;">${pctStr}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+
+// ======================================
+// SMART ALERT SUGGESTIONS
+// ======================================
+function renderSmartAlertSuggestions(sym, d) {
+  const el = document.getElementById('smartAlertSection');
+  if (!el || !d) return;
+  const price = d.regularMarketPrice;
+  const hi52 = d.fiftyTwoWeekHigh || 0;
+  const lo52 = d.fiftyTwoWeekLow || 0;
+  const suggestions = [];
+
+  // Near 52W High (within 3%)
+  if (hi52 > 0 && (hi52 - price) / hi52 * 100 <= 3) {
+    suggestions.push({label:'Breakout: ₹' + hi52.toFixed(2), price: hi52, color:'#f59e0b', bg:'rgba(245,158,11,0.15)'});
+  }
+  // Near 52W Low (within 3%)
+  if (lo52 > 0 && (price - lo52) / lo52 * 100 <= 3) {
+    suggestions.push({label:'Support: ₹' + lo52.toFixed(2), price: lo52, color:'#38bdf8', bg:'rgba(56,189,248,0.15)'});
+  }
+  // Round number levels near current price
+  const roundLevels = [50,100,200,250,500,750,1000,1500,2000,2500,3000,4000,5000,10000];
+  roundLevels.forEach(r => {
+    if (Math.abs(price - r) / price < 0.03 && r !== price) {
+      suggestions.push({label:'Round: ₹' + r, price: r, color:'#a78bfa', bg:'rgba(167,139,250,0.12)'});
+    }
+  });
+  // Holdings stop-loss (avg - 8%)
+  const holding = holdings.find(h => h.sym === sym);
+  if (holding) {
+    const sl = (holding.avg * 0.92);
+    suggestions.push({label:'Stop Loss: ₹' + sl.toFixed(2), price: parseFloat(sl.toFixed(2)), color:'#ef4444', bg:'rgba(239,68,68,0.12)'});
+    const tgt = (holding.avg * 1.15);
+    suggestions.push({label:'Target +15%: ₹' + tgt.toFixed(2), price: parseFloat(tgt.toFixed(2)), color:'#22c55e', bg:'rgba(34,197,94,0.12)'});
+  }
+
+  if (suggestions.length === 0) { el.innerHTML = ''; return; }
+
+  // Filter already-set alerts
+  const existingPrices = new Set(alerts.filter(a => a.sym === sym && !a.triggered).map(a => a.price));
+
+  let html = '<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">SMART ALERT SUGGESTIONS</div>';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">';
+  suggestions.forEach(s => {
+    const already = existingPrices.has(s.price);
+    if (already) return;
+    html += `<button onclick="setSmartAlert('${sym}',${s.price},this)" style="padding:5px 9px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${s.color}44;background:${s.bg};color:${s.color};">${s.label}</button>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function setSmartAlert(sym, price, btn) {
+  alerts.push({sym: sym, price: price, triggered: false});
+  localStorage.setItem('alerts', JSON.stringify(alerts));
+  if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
+  showPopup('Alert set: ' + sym + ' @ ₹' + price);
+}
+
+
+// ======================================
+// EARNINGS CALENDAR
+// ======================================
+function renderEarningsCalendar() {
+  const el = document.getElementById('earningsCalContent');
+  if (!el) return;
+
+  // Collect all earnings dates from fundCache
+  const today = new Date();
+  const todayTs = today.getTime();
+  const earnings = [];
+
+  [...wl, ...POPULAR_STOCKS].forEach(sym => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('fundCache4_' + sym) || 'null');
+      if (!stored || !stored.data) return;
+      const ed = stored.data.earningsDate;
+      if (!ed || ed === '--') return;
+      // Parse "15 Apr 2025" format
+      const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+      const parts = ed.split(' ');
+      if (parts.length !== 3) return;
+      const dt = new Date(parseInt(parts[2]), months[parts[1]], parseInt(parts[0]));
+      if (isNaN(dt)) return;
+      earnings.push({sym, date: dt, dateStr: ed});
+    } catch(e) {}
+  });
+
+  // Remove duplicates by sym
+  const seen = new Set();
+  const uniq = earnings.filter(e => { if(seen.has(e.sym)) return false; seen.add(e.sym); return true; });
+
+  // Sort by date
+  uniq.sort((a,b) => a.date - b.date);
+
+  // Split: upcoming vs past
+  const upcoming = uniq.filter(e => e.date >= new Date(todayTs - 86400000));
+  const past = uniq.filter(e => e.date < new Date(todayTs - 86400000)).slice(-5);
+
+  if (upcoming.length === 0 && past.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">No earnings data cached yet.<br>Open Stock Detail for watchlist stocks to load data.</div>';
+    return;
+  }
+
+  let html = '';
+
+  if (upcoming.length > 0) {
+    html += '<div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:8px;letter-spacing:0.5px;">UPCOMING EARNINGS</div>';
+    html += '<div style="background:#111827;border-radius:8px;overflow:hidden;margin-bottom:12px;">';
+    upcoming.forEach((e, i) => {
+      const diffDays = Math.round((e.date - today) / 86400000);
+      const isClose = diffDays <= 7;
+      const isSoon = diffDays <= 3;
+      const badge = isSoon ? 
+        `<span style="font-size:8px;background:rgba(239,68,68,0.2);color:#ef4444;padding:1px 5px;border-radius:3px;margin-left:4px;">${diffDays===0?'Today':diffDays+'d'}</span>` :
+        isClose ? `<span style="font-size:8px;background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 5px;border-radius:3px;margin-left:4px;">${diffDays}d</span>` : '';
+      html += `<div onclick="openDetail('${e.sym}',false)" style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:7px 10px;gap:6px;border-bottom:${i<upcoming.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
+        <div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${e.sym}</span>${badge}</div>
+        <span style="font-size:11px;color:#f59e0b;font-weight:700;">${e.dateStr}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (past.length > 0) {
+    html += '<div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">RECENT (PAST)</div>';
+    html += '<div style="background:#111827;border-radius:8px;overflow:hidden;">';
+    past.reverse().forEach((e, i) => {
+      html += `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:7px 10px;gap:6px;border-bottom:${i<past.length-1?'1px solid rgba(255,255,255,0.04)':'none'};">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#4b6280;">${e.sym}</span>
+        <span style="font-size:11px;color:#4b6280;">${e.dateStr}</span>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function refreshEarningsCal() {
+  // Clear all fundCache4 for watchlist stocks to force re-fetch
+  wl.forEach(sym => localStorage.removeItem('fundCache4_' + sym));
+  showPopup('Refreshing earnings data...');
+  Promise.all(wl.slice(0,20).map(sym => fetchFundamentals(sym))).then(() => {
+    renderEarningsCalendar();
+    showPopup('Earnings data updated');
+  });
+}
 // ======================================
 // INIT
 // ======================================
