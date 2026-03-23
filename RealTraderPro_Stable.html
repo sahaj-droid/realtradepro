@@ -1273,7 +1273,7 @@ async function renderSparkline(sym) {
   const el = document.getElementById('spark-' + sym);
   if (!el) return;
   try {
-    const hist = await fetchHistory(sym, '7d', '1d');
+    const hist = await fetchHistory(sym, '10d', '1d');
     if (!hist || !hist.close || hist.close.length < 2) return;
     const closes = hist.close.filter(v => v != null);
     if (closes.length < 2) return;
@@ -2856,6 +2856,14 @@ function calcBollinger(closes, period=20, mult=2){
 // Render Bollinger Band section in Stock Detail Modal
 let _bbSym='', _bbRange='1M', _bbInterval='daily';
 
+// Option B: each period button → correct range + BB period
+const BB_CONFIG={
+  '1M': {range:'30d',  interval:'1d',  bbPeriod:20},
+  '3M': {range:'90d',  interval:'1d',  bbPeriod:50},
+  '6M': {range:'180d', interval:'1d',  bbPeriod:100},
+  '1Y': {range:'365d', interval:'1wk', bbPeriod:52}
+};
+
 async function renderBollinger(sym){
   // Only reset period when a NEW stock is opened
   if(sym !== _bbSym){ _bbRange='1M'; _bbInterval='daily'; }
@@ -2864,27 +2872,21 @@ async function renderBollinger(sym){
   if(!bs) return;
   bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
 
-  // Period → range+interval params for GAS
-  const rangeMap={
-    '1M':  {range:'30d',  interval:'1d'},
-    '3M':  {range:'90d',  interval:'1d'},
-    '6M':  {range:'180d', interval:'1d'},
-    '1Y':  {range:'365d', interval:'1wk'}
-  };
-  const {range, interval}=rangeMap[_bbRange]||rangeMap['1M'];
+  const {range, interval, bbPeriod}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
   const hist=await fetchHistory(sym, range, interval);
 
-  if(!hist||!hist.close||hist.close.length<20){
+  if(!hist||!hist.close||hist.close.length<(BB_CONFIG[_bbRange]?.bbPeriod||20)){
     const isLocal = location.protocol === 'file:';
     bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:8px;">
       <div style="color:#f59e0b;font-weight:700;margin-bottom:3px;">${isLocal?'Open via GitHub Pages':'Not enough data'}</div>
-      <div style="color:#4b6280;font-size:9px;">${isLocal?'Local file cannot call GAS API':'Need 20+ candles for BB calculation'}</div>
+      <div style="color:#4b6280;font-size:9px;">${isLocal?'Local file cannot call GAS API':'Need more candles for BB calculation'}</div>
     </div>`;
     return;
   }
 
   const closes=hist.close.filter(v=>v!=null);
-  const bb=calcBollinger(closes);
+  const {bbPeriod:bp}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
+  const bb=calcBollinger(closes, bp, 2);
   if(!bb){ bs.innerHTML=''; return; }
 
   const signalColor=bb.signal==='Oversold'?'#22c55e':bb.signal==='Overbought'?'#ef4444':bb.signal==='Squeeze'?'#f59e0b':'#94a3b8';
@@ -2893,8 +2895,9 @@ async function renderBollinger(sym){
   // Visual position bar: where price sits between lower and upper
   const barPct=Math.min(100,Math.max(0,bb.pctB));
 
+  const {bbPeriod:activeBP}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
   bs.innerHTML=`
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (20,2)</div>
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (${activeBP},2)</div>
     <div style="display:flex;gap:4px;margin-bottom:6px;">
       ${['1M','3M','6M','1Y'].map(p=>`
         <button onclick="setBBPeriod('${p}')" id="bb-btn-${p}"
@@ -2908,7 +2911,7 @@ async function renderBollinger(sym){
       <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">UPPER BAND</div><div style="font-size:12px;font-weight:700;color:#ef4444;white-space:nowrap;">₹${bb.upper}</div></div>
         <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MA (20)</div><div style="font-size:12px;font-weight:700;color:#38bdf8;white-space:nowrap;">₹${bb.ma}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MA (${activeBP})</div><div style="font-size:12px;font-weight:700;color:#38bdf8;white-space:nowrap;">₹${bb.ma}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">LOWER BAND</div><div style="font-size:12px;font-weight:700;color:#22c55e;white-space:nowrap;">₹${bb.lower}</div></div>
@@ -2932,7 +2935,7 @@ async function renderBollinger(sym){
         <div style="position:absolute;right:0;top:0;height:100%;width:33.3%;background:rgba(239,68,68,0.2);"></div>
         <div style="position:absolute;top:50%;left:${barPct}%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#38bdf8;box-shadow:0 0 4px #38bdf8;"></div>
       </div>
-      <div style="text-align:center;margin-top:4px;font-size:9px;color:#94a3b8;">MA ₹${bb.ma} | ${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</div>
+      <div style="text-align:center;margin-top:4px;font-size:9px;color:#94a3b8;">MA(${activeBP}) ₹${bb.ma} | ${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</div>
     </div>`;
 }
 
@@ -3110,6 +3113,7 @@ const FEATURE_DATA = [
     {name:"ACT Button", desc:"Opens action panel: BUY / SELL / CHART / NEWS / ALERT / TARGET."},
     {name:"Day Bar", desc:"Visual Day High-Low range bar with CMP position marker."},
     {name:"52W Bar", desc:"52-week High-Low bar. Label: ** Near 52W High / !! Near 52W Low."},
+    {name:"Sparkline (7D)", desc:"Mini SVG line chart showing 7-day price trend. Green = up, Red = down. Loaded after watchlist render."},
     {name:"CMP Flash", desc:"Live price with green/red flash animation on change."},
     {name:"Remove (X)", desc:"Remove stock from watchlist with confirmation."}
   ]},
@@ -3152,6 +3156,10 @@ const FEATURE_DATA = [
     {name:"Price Data", desc:"Open, Prev Close, Day High, Day Low, 52W High, 52W Low."},
     {name:"Fundamentals", desc:"P/E TTM, Forward P/E, EPS TTM, Forward EPS, Mkt Cap, Book Value, Volume, Div Yield."},
     {name:"Technicals (30d)", desc:"RSI(14), MACD(12,26,9), Inside Bar, Narrow Range - live calculated."},
+    {name:"Bollinger Bands", desc:"BB(20/50/100,2) with period selector 1M/3M/6M/1Y. Upper, Lower, MA, %B, Band Width, Signal, Position bar."},
+    {name:"Circuit Limits", desc:"Auto-detects NSE band (2/5/10/20%). Upper + Lower circuit levels from Prev Close."},
+    {name:"Bulk/Block Deals", desc:"NSE RSS feed for bulk and block deals for the selected stock."},
+    {name:"Smart Alert Suggestions", desc:"Auto-suggests Breakout, Support, Round, StopLoss, Target levels. One-tap set alert."},
     {name:"Earnings + Dividends", desc:"Next earnings date + Ex-dividend date (day-cached from Yahoo)."},
     {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
   ]},
@@ -3173,8 +3181,17 @@ const FEATURE_DATA = [
   {cat:"GAINERS / LOSERS", color:"#c4b5fd", items:[
     {name:"Top Gainers", desc:"Top 10 gainers from 334 preloaded stocks. Symbol + Price + %."},
     {name:"Top Losers", desc:"Top 10 losers same list."},
+    {name:"Screener", desc:"Filter tab: +3% Today, -3% Today, Near 52W High, Near 52W Low, Vol Breakout. Source: Watchlist / Popular / All Cached."},
     {name:"Background Preload", desc:"Silently fetches 80 stocks 1.5s after app open."},
     {name:"Manual Refresh", desc:"Force fresh batch fetch from Gainers tab."}
+  ]},
+  {cat:"CLOUD SYNC", color:"#f472b6", items:[
+    {name:"Auto Sync", desc:"Every watchlist/holdings change auto-saves to Google Sheet (2s debounce)."},
+    {name:"Upload to Cloud", desc:"Manual push — saves watchlist, holdings, history, groups in parallel."},
+    {name:"Download from Cloud", desc:"Manual pull — cloud always wins. Restores all 4 data keys."},
+    {name:"Sync on Start", desc:"pullFromCloud() runs on app open — latest data always loaded."},
+    {name:"Sync Status", desc:"Shows: Syncing... / Synced / Sync Error with last sync time."},
+    {name:"2-Device Sync", desc:"Same GitHub Pages URL = same localStorage. Cloud Sheet bridges laptop + mobile."}
   ]},
   {cat:"JOURNAL", color:"#94a3b8", items:[
     {name:"Entry Types", desc:"NOTE / BUY / SELL / WATCH - four trade diary entry types."},
@@ -3189,7 +3206,8 @@ const FEATURE_DATA = [
     {name:"Duplicate Warning", desc:"Toggle warning when same stock added twice."},
     {name:"Danger Zone", desc:"Clear Holdings / History / Alerts individually with confirmation."},
     {name:"Import CSV", desc:"Bulk import holdings from CSV file."},
-    {name:"Backup + Restore", desc:"JSON export/import for cross-device data sync."}
+    {name:"Backup + Restore", desc:"JSON export/import for cross-device data sync."},
+    {name:"Earnings Calendar", desc:"Header Calendar icon. Shows next earnings dates for all watchlist stocks. Week/Month view."}
   ]},
   {cat:"TECHNICAL DETAILS", color:"#4b6280", items:[
     {name:"No Frameworks", desc:"Pure HTML + Tailwind CSS + Vanilla JS. Zero dependencies."},
