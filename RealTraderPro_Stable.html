@@ -2754,8 +2754,9 @@ function calcBollinger(closes, period=20, mult=2){
 let _bbSym='', _bbRange='1M', _bbInterval='daily';
 
 async function renderBollinger(sym){
+  // Only reset period when a NEW stock is opened
+  if(sym !== _bbSym){ _bbRange='1M'; _bbInterval='daily'; }
   _bbSym=sym;
-  _bbRange='1M'; _bbInterval='daily'; // reset period on new stock open
   const bs=document.getElementById('bbSection');
   if(!bs) return;
   bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
