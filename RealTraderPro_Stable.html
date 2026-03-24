@@ -2484,7 +2484,7 @@ function normalizeBatchItem(gasData){
   return {
     regularMarketPrice:       gasData.price,
     chartPreviousClose:       gasData.prevClose,
-    regularMarketOpen: (gasData.open != null ? gasData.open : gasData.price),
+    regularMarketOpen:        (gasData.open != null ? gasData.open : gasData.price),
     regularMarketDayHigh:     gasData.high,
     regularMarketDayLow:      gasData.low,
     fiftyTwoWeekHigh:         gasData.week52High,
@@ -2576,7 +2576,7 @@ function loadSettingsUI(){
   if(d1) d1.innerText=localStorage.getItem("customAPI")||API;
   if(d2) d2.innerText=localStorage.getItem("customAPI2")||"Not set";
   if(d3) d3.innerText=localStorage.getItem("customAPI3")||"Not set";
-  if(refEl) refEl.value=parseInt(localStorage.getItem("refreshSec")||"30");
+  if(refEl) refEl.value=parseInt(localStorage.getItem("refreshSec")||"10");
   if(cacheEl) cacheEl.value=parseInt(localStorage.getItem("cacheSec")||"8000");
   const btn=document.getElementById("dupToggleBtn");
   if(btn){ btn.innerText=dupWarnEnabled?"ON":"OFF"; btn.style.background=dupWarnEnabled?"#166534":"#7f1d1d"; btn.style.color=dupWarnEnabled?"#86efac":"#fca5a5"; }
@@ -3416,7 +3416,30 @@ async function startApp(){
 // ======================================
 // AUTO REFRESH & MANUAL
 // ======================================
-setInterval(()=>{updatePrices();},30000);
+  let refreshInterval = null;
+
+function startRefresh(){
+  if(refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(()=>{
+    const m = getMarketStatus();
+    if(m.open) updatePrices();
+  }, 10000);
+}
+
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){
+    if(refreshInterval) clearInterval(refreshInterval);
+  } else {
+    updatePrices();
+    startRefresh();
+  }
+});
+
+startRefresh();
+  setInterval(()=>{
+  const m = getMarketStatus();
+  if(m.open) updatePrices();
+}, 10000);
 
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
