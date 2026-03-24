@@ -1310,12 +1310,7 @@ async function renderWL(){
             <div style="font-size:10px;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':''}₹${Math.abs(diff).toFixed(2)}</div>
           </div>
         </div>
-        <!-- ROW 3: Sparkline (7d trend) -->
-        <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
-          <div onclick="renderSparkline('${s}')" style="flex-shrink:0;min-width:68px;font-size:8px;color:#38bdf8;cursor:pointer;text-decoration:underline dotted;">7D TREND</div>
-          <div style="flex:1;" id="spark-${s}"><svg width="100%" height="18" viewBox="0 0 100 18"><line x1="0" y1="9" x2="100" y2="9" stroke="#2d3f52" stroke-width="1" stroke-dasharray="2"/></svg></div>
-          <div style="flex-shrink:0;min-width:76px;"></div>
-        </div>
+
       </div>
       <!-- ACTION PANEL (tap ACT to open) -->
       <div class="wl-actions-panel" id="act-${s}">
@@ -1502,6 +1497,8 @@ async function updateHeaderIndices(){
 // UPDATE PRICES
 // ======================================
 async function updatePrices(){
+  // Force fresh fetch for indices (clear their cache)
+  for(let i of indicesList){ if(cache[i.sym]) cache[i.sym].time=0; }
   for(let s of wl){
     let d=await fetchFull(s);if(!d) continue;
     let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
@@ -1764,7 +1761,10 @@ async function fetchFundamentals(sym){
   let d = null;
   try {
     const apiUrl = localStorage.getItem('customAPI')||API;
-    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`);
+    const controller = new AbortController();
+    const tid = setTimeout(()=>controller.abort(), 8000);
+    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`, {signal: controller.signal});
+    clearTimeout(tid);
     const j = await r.json();
     if(j && !j.error && j.price) d = j;
   } catch(e){}
@@ -1826,14 +1826,12 @@ async function openDetail(sym,isIndex){
     </div>
     <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
     <div id="circuitSection" style="margin-top:8px;"></div>
-    <div id="bulkSection" style="margin-top:8px;"></div>
     <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
     <div id="bbSection" style="margin-top:8px;"></div>
     <div id="smartAlertSection" style="margin-top:8px;"></div>
     <button onclick="chart('${sym}',${isIndex?true:false})" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
   document.getElementById("detailModal").classList.remove("hidden");
   if(!isIndex) renderCircuit(sym, d);
-  if(!isIndex) renderBulkDeals(sym);
   if(!isIndex) renderBollinger(sym);
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
   if(!isIndex){
@@ -1899,7 +1897,7 @@ async function openDetail(sym,isIndex){
     fetchHistory(sym).then(hist=>{
       const ts=document.getElementById("techSection");
       if(!ts) return;
-      if(!hist||!hist.close){ ts.innerHTML=''; return; }
+      if(!hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>'; return; }
       const closes=hist.close.filter(v=>v!=null);
       const highs=hist.high.filter(v=>v!=null);
       const lows=hist.low.filter(v=>v!=null);
@@ -2559,7 +2557,7 @@ async function fetchFull(sym,isIndex=false){
   for(let i=0;i<urls.length;i++){
     let data=await tryOne(urls[i]);
     if(data){
-      if(i>0) showPopup('Using API fallback',2000);
+      if(i>0&&!sessionStorage.getItem('fallbackShown')){ showPopup('Using API fallback',2000); sessionStorage.setItem('fallbackShown','1'); }
       cache[key]={data,time:Date.now()};
       lastUpdatedMap[key]=Date.now();
       return data;
@@ -3656,26 +3654,7 @@ async function renderNews() {
     </div>
     <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">${chips}</div>
     ${cards}${emptyHtml}
-    <div style="margin-top:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-        <div style="font-size:12px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;">NSE Announcements</div>
-        <button onclick="nseNewsCache=null;nseNewsCacheTime=0;renderNSENews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
-      </div>
-      <div id="nseAnnouncementsBox" style="background:linear-gradient(145deg,#111827,#1a2332);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:6px 8px;">
-        <div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading...</div>
-      </div>
-    </div>
-    <div style="margin-top:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 2px 6px;">
-        <div style="font-size:12px;font-weight:700;color:#a78bfa;letter-spacing:0.5px;">FII / DII Activity</div>
-        <button onclick="fiidiCache=null;fiidiCacheTime=0;renderFIIDII();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
-      </div>
-      <div id="fiiDiiBox" style="background:linear-gradient(145deg,#111827,#1a2332);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:6px 8px;">
-        <div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading...</div>
-      </div>
-    </div>`;
-  renderNSENews();
-  renderFIIDII();
+`;
 }
 
 function setNewsFilter(sym) {
