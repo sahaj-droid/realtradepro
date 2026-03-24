@@ -2577,8 +2577,8 @@ function loadSettingsUI(){
   const refEl=document.getElementById("set-refresh");
   const cacheEl=document.getElementById("set-cache");
   if(d1) d1.innerText=localStorage.getItem("customAPI")||API;
-  if(d2) d2.innerText=localStorage.getItem("customAPI2")||"Not set";
-  if(d3) d3.innerText=localStorage.getItem("customAPI3")||"Not set";
+  if(d2) d2.innerText=localStorage.getItem("customAPI2")||API2;
+  if(d3) d3.innerText=localStorage.getItem("customAPI3")||API3;
   if(refEl) refEl.value=parseInt(localStorage.getItem("refreshSec")||"10");
   if(cacheEl) cacheEl.value=parseInt(localStorage.getItem("cacheSec")||"8000");
   const btn=document.getElementById("dupToggleBtn");
