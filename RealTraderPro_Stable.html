@@ -1253,7 +1253,7 @@ async function renderWL(){
         </div>
         <!-- ROW 3: Sparkline (7d trend) -->
         <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
-          <div style="flex-shrink:0;min-width:68px;font-size:8px;color:#4b6280;">7D TREND</div>
+          <div onclick="renderSparkline('${s}')" style="flex-shrink:0;min-width:68px;font-size:8px;color:#38bdf8;cursor:pointer;text-decoration:underline dotted;">7D TREND</div>
           <div style="flex:1;" id="spark-${s}"><svg width="100%" height="18" viewBox="0 0 100 18"><line x1="0" y1="9" x2="100" y2="9" stroke="#2d3f52" stroke-width="1" stroke-dasharray="2"/></svg></div>
           <div style="flex-shrink:0;min-width:76px;"></div>
         </div>
@@ -1272,9 +1272,8 @@ async function renderWL(){
   const watchlistDiv=document.getElementById("watchlist");
   if(html){
     watchlistDiv.innerHTML=html;
-    // Render sparklines after cards are in DOM
-    const showSpark = localStorage.getItem('showSparkline') !== 'false';
-    if(showSpark) setTimeout(()=>renderAllSparklines(), 50);
+    // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
+    // Auto-load disabled to prevent quota exhaustion (20k/day limit)
   } else {
     watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${currentGroup!=='ALL'?'No stocks in this group':'Type stock name in search box (Press Enter)'}</div>`;
   }
