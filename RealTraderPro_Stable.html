@@ -657,6 +657,8 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
+const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
+const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -2502,8 +2504,8 @@ async function batchFetchStocks(symbols, isIndex=false){
   const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
   const urls=[
     localStorage.getItem('customAPI')||API,
-    localStorage.getItem('customAPI2')||'',
-    localStorage.getItem('customAPI3')||''
+    localStorage.getItem('customAPI2')||API2
+    localStorage.getItem('customAPI3')||API3
   ].filter(Boolean);
 
   async function tryBatch(apiUrl){
@@ -2542,8 +2544,8 @@ async function fetchFull(sym,isIndex=false){
 
   const urls=[
     localStorage.getItem("customAPI")||API,
-    localStorage.getItem("customAPI2")||"",
-    localStorage.getItem("customAPI3")||""
+    localStorage.getItem('customAPI2')||API2,
+    localStorage.getItem('customAPI3')||API3
   ].filter(Boolean);
 
   async function tryOne(apiUrl){
