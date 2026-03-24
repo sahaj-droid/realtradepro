@@ -9,6 +9,9 @@
 
 body { background:#0a0f1a; color:#e2e8f0; font-family:'Rajdhani',sans-serif; transition:background 0.3s,color 0.3s; }
 html { font-size: 112%; }
+html[data-fsize='small'] { font-size: 95%; }
+html[data-fsize='medium'] { font-size: 112%; }
+html[data-fsize='large'] { font-size: 128%; }
 body.light { background:#f0f4f8; color:#1a202c; }
 body.light .card { background:linear-gradient(145deg,#ffffff,#f1f5f9); border:1px solid #cbd5e0; box-shadow:0 2px 8px rgba(0,0,0,0.08); color:#1a202c; }
 body.light .app-header { background:linear-gradient(90deg,#ffffff,#e8f0fe); border-bottom:1px solid #cbd5e0; color:#1a202c; }
@@ -858,6 +861,8 @@ try{h=JSON.parse(localStorage.getItem("h"))||[];}catch(e){}
 try{hist=JSON.parse(localStorage.getItem("hist"))||[];}catch(e){}
 try{alerts=JSON.parse(localStorage.getItem("alerts"))||[];}catch(e){}
 try{isDark=localStorage.getItem("theme")!=="light";}catch(e){}
+// Font size init
+(function(){ const fs=localStorage.getItem('fontSize')||'medium'; document.documentElement.setAttribute('data-fsize',fs); })();
 try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 
 if(!isDark){ document.body.classList.add("light"); }
@@ -1774,6 +1779,8 @@ async function fetchFundamentals(sym){
   // Fallback to fetchFull meta
   if(!d) d = await fetchFull(sym, false);
   if(!d) d = cache[sym]&&cache[sym].data;
+  // Last resort: use cache directly
+  if(!d && cache[sym]) d = cache[sym].data;
 
   let pe='--',eps='--',mktCap='--',volume='--';
   let divYield='--',forwardPE='--',bookValue='--',forwardEps='--',earningsDate='--',exDivDate='--';
@@ -1812,7 +1819,7 @@ async function openDetail(sym,isIndex){
   document.getElementById("d-body").innerHTML=`
     <div style="display:flex;flex-direction:column;gap:3px;">
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen&&d.regularMarketOpen>1?d.regularMarketOpen:(d.chartPreviousClose||0)).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
       </div>
@@ -1834,6 +1841,7 @@ async function openDetail(sym,isIndex){
     <div id="smartAlertSection" style="margin-top:8px;"></div>
     <button onclick="chart('${sym}',${isIndex?true:false})" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
   document.getElementById("detailModal").classList.remove("hidden");
+  document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
   if(!isIndex) renderBollinger(sym);
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
@@ -1894,10 +1902,16 @@ async function openDetail(sym,isIndex){
           <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
         </div>`;
     } else if(fs){
-      fs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Fundamentals not available</div>`;
+      fs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Fundamentals not available (open on GitHub Pages for full data)</div>`;
     }
     // Load technical data
+    // Safety: clear loading after 10s if still stuck
+    const _techTimeout = setTimeout(()=>{
+      const ts=document.getElementById('techSection');
+      if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>';
+    }, 10000);
     fetchHistory(sym).then(hist=>{
+      clearTimeout(_techTimeout);
       const ts=document.getElementById("techSection");
       if(!ts) return;
       if(!hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>'; return; }
@@ -1943,11 +1957,14 @@ function renderCircuit(sym, d) {
   const cmp = d.regularMarketPrice || pc;
   const pct = ((cmp - pc) / pc * 100);
   // NSE circuit bands: 2%, 5%, 10%, 20%
-  let band = 5;
+  // Default 20% for most NSE stocks. Narrower bands for specific categories.
   const absPct = Math.abs(pct);
-  if(absPct > 15) band = 20;
-  else if(absPct > 8) band = 10;
-  else if(absPct <= 2.1) band = 2;
+  let band = 20;
+  if(absPct >= 19) band = 20;
+  else if(absPct >= 9) band = 10;
+  else if(absPct >= 4.5) band = 5;
+  else if(absPct >= 1.9) band = 2;
+  else band = 20;
   const uch = parseFloat((pc * (1 + band/100)).toFixed(2));
   const lcl = parseFloat((pc * (1 - band/100)).toFixed(2));
   const nearUC = Math.abs((cmp - uch) / uch) < 0.01;
@@ -2583,6 +2600,9 @@ function loadSettingsUI(){
   if(cacheEl) cacheEl.value=parseInt(localStorage.getItem("cacheSec")||"8000");
   const btn=document.getElementById("dupToggleBtn");
   if(btn){ btn.innerText=dupWarnEnabled?"ON":"OFF"; btn.style.background=dupWarnEnabled?"#166534":"#7f1d1d"; btn.style.color=dupWarnEnabled?"#86efac":"#fca5a5"; }
+  // Font size button active state
+  const curFs=localStorage.getItem('fontSize')||'medium';
+  setFontSize(curFs);
 }
 
 function startAPIEdit(){
@@ -4338,6 +4358,24 @@ async function pullFromCloud(showMsg = false) {
     if (syncBtn) { syncBtn.innerText = 'Sync Error'; syncBtn.style.color = '#ef4444'; }
     if (showMsg) showPopup('Cloud load error');
   }
+}
+
+
+// ======================================
+// FONT SIZE CONTROL
+// ======================================
+function setFontSize(size) {
+  document.documentElement.setAttribute('data-fsize', size);
+  localStorage.setItem('fontSize', size);
+  // Update button states
+  ['small','medium','large'].forEach(s => {
+    const btn = document.getElementById('fs-'+s);
+    if(btn) {
+      btn.style.background = s===size ? '#1e3a5f' : '#0f172a';
+      btn.style.color = s===size ? '#38bdf8' : '#4b6280';
+      btn.style.borderColor = s===size ? '#2d5a8e' : '#1e2d3d';
+    }
+  });
 }
 
 // ======================================
