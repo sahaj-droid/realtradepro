@@ -2504,7 +2504,7 @@ async function batchFetchStocks(symbols, isIndex=false){
   const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
   const urls=[
     localStorage.getItem('customAPI')||API,
-    localStorage.getItem('customAPI2')||API2
+    localStorage.getItem('customAPI2')||API2,
     localStorage.getItem('customAPI3')||API3
   ].filter(Boolean);
 
