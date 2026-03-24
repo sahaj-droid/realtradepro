@@ -215,7 +215,7 @@ body.light .ticker-price{color:#e2e8f0;}
 <!-- SEARCH + SUGGESTIONS -->
 <div id="searchSection" class="p-3 pb-1">
   <div style="position:relative;">
-    <input id="searchBox" placeholder="Search stock (Press Enter)..."
+    <input id="searchBox" placeholder="Search stock name or symbol..."
       oninput="showSuggestions(this.value)"
       onkeydown="if(event.key==='Enter'){event.preventDefault();addStock(this.value);hideSuggestions();}if(event.key==='Escape'){hideSuggestions();}">
     <div id="suggestionBox"></div>
@@ -992,19 +992,78 @@ function toggleTheme(){
 // ======================================
 // SEARCH SUGGESTIONS
 // ======================================
-function showSuggestions(val){
-  val=val.toUpperCase().trim();
-  const box=document.getElementById("suggestionBox");
-  if(!val){box.style.display="none";return;}
-  const alreadyIn=new Set(wl);
-  const matches=POPULAR_STOCKS.filter(s=>s.startsWith(val)&&!alreadyIn.has(s)).slice(0,6);
-  if(matches.length===0){box.style.display="none";return;}
-  box.innerHTML=matches.map(s=>`<div class="suggestion-item" onclick="selectSuggestion('${s}')">${s}</div>`).join("");
-  box.style.display="block";
+// Search debounce timer
+let _searchTimer = null;
+let _lastSearchVal = "";
+
+function showSuggestions(val) {
+  val = val.trim();
+  const box = document.getElementById("suggestionBox");
+  if (!val || val.length < 1) { box.style.display = "none"; return; }
+
+  // 1. Instant: local POPULAR_STOCKS match (prefix)
+  const valUpper = val.toUpperCase();
+  const alreadyIn = new Set(wl);
+  const localMatches = POPULAR_STOCKS
+    .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
+    .slice(0, 4);
+
+  if (localMatches.length > 0) {
+    renderSuggestions(localMatches.map(s => ({symbol: s, name: '', exchange: ''})), box, true);
+  }
+
+  // 2. Debounced Yahoo search (300ms)
+  if (_searchTimer) clearTimeout(_searchTimer);
+  _lastSearchVal = val;
+  _searchTimer = setTimeout(() => {
+    if (_lastSearchVal !== val) return;
+    fetchYahooSuggestions(val, box);
+  }, 300);
 }
-function selectSuggestion(sym){ document.getElementById("searchBox").value=sym; hideSuggestions(); addStock(sym); }
-function hideSuggestions(){ document.getElementById("suggestionBox").style.display="none"; }
-document.addEventListener("click",e=>{if(!e.target.closest("#searchSection"))hideSuggestions();});
+
+async function fetchYahooSuggestions(val, box) {
+  try {
+    const api = localStorage.getItem('customAPI') || API;
+    const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
+    const j = await r.json();
+    if (!j.ok || !j.results || j.results.length === 0) return;
+    // Filter: prefer .NS (Indian stocks), remove already in watchlist
+    const alreadyIn = new Set(wl);
+    const results = j.results
+      .filter(r => !alreadyIn.has(r.symbol.replace('.NS','').replace('.BO','')))
+      .slice(0, 7);
+    if (results.length > 0 && _lastSearchVal === val) {
+      renderSuggestions(results, box, false);
+    }
+  } catch(e) {}
+}
+
+function renderSuggestions(items, box, isLocal) {
+  if (!items || items.length === 0) { box.style.display = "none"; return; }
+  box.innerHTML = items.map(item => {
+    // Normalize: local items have just symbol string, Yahoo has {symbol,name,exchange}
+    const sym = item.symbol || item;
+    const rawSym = sym.replace('.NS','').replace('.BO','');
+    const name = item.name || '';
+    const exch = item.exchange ? `<span style="font-size:9px;color:#4b6280;margin-left:4px;">${item.exchange}</span>` : '';
+    const nameHtml = name ? `<div style="font-size:10px;color:#94a3b8;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
+    return `<div class="suggestion-item" style="padding:7px 14px;" onclick="selectSuggestion('${rawSym}')">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-weight:700;">${rawSym}</span>${exch}
+      </div>
+      ${nameHtml}
+    </div>`;
+  }).join('');
+  box.style.display = "block";
+}
+
+function selectSuggestion(sym) {
+  document.getElementById("searchBox").value = sym;
+  hideSuggestions();
+  addStock(sym);
+}
+function hideSuggestions() { document.getElementById("suggestionBox").style.display = "none"; }
+document.addEventListener("click", e => { if (!e.target.closest("#searchSection")) hideSuggestions(); });
 
 // ======================================
 // POPUP & ERROR (once per session)
