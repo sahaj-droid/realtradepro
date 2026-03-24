@@ -3416,8 +3416,7 @@ async function startApp(){
 // ======================================
 // AUTO REFRESH & MANUAL
 // ======================================
-  let refreshInterval = null;
-
+  
 function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
@@ -3436,11 +3435,7 @@ document.addEventListener('visibilitychange', ()=>{
 });
 
 startRefresh();
-  setInterval(()=>{
-  const m = getMarketStatus();
-  if(m.open) updatePrices();
-}, 10000);
-
+    
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
   btn.style.opacity="0.4";btn.style.pointerEvents="none";btn.innerHTML="...";
