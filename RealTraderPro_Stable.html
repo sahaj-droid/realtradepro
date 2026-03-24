@@ -288,8 +288,12 @@ body.light .ticker-price{color:#e2e8f0;}
 <div id="settings" class="tab p-3 space-y-3">
   <div style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">SETTINGS</div>
 
-  <!-- QUICK ACCESS: Theme + Alerts + Holidays -->
-  <div style="display:flex;gap:8px;">
+  <!-- QUICK ACCESS: Theme + Alerts + Holidays + Font Size -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="cycleFontSize()" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" width="18" height="18"><text x="2" y="16" font-size="12" fill="#a78bfa" stroke="none" font-family="sans-serif" font-weight="bold">A</text><text x="11" y="19" font-size="16" fill="#a78bfa" stroke="none" font-family="sans-serif" font-weight="bold">A</text></svg>
+      <span id="fontSizeLabel" style="font-size:10px;font-weight:700;color:#a78bfa;">FONT: M</span>
+    </button>
     <button onclick="toggleTheme()" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
       <svg id="qs-theme-icon" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
       <span style="font-size:10px;font-weight:700;color:#f59e0b;">THEME</span>
@@ -655,9 +659,23 @@ body.light .ticker-price{color:#e2e8f0;}
     <button onclick="closeAvgCalc()" style="width:100%;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Close</button>
   </div>
 </div>
-
 </div><!-- end mainApp -->
-
+// -- FONT SIZE TOGGLE --
+const FONT_SIZES = {S:'100%', M:'112%', L:'125%'};
+function cycleFontSize(){
+  const current = localStorage.getItem('fontSize')||'M';
+  const keys = Object.keys(FONT_SIZES);
+  const next = keys[(keys.indexOf(current)+1)%keys.length];
+  localStorage.setItem('fontSize', next);
+  applyFontSize();
+}
+function applyFontSize(){
+  const size = localStorage.getItem('fontSize')||'M';
+  document.documentElement.style.fontSize = FONT_SIZES[size];
+  const lbl = document.getElementById('fontSizeLabel');
+  if(lbl) lbl.innerText = 'FONT: '+size;
+}
+applyFontSize();
 <script>
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
