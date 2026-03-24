@@ -660,6 +660,15 @@ body.light .ticker-price{color:#e2e8f0;}
   </div>
 </div>
 </div><!-- end mainApp -->
+
+<script>
+const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
+const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
+const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+let azAsc=true,priceAsc=false,percentAsc=false;
+let groups={},currentGroup="ALL";
+let currentTradeType="CNC"; // CNC or MIS
 // -- FONT SIZE TOGGLE --
 const FONT_SIZES = {S:'100%', M:'112%', L:'125%'};
 function cycleFontSize(){
@@ -676,15 +685,6 @@ function applyFontSize(){
   if(lbl) lbl.innerText = 'FONT: '+size;
 }
 applyFontSize();
-<script>
-const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
-const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
-const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
-let azAsc=true,priceAsc=false,percentAsc=false;
-let groups={},currentGroup="ALL";
-let currentTradeType="CNC"; // CNC or MIS
-
 // -- INDIAN NUMBER FORMAT --
 function inr(n){
   if(isNaN(n)) return '₹0';
