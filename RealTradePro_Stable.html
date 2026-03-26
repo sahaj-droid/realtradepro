@@ -132,9 +132,9 @@ body.light #news .group-btn.active { background:#dbeafe !important; color:#1d4ed
 
 /* Tap Action System */
 .wl-card-wrap { position:relative; border-radius:12px; margin-bottom:4px; }
-.wl-actions-panel { display:none; padding:4px 6px; background:#0a1628; border-radius:0 0 10px 10px; border-top:1px solid #1e2d3d; overflow:visible; }
-.wl-actions-panel.open { display:flex; flex-wrap:wrap; gap:4px; }
-.act-btn { font-size:10px; font-weight:700; padding:5px 8px; border-radius:6px; border:none; cursor:pointer; font-family:'Rajdhani',sans-serif; flex:1; min-width:50px; text-align:center; }
+.wl-actions-panel { display:none; padding:4px 6px; background:#0a1628; border-radius:0 0 10px 10px; border-top:1px solid #1e2d3d; }
+.wl-actions-panel.open { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+.act-btn { font-size:10px; font-weight:700; padding:5px 4px; border-radius:6px; border:none; cursor:pointer; font-family:'Rajdhani',sans-serif; text-align:center; width:100%; }
 .tap-hint { font-size:8px; color:#2d3f52; text-align:center; padding:1px 0 2px; }
 
 .icon-svg { display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px; }
@@ -1409,7 +1409,7 @@ async function renderWL(){
         <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#a78bfa;">NEWS</button>
         <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12;color:#fde68a;">ALERT</button>
         <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96;color:#c4b5fd;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;">🤖 NIVI</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;grid-column:span 2;">🤖 NIVI</button>
       </div>
     </div>`;
   }
