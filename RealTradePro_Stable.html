@@ -2120,7 +2120,7 @@ async function renderBulkDeals(sym) {
     ${rows}`;
 }
 
-function closeDetail(){document.getElementById("detailModal").classList.add("hidden");}
+function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
 
 function openModal(type,sym,price){
   currentTrade={type,sym};
