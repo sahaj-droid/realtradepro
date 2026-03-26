@@ -659,12 +659,75 @@ body.light .ticker-price{color:#e2e8f0;}
     <button onclick="closeAvgCalc()" style="width:100%;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Close</button>
   </div>
 </div>
+
+<!-- ============================================================ -->
+<!-- 🤖 NIVI AI MODAL                                             -->
+<!-- ============================================================ -->
+<div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:flex-end;justify-content:center;">
+  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;padding:18px 16px 28px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <!-- Avatar ring -->
+        <div id="nivi-avatar-ring" style="width:36px;height:36px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;font-size:18px;background:#0a1628;transition:box-shadow 0.3s;">🤖</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;">Nivi AI</div>
+          <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;">--</div>
+        </div>
+      </div>
+      <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕ Close</button>
+    </div>
+
+    <!-- Price + Rec Badge -->
+    <div id="nivi-price-row" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div id="nivi-price" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#e2e8f0;">--</div>
+          <div id="nivi-change" style="font-size:11px;font-weight:700;color:#94a3b8;">--</div>
+        </div>
+        <div id="nivi-rec-badge" style="font-size:13px;font-weight:700;padding:6px 14px;border-radius:8px;text-align:center;letter-spacing:0.5px;">--</div>
+      </div>
+    </div>
+
+    <!-- Technical Indicators mini-row -->
+    <div id="nivi-tech-row" style="display:none;display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;"></div>
+
+    <!-- Loading spinner -->
+    <div id="nivi-loading" style="text-align:center;padding:30px 0;">
+      <div class="spinner" style="margin:0 auto 10px;"></div>
+      <div style="font-size:12px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
+    </div>
+
+    <!-- AI Response (3 bullets) -->
+    <div id="nivi-answer" style="display:none;margin-bottom:12px;">
+      <div id="nivi-bullets" style="font-size:13px;color:#e2e8f0;line-height:1.8;font-family:'Rajdhani',sans-serif;"></div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div id="nivi-disclaimer" style="display:none;background:#111;border-radius:8px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-size:10px;color:#4b6280;line-height:1.5;font-family:'Rajdhani',sans-serif;">⚠️ यह सलाह केवल जानकारी के लिए है। निवेश से पहले अपने वित्तीय सलाहकार से परामर्श लें। Nivi SEBI registered advisor नहीं है।</div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div id="nivi-actions" style="display:none;display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="nivi-speak-btn" onclick="niviSpeak()" style="flex:1;background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊 Awaaz</button>
+      <button id="nivi-stop-btn" onclick="niviStop()" style="flex:1;display:none;background:#7f1d1d;color:#fca5a5;border:1px solid #7f1d1d;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">⏹ Stop</button>
+      <button onclick="niviCopy()" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">📋 Copy</button>
+      <button onclick="niviRefresh()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔄 Refresh</button>
+    </div>
+
+  </div>
+</div>
+
 </div><!-- end mainApp -->
 
 <script>
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
+// ✨ NIVI AI — merged GAS v2 URL
+const API_NIVI = "https://script.google.com/macros/s/AKfycbz1oSX6l2yx4R5VHTdhrC1LzlV0maGXgac5oFraXlXF-06sGjTfC9ToYBpiy-haP-o1/exec";
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -1346,6 +1409,7 @@ async function renderWL(){
         <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#a78bfa;">NEWS</button>
         <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12;color:#fde68a;">ALERT</button>
         <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96;color:#c4b5fd;">TARGET</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;">🤖 NIVI</button>
       </div>
     </div>`;
   }
@@ -4399,6 +4463,205 @@ function setFontSize(size) {
 // ======================================
 // INIT
 // ======================================
+
+// ======================================
+// 🤖 NIVI AI — Full Integration
+// Cache: localStorage, 30 min expiry
+// ======================================
+let _niviCurrentSym = '';
+let _niviSpeaking   = false;
+let _niviUtterance  = null;
+const NIVI_CACHE_MS = 30 * 60 * 1000; // 30 minutes
+
+// --- OPEN NIVI MODAL ---
+async function openNivi(sym) {
+  _niviCurrentSym = sym;
+  const modal = document.getElementById('niviModal');
+  modal.style.display = 'flex';
+  document.getElementById('nivi-sym-label').innerText = sym;
+  document.getElementById('nivi-loading').style.display  = 'block';
+  document.getElementById('nivi-answer').style.display   = 'none';
+  document.getElementById('nivi-disclaimer').style.display = 'none';
+  document.getElementById('nivi-actions').style.display  = 'none';
+  document.getElementById('nivi-price-row').style.display = 'none';
+  document.getElementById('nivi-tech-row').style.display  = 'none';
+  niviStop();
+
+  // Check cache first
+  const cacheKey = 'niviCache_' + sym;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+    if (cached && (Date.now() - cached.ts) < NIVI_CACHE_MS) {
+      renderNiviResponse(cached.data);
+      return;
+    }
+  } catch(e) {}
+
+  // Fetch fresh
+  try {
+    const r = await fetch(`${API_NIVI}?type=askNivi&s=${encodeURIComponent(sym)}.NS`);
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'API error');
+    // Cache it
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+    renderNiviResponse(data);
+  } catch(err) {
+    document.getElementById('nivi-loading').style.display = 'none';
+    document.getElementById('nivi-answer').style.display = 'block';
+    document.getElementById('nivi-bullets').innerHTML =
+      `<div style="color:#ef4444;font-size:12px;">⚠️ Error: ${err.message}</div>`;
+    document.getElementById('nivi-actions').style.display = 'flex';
+  }
+}
+
+// --- RENDER RESPONSE ---
+function renderNiviResponse(data) {
+  document.getElementById('nivi-loading').style.display = 'none';
+
+  // Price row
+  const f = data.fundamental || {};
+  if (f.price) {
+    document.getElementById('nivi-price-row').style.display = 'block';
+    document.getElementById('nivi-price').innerText = '₹' + (f.price || '--');
+    const chg = f.changePct ? (f.changePct >= 0 ? '+' : '') + f.changePct.toFixed(2) + '%' : '--';
+    const chgEl = document.getElementById('nivi-change');
+    chgEl.innerText = chg + (f.change ? '  ₹' + Math.abs(f.change).toFixed(2) : '');
+    chgEl.style.color = (f.changePct >= 0) ? '#22c55e' : '#ef4444';
+  }
+
+  // Recommendation badge
+  const rec = data.recommendation || {};
+  const badgeEl = document.getElementById('nivi-rec-badge');
+  if (rec.signal) {
+    const badgeCfg = {
+      BUY:  { bg: '#166534', color: '#86efac', text: '🟢 BUY'  },
+      HOLD: { bg: '#713f12', color: '#fde68a', text: '🟡 HOLD' },
+      SELL: { bg: '#7f1d1d', color: '#fca5a5', text: '🔴 SELL' }
+    };
+    const cfg = badgeCfg[rec.signal] || badgeCfg.HOLD;
+    badgeEl.style.background = cfg.bg;
+    badgeEl.style.color      = cfg.color;
+    badgeEl.innerText        = cfg.text;
+    badgeEl.style.display    = 'block';
+  }
+
+  // Technical indicators mini row
+  const t = data.technical || {};
+  const techEl = document.getElementById('nivi-tech-row');
+  const indicators = [
+    { label: 'RSI', val: t.rsi14 != null ? t.rsi14.toFixed(1) : '--', color: t.rsi14 < 35 ? '#22c55e' : t.rsi14 > 70 ? '#ef4444' : '#f59e0b' },
+    { label: 'MA20', val: t.ma20 ? '₹' + t.ma20 : '--', color: f.price > t.ma20 ? '#22c55e' : '#ef4444' },
+    { label: 'MA50', val: t.ma50 ? '₹' + t.ma50 : '--', color: f.price > t.ma50 ? '#22c55e' : '#ef4444' },
+    { label: '52W%', val: t.week52Pos != null ? t.week52Pos + '%' : '--', color: '#94a3b8' },
+    { label: 'VOL', val: t.volRatio ? t.volRatio + 'x' : '--', color: t.volRatio > 1.5 ? '#22c55e' : '#94a3b8' }
+  ];
+  techEl.style.display = 'flex';
+  techEl.innerHTML = indicators.map(i =>
+    `<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:6px;padding:4px 8px;text-align:center;flex:1;">
+      <div style="font-size:8px;color:#4b6280;font-weight:700;">${i.label}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:${i.color};">${i.val}</div>
+    </div>`
+  ).join('');
+
+  // AI bullets
+  const nivi = data.niviAdvice || {};
+  const answer = document.getElementById('nivi-answer');
+  const bullets = document.getElementById('nivi-bullets');
+  answer.style.display = 'block';
+
+  if (nivi.ok && nivi.answer) {
+    // Split into bullet points and render
+    const lines = nivi.answer.split('\n').filter(l => l.trim());
+    bullets.innerHTML = lines.map((line, i) => {
+      const clean = line.replace(/^[•\-\*]\s*/, '').trim();
+      return `<div style="display:flex;gap:8px;padding:8px 0;${i < lines.length-1 ? 'border-bottom:1px solid rgba(255,255,255,0.05)' : ''}">
+        <span style="color:#34d399;font-size:14px;flex-shrink:0;">•</span>
+        <span style="color:#e2e8f0;font-size:13px;line-height:1.6;">${clean}</span>
+      </div>`;
+    }).join('');
+
+    // Auto-speak if user prefers voice
+    const voicePref = localStorage.getItem('niviVoicePref');
+    if (voicePref === 'voice') {
+      setTimeout(() => niviSpeak(), 600);
+    }
+  } else {
+    bullets.innerHTML = `<div style="color:#ef4444;font-size:12px;">Nivi response unavailable.</div>`;
+  }
+
+  document.getElementById('nivi-disclaimer').style.display = 'block';
+  document.getElementById('nivi-actions').style.display = 'flex';
+}
+
+// --- CLOSE ---
+function closeNivi() {
+  niviStop();
+  document.getElementById('niviModal').style.display = 'none';
+}
+
+// --- SPEAK (Text-to-Speech) ---
+function niviSpeak() {
+  if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
+  niviStop();
+  const bullets = document.getElementById('nivi-bullets');
+  const text = bullets ? bullets.innerText : '';
+  if (!text) return;
+
+  _niviUtterance = new SpeechSynthesisUtterance(text);
+  _niviUtterance.lang  = 'hi-IN';
+  _niviUtterance.rate  = 0.82;
+  _niviUtterance.pitch = 1.0;
+
+  // Try Google Hindi voice
+  const voices = speechSynthesis.getVoices();
+  const hiVoice = voices.find(v => v.lang === 'hi-IN' && v.name.includes('Google'))
+                || voices.find(v => v.lang === 'hi-IN');
+  if (hiVoice) _niviUtterance.voice = hiVoice;
+
+  _niviUtterance.onstart = () => {
+    _niviSpeaking = true;
+    document.getElementById('nivi-speak-btn').style.display = 'none';
+    document.getElementById('nivi-stop-btn').style.display  = 'flex';
+    document.getElementById('nivi-avatar-ring').style.boxShadow = '0 0 12px #34d399';
+  };
+  _niviUtterance.onend = _niviUtterance.onerror = () => {
+    _niviSpeaking = false;
+    document.getElementById('nivi-speak-btn').style.display = 'flex';
+    document.getElementById('nivi-stop-btn').style.display  = 'none';
+    document.getElementById('nivi-avatar-ring').style.boxShadow = 'none';
+  };
+
+  speechSynthesis.speak(_niviUtterance);
+}
+
+function niviStop() {
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  _niviSpeaking = false;
+  const sb = document.getElementById('nivi-speak-btn');
+  const st = document.getElementById('nivi-stop-btn');
+  if (sb) sb.style.display = 'flex';
+  if (st) st.style.display = 'none';
+  const ring = document.getElementById('nivi-avatar-ring');
+  if (ring) ring.style.boxShadow = 'none';
+}
+
+function niviCopy() {
+  const text = document.getElementById('nivi-bullets')?.innerText || '';
+  navigator.clipboard.writeText(text).then(() => showPopup('Nivi response copied!')).catch(() => showPopup('Copy failed'));
+}
+
+function niviRefresh() {
+  // Clear cache for this stock and re-fetch
+  const cacheKey = 'niviCache_' + _niviCurrentSym;
+  localStorage.removeItem(cacheKey);
+  openNivi(_niviCurrentSym);
+}
+
+// Close modal on backdrop tap
+document.getElementById('niviModal').addEventListener('click', function(e) {
+  if (e.target === this) closeNivi();
+});
+
 startApp();
 </script>
 </body>
