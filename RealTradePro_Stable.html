@@ -4663,6 +4663,197 @@ document.getElementById('niviModal').addEventListener('click', function(e) {
 });
 
 startApp();
+
+// ============================================================
+// ✅ MARKET PULSE — Smart Signal Engine (Watchlist-based)
+// 
+// Strategy (API calls minimum):
+//   • દર 5 મિનિટે એક batch call — watchlist ના બધા stocks
+//   • RealTradePro ના existing API (batch type) ને જ વાપરે
+//   • localStorage cache — same signal repeat notification નહીં
+//   • Market closed હોય ત્યારે check જ નહીં (quota save)
+//   • 1 API call = બધા stocks (batch endpoint)
+// ============================================================
+
+const MP_CHECK_INTERVAL = 5 * 60 * 1000; // 5 મિનિટ
+const MP_SIGNAL_CACHE_TTL = 30 * 60 * 1000; // 30 મિનિટ — same signal ફરી ન આવે
+const MP_CACHE_KEY = 'mp_signal_cache';
+
+// Cache load/save helpers
+function mpLoadCache() {
+  try { return JSON.parse(localStorage.getItem(MP_CACHE_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function mpSaveCache(c) {
+  try { localStorage.setItem(MP_CACHE_KEY, JSON.stringify(c)); }
+  catch(e) {}
+}
+
+// Market open check (IST 9:15 – 15:30, Mon–Fri, no holiday)
+function mpIsMarketOpen() {
+  const now = new Date();
+  const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const day = ist.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false;
+  const dateStr = ist.toISOString().split('T')[0];
+  if (typeof isMarketHoliday === 'function' && isMarketHoliday(dateStr)) return false;
+  const h = ist.getHours(), m = ist.getMinutes();
+  const mins = h * 60 + m;
+  return mins >= 555 && mins <= 930; // 9:15 to 15:30
+}
+
+// RSI calculator (14-period) — local, no extra API call
+function mpCalcRSI(prices) {
+  if (!prices || prices.length < 15) return null;
+  let gains = 0, losses = 0;
+  const slice = prices.slice(-15);
+  for (let i = 0; i < slice.length - 1; i++) {
+    const diff = slice[i+1] - slice[i];
+    if (diff > 0) gains += diff; else losses -= diff;
+  }
+  const rs = gains / (losses || 1);
+  return Math.round(100 - (100 / (1 + rs)));
+}
+
+// Signal evaluator — pure math, no API
+function mpEvalSignal(prices, volumes) {
+  if (!prices || prices.length < 5) return null;
+  const clean = prices.filter(p => p != null);
+  const vclean = (volumes || []).filter(v => v != null);
+  if (clean.length < 5) return null;
+
+  const cur = clean.at(-1);
+  const prev = clean.at(-2);
+  const change = prev ? ((cur - prev) / prev) * 100 : 0;
+  const prevHigh = Math.max(...clean.slice(-20));
+  const avgVol = vclean.length > 1
+    ? vclean.slice(-20).reduce((a,b) => a+b, 0) / Math.min(20, vclean.length)
+    : 0;
+  const curVol = vclean.at(-1) || 0;
+  const rsi = mpCalcRSI(clean);
+
+  const breakout = cur > prevHigh;
+  const volSpike = avgVol > 0 && curVol > avgVol * 2;
+
+  let signal = null;
+  if (breakout && volSpike && rsi > 55) signal = "STRONG";
+  else if (breakout && rsi > 50)       signal = "MEDIUM";
+  else if (volSpike)                   signal = "WEAK";
+
+  let sentiment = "NEUTRAL";
+  if (change > 1) sentiment = "BULLISH";
+  if (change < -1) sentiment = "BEARISH";
+
+  return signal ? { signal, rsi, change: change.toFixed(2), sentiment } : null;
+}
+
+// Core check — 1 batch API call for all watchlist stocks
+async function mpRunCheck() {
+  if (!mpIsMarketOpen()) return; // market band hoy to skip
+
+  // Watchlist stocks — RealTradePro ना wl array mathi
+  const stocks = (typeof wl !== 'undefined' && wl.length > 0)
+    ? wl.map(s => s + (s.includes('.') ? '' : '.NS'))
+    : ['SBIN.NS', 'RELIANCE.NS', 'TCS.NS'];
+
+  const cache = mpLoadCache();
+  const now = Date.now();
+
+  // Batch fetch — 1 call = all stocks (Yahoo Finance batch)
+  // RealTradePro ना existing batch endpoint use karo
+  const batchSym = stocks.join(',');
+  let priceData = {};
+
+  try {
+    // RealTradePro batch API use karo (same quota)
+    const apiBase = (typeof API !== 'undefined') ? API : '';
+    if (!apiBase) return;
+
+    const res = await fetch(`${apiBase}?type=batch&s=${encodeURIComponent(batchSym)}`);
+    const data = await res.json();
+
+    // batch returns array of quotes
+    if (Array.isArray(data)) {
+      data.forEach(q => { if (q.symbol) priceData[q.symbol] = q; });
+    } else if (data && typeof data === 'object') {
+      priceData = data;
+    }
+  } catch(e) {
+    console.log('MP batch fetch error:', e);
+    return;
+  }
+
+  // Per-stock signal check using cached price history
+  stocks.forEach(sym => {
+    const symClean = sym.replace('.NS','').replace('.BO','');
+    const q = priceData[sym] || priceData[symClean] || null;
+    if (!q) return;
+
+    // Use available price data for simple signal
+    const price = q.price || q.regularMarketPrice;
+    const change = q.changePct || q.regularMarketChangePercent || 0;
+    const volume = q.volume || q.regularMarketVolume || 0;
+    const avgVol = q.avgVolume || q.averageDailyVolume3Month || 0;
+
+    if (!price) return;
+
+    // Simple signal from available quote data
+    const volSpike = avgVol > 0 && volume > avgVol * 2;
+    const strongMove = Math.abs(change) > 2;
+
+    let signal = null;
+    if (strongMove && volSpike) signal = "STRONG";
+    else if (strongMove)        signal = "MEDIUM";
+    else if (volSpike)          signal = "WEAK";
+
+    if (!signal) return;
+
+    // Cache check — same signal ane TTL na expire thay tyan sudi skip
+    const cacheKey = symClean + '_' + signal;
+    if (cache[cacheKey] && (now - cache[cacheKey]) < MP_SIGNAL_CACHE_TTL) return;
+
+    // New signal! Cache update + notification
+    cache[cacheKey] = now;
+
+    const emoji = signal === "STRONG" ? "🔥" : signal === "MEDIUM" ? "⚡" : "📊";
+    const dir = change >= 0 ? "▲" : "▼";
+    const msg = `${emoji} ${symClean}: ${signal} | ${dir}${Math.abs(change).toFixed(2)}% | Vol Spike`;
+
+    // Android notification
+    if (window.Android) {
+      window.Android.notifyWithTitle("📈 RealTradePro Signal", msg);
+    }
+
+    // In-app popup
+    if (typeof showPopup === 'function') {
+      showPopup(msg);
+    }
+  });
+
+  mpSaveCache(cache);
+}
+
+// Cleanup old cache entries (daily)
+function mpCleanCache() {
+  const cache = mpLoadCache();
+  const now = Date.now();
+  let changed = false;
+  Object.keys(cache).forEach(k => {
+    if (now - cache[k] > MP_SIGNAL_CACHE_TTL) {
+      delete cache[k];
+      changed = true;
+    }
+  });
+  if (changed) mpSaveCache(cache);
+}
+
+// START — 2 min delay after app load, then every 5 min
+setTimeout(() => {
+  mpCleanCache();
+  mpRunCheck();
+  setInterval(mpRunCheck, MP_CHECK_INTERVAL);
+}, 2 * 60 * 1000); // 2 min baad start (app load thaay let it settle)
+
 </script>
 </body>
 </html>
