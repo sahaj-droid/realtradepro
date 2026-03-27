@@ -523,6 +523,19 @@ body.light .ticker-price{color:#e2e8f0;}
   </div>
 </div>
 
+<!-- EXIT CONFIRMATION MODAL -->
+<div id="exitModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:9999;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:24px;width:270px;">
+    <div style="font-size:20px;text-align:center;margin-bottom:8px;">👋</div>
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:6px;color:#e2e8f0;text-align:center;">Exit App?</h2>
+    <p style="font-size:12px;color:#94a3b8;text-align:center;margin-bottom:18px;">Do you want to exit RealTradePro?</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="if(window.Android)Android.exitApp();else window.close();" style="flex:1;padding:10px;border-radius:8px;font-weight:700;font-size:14px;background:#7f1d1d;color:#fca5a5;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Yes, Exit</button>
+      <button onclick="document.getElementById('exitModal').classList.add('hidden')" style="flex:1;padding:10px;border-radius:8px;font-weight:700;font-size:14px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">No</button>
+    </div>
+  </div>
+</div>
+
 <!-- DETAILS MODAL -->
 <div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="z-index:200;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);max-height:88vh;overflow-y:auto;">
@@ -1900,20 +1913,20 @@ async function openDetail(sym,isIndex){
   document.getElementById("d-title").innerText=sym;
   document.getElementById("d-body").innerHTML=`
     <div style="display:flex;flex-direction:column;gap:3px;">
-      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen&&d.regularMarketOpen>1?d.regularMarketOpen:(d.chartPreviousClose||0)).toFixed(2)}</div></div>
-        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
+      <div style="background:#0a1628;border-radius:7px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">OPEN</div><div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen&&d.regularMarketOpen>1?d.regularMarketOpen:(d.chartPreviousClose||0)).toFixed(2)}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">PREV CLOSE</div><div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
-        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
+      <div style="background:#0a1628;border-radius:7px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
-        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
+      <div style="background:#0a1628;border-radius:7px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
       </div>
     </div>
     <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
@@ -1941,22 +1954,22 @@ async function openDetail(sym,isIndex){
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS</div>
         <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
           <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:10px;color:#4b6280;line-height:1.3;">P/E (TTM)</div><div style="font-size:14px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
             <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:14px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
             <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:14px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
             <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">BOOK VALUE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:14px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
             <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DIV YIELD</div><div style="font-size:11px;font-weight:700;white-space:nowrap;color:${dy_v!=='--'?'#22c55e':'#e2e8f0'};">${dy_v}</div></div>
           </div>
@@ -2120,7 +2133,7 @@ async function renderBulkDeals(sym) {
     ${rows}`;
 }
 
-function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
+function closeDetail(){document.getElementById("detailModal").classList.add("hidden");}
 
 function openModal(type,sym,price){
   currentTrade={type,sym};
@@ -3558,9 +3571,42 @@ async function manualRefresh(){
   showPopup("Refreshed!");
 }
 
-let touchStartY=0,isPulling=false;
-document.addEventListener('touchstart',e=>{touchStartY=e.touches[0].clientY;},{passive:true});
-document.addEventListener('touchend',e=>{let diff=e.changedTouches[0].clientY-touchStartY;if(diff>80&&window.scrollY===0&&!isPulling){isPulling=true;showPopup("Refreshing...",1500);manualRefresh().then(()=>{isPulling=false;});}},{passive:true});
+// ── SWIPE LEFT/RIGHT TO CHANGE TABS ──────────────────────────
+const TAB_ORDER = ['watchlist','indices','holdings','history','news'];
+let _currentTab = 'watchlist';
+let _swipeStartX = 0, _swipeStartY = 0;
+
+// Override tab() to track current tab
+const _origTab = tab;
+function tab(t) {
+  _origTab(t);
+  if (TAB_ORDER.includes(t)) _currentTab = t;
+}
+
+document.addEventListener('touchstart', e => {
+  _swipeStartX = e.touches[0].clientX;
+  _swipeStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _swipeStartX;
+  const dy = e.changedTouches[0].clientY - _swipeStartY;
+  // Only horizontal swipe (dx > dy*1.5 means mostly horizontal)
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+  // Don't swipe if any modal is open
+  if (!document.getElementById('detailModal').classList.contains('hidden')) return;
+  if (!document.getElementById('modal').classList.contains('hidden')) return;
+  const idx = TAB_ORDER.indexOf(_currentTab);
+  if (dx < -60 && idx < TAB_ORDER.length - 1) tab(TAB_ORDER[idx + 1]); // swipe left → next
+  if (dx >  60 && idx > 0)                    tab(TAB_ORDER[idx - 1]); // swipe right → prev
+}, { passive: true });
+
+// ── BACK BUTTON → Exit Confirmation ──────────────────────────
+window.addEventListener('popstate', e => {
+  document.getElementById('exitModal').classList.remove('hidden');
+});
+// Push a state so popstate fires on back press
+history.pushState(null, '', window.location.href);
 
 
 
@@ -4666,194 +4712,101 @@ startApp();
 
 // ============================================================
 // ✅ MARKET PULSE — Smart Signal Engine (Watchlist-based)
-// 
-// Strategy (API calls minimum):
-//   • દર 5 મિનિટે એક batch call — watchlist ના બધા stocks
-//   • RealTradePro ના existing API (batch type) ને જ વાપરે
-//   • localStorage cache — same signal repeat notification નહીં
-//   • Market closed હોય ત્યારે check જ નહીં (quota save)
-//   • 1 API call = બધા stocks (batch endpoint)
+// Strategy: RealTradePro ના existing batch API વાપરો
+// Cache: same signal 30 min સુધી repeat નહીં
+// Frequency: દર 5 min (market open hours only)
 // ============================================================
+const MP_INTERVAL     = 5 * 60 * 1000;   // 5 min
+const MP_SIG_TTL      = 30 * 60 * 1000;  // 30 min same signal block
+const MP_CACHE_KEY    = 'mp_sig_v2';
 
-const MP_CHECK_INTERVAL = 5 * 60 * 1000; // 5 મિનિટ
-const MP_SIGNAL_CACHE_TTL = 30 * 60 * 1000; // 30 મિનિટ — same signal ફરી ન આવે
-const MP_CACHE_KEY = 'mp_signal_cache';
+function mpLoadCache(){ try{ return JSON.parse(localStorage.getItem(MP_CACHE_KEY)||'{}'); }catch(e){ return {}; } }
+function mpSaveCache(c){ try{ localStorage.setItem(MP_CACHE_KEY, JSON.stringify(c)); }catch(e){} }
 
-// Cache load/save helpers
-function mpLoadCache() {
-  try { return JSON.parse(localStorage.getItem(MP_CACHE_KEY) || '{}'); }
-  catch(e) { return {}; }
-}
-function mpSaveCache(c) {
-  try { localStorage.setItem(MP_CACHE_KEY, JSON.stringify(c)); }
-  catch(e) {}
-}
-
-// Market open check (IST 9:15 – 15:30, Mon–Fri, no holiday)
-function mpIsMarketOpen() {
+function mpMarketOpen(){
   const now = new Date();
-  const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const day = ist.getDay(); // 0=Sun, 6=Sat
-  if (day === 0 || day === 6) return false;
-  const dateStr = ist.toISOString().split('T')[0];
-  if (typeof isMarketHoliday === 'function' && isMarketHoliday(dateStr)) return false;
-  const h = ist.getHours(), m = ist.getMinutes();
-  const mins = h * 60 + m;
+  const ist = new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  const day = ist.getDay();
+  if(day===0||day===6) return false;
+  const ds = ist.toISOString().split('T')[0];
+  if(typeof isMarketHoliday==='function' && isMarketHoliday(ds)) return false;
+  const mins = ist.getHours()*60 + ist.getMinutes();
   return mins >= 555 && mins <= 930; // 9:15 to 15:30
 }
 
-// RSI calculator (14-period) — local, no extra API call
-function mpCalcRSI(prices) {
-  if (!prices || prices.length < 15) return null;
-  let gains = 0, losses = 0;
-  const slice = prices.slice(-15);
-  for (let i = 0; i < slice.length - 1; i++) {
-    const diff = slice[i+1] - slice[i];
-    if (diff > 0) gains += diff; else losses -= diff;
-  }
-  const rs = gains / (losses || 1);
-  return Math.round(100 - (100 / (1 + rs)));
-}
+async function mpCheck(){
+  if(!mpMarketOpen()) return;
 
-// Signal evaluator — pure math, no API
-function mpEvalSignal(prices, volumes) {
-  if (!prices || prices.length < 5) return null;
-  const clean = prices.filter(p => p != null);
-  const vclean = (volumes || []).filter(v => v != null);
-  if (clean.length < 5) return null;
+  // Watchlist symbols — wl array mathi
+  const syms = (typeof wl !== 'undefined' && wl.length > 0)
+    ? wl.map(s => s.includes('.') ? s : s+'.NS')
+    : ['SBIN.NS','RELIANCE.NS','TCS.NS'];
 
-  const cur = clean.at(-1);
-  const prev = clean.at(-2);
-  const change = prev ? ((cur - prev) / prev) * 100 : 0;
-  const prevHigh = Math.max(...clean.slice(-20));
-  const avgVol = vclean.length > 1
-    ? vclean.slice(-20).reduce((a,b) => a+b, 0) / Math.min(20, vclean.length)
-    : 0;
-  const curVol = vclean.at(-1) || 0;
-  const rsi = mpCalcRSI(clean);
-
-  const breakout = cur > prevHigh;
-  const volSpike = avgVol > 0 && curVol > avgVol * 2;
-
-  let signal = null;
-  if (breakout && volSpike && rsi > 55) signal = "STRONG";
-  else if (breakout && rsi > 50)       signal = "MEDIUM";
-  else if (volSpike)                   signal = "WEAK";
-
-  let sentiment = "NEUTRAL";
-  if (change > 1) sentiment = "BULLISH";
-  if (change < -1) sentiment = "BEARISH";
-
-  return signal ? { signal, rsi, change: change.toFixed(2), sentiment } : null;
-}
-
-// Core check — 1 batch API call for all watchlist stocks
-async function mpRunCheck() {
-  if (!mpIsMarketOpen()) return; // market band hoy to skip
-
-  // Watchlist stocks — RealTradePro ना wl array mathi
-  const stocks = (typeof wl !== 'undefined' && wl.length > 0)
-    ? wl.map(s => s + (s.includes('.') ? '' : '.NS'))
-    : ['SBIN.NS', 'RELIANCE.NS', 'TCS.NS'];
-
-  const cache = mpLoadCache();
+  const sigCache = mpLoadCache();
   const now = Date.now();
 
-  // Batch fetch — 1 call = all stocks (Yahoo Finance batch)
-  // RealTradePro ना existing batch endpoint use karo
-  const batchSym = stocks.join(',');
-  let priceData = {};
+  // 1 batch call = bhadha watchlist stocks
+  const apiUrl = (typeof API !== 'undefined') ? API : '';
+  if(!apiUrl) return;
 
+  let results = [];
   try {
-    // RealTradePro batch API use karo (same quota)
-    const apiBase = (typeof API !== 'undefined') ? API : '';
-    if (!apiBase) return;
-
-    const res = await fetch(`${apiBase}?type=batch&s=${encodeURIComponent(batchSym)}`);
+    const batchSym = syms.join(',');
+    const res  = await fetch(`${apiUrl}?type=batch&s=${encodeURIComponent(batchSym)}`);
     const data = await res.json();
+    results = Array.isArray(data) ? data : (data && typeof data==='object' ? Object.values(data) : []);
+  } catch(e){ console.log('MP fetch err:',e); return; }
 
-    // batch returns array of quotes
-    if (Array.isArray(data)) {
-      data.forEach(q => { if (q.symbol) priceData[q.symbol] = q; });
-    } else if (data && typeof data === 'object') {
-      priceData = data;
-    }
-  } catch(e) {
-    console.log('MP batch fetch error:', e);
-    return;
-  }
+  results.forEach(q => {
+    if(!q) return;
+    const sym     = (q.symbol||'').replace('.NS','').replace('.BO','');
+    const price   = q.price || q.regularMarketPrice || 0;
+    const changePct = parseFloat(q.changePct || q.regularMarketChangePercent || 0);
+    const volume  = q.volume  || q.regularMarketVolume  || 0;
+    const avgVol  = q.avgVolume || q.averageDailyVolume3Month || 0;
+    if(!price || !sym) return;
 
-  // Per-stock signal check using cached price history
-  stocks.forEach(sym => {
-    const symClean = sym.replace('.NS','').replace('.BO','');
-    const q = priceData[sym] || priceData[symClean] || null;
-    if (!q) return;
-
-    // Use available price data for simple signal
-    const price = q.price || q.regularMarketPrice;
-    const change = q.changePct || q.regularMarketChangePercent || 0;
-    const volume = q.volume || q.regularMarketVolume || 0;
-    const avgVol = q.avgVolume || q.averageDailyVolume3Month || 0;
-
-    if (!price) return;
-
-    // Simple signal from available quote data
-    const volSpike = avgVol > 0 && volume > avgVol * 2;
-    const strongMove = Math.abs(change) > 2;
+    const volSpike   = avgVol > 0 && volume > avgVol * 1.8;
+    const strongMove = Math.abs(changePct) > 2.5;
+    const medMove    = Math.abs(changePct) > 1.5;
 
     let signal = null;
-    if (strongMove && volSpike) signal = "STRONG";
-    else if (strongMove)        signal = "MEDIUM";
-    else if (volSpike)          signal = "WEAK";
+    if(strongMove && volSpike) signal = 'STRONG';
+    else if(strongMove)        signal = 'MEDIUM';
+    else if(volSpike && medMove) signal = 'WATCH';
 
-    if (!signal) return;
+    if(!signal) return;
 
-    // Cache check — same signal ane TTL na expire thay tyan sudi skip
-    const cacheKey = symClean + '_' + signal;
-    if (cache[cacheKey] && (now - cache[cacheKey]) < MP_SIGNAL_CACHE_TTL) return;
+    // Cache check — 30 min block
+    const cacheKey = sym + '_' + signal;
+    if(sigCache[cacheKey] && (now - sigCache[cacheKey]) < MP_SIG_TTL) return;
+    sigCache[cacheKey] = now;
 
-    // New signal! Cache update + notification
-    cache[cacheKey] = now;
+    // Build notification message
+    const emoji = signal==='STRONG' ? '🔥' : signal==='MEDIUM' ? '⚡' : '👁️';
+    const dir   = changePct >= 0 ? '▲' : '▼';
+    const msg   = `${emoji} ${sym}: ${signal} Signal | ${dir}${Math.abs(changePct).toFixed(2)}% | ₹${price.toFixed(2)}`;
 
-    const emoji = signal === "STRONG" ? "🔥" : signal === "MEDIUM" ? "⚡" : "📊";
-    const dir = change >= 0 ? "▲" : "▼";
-    const msg = `${emoji} ${symClean}: ${signal} | ${dir}${Math.abs(change).toFixed(2)}% | Vol Spike`;
-
-    // Android notification
-    if (window.Android) {
-      window.Android.notifyWithTitle("📈 RealTradePro Signal", msg);
+    // ✅ Android notification
+    if(window.Android && typeof window.Android.notifyWithTitle === 'function'){
+      window.Android.notifyWithTitle('📈 RealTradePro Alert', msg);
     }
-
-    // In-app popup
-    if (typeof showPopup === 'function') {
-      showPopup(msg);
-    }
+    // ✅ In-app popup
+    if(typeof showPopup === 'function') showPopup(msg);
   });
 
-  mpSaveCache(cache);
+  mpSaveCache(sigCache);
 }
 
-// Cleanup old cache entries (daily)
-function mpCleanCache() {
-  const cache = mpLoadCache();
-  const now = Date.now();
-  let changed = false;
-  Object.keys(cache).forEach(k => {
-    if (now - cache[k] > MP_SIGNAL_CACHE_TTL) {
-      delete cache[k];
-      changed = true;
-    }
-  });
-  if (changed) mpSaveCache(cache);
+// Clean stale cache entries
+function mpClean(){
+  const c = mpLoadCache(); const now = Date.now(); let ch = false;
+  Object.keys(c).forEach(k=>{ if(now-c[k]>MP_SIG_TTL){ delete c[k]; ch=true; } });
+  if(ch) mpSaveCache(c);
 }
 
-// START — 2 min delay after app load, then every 5 min
-setTimeout(() => {
-  mpCleanCache();
-  mpRunCheck();
-  setInterval(mpRunCheck, MP_CHECK_INTERVAL);
-}, 2 * 60 * 1000); // 2 min baad start (app load thaay let it settle)
-
+// Start after 90 seconds (let app fully load), then every 5 min
+setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 90000);
 </script>
 </body>
 </html>
