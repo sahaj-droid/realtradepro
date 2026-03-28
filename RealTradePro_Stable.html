@@ -4253,120 +4253,361 @@ function getFallbackNews() {
 let newsActiveFilter = 'ALL';
 let newsActiveTab = 'all';
 
+// =============================================
+// ASK NIVI TAB — Chat UI v3
+// Market Brief (top) + Chat + Mic + Chips
+// =============================================
+let _tabChatHistory = [];   // [{role:'user'|'nivi', text, ts}]
+let _tabMicActive   = false;
+let _tabRecognition = null;
+let _tabSpeaking    = false;
+let _tabUtterance   = null;
+
 async function renderNews() {
   const el = document.getElementById('news');
-  if(!el) return;
+  if (!el) return;
 
-  // Cache: 30 min
-  const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
-  const AI_NEWS_CACHE_MS = 30 * 60 * 1000;
-
-  // Show loading
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div>
-        <div style="font-size:14px;font-weight:700;color:#34d399;letter-spacing:0.5px;">निवी मार्केट ब्रीफ</div>
-        <div style="font-size:10px;color:#4b6280;margin-top:1px;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 120px);overflow:hidden;">
+
+    <!-- TOP: Header + Market Brief toggle -->
+    <div style="flex-shrink:0;padding:0 0 8px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
+          <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
+        </div>
+        <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
       </div>
-      <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
+
+      <!-- Mover chips (always visible) -->
+      <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:8px;">
+        ${buildMoverChips()}
+      </div>
+
+      <!-- Market Brief card (collapsible) -->
+      <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
+        <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:120px;overflow:hidden;transition:max-height 0.3s;">
+          <div style="text-align:center;padding:10px 0;">
+            <div class="spinner" style="margin:0 auto 6px;"></div>
+            <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+          <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
+          <div style="display:flex;gap:5px;">
+            <button onclick="_tabBriefToggle()" id="tab-brief-expand-btn" style="background:transparent;color:#4b6280;border:none;font-size:10px;cursor:pointer;font-family:'Rajdhani',sans-serif;">▼ विस्तार</button>
+            <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="ai-news-body">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 10px;gap:10px;">
-        <svg viewBox="0 0 40 40" width="36" height="36"><defs><linearGradient id="ng1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient></defs><circle cx="20" cy="20" r="18" fill="none" stroke="url(#ng1)" stroke-width="2" stroke-dasharray="4 3"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="2s" repeatCount="indefinite"/></circle><path d="M20 4C20 4 21.4 13.6 28.5 20C21.4 26.4 20 36 20 36C20 36 18.6 26.4 11.5 20C18.6 13.6 20 4 20 4Z" fill="url(#ng1)" opacity="0.9"/></svg>
-        <div style="font-size:12px;color:#34d399;font-weight:700;">NIVI soch rahi hai...</div>
-        <div style="font-size:10px;color:#4b6280;text-align:center;">Watchlist stocks analyze kar rahi hai</div>
+
+    <!-- MIDDLE: Chat bubbles -->
+    <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0 8px 0;-webkit-overflow-scrolling:touch;min-height:0;">
+      <!-- messages render here -->
+    </div>
+
+    <!-- BOTTOM: Quick chips + Input + Mic + Send -->
+    <div style="flex-shrink:0;padding-top:8px;border-top:1px solid rgba(6,95,70,0.3);">
+
+      <!-- Quick chips -->
+      <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:7px;padding-bottom:2px;scrollbar-width:none;">
+        <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
+        <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
+        <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
+        <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
+        <button onclick="_tabChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
+        <button onclick="_tabChip('अभी कौन से स्टॉक में सबसे ज़्यादा volume है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🔥 Volume</button>
       </div>
-    </div>`;
+
+      <!-- Input row -->
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="tab-nivi-input" type="text" placeholder="Nivi se kuch bhi poochho..."
+          onkeydown="if(event.key==='Enter')_tabSend()"
+          style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
+        <button id="tab-mic-btn" onclick="_tabMicToggle()" title="Voice Input"
+          style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;line-height:1;">🎙️</button>
+        <button onclick="_tabSend()"
+          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+      </div>
+      <div id="tab-mic-status" style="font-size:9px;color:#f59e0b;margin-top:3px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... दोबारा दबाएं रोकने के लिए</div>
+    </div>
+  </div>`;
+
+  // Load market brief
+  _tabLoadBrief();
+
+  // Re-render existing chat if any
+  _tabRenderChat();
+}
+
+// --- MARKET BRIEF LOADER ---
+async function _tabLoadBrief() {
+  const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
+  const AI_NEWS_CACHE_MS  = 30 * 60 * 1000;
 
   // Check cache
   try {
     const cached = JSON.parse(localStorage.getItem(AI_NEWS_CACHE_KEY));
-    if(cached && cached.syms === wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
-      renderAINewsResult(cached.html, cached.ts);
+    if (cached && cached.syms === wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
+      _tabSetBriefHtml(cached.html, cached.ts);
       return;
     }
-  } catch(e){}
+  } catch(e) {}
 
-  // Build watchlist price context from cache
-  const stockLines = wl.slice(0, 12).map(s => {
+  // Build context
+  const stockLines = wl.slice(0,12).map(s => {
     const d = cache[s] && cache[s].data;
-    if(!d) return null;
+    if (!d) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct = ((diff / d.chartPreviousClose) * 100).toFixed(2);
-    const sign = diff >= 0 ? '+' : '';
-    return `${s}: \u20b9${d.regularMarketPrice.toFixed(2)} (${sign}${pct}%)`;
+    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
+    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
   }).filter(Boolean);
 
-  const stockContext = stockLines.length > 0
-    ? stockLines.join(', ')
-    : 'No cached price data available';
+  const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-  const today = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-
-const prompt = `Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein baat karti hain.
+  const prompt =
+`Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein jawab deti hain.
 Aaj ki tarikh: ${today}
+Watchlist stocks: ${stockLines.join(', ') || 'data nahi'}
 
-User ki watchlist ke stocks aur unke current prices:
-${stockContext}
-
-Watchlist: ${wl.slice(0,12).join(', ')}
-
-Neeche diye gaye format mein, bilkul shuddh Hindi mein (Devanagari script mein) jawab dijiye.
-Koi Roman/English word nahi — sirf Hindi. ₹ symbol use karo numbers ke saath.
+Neeche diye format mein bilkul shuddh Hindi (Devanagari) mein jawab dijiye. Koi English nahi.
 
 **आजका बाज़ार मूड**
-[1-2 sentences mein aaj ka overall market sentiment — तेजी/मंदी/sideways — Hindi mein]
+[1-2 sentences — overall market sentiment aaj]
 
 **वॉचलिस्ट की खास बातें**
-[Top 3-4 movers ke baare mein 1-1 line — kya ho raha hai aur kyun — Hindi mein]
+[Top 3 movers ke baare mein 1-1 line]
 
 **सेक्टर नज़र**
-[Kaun se sectors focus mein hain aaj — IT, Banking, PSU, Green Energy etc — 2-3 lines Hindi mein]
+[Kaun se sectors mein action hai — 2 lines]
 
 **निवी की सलाह**
-[Ek actionable insight — kya dekhna chahiye, key level, ya savdhani — 2 lines max — Hindi mein]
+[Ek actionable insight — 2 lines max]
 
-Concise rakho, practical rakho, koi disclaimer nahi. Max 200 words. Sirf Hindi Devanagari script.`;
-  
-  // Try Direct Gemini first (if key set), else try GAS askMarket
-  const gemKey = localStorage.getItem('geminiApiKey');
-
-  async function tryGetAINews(){
-    // 1. Direct Gemini (preferred — faster + no GAS quota)
-    if(gemKey){
-      const resp = await directGeminiCall(prompt);
-      if(resp && resp.ok && resp.answer) return resp.answer;
-    }
-    // 2. GAS askMarket fallback
-    const _mUrl = localStorage.getItem('customAPI') || API;
-    const r = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}&stocks=${encodeURIComponent(wl.slice(0,12).join(','))}`);
-    const data = await r.json();
-    const txt = data.summary || data.text || data.content || data.answer || '';
-    if(!txt) throw new Error(data.error || 'No response from GAS');
-    return txt;
-  }
+Max 180 words. Sirf Hindi Devanagari.`;
 
   try {
-    const rawText = await tryGetAINews();
+    const gemKey = localStorage.getItem('geminiApiKey');
+    let rawText = null;
+    if (gemKey) {
+      const r = await directGeminiCall(prompt);
+      if (r && r.ok) rawText = r.answer;
+    }
+    if (!rawText) {
+      const _mUrl = localStorage.getItem('customAPI') || API;
+      const r    = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
+      const data = await r.json();
+      rawText = data.answer || data.text || data.summary || null;
+      if (!rawText) throw new Error(data.error || 'No response');
+    }
     const htmlOut = formatAINewsText(rawText);
-    try {
-      localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({
-        ts: Date.now(), syms: wl.slice(0,12).join(','), html: htmlOut
-      }));
-    } catch(e){}
-    renderAINewsResult(htmlOut, Date.now());
+    try { localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({ts:Date.now(), syms:wl.slice(0,12).join(','), html:htmlOut})); } catch(e){}
+    _tabSetBriefHtml(htmlOut, Date.now());
   } catch(err) {
-    // Show helpful error with setup guide
-    const hasKey = !!gemKey;
-    document.getElementById('ai-news-body').innerHTML=`
-      <div style="padding:16px;text-align:center;">
-        <div style="font-size:28px;margin-bottom:8px;">⚠️</div>
-        <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:6px;">AI News unavailable</div>
-        <div style="font-size:11px;color:#4b6280;line-height:1.6;margin-bottom:12px;">${hasKey?'Gemini API error: '+err.message:'Settings → Gemini API Key add karo for AI News'}</div>
-        ${!hasKey?`<button onclick="tab('settings')" style="background:#065f46;color:#34d399;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">⚙️ Go to Settings</button>`:''}
-        ${buildFallbackNewsSummary(stockLines)}
-      </div>`;
+    const briefBody = document.getElementById('tab-brief-body');
+    if (briefBody) briefBody.innerHTML = `<div style="font-size:11px;color:#f59e0b;padding:4px 0;">⚠️ Market brief load nahi hua. Refresh karein.</div>`;
   }
+}
+
+function _tabSetBriefHtml(html, ts) {
+  const briefBody = document.getElementById('tab-brief-body');
+  const briefTime = document.getElementById('tab-brief-time');
+  if (briefBody) {
+    briefBody.innerHTML = `<div style="font-size:12px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">${html}</div>`;
+  }
+  if (briefTime && ts) {
+    const mins = Math.round((Date.now()-ts)/60000);
+    briefTime.innerText = mins < 1 ? '🟢 अभी' : '🕐 ' + mins + ' मिनट पहले';
+  }
+}
+
+let _tabBriefExpanded = false;
+function _tabBriefToggle() {
+  const body = document.getElementById('tab-brief-body');
+  const btn  = document.getElementById('tab-brief-expand-btn');
+  if (!body) return;
+  _tabBriefExpanded = !_tabBriefExpanded;
+  body.style.maxHeight = _tabBriefExpanded ? '600px' : '120px';
+  if (btn) btn.innerText = _tabBriefExpanded ? '▲ छोटा करें' : '▼ विस्तार';
+}
+
+// --- CHAT SEND ---
+async function _tabSend() {
+  const inp = document.getElementById('tab-nivi-input');
+  const q   = inp ? inp.value.trim() : '';
+  if (!q) return;
+  if (inp) inp.value = '';
+  await _tabAsk(q);
+}
+
+async function _tabChip(question) {
+  await _tabAsk(question);
+}
+
+async function _tabAsk(question) {
+  _tabChatHistory.push({role:'user', text:question, ts:Date.now()});
+  _tabRenderChat();
+
+  // Build context
+  const wlCtx = wl.slice(0,12).map(s => {
+    const d = cache[s] && cache[s].data;
+    if (!d) return null;
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
+    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+  }).filter(Boolean).join(', ');
+
+  const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  const prompt =
+`Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein jawab deti hain.
+Aaj ki tarikh: ${today}
+User ki watchlist: ${wlCtx || 'data nahi'}
+
+User ka sawaal: ${question}
+
+Bilkul shuddh Hindi mein (Devanagari script), concise aur practical jawab dijiye. Max 4 lines. Koi English nahi. Koi disclaimer nahi.`;
+
+  _tabShowLoading(true);
+  let answer = null;
+
+  const gemKey = localStorage.getItem('geminiApiKey');
+  if (gemKey) {
+    const r = await directGeminiCall(prompt);
+    if (r && r.ok) answer = r.answer;
+  }
+  if (!answer) {
+    try {
+      const _nu  = localStorage.getItem('customAPI') || API;
+      const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
+      const data = await r.json();
+      answer = data.answer || data.text || data.summary || null;
+    } catch(e) {}
+  }
+
+  _tabShowLoading(false);
+  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ कोई जवाब नहीं मिला।', ts:Date.now()});
+  _tabRenderChat(true); // true = speak last answer
+}
+
+// --- RENDER CHAT BUBBLES ---
+function _tabRenderChat(speakLast) {
+  const area = document.getElementById('tab-chat-area');
+  if (!area) return;
+  if (_tabChatHistory.length === 0) {
+    area.innerHTML = `<div style="text-align:center;padding:16px 0;color:#2d4a3e;font-size:11px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">Nivi se kuch bhi poochho ⬇️</div>`;
+    return;
+  }
+  area.innerHTML = _tabChatHistory.map(msg => {
+    if (msg.role === 'user') {
+      return `<div style="display:flex;justify-content:flex-end;">
+        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+      </div>`;
+    } else {
+      const formatted = msg.text.split('\n').filter(l=>l.trim()).map(l=>
+        `<div style="margin-bottom:4px;">${l.replace(/^[•\-\*]\s*/,'• ')}</div>`
+      ).join('');
+      return `<div style="display:flex;gap:7px;align-items:flex-start;">
+        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+          <svg viewBox="0 0 28 28" width="13" height="13" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
+        </div>
+        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
+      </div>`;
+    }
+  }).join('');
+  area.scrollTop = area.scrollHeight;
+
+  // Auto-speak last Nivi message
+  if (speakLast) {
+    const last = [..._tabChatHistory].reverse().find(m => m.role === 'nivi');
+    if (last) setTimeout(() => _tabSpeak(last.text), 400);
+  }
+}
+
+function _tabShowLoading(show) {
+  const area = document.getElementById('tab-chat-area');
+  if (!area) return;
+  const existing = document.getElementById('tab-loading-indicator');
+  if (show) {
+    if (!existing) {
+      const el = document.createElement('div');
+      el.id = 'tab-loading-indicator';
+      el.style.cssText = 'text-align:center;padding:12px 0;';
+      el.innerHTML = '<div class="spinner" style="margin:0 auto 5px;width:20px;height:20px;"></div><div style="font-size:10px;color:#4b6280;font-family:\'Rajdhani\',sans-serif;">Nivi सोच रही है...</div>';
+      area.appendChild(el);
+      area.scrollTop = area.scrollHeight;
+    }
+  } else {
+    if (existing) existing.remove();
+  }
+}
+
+// --- VOICE INPUT (MIC) ---
+function _tabMicToggle() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showPopup('Voice input browser mein support nahi hai'); return;
+  }
+  if (_tabMicActive) {
+    if (_tabRecognition) _tabRecognition.stop();
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _tabRecognition = new SR();
+  _tabRecognition.lang = 'hi-IN';
+  _tabRecognition.interimResults = false;
+  _tabRecognition.maxAlternatives = 1;
+  _tabMicActive = true;
+
+  const micBtn    = document.getElementById('tab-mic-btn');
+  const micStatus = document.getElementById('tab-mic-status');
+  if (micBtn)    { micBtn.style.background = '#7f1d1d'; micBtn.style.borderColor = '#ef4444'; }
+  if (micStatus) micStatus.style.display = 'block';
+
+  _tabRecognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    const inp = document.getElementById('tab-nivi-input');
+    if (inp) inp.value = transcript;
+  };
+  _tabRecognition.onend = () => {
+    _tabMicActive = false;
+    if (micBtn)    { micBtn.style.background = '#0f2a1a'; micBtn.style.borderColor = '#065f46'; }
+    if (micStatus) micStatus.style.display = 'none';
+    const inp = document.getElementById('tab-nivi-input');
+    if (inp && inp.value.trim()) _tabSend();
+  };
+  _tabRecognition.onerror = () => {
+    _tabMicActive = false;
+    if (micBtn)    { micBtn.style.background = '#0f2a1a'; micBtn.style.borderColor = '#065f46'; }
+    if (micStatus) micStatus.style.display = 'none';
+  };
+  _tabRecognition.start();
+}
+
+// --- TTS FOR CHAT ---
+function _tabSpeak(text) {
+  if (!window.speechSynthesis || !text) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/[^\w\s.,!?%₹+\-।]/g,' ').substring(0, 500);
+  _tabUtterance = new SpeechSynthesisUtterance(expandTickersForSpeech(clean));
+  _tabUtterance.lang  = 'hi-IN';
+  _tabUtterance.rate  = 0.88;
+  _tabUtterance.pitch = 1.15;
+  const voices   = speechSynthesis.getVoices();
+  const female   =
+    voices.find(v => v.lang==='hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN' && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN');
+  if (female) _tabUtterance.voice = female;
+  speechSynthesis.speak(_tabUtterance);
+}
+
+function _tabNewsSpeak() {
+  const briefBody = document.getElementById('tab-brief-body');
+  if (!briefBody) return;
+  _tabSpeak(briefBody.innerText);
 }
 
 function aiNewsCacheClear() {
@@ -4374,117 +4615,14 @@ function aiNewsCacheClear() {
 }
 
 function formatAINewsText(raw) {
-  if(!raw) return '<div style="color:#4b6280;font-size:12px;">No data received.</div>';
-  // Convert **heading** to styled divs, newlines to <br>
-  let html = raw
-    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-top:14px;margin-bottom:5px;font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">$1</div>')
+  if (!raw) return '<div style="color:#4b6280;font-size:12px;">No data received.</div>';
+  return raw
+    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-top:12px;margin-bottom:4px;font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">$1</div>')
     .replace(/\n/g, '<br>');
-  return html;
-}
-
-function renderAINewsResult(htmlContent, ts) {
-  const timeAgo = ts ? Math.round((Date.now()-ts)/60000) : 0;
-  const timeStr = timeAgo < 1 ? 'Abhi' : timeAgo + ' min pehle';
-  const body = document.getElementById('ai-news-body');
-  if(!body) return;
-  body.innerHTML = `
-    <div style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="font-size:13px;color:#e2e8f0;line-height:2.0;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;">${htmlContent}</div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
-      <div style="font-size:9px;color:#4b6280;">Updated: ${timeStr} &bull; Watchlist: ${wl.slice(0,12).length} stocks</div>
-      <div style="display:flex;gap:6px;">
-        <button onclick="niviNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128266; Awaaz</button>
-        <button onclick="niviNewsStop()" id="nivi-news-stop" style="display:none;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#9635; Stop</button>
-      </div>
-    </div>
-    <div style="margin-top:10px;padding:10px;background:#0a1628;border-radius:8px;border:1px solid #1e2d3d;">
-      <div style="font-size:9px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">TODAY'S MOVERS (WATCHLIST)</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">${buildMoverChips()}</div>
-    </div>`;
-}
-
-function buildMoverChips() {
-  return wl.slice(0,15).map(s => {
-    const d = cache[s] && cache[s].data;
-    if(!d) return '';
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct = ((diff / d.chartPreviousClose) * 100);
-    const isUp = diff >= 0;
-    const col = isUp ? '#22c55e' : '#ef4444';
-    const bg = isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
-    const bdr = isUp ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)';
-    return `<div style="background:${bg};border:1px solid ${bdr};border-radius:6px;padding:4px 8px;display:flex;flex-direction:column;align-items:center;min-width:64px;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#e2e8f0;">${s}</div>
-      <div style="font-size:10px;font-weight:700;color:${col};">${isUp?'+':''}${pct.toFixed(2)}%</div>
-    </div>`;
-  }).join('');
-}
-
-function buildFallbackNewsSummary(stockLines) {
-  const gainers = wl.map(s => {
-    const d = cache[s] && cache[s].data;
-    if(!d) return null;
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct = ((diff / d.chartPreviousClose) * 100);
-    return {s, pct};
-  }).filter(Boolean).sort((a,b) => b.pct - a.pct);
-
-  const top3 = gainers.slice(0,3).map(x => `${x.s} ${x.pct>=0?'+':''}${x.pct.toFixed(2)}%`).join(' &bull; ');
-  const bot3 = gainers.slice(-3).reverse().map(x => `${x.s} ${x.pct>=0?'+':''}${x.pct.toFixed(2)}%`).join(' &bull; ');
-
-  return `
-    <div style="background:#0a1e14;border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="font-size:9px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;margin-bottom:8px;">NIVI OFFLINE - LOCAL SUMMARY</div>
-      <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">API connect nahi ho paya. Watchlist ka local data:</div>
-      <div style="font-size:10px;font-weight:700;color:#34d399;margin-bottom:4px;letter-spacing:0.5px;">TOP GAINERS</div>
-      <div style="font-size:11px;color:#22c55e;margin-bottom:10px;">${top3||'Data nahi'}</div>
-      <div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:4px;letter-spacing:0.5px;">TOP LOSERS</div>
-      <div style="font-size:11px;color:#ef4444;">${bot3||'Data nahi'}</div>
-    </div>
-    <div style="padding:10px;background:#0a1628;border-radius:8px;border:1px solid #1e2d3d;">
-      <div style="font-size:9px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">ALL MOVERS</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">${buildMoverChips()}</div>
-    </div>`;
-}
-
-var _niviNewsSpeech = null;
-function niviNewsSpeak() {
-  const body = document.getElementById('ai-news-body');
-  if(!body) return;
-  const rawText = body.innerText.replace(/[^\w\s.,!?%₹+\-]/g,' ').substring(0,600);
-  if(!rawText) return;
-  const text = expandTickersForSpeech(rawText);
-  niviNewsStop();
-  _niviNewsSpeech = new SpeechSynthesisUtterance(text);
-  _niviNewsSpeech.lang  = 'hi-IN';
-  _niviNewsSpeech.rate  = 0.88;
-  _niviNewsSpeech.pitch = 1.15;
-  const _nvsVoices = speechSynthesis.getVoices();
-  const _nvsFemale =
-    _nvsVoices.find(v => v.lang === 'hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
-    _nvsVoices.find(v => v.lang === 'hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
-    _nvsVoices.find(v => v.lang === 'hi-IN' && !/male/i.test(v.name)) ||
-    _nvsVoices.find(v => v.lang === 'hi-IN');
-  if (_nvsFemale) _niviNewsSpeech.voice = _nvsFemale;
-  _niviNewsSpeech.onend = () => { const s=document.getElementById('nivi-news-stop'); if(s) s.style.display='none'; };
-  window.speechSynthesis.speak(_niviNewsSpeech);
-  const s = document.getElementById('nivi-news-stop');
-  if(s) s.style.display='inline-block';
-}
-function niviNewsStop() {
-  window.speechSynthesis.cancel();
-  const s = document.getElementById('nivi-news-stop');
-  if(s) s.style.display='none';
 }
 
 function setNewsFilter(sym) {
   newsActiveFilter = sym;
-  renderNews();
-}
-
-function setNewsTab(t) {
-  newsActiveTab = t;
   renderNews();
 }
 
