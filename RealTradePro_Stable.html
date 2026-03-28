@@ -2070,14 +2070,22 @@ async function fetchFundamentals(sym){
       if(j && !j.error && (j.price || j.regularMarketPrice || j.pe || j.eps || j.trailingPE)) d = j;
     } catch(e){}
   }
-  // Fallback to fetchFull meta
-  if(!d) d = await fetchFull(sym, false);
-  if(!d) d = cache[sym]&&cache[sym].data;
-  // Last resort: use cache directly
-  if(!d && cache[sym]) d = cache[sym].data;
+  // Fallback: fetchFull fresh (NOT cache — batch endpoint misses PE/EPS)
+  // Only use cache as absolute last resort and only for price/vol fields
+  if(!d){
+    try{
+      const freshD = await fetchFull(sym, false);
+      // fetchFull batch doesn't have PE/EPS — only use if quote failed completely
+      if(freshD && (freshD.trailingPE || freshD.pe)) d = freshD;
+    }catch(e){}
+  }
+  // Last resort: cache for volume only (pe/eps won't be there from batch)
+  const _cacheD = cache[sym]&&cache[sym].data;
 
   let pe='--',eps='--',mktCap='--',volume='--';
   let divYield='--',forwardPE='--',bookValue='--',forwardEps='--',earningsDate='--',exDivDate='--';
+  // For volume: use cache if quote didn't have it
+  if(!d && _cacheD) d = _cacheD;
   if(d){
     var pe_v=safe(d.trailingPE||d.pe);
     if(pe_v!==null&&!isNaN(pe_v)&&pe_v>0) pe=parseFloat(pe_v).toFixed(2);
@@ -3241,13 +3249,21 @@ async function fetchHistory(sym, range='30d', interval='1d'){
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
     if(stored&&stored.date===today&&stored.data) return stored.data;
   }catch(e){}
-  // ✨ Google Sheets GOOGLEFINANCE history — try first if enabled (only for 1mo range)
-  if(isSheetEnabled() && (range==='1mo'||range==='30d'||range==='200d'||range==='10d')){
+  // ✨ Google Sheets GOOGLEFINANCE history — only for 1mo/30d range, validate dates
+  if(isSheetEnabled() && (range==='1mo'||range==='30d')){
     try{
       const sheetHist = await fetchHistSheet(sym);
       if(sheetHist && sheetHist.close && sheetHist.close.length >= 14){
-        try{ localStorage.setItem(DAY_KEY, JSON.stringify({date:today, data:sheetHist})); }catch(e){}
-        return sheetHist;
+        // Validate: last date must be within 5 days of today (not stale 2025 data)
+        const lastDate=sheetHist.dates&&sheetHist.dates[sheetHist.dates.length-1];
+        const lastMs=lastDate?new Date(lastDate).getTime():0;
+        const nowMs=Date.now();
+        const daysDiff=(nowMs-lastMs)/(1000*86400);
+        if(daysDiff <= 7){ // within 1 week — data is fresh
+          try{ localStorage.setItem(DAY_KEY, JSON.stringify({date:today, data:sheetHist})); }catch(e){}
+          return sheetHist;
+        }
+        // else: stale sheet data — fall through to GAS Yahoo fetch
       }
     }catch(e){}
   }
@@ -3395,49 +3411,50 @@ function calcBollinger(closes, period=20, mult=2){
 }
 
 // Render Bollinger Band section in Stock Detail Modal
-let _bbSym='', _bbRange='1M', _bbInterval='daily';
+let _bbSym='', _bbPeriod='6M', _bbRange='daily';
 
-// Option B: each period button → correct range + BB period
-const BB_CONFIG={
-  '1M': {range:'1mo',  interval:'1d',  bbPeriod:20},
-  '3M': {range:'3mo',  interval:'1d',  bbPeriod:50},
-  '6M': {range:'6mo',  interval:'1d',  bbPeriod:100},
-  '1Y': {range:'1y',   interval:'1wk', bbPeriod:52}
+// BB_CONFIG — Period x Range matrix (like Chartink)
+// _bbPeriod = chart period (1M/3M/6M/1Y/2Y)
+// _bbRange  = candle interval (daily/weekly/monthly)
+const BB_MATRIX={
+  'daily':   {'1M':{range:'1mo',interval:'1d',bbPeriod:20}, '3M':{range:'3mo',interval:'1d',bbPeriod:20}, '6M':{range:'6mo',interval:'1d',bbPeriod:20}, '1Y':{range:'1y',interval:'1d',bbPeriod:20}, '2Y':{range:'2y',interval:'1d',bbPeriod:20}},
+  'weekly':  {'1M':{range:'1mo',interval:'1wk',bbPeriod:20},'3M':{range:'3mo',interval:'1wk',bbPeriod:20},'6M':{range:'6mo',interval:'1wk',bbPeriod:20},'1Y':{range:'1y',interval:'1wk',bbPeriod:20},'2Y':{range:'2y',interval:'1wk',bbPeriod:20}},
+  'monthly': {'1M':{range:'1mo',interval:'1mo',bbPeriod:5}, '3M':{range:'3mo',interval:'1mo',bbPeriod:5}, '6M':{range:'6mo',interval:'1mo',bbPeriod:5}, '1Y':{range:'1y',interval:'1mo',bbPeriod:12},'2Y':{range:'2y',interval:'1mo',bbPeriod:12}}
 };
+function getBBConfig(){ return (BB_MATRIX[_bbRange]||BB_MATRIX['daily'])[_bbPeriod] || BB_MATRIX['daily']['6M']; }
 
 async function renderBollinger(sym){
-  // Only reset period when a NEW stock is opened
-  if(sym !== _bbSym){ _bbRange='1M'; _bbInterval='daily'; }
+  // Reset only when new stock opened
+  if(sym !== _bbSym){ _bbPeriod='6M'; _bbRange='daily'; }
   _bbSym=sym;
   const bs=document.getElementById('bbSection');
   if(!bs) return;
   bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
 
-  const {range, interval, bbPeriod}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
-  const hist=await fetchHistory(sym, range, interval);
+  const cfg=getBBConfig();
+  const hist=await fetchHistory(sym, cfg.range, cfg.interval);
+  const minNeeded=cfg.bbPeriod+1;
 
-  if(!hist||!hist.close||hist.close.length<(BB_CONFIG[_bbRange]?.bbPeriod||20)){
-    const minNeeded=BB_CONFIG[_bbRange]?.bbPeriod||20;
+  if(!hist||!hist.close||hist.close.length<minNeeded){
     const got=hist?.close?.length||0;
     bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:10px;">
       <div style="color:#f59e0b;font-weight:700;margin-bottom:4px;">&#9888; BB Data Unavailable</div>
-      <div style="color:#4b6280;font-size:9px;line-height:1.5;">${got===0?'History API failed. Check GAS API or network.':'Only '+got+' candles — need '+minNeeded+' for '+_bbRange+'. Try a shorter range.'}</div>
+      <div style="color:#4b6280;font-size:9px;line-height:1.5;">${got===0?'History API failed. Check GAS API or network.':'Only '+got+' candles — need '+minNeeded+' for '+_bbPeriod+' '+_bbRange+'. Try Daily or shorter period.'}</div>
       <button onclick="renderBollinger('${sym}')" style="margin-top:8px;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Retry</button>
     </div>`;
     return;
   }
 
   const closes=hist.close.filter(v=>v!=null);
-  const {bbPeriod:bp}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
+  const activeBP=cfg.bbPeriod;
   // Full BB series for mini chart
-  const bbFull=calcBollingerSeries(closes, bp, 2);
-  const bb=bbFull ? bbFull[bbFull.length-1] : calcBollinger(closes, bp, 2);
+  const bbFull=calcBollingerSeries(closes, activeBP, 2);
+  const bb=bbFull ? bbFull[bbFull.length-1] : calcBollinger(closes, activeBP, 2);
   if(!bb){ bs.innerHTML=''; return; }
 
   const signalColor=bb.signal==='Oversold'?'#22c55e':bb.signal==='Overbought'?'#ef4444':bb.signal==='Squeeze'?'#f59e0b':'#94a3b8';
   const pctBColor=bb.pctB<10?'#22c55e':bb.pctB>90?'#ef4444':'#38bdf8';
   const barPct=Math.min(100,Math.max(0,bb.pctB));
-  const {bbPeriod:activeBP}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
 
   // Squeeze direction detection
   const bwArr=bbFull?bbFull.map(b=>b.width):[];
@@ -3445,16 +3462,26 @@ async function renderBollinger(sym){
   const bwPrev=bwArr.slice(-10,-5).reduce((a,b)=>a+b,0)/5||bb.width;
   const squeezeDir=bwNow<bwPrev?'Contracting':'Expanding';
   const squeezeColor=bwNow<bwPrev?'#f59e0b':'#a78bfa';
+  const rangeLabel=_bbRange==='daily'?'Daily':_bbRange==='weekly'?'Weekly':'Monthly';
 
   bs.innerHTML=`
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (${activeBP},2) <span style="font-size:9px;color:${squeezeColor};font-weight:600;">● ${squeezeDir}</span></div>
-    <div style="display:flex;gap:4px;margin-bottom:6px;">
-      ${['1M','3M','6M','1Y'].map(p=>`
-        <button onclick="setBBPeriod('${p}')" id="bb-btn-${p}"
-          style="flex:1;padding:4px 0;border-radius:6px;border:1px solid ${p===_bbRange?'#38bdf8':'#1e3a5f'};
-          background:${p===_bbRange?'rgba(56,189,248,0.15)':'#0a1628'};
-          color:${p===_bbRange?'#38bdf8':'#4b6280'};font-size:10px;font-weight:700;cursor:pointer;
+    <div style="display:flex;gap:4px;margin-bottom:4px;">
+      ${['1M','3M','6M','1Y','2Y'].map(p=>`
+        <button onclick="setBBPeriod('${p}')"
+          style="flex:1;padding:3px 0;border-radius:5px;border:1px solid ${p===_bbPeriod?'#38bdf8':'#1e3a5f'};
+          background:${p===_bbPeriod?'rgba(56,189,248,0.15)':'#0a1628'};
+          color:${p===_bbPeriod?'#38bdf8':'#4b6280'};font-size:10px;font-weight:700;cursor:pointer;
           font-family:'Rajdhani',sans-serif;">${p}</button>
+      `).join('')}
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:6px;">
+      ${['daily','weekly','monthly'].map(r=>`
+        <button onclick="setBBRange('${r}')"
+          style="flex:1;padding:3px 0;border-radius:5px;border:1px solid ${r===_bbRange?'#a78bfa':'#1e3a5f'};
+          background:${r===_bbRange?'rgba(167,139,250,0.15)':'#0a1628'};
+          color:${r===_bbRange?'#a78bfa':'#4b6280'};font-size:9px;font-weight:700;cursor:pointer;
+          font-family:'Rajdhani',sans-serif;text-transform:capitalize;">${r.charAt(0).toUpperCase()+r.slice(1)}</button>
       `).join('')}
     </div>
     <canvas id="bb-chart" width="320" height="90" style="width:100%;height:90px;border-radius:6px;background:#0a1628;display:block;margin-bottom:6px;"></canvas>
@@ -3488,7 +3515,7 @@ async function renderBollinger(sym){
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:4px;">
         <span style="font-size:8px;color:#22c55e;">Buy Zone</span>
-        <span style="font-size:8px;color:#94a3b8;">${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</span>
+        <span style="font-size:8px;color:#94a3b8;">${_bbPeriod} ${rangeLabel} | MA${activeBP}</span>
         <span style="font-size:8px;color:#ef4444;">Sell Zone</span>
       </div>
     </div>`;
@@ -3501,7 +3528,7 @@ async function renderBollinger(sym){
     const W=canvas.width, H=canvas.height;
     const pad={t:6,b:6,l:4,r:4};
     const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
-    const N=Math.min(bbFull.length, _bbRange==='1Y'?52:_bbRange==='6M'?90:_bbRange==='3M'?60:30);
+    const N=Math.min(bbFull.length, _bbPeriod==='2Y'?120:_bbPeriod==='1Y'?(_bbRange==='weekly'?52:(_bbRange==='monthly'?12:250)):_bbPeriod==='6M'?(_bbRange==='weekly'?26:(_bbRange==='monthly'?6:130)):_bbPeriod==='3M'?(_bbRange==='weekly'?13:66):22);
     const slice=bbFull.slice(-N);
     const priceSlice=closes.slice(-N);
     const allVals=slice.flatMap(b=>[b.upper,b.lower]).concat(priceSlice);
@@ -3540,8 +3567,11 @@ async function renderBollinger(sym){
 }
 
 function setBBPeriod(p){
-  _bbRange=p;
-  _bbInterval=(p==='1Y')?'weekly':'daily';
+  _bbPeriod=p;
+  renderBollinger(_bbSym);
+}
+function setBBRange(r){
+  _bbRange=r;
   renderBollinger(_bbSym);
 }
 
