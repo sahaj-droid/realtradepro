@@ -4292,29 +4292,31 @@ async function renderNews() {
 
   const today = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-  const prompt = `You are NIVI, an expert Indian stock market analyst. Today is ${today}.
+const prompt = `Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein baat karti hain.
+Aaj ki tarikh: ${today}
 
-User's watchlist stocks with current prices:
+User ki watchlist ke stocks aur unke current prices:
 ${stockContext}
 
 Watchlist: ${wl.slice(0,12).join(', ')}
 
-Give a crisp market brief in Hindi/Gujarati mix (Roman script OK). Structure your response as:
+Neeche diye gaye format mein, bilkul shuddh Hindi mein (Devanagari script mein) jawab dijiye.
+Koi Roman/English word nahi — sirf Hindi. ₹ symbol use karo numbers ke saath.
 
-**AAJKA MARKET MOOD**
-[1-2 lines about overall market sentiment today - bullish/bearish/sideways]
+**आजका बाज़ार मूड**
+[1-2 sentences mein aaj ka overall market sentiment — तेजी/मंदी/sideways — Hindi mein]
 
-**WATCHLIST HIGHLIGHTS**
-[For top 3-4 movers in the watchlist, give 1 line insight each: what's moving and why (based on sector/recent trends)]
+**वॉचलिस्ट की खास बातें**
+[Top 3-4 movers ke baare mein 1-1 line — kya ho raha hai aur kyun — Hindi mein]
 
-**SECTOR WATCH**
-[Which sectors are in focus today - IT, Banking, PSU, Green Energy, etc. - 2-3 lines]
+**सेक्टर नज़र**
+[Kaun se sectors focus mein hain aaj — IT, Banking, PSU, Green Energy etc — 2-3 lines Hindi mein]
 
-**NIVI'S TIP**
-[One actionable insight: what to watch, key level, or caution - 2 lines max]
+**निवी की सलाह**
+[Ek actionable insight — kya dekhna chahiye, key level, ya savdhani — 2 lines max — Hindi mein]
 
-Keep it concise, practical, no disclaimers. Use ₹ symbol. Max 200 words.`;
-
+Concise rakho, practical rakho, koi disclaimer nahi. Max 200 words. Sirf Hindi Devanagari script.`;
+  
   // Try Direct Gemini first (if key set), else try GAS askMarket
   const gemKey = localStorage.getItem('geminiApiKey');
 
