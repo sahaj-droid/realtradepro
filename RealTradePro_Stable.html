@@ -1516,10 +1516,11 @@ async function renderWL(){
           <div style="min-width:75px; flex-shrink:0;">
             <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
           </div>
-          <div style="flex:0.7; min-width:0;">
-            ${buildDayBar(d)}
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
+            <div style="width:100%; max-width:140px;"> ${buildDayBar(d)}
+            </div>
           </div>
-          <div style="flex:1; text-align:right; min-width:105px; flex-shrink:0;">
+          <div style="min-width:105px; flex-shrink:0; text-align:right;">
             <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
@@ -1528,10 +1529,11 @@ async function renderWL(){
           <div style="min-width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
             ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
           </div>
-          <div style="flex:0.7; min-width:0;">
-            ${build52WBar(d)}
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
+            <div style="width:100%; max-width:140px;"> ${build52WBar(d)}
+            </div>
           </div>
-          <div style="flex:1; text-align:right; min-width:105px; flex-shrink:0;">
+          <div style="min-width:105px; flex-shrink:0; text-align:right;">
             <div id="change-${s}" style="font-size:11px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
               ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
@@ -1552,8 +1554,7 @@ async function renderWL(){
         </button>
       </div>
     </div>`;
-  }
-  const watchlistDiv=document.getElementById("watchlist");
+  }  const watchlistDiv=document.getElementById("watchlist");
   if(html){
     watchlistDiv.innerHTML=html;
     // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
