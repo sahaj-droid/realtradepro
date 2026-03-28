@@ -2057,7 +2057,7 @@ async function fetchFundamentals(sym){
   try {
     const apiUrl = localStorage.getItem('customAPI')||API;
     const controller = new AbortController();
-    const tid = setTimeout(()=>controller.abort(), 8000);
+    const tid = setTimeout(()=>controller.abort(), 15000); // increased to 15s
     const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`, {signal: controller.signal});
     clearTimeout(tid);
     const j = await r.json();
@@ -3288,14 +3288,17 @@ async function fetchHistory(sym, range='30d', interval='1d'){
 
   for(let apiUrl of urls){
     try{
-      const r=await fetch(`${apiUrl}?type=history&s=${sym}.NS&range=${range}&interval=${interval}`);
+      const ctrl = new AbortController();
+      const tid  = setTimeout(()=>ctrl.abort(), 10000); // 10s timeout
+      const r=await fetch(`${apiUrl}?type=history&s=${sym}.NS&range=${range}&interval=${interval}`, {signal:ctrl.signal});
+      clearTimeout(tid);
       const j=await r.json();
       if(j.error||!j.dates||!j.close) continue;
       // Validate data
       if(j.close.length<14) continue;
       const data={
-        dates:j.dates, open:j.open, high:j.high,
-        low:j.low, close:j.close, volume:j.volume
+        dates:j.dates, open:j.open||j.close, high:j.high||j.close,
+        low:j.low||j.close, close:j.close, volume:j.volume||[]
       };
       try{ localStorage.setItem(DAY_KEY,JSON.stringify({date:today,data})); }catch(e){}
       return data;
@@ -5264,9 +5267,12 @@ async function fetchFundSheet(sym){
   const apiUrl = localStorage.getItem('customAPI') || API;
   const sheetId = getSheetId();
   try{
-    const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
+    const ctrl2 = new AbortController();
+    const tid2  = setTimeout(()=>ctrl2.abort(), 12000);
+    const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`, {signal:ctrl2.signal});
+    clearTimeout(tid2);
     const j = await r.json();
-    if(!j.ok) return null;
+    if(!j.ok) return null; // Sheet row just created or error — fall through to Yahoo
     // Only fundamentals — NO price/volume (those must stay from Yahoo Finance)
     return {
       pe: j.pe, eps: j.eps,
@@ -5281,7 +5287,10 @@ async function fetchHistSheet(sym){
   const apiUrl = localStorage.getItem('customAPI') || API;
   const sheetId = getSheetId();
   try{
-    const r = await fetch(`${apiUrl}?type=histSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
+    const ctrl3 = new AbortController();
+    const tid3  = setTimeout(()=>ctrl3.abort(), 15000);
+    const r = await fetch(`${apiUrl}?type=histSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`, {signal:ctrl3.signal});
+    clearTimeout(tid3);
     const j = await r.json();
     if(!j.ok || !j.close || j.close.length < 14) return null;
     return { dates: j.dates, close: j.close, open: j.close, high: j.close, low: j.close, volume: [] };
