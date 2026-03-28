@@ -368,6 +368,36 @@ body.light .ticker-price{color:#e2e8f0;}
     <div id="gemini-key-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
   </div>
 
+
+  <!-- GOOGLE SHEETS INTEGRATION -->
+  <div class="card" style="border:1px solid rgba(66,133,244,0.35);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="1" width="12" height="14" rx="1.5" fill="#0f9d58"/><rect x="4" y="4" width="8" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/><rect x="4" y="6.5" width="8" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/><rect x="4" y="9" width="5" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">GOOGLE SHEETS <span style="color:#4b6280;font-weight:400;">(Fundamentals + History)</span></div>
+    </div>
+    <div style="font-size:9px;color:#4b6280;margin-bottom:8px;line-height:1.5;">
+      <b style="color:#f59e0b;">Live Price + Volume = Yahoo Finance</b> (real-time ✅)<br>
+      PE, EPS, MarketCap, BookValue, 52W H/L + History = Google Sheets (15-20min delay — okay for fundamentals). Yahoo quota ~40% bachse.
+    </div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">Sheet ID:</div>
+    <div id="sheet-id-display" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#4b6280;border-radius:8px;padding:7px 10px;font-size:9px;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:28px;"></div>
+    <div id="sheet-id-edit" style="display:none;margin-top:6px;">
+      <input id="sheet-id-input" placeholder="Paste Google Sheet ID..." style="width:100%;background:#0a1628;border:1px solid #4285F4;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="saveSheetId()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="cancelSheetEdit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+      <button onclick="startSheetEdit()" id="changeSheetBtn" style="background:#1a3a6b;color:#93c5fd;border:1px solid #1e3a5f;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change ID</button>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="checkbox" id="sheet-enabled" onchange="toggleSheetIntegration(this.checked)" style="accent-color:#4285F4;width:14px;height:14px;">
+        <span style="font-size:11px;color:#94a3b8;">Enable Sheet Integration</span>
+      </label>
+    </div>
+    <div id="sheet-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
+  </div>
+
   <!-- Refresh Interval -->
   <div class="card">
     <div style="font-size:11px;color:#4b6280;margin-bottom:6px;font-weight:700;">AUTO REFRESH INTERVAL</div>
@@ -2006,6 +2036,13 @@ async function fetchFundamentals(sym){
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
     if(stored&&stored.date===today) return stored.data;
   }catch(e){}
+  // ✨ Google Sheets GOOGLEFINANCE — PE/EPS/MarketCap/BookValue/52W H/L only
+  // Live price + volume = always from Yahoo Finance (no delay)
+  // Sheet only fills fundamentals that don't need real-time data
+  let _sheetFund = null;
+  if(isSheetEnabled()){
+    try{ _sheetFund = await fetchFundSheet(sym); }catch(e){}
+  }
   function fmtVol(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(2)+'Cr';if(v>=1e5)return(v/1e5).toFixed(2)+'L';return v.toLocaleString('en-IN');}
   function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
   function fmtDate(ts){
@@ -2058,7 +2095,17 @@ async function fetchFundamentals(sym){
     var exd=safe(d.exDividendDate||d.dividendDate);
     if(exd!==null&&exd>0) exDivDate=fmtDate(exd);
   }
-  const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate};
+  // ✨ Override PE/EPS/MarketCap/BookValue/52W H/L from Google Sheets if available
+  // Volume + Live Price stay from Yahoo Finance (real-time)
+  if(_sheetFund){
+    if(_sheetFund.pe !== null && _sheetFund.pe > 0) pe = parseFloat(_sheetFund.pe).toFixed(2);
+    if(_sheetFund.eps !== null) eps = '₹' + parseFloat(_sheetFund.eps).toFixed(2);
+    if(_sheetFund.marketCap !== null) mktCap = fmtCap(_sheetFund.marketCap);
+    if(_sheetFund.bookValue !== null && _sheetFund.bookValue > 0) bookValue = '₹' + parseFloat(_sheetFund.bookValue).toFixed(2);
+    // Note: 52W H/L from sheet used only if Yahoo didn't provide them
+  }
+  const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
+    _sheetSource:_sheetFund?'googlefinance':null};
   try{ localStorage.setItem(DAY_KEY,JSON.stringify({date:today,data})); }catch(e){}
   return data;
 }
@@ -2979,6 +3026,13 @@ function loadSettingsUI(){
   // Font size button active state
   const curFs=localStorage.getItem('fontSize')||'medium';
   setFontSize(curFs);
+  // Google Sheets UI
+  const sheetDisplay = document.getElementById('sheet-id-display');
+  const sheetCheck = document.getElementById('sheet-enabled');
+  const DEFAULT_SHEET_ID = '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
+  if(sheetDisplay) sheetDisplay.innerText = localStorage.getItem('sheetId') || DEFAULT_SHEET_ID;
+  if(sheetCheck) sheetCheck.checked = localStorage.getItem('sheetEnabled') === 'true';
+  updateSheetStatus();
 }
 
 function startAPIEdit(){
@@ -3215,6 +3269,16 @@ async function fetchHistory(sym, range='30d', interval='1d'){
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
     if(stored&&stored.date===today&&stored.data) return stored.data;
   }catch(e){}
+  // ✨ Google Sheets GOOGLEFINANCE history — try first if enabled (only for 30d+ range)
+  if(isSheetEnabled() && (range==='30d'||range==='200d'||range==='10d')){
+    try{
+      const sheetHist = await fetchHistSheet(sym);
+      if(sheetHist && sheetHist.close && sheetHist.close.length >= 14){
+        try{ localStorage.setItem(DAY_KEY, JSON.stringify({date:today, data:sheetHist})); }catch(e){}
+        return sheetHist;
+      }
+    }catch(e){}
+  }
 
   const urls=[
     localStorage.getItem('customAPI')||API,
@@ -5155,6 +5219,75 @@ function closeNivi() {
 // ============================================================
 // GEMINI KEY MANAGEMENT
 // ============================================================
+// ============================================================
+// GOOGLE SHEETS INTEGRATION — Settings + fetchFundamentals/fetchHistory override
+// ============================================================
+const DEFAULT_SHEET_ID = '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
+
+function getSheetId(){ return localStorage.getItem('sheetId') || DEFAULT_SHEET_ID; }
+function isSheetEnabled(){ return localStorage.getItem('sheetEnabled') === 'true'; }
+
+function startSheetEdit(){
+  const inp = document.getElementById('sheet-id-input');
+  if(inp) inp.value = getSheetId();
+  document.getElementById('sheet-id-edit').style.display = 'block';
+  document.getElementById('changeSheetBtn').style.display = 'none';
+}
+function cancelSheetEdit(){
+  document.getElementById('sheet-id-edit').style.display = 'none';
+  document.getElementById('changeSheetBtn').style.display = 'inline-block';
+}
+function saveSheetId(){
+  const val = document.getElementById('sheet-id-input').value.trim();
+  if(!val){ showPopup('Sheet ID cannot be empty'); return; }
+  localStorage.setItem('sheetId', val);
+  document.getElementById('sheet-id-display').innerText = val;
+  cancelSheetEdit();
+  showPopup('Sheet ID saved!');
+}
+function toggleSheetIntegration(enabled){
+  localStorage.setItem('sheetEnabled', enabled ? 'true' : 'false');
+  updateSheetStatus();
+  showPopup(enabled ? '✅ Sheet Integration ON — Fundamentals & History use Google Sheets' : 'Sheet Integration OFF');
+}
+function updateSheetStatus(){
+  const el = document.getElementById('sheet-status');
+  if(!el) return;
+  const on = isSheetEnabled();
+  el.innerHTML = on
+    ? '<span style="color:#34d399;">✅ Active — PE/EPS/MarketCap/BookValue/History via Sheets | Price+Volume = Yahoo ⚡</span>'
+    : '<span style="color:#4b6280;">Disabled — using Yahoo Finance API</span>';
+}
+
+// Sheet-based fundamentals fetch (calls GAS fundSheet endpoint)
+async function fetchFundSheet(sym){
+  const apiUrl = localStorage.getItem('customAPI') || API;
+  const sheetId = getSheetId();
+  try{
+    const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
+    const j = await r.json();
+    if(!j.ok) return null;
+    // Only fundamentals — NO price/volume (those must stay from Yahoo Finance)
+    return {
+      pe: j.pe, eps: j.eps,
+      marketCap: j.marketCap, bookValue: j.bookValue,
+      high52: j.high52, low52: j.low52
+    };
+  }catch(e){ return null; }
+}
+
+// Sheet-based history fetch (calls GAS histSheet endpoint)
+async function fetchHistSheet(sym){
+  const apiUrl = localStorage.getItem('customAPI') || API;
+  const sheetId = getSheetId();
+  try{
+    const r = await fetch(`${apiUrl}?type=histSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
+    const j = await r.json();
+    if(!j.ok || !j.close || j.close.length < 14) return null;
+    return { dates: j.dates, close: j.close, open: j.close, high: j.close, low: j.close, volume: [] };
+  }catch(e){ return null; }
+}
+
 function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
   if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
