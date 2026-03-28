@@ -1508,11 +1508,13 @@ async function renderWL(){
     let pct=(diff/d.chartPreviousClose*100)||0;
     html+=`
     <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" style="padding:8px 10px; position:relative;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:4px; right:6px; color:#ef4444; font-size:13px; background:none; border:none; cursor:pointer; z-index:2;">&#x2715;</button>
+      <div class="card" onclick="toggleActions('${s}')" style="padding:8px 10px; position:relative; cursor:pointer;">
+        
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:12px; background:none; border:none; cursor:pointer; z-index:10;">&#x2715;</button>
+
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
           <div style="min-width:72px;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#e2e8f0;">${s}</span>
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
           </div>
           <div style="flex:1;">
             ${buildDayBar(d)}
@@ -1521,17 +1523,7 @@ async function renderWL(){
             <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="min-width:72px;">
-            <button onclick="event.stopPropagation();toggleActions('${s}')" style="font-size:11px; font-weight:700; color:#38bdf8; background:#1e3a5f; border:1px solid #2d5a8e; border-radius:5px; padding:3px 0; width:100%; cursor:pointer; font-family:'Rajdhani',sans-serif;">ACT</button>
-          </div>
-          <div style="flex:1;"></div>
-          <div style="min-width:85px; text-align:right;">
-            <div id="change-${s}" style="font-size:12px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'};">
-              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
-            </div>
-          </div>
-        </div>
+
         <div style="display:flex; align-items:center; gap:8px;">
           <div style="min-width:72px; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
             ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
@@ -1539,9 +1531,14 @@ async function renderWL(){
           <div style="flex:1;">
             ${build52WBar(d)}
           </div>
-          <div style="min-width:85px;"></div>
+          <div style="min-width:85px; text-align:right;">
+            <div id="change-${s}" style="font-size:12px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'};">
+              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
+            </div>
+          </div>
         </div>
       </div>
+
       <div class="wl-actions-panel" id="act-${s}">
         <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac;">BUY</button>
         <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5;">SELL</button>
