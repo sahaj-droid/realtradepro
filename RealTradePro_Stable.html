@@ -1520,7 +1520,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
             <div style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
 
@@ -1532,7 +1532,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
             <div style="width:100%; max-width:140px;">${build52WBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:11px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
+            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
               ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
@@ -1745,7 +1745,7 @@ async function updatePrices(){
     if(ce){
       // Format: +₹diff (pct%) — matches card render format
       const sign=diff>=0?'+':'';
-      ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:10px;">('+sign+pct.toFixed(2)+'%)</span>';
+      ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
@@ -2477,8 +2477,8 @@ function buildDualBar(d){
     const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
     dayHtml=
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
       +'</div>'
       +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">'
       +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
