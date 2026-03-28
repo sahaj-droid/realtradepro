@@ -2030,15 +2030,37 @@ function renderHist(){
 // FUNDAMENTALS (day-cached, from Yahoo meta)
 // ======================================
 async function fetchFundamentals(sym){
-  // v5: 7-day cache (PE/EPS change quarterly, not daily)
-  // Sheet integration removed for fundamentals — unreliable (formula async delay)
-  // Source: type=quote GAS endpoint → Yahoo Finance v7/quote (richest data)
-  const FUND_KEY='fundCache5_'+sym;
+  // v6: Show cached immediately, background refresh if stale
+  // 7-day cache (PE/EPS change quarterly)
+  const FUND_KEY='fundCache6_'+sym;
   const CACHE_DAYS=7;
+  let cachedData = null;
   try{
     const stored=JSON.parse(localStorage.getItem(FUND_KEY)||'null');
-    if(stored&&stored.ts&&(Date.now()-stored.ts)<(CACHE_DAYS*86400000)) return stored.data;
+    if(stored&&stored.ts){
+      cachedData = stored.data;
+      // Fresh cache (< 7 days) — return immediately, no API call
+      if((Date.now()-stored.ts)<(CACHE_DAYS*86400000)) return cachedData;
+      // Stale cache — return it now, refresh in background
+    }
   }catch(e){}
+  // If stale cache exists, return it immediately and refresh async in background
+  if(cachedData){
+    _refreshFundamentalsBackground(sym, FUND_KEY);
+    return cachedData;
+  }
+  // No cache at all — fetch fresh (blocking)
+  return await _fetchFundamentalsFromAPI(sym, FUND_KEY);
+}
+
+// Background refresh — does NOT block UI
+function _refreshFundamentalsBackground(sym, cacheKey){
+  setTimeout(async ()=>{
+    await _fetchFundamentalsFromAPI(sym, cacheKey);
+  }, 100);
+}
+
+async function _fetchFundamentalsFromAPI(sym, cacheKey){
   let _sheetFund = null; // Sheet bypass — kept for future use
   function fmtVol(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(2)+'Cr';if(v>=1e5)return(v/1e5).toFixed(2)+'L';return v.toLocaleString('en-IN');}
   function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
@@ -2110,8 +2132,55 @@ async function fetchFundamentals(sym){
   // Sheet override removed — Sheet GOOGLEFINANCE formula has async delay (unreliable)
   const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
     _source:'yahoo_quote'};
-  try{ localStorage.setItem(FUND_KEY,JSON.stringify({ts:Date.now(),data})); }catch(e){}
+  try{ localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data})); }catch(e){}
   return data;
+}
+
+// Reusable fundamentals renderer
+function _renderFundamentalsHTML(fs, fund, isCached){
+  if(!fs||!fund) return;
+  const fpe_v=fund.forwardPE||'--';
+  const feps_v=fund.forwardEps||'--';
+  const bv_v=fund.bookValue||'--';
+  const dy_v=fund.divYield||'--';
+  const ed_v=fund.earningsDate||'--';
+  const exd_v=fund.exDivDate||'--';
+  const cacheLabel=isCached?'<span style="font-size:8px;color:#4b6280;font-weight:400;margin-left:4px;">(cached)</span>':'';
+  fs.innerHTML=`
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS${cacheLabel}</div>
+    <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
+      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
+      </div>
+      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
+      </div>
+      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">BOOK VALUE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
+      </div>
+      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
+        <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DIV YIELD</div><div style="font-size:11px;font-weight:700;white-space:nowrap;color:${dy_v!=='--'?'#22c55e':'#e2e8f0'};">${dy_v}</div></div>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">DIVIDENDS & EARNINGS</div>
+    <div style="display:flex;gap:4px;margin-bottom:8px;">
+      <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;border:1px solid rgba(245,158,11,0.2);">
+        <div style="font-size:9px;color:#4b6280;">NEXT EARNINGS</div>
+        <div style="font-size:11px;font-weight:700;color:${ed_v!=='--'?'#f59e0b':'#e2e8f0'};">${ed_v}</div>
+      </div>
+      <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;border:1px solid rgba(34,197,94,0.2);">
+        <div style="font-size:9px;color:#4b6280;">EX-DIV DATE</div>
+        <div style="font-size:11px;font-weight:700;color:${exd_v!=='--'?'#22c55e':'#e2e8f0'};">${exd_v}</div>
+      </div>
+    </div>`;
 }
 
 async function openDetail(sym,isIndex){
@@ -2148,9 +2217,20 @@ async function openDetail(sym,isIndex){
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
   renderQuickLinks(sym);
   if(!isIndex){
-    const fund=await fetchFundamentals(sym);
+    // Show cached fundamentals immediately if available (no wait)
+    const _cachedFund = (()=>{
+      try{
+        const s=JSON.parse(localStorage.getItem('fundCache6_'+sym)||'null');
+        return s&&s.data?s.data:null;
+      }catch(e){return null;}
+    })();
     const fs=document.getElementById("fundamentalsSection");
-    if(fs && !fund){
+    if(_cachedFund && fs){
+      // Render cached immediately — API refresh happens in background
+      _renderFundamentalsHTML(fs, _cachedFund, true);
+    }
+    const fund=await fetchFundamentals(sym);
+    if(fs && !fund && !_cachedFund){
       // fetchFundamentals failed — use cached quote data if available
       const cd = cache[sym]&&cache[sym].data;
       if(cd){
@@ -2178,50 +2258,9 @@ async function openDetail(sym,isIndex){
       }
     }
     if(fs&&fund){
-      const fpe_v=fund.forwardPE||'--';
-      const feps_v=fund.forwardEps||'--';
-      const bv_v=fund.bookValue||'--';
-      const dy_v=fund.divYield||'--';
-      const ed_v=fund.earningsDate||'--';
-      const exd_v=fund.exDivDate||'--';
-      fs.innerHTML=`
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS</div>
-        <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
-          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
-          </div>
-          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
-          </div>
-          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.mktCap||'--'}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">BOOK VALUE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
-          </div>
-          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.volume||'--'}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DIV YIELD</div><div style="font-size:11px;font-weight:700;white-space:nowrap;color:${dy_v!=='--'?'#22c55e':'#e2e8f0'};">${dy_v}</div></div>
-          </div>
-        </div>
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">DIVIDENDS & EARNINGS</div>
-        <div style="display:flex;gap:4px;margin-bottom:8px;">
-          <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;border:1px solid rgba(245,158,11,0.2);">
-            <div style="font-size:9px;color:#4b6280;">NEXT EARNINGS</div>
-            <div style="font-size:11px;font-weight:700;color:${ed_v!=='--'?'#f59e0b':'#e2e8f0'};">${ed_v}</div>
-          </div>
-          <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;border:1px solid rgba(34,197,94,0.2);">
-            <div style="font-size:9px;color:#4b6280;">EX-DIV DATE</div>
-            <div style="font-size:11px;font-weight:700;color:${exd_v!=='--'?'#22c55e':'#e2e8f0'};">${exd_v}</div>
-          </div>
-        </div>
-        `;
-    } else if(fs){
-      fs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Fundamentals not available (open on GitHub Pages for full data)</div>`;
+      _renderFundamentalsHTML(fs, fund, false);
+    } else if(fs && !_cachedFund){
+      fs.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Fundamentals unavailable — will retry on next open</div>';
     }
     // Quick Links rendered via renderQuickLinks() into quickLinksSection div
     // Load technical data
