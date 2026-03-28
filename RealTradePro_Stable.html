@@ -1533,16 +1533,23 @@ async function renderWL(){
           </div>
         </div>
         <!-- ROW 2: 52W label | 52W Bar -->
-        html += `
-<div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
-  <div style="flex-shrink:0;min-width:72px;font-size:10px;line-height:1.2;">
-    ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
-  </div>
-  <div style="flex:1;padding-right:16px;">
-    ${build52WBar(d)}
-  </div>
-</div>`;
-      </div>
+        function build52WBar(d) {
+  if (!d || !d.fiftyTwoWeekHigh || !d.fiftyTwoWeekLow) return '';
+  const lo = d.fiftyTwoWeekLow, hi = d.fiftyTwoWeekHigh, cur = d.regularMarketPrice;
+  const range = hi - lo; if (range <= 0) return '';
+  const pct = Math.min(100, Math.max(0, ((cur - lo) / range) * 100)).toFixed(0);
+  
+  // margin-top:0 rakho jethi gap na rahe ane alignment barabar rahe
+  return '<div style="margin:0;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;line-height:1;margin-bottom:2px;">'
+    + '<span style="color:#ef4444;">' + lo.toFixed(2) + '</span>'
+    + '<span style="color:#4b6280;font-size:8px;font-weight:600;">52W</span>'
+    + '<span style="color:#22c55e;">' + hi.toFixed(2) + '</span></div>'
+    + '<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
+    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+    + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:#38bdf8;border-radius:50%;box-shadow:0 0 2px rgba(56,189,248,0.6);"></div>'
+    + '</div></div>';
+}
       <!-- ACTION PANEL (tap ACT to open) -->
       <div class="wl-actions-panel" id="act-${s}">
         <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534;color:#86efac;">BUY</button>
