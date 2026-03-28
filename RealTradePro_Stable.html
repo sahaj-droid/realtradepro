@@ -2067,7 +2067,7 @@ async function fetchFundamentals(sym){
       const r = await fetch(`${_qu}?type=quote&s=${sym}.NS`, {signal: controller.signal});
       clearTimeout(tid);
       const j = await r.json();
-      if(j && !j.error && (j.price || j.regularMarketPrice)) d = j;
+      if(j && !j.error && (j.price || j.regularMarketPrice || j.pe || j.eps || j.trailingPE)) d = j;
     } catch(e){}
   }
   // Fallback to fetchFull meta
@@ -3241,8 +3241,8 @@ async function fetchHistory(sym, range='30d', interval='1d'){
     const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
     if(stored&&stored.date===today&&stored.data) return stored.data;
   }catch(e){}
-  // ✨ Google Sheets GOOGLEFINANCE history — try first if enabled (only for 30d+ range)
-  if(isSheetEnabled() && (range==='30d'||range==='200d'||range==='10d')){
+  // ✨ Google Sheets GOOGLEFINANCE history — try first if enabled (only for 1mo range)
+  if(isSheetEnabled() && (range==='1mo'||range==='30d'||range==='200d'||range==='10d')){
     try{
       const sheetHist = await fetchHistSheet(sym);
       if(sheetHist && sheetHist.close && sheetHist.close.length >= 14){
@@ -3349,7 +3349,30 @@ function detectNarrowRange(highs, lows, threshold=1.5){
   return range<threshold;
 }
 
-// Bollinger Bands (20, 2)
+// Bollinger Bands full series (returns array of {upper,ma,lower,width,pctB,signal} per candle)
+function calcBollingerSeries(closes, period=20, mult=2){
+  if(!closes||closes.length<period) return null;
+  const result=[];
+  for(let i=period-1;i<closes.length;i++){
+    const slice=closes.slice(i-period+1,i+1);
+    const ma=slice.reduce((a,b)=>a+b,0)/period;
+    const variance=slice.reduce((a,b)=>a+Math.pow(b-ma,2),0)/period;
+    const sd=Math.sqrt(variance);
+    const upper=parseFloat((ma+mult*sd).toFixed(2));
+    const lower=parseFloat((ma-mult*sd).toFixed(2));
+    const width=parseFloat(((upper-lower)/ma*100).toFixed(2));
+    const price=closes[i];
+    const pctB=upper===lower?50:parseFloat(((price-lower)/(upper-lower)*100).toFixed(1));
+    let signal='Neutral';
+    if(pctB<10) signal='Oversold';
+    else if(pctB>90) signal='Overbought';
+    else if(width<3) signal='Squeeze';
+    result.push({upper, ma:parseFloat(ma.toFixed(2)), lower, width, pctB, signal, price:parseFloat(price.toFixed(2))});
+  }
+  return result;
+}
+
+// Bollinger Bands (20, 2) — single point (last candle)
 function calcBollinger(closes, period=20, mult=2){
   if(!closes||closes.length<period) return null;
   const slice=closes.slice(-period);
@@ -3376,10 +3399,10 @@ let _bbSym='', _bbRange='1M', _bbInterval='daily';
 
 // Option B: each period button → correct range + BB period
 const BB_CONFIG={
-  '1M': {range:'30d',  interval:'1d',  bbPeriod:20},
-  '3M': {range:'90d',  interval:'1d',  bbPeriod:50},
-  '6M': {range:'180d', interval:'1d',  bbPeriod:100},
-  '1Y': {range:'365d', interval:'1wk', bbPeriod:52}
+  '1M': {range:'1mo',  interval:'1d',  bbPeriod:20},
+  '3M': {range:'3mo',  interval:'1d',  bbPeriod:50},
+  '6M': {range:'6mo',  interval:'1d',  bbPeriod:100},
+  '1Y': {range:'1y',   interval:'1wk', bbPeriod:52}
 };
 
 async function renderBollinger(sym){
@@ -3406,18 +3429,25 @@ async function renderBollinger(sym){
 
   const closes=hist.close.filter(v=>v!=null);
   const {bbPeriod:bp}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
-  const bb=calcBollinger(closes, bp, 2);
+  // Full BB series for mini chart
+  const bbFull=calcBollingerSeries(closes, bp, 2);
+  const bb=bbFull ? bbFull[bbFull.length-1] : calcBollinger(closes, bp, 2);
   if(!bb){ bs.innerHTML=''; return; }
 
   const signalColor=bb.signal==='Oversold'?'#22c55e':bb.signal==='Overbought'?'#ef4444':bb.signal==='Squeeze'?'#f59e0b':'#94a3b8';
   const pctBColor=bb.pctB<10?'#22c55e':bb.pctB>90?'#ef4444':'#38bdf8';
-
-  // Visual position bar: where price sits between lower and upper
   const barPct=Math.min(100,Math.max(0,bb.pctB));
-
   const {bbPeriod:activeBP}=BB_CONFIG[_bbRange]||BB_CONFIG['1M'];
+
+  // Squeeze direction detection
+  const bwArr=bbFull?bbFull.map(b=>b.width):[];
+  const bwNow=bwArr.slice(-5).reduce((a,b)=>a+b,0)/5||bb.width;
+  const bwPrev=bwArr.slice(-10,-5).reduce((a,b)=>a+b,0)/5||bb.width;
+  const squeezeDir=bwNow<bwPrev?'Contracting':'Expanding';
+  const squeezeColor=bwNow<bwPrev?'#f59e0b':'#a78bfa';
+
   bs.innerHTML=`
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (${activeBP},2)</div>
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (${activeBP},2) <span style="font-size:9px;color:${squeezeColor};font-weight:600;">● ${squeezeDir}</span></div>
     <div style="display:flex;gap:4px;margin-bottom:6px;">
       ${['1M','3M','6M','1Y'].map(p=>`
         <button onclick="setBBPeriod('${p}')" id="bb-btn-${p}"
@@ -3427,36 +3457,86 @@ async function renderBollinger(sym){
           font-family:'Rajdhani',sans-serif;">${p}</button>
       `).join('')}
     </div>
+    <canvas id="bb-chart" width="320" height="90" style="width:100%;height:90px;border-radius:6px;background:#0a1628;display:block;margin-bottom:6px;"></canvas>
     <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:6px;">
       <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">UPPER BAND</div><div style="font-size:12px;font-weight:700;color:#ef4444;white-space:nowrap;">₹${bb.upper}</div></div>
         <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MA (${activeBP})</div><div style="font-size:12px;font-weight:700;color:#38bdf8;white-space:nowrap;">₹${bb.ma}</div></div>
+        <div style="flex:1;min-width:0;text-align:center;"><div style="font-size:9px;color:#4b6280;">MA (${activeBP})</div><div style="font-size:12px;font-weight:700;color:#38bdf8;white-space:nowrap;">₹${bb.ma}</div></div>
+        <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">LOWER BAND</div><div style="font-size:12px;font-weight:700;color:#22c55e;white-space:nowrap;">₹${bb.lower}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">LOWER BAND</div><div style="font-size:12px;font-weight:700;color:#22c55e;white-space:nowrap;">₹${bb.lower}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">%B VALUE</div><div style="font-size:13px;font-weight:700;white-space:nowrap;color:${pctBColor};">${bb.pctB}%</div></div>
         <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">BAND WIDTH</div><div style="font-size:12px;font-weight:700;color:#e2e8f0;white-space:nowrap;">${bb.width}%</div></div>
-      </div>
-      <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">%B VALUE</div><div style="font-size:12px;font-weight:700;white-space:nowrap;color:${pctBColor};">${bb.pctB}%</div></div>
+        <div style="flex:1;min-width:0;text-align:center;"><div style="font-size:9px;color:#4b6280;">BAND WIDTH</div><div style="font-size:13px;font-weight:700;color:#e2e8f0;white-space:nowrap;">${bb.width}%</div></div>
         <div style="width:1px;height:24px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">SIGNAL</div><div style="font-size:12px;font-weight:700;white-space:nowrap;color:${signalColor};">${bb.signal}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">SIGNAL</div><div style="font-size:13px;font-weight:700;white-space:nowrap;color:${signalColor};">${bb.signal}</div></div>
       </div>
     </div>
     <div style="background:#0a1628;border-radius:6px;padding:8px 10px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
         <span style="font-size:9px;color:#22c55e;">Lower ₹${bb.lower}</span>
-        <span style="font-size:9px;color:#94a3b8;">Price Position</span>
+        <span style="font-size:9px;color:#94a3b8;font-weight:700;">Price Position (${bb.pctB.toFixed(0)}%B)</span>
         <span style="font-size:9px;color:#ef4444;">Upper ₹${bb.upper}</span>
       </div>
-      <div style="background:#1e3a5f;border-radius:4px;height:8px;position:relative;overflow:hidden;">
-        <div style="position:absolute;left:0;top:0;height:100%;width:33.3%;background:rgba(34,197,94,0.2);"></div>
-        <div style="position:absolute;right:0;top:0;height:100%;width:33.3%;background:rgba(239,68,68,0.2);"></div>
-        <div style="position:absolute;top:50%;left:${barPct}%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:#38bdf8;box-shadow:0 0 4px #38bdf8;"></div>
+      <div style="background:#1e3a5f;border-radius:4px;height:10px;position:relative;overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;height:100%;width:20%;background:rgba(34,197,94,0.25);"></div>
+        <div style="position:absolute;right:0;top:0;height:100%;width:20%;background:rgba(239,68,68,0.25);"></div>
+        <div style="position:absolute;left:50%;top:0;height:100%;width:1px;background:rgba(56,189,248,0.3);"></div>
+        <div style="position:absolute;top:50%;left:${barPct}%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:${pctBColor};box-shadow:0 0 5px ${pctBColor};"></div>
       </div>
-      <div style="text-align:center;margin-top:4px;font-size:9px;color:#94a3b8;">MA(${activeBP}) ₹${bb.ma} | ${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:8px;color:#22c55e;">Buy Zone</span>
+        <span style="font-size:8px;color:#94a3b8;">${_bbRange} ${_bbInterval==='daily'?'Daily':'Weekly'}</span>
+        <span style="font-size:8px;color:#ef4444;">Sell Zone</span>
+      </div>
     </div>`;
+
+  // Draw mini BB chart on canvas
+  requestAnimationFrame(()=>{
+    const canvas=document.getElementById('bb-chart');
+    if(!canvas||!bbFull||bbFull.length<2) return;
+    const ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    const pad={t:6,b:6,l:4,r:4};
+    const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+    const N=Math.min(bbFull.length, _bbRange==='1Y'?52:_bbRange==='6M'?90:_bbRange==='3M'?60:30);
+    const slice=bbFull.slice(-N);
+    const priceSlice=closes.slice(-N);
+    const allVals=slice.flatMap(b=>[b.upper,b.lower]).concat(priceSlice);
+    const minV=Math.min(...allVals)*0.999, maxV=Math.max(...allVals)*1.001;
+    const xScale=i=>pad.l+(i/(N-1))*cw;
+    const yScale=v=>H-pad.b-((v-minV)/(maxV-minV))*ch;
+    ctx.clearRect(0,0,W,H);
+    // Shaded band area
+    ctx.beginPath();
+    slice.forEach((b,i)=>{ if(i===0) ctx.moveTo(xScale(i),yScale(b.upper)); else ctx.lineTo(xScale(i),yScale(b.upper)); });
+    slice.forEach((b,i)=>{ ctx.lineTo(xScale(N-1-i),yScale(slice[N-1-i].lower)); });
+    ctx.closePath();
+    ctx.fillStyle='rgba(56,189,248,0.08)';
+    ctx.fill();
+    // Upper band
+    ctx.beginPath();
+    slice.forEach((b,i)=>{ if(i===0) ctx.moveTo(xScale(i),yScale(b.upper)); else ctx.lineTo(xScale(i),yScale(b.upper)); });
+    ctx.strokeStyle='rgba(239,68,68,0.55)'; ctx.lineWidth=1; ctx.stroke();
+    // Lower band
+    ctx.beginPath();
+    slice.forEach((b,i)=>{ if(i===0) ctx.moveTo(xScale(i),yScale(b.lower)); else ctx.lineTo(xScale(i),yScale(b.lower)); });
+    ctx.strokeStyle='rgba(34,197,94,0.55)'; ctx.lineWidth=1; ctx.stroke();
+    // MA line dashed
+    ctx.beginPath();
+    slice.forEach((b,i)=>{ if(i===0) ctx.moveTo(xScale(i),yScale(b.ma)); else ctx.lineTo(xScale(i),yScale(b.ma)); });
+    ctx.strokeStyle='rgba(56,189,248,0.6)'; ctx.lineWidth=1; ctx.setLineDash([3,2]); ctx.stroke(); ctx.setLineDash([]);
+    // Price line
+    ctx.beginPath();
+    priceSlice.forEach((p,i)=>{ if(i===0) ctx.moveTo(xScale(i),yScale(p)); else ctx.lineTo(xScale(i),yScale(p)); });
+    ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1.5; ctx.stroke();
+    // Last price dot
+    const lx=xScale(N-1), ly=yScale(priceSlice[N-1]);
+    ctx.beginPath(); ctx.arc(lx,ly,3,0,Math.PI*2);
+    ctx.fillStyle=pctBColor; ctx.fill();
+  });
 }
 
 function setBBPeriod(p){
