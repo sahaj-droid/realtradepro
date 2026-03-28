@@ -781,7 +781,7 @@ body.light .ticker-price{color:#e2e8f0;}
 
     <!-- AI Response (3 bullets) -->
     <div id="nivi-answer" style="display:none;margin-bottom:12px;">
-      <div id="nivi-bullets" style="font-size:13px;color:#e2e8f0;line-height:1.8;font-family:'Rajdhani',sans-serif;"></div>
+      <div id="nivi-bullets" style="font-size:13px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;overflow-wrap:break-word;"></div>
     </div>
 
     <!-- Disclaimer -->
@@ -4364,7 +4364,7 @@ function formatAINewsText(raw) {
   if(!raw) return '<div style="color:#4b6280;font-size:12px;">No data received.</div>';
   // Convert **heading** to styled divs, newlines to <br>
   let html = raw
-    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:0.8px;margin-top:12px;margin-bottom:4px;">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:11px;font-weight:700;color:#34d399;letter-spacing:0.5px;margin-top:14px;margin-bottom:5px;font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">$1</div>')
     .replace(/\n/g, '<br>');
   return html;
 }
@@ -4376,7 +4376,7 @@ function renderAINewsResult(htmlContent, ts) {
   if(!body) return;
   body.innerHTML = `
     <div style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:14px;margin-bottom:10px;">
-      <div style="font-size:12px;color:#e2e8f0;line-height:1.9;">${htmlContent}</div>
+      <div style="font-size:13px;color:#e2e8f0;line-height:2.0;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;">${htmlContent}</div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
       <div style="font-size:9px;color:#4b6280;">Updated: ${timeStr} &bull; Watchlist: ${wl.slice(0,12).length} stocks</div>
@@ -5360,7 +5360,7 @@ const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#
       const clean = line.replace(/^[•\-\*]\s*/, '').trim();
       return `<div style="display:flex;gap:8px;padding:8px 0;${i < lines.length-1 ? 'border-bottom:1px solid rgba(255,255,255,0.05)' : ''}">
         <span style="color:#34d399;font-size:14px;flex-shrink:0;">•</span>
-        <span style="color:#e2e8f0;font-size:13px;line-height:1.6;">${clean}</span>
+        <span style="color:#e2e8f0;font-size:13px;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;">${clean}</span>
       </div>`;
     }).join('');
 
