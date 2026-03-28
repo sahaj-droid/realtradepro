@@ -5196,7 +5196,6 @@ async function openNivi(sym) {
     }catch(e){ _gasErr = e; }
   }
   if(_niviData){
-    if(_niviData){
     const _freshTs = Date.now();
     localStorage.setItem(cacheKey, JSON.stringify({ ts: _freshTs, data: _niviData }));
     renderNiviResponse(_niviData, _freshTs);
