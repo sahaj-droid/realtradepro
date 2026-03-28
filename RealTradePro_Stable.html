@@ -751,8 +751,10 @@ body.light .ticker-price{color:#e2e8f0;}
 </div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;">Nivi AI</div>
-          <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;">--</div>
-        </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;">--</div>
+            <div id="nivi-cache-timer" style="font-size:9px;color:#4b6280;display:none;">•</div>
+          </div>
       </div>
       <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕ Close</button>
     </div>
@@ -5194,8 +5196,10 @@ async function openNivi(sym) {
     }catch(e){ _gasErr = e; }
   }
   if(_niviData){
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: _niviData }));
-    renderNiviResponse(_niviData);
+    if(_niviData){
+    const _freshTs = Date.now();
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: _freshTs, data: _niviData }));
+    renderNiviResponse(_niviData, _freshTs);
   } else {
   const gasErr = _gasErr || new Error('All GAS URLs failed');
   try {
@@ -5269,8 +5273,23 @@ Bullet format: • [vakya]`;
 }
 
 // --- RENDER RESPONSE ---
-function renderNiviResponse(data) {
+function renderNiviResponse(data, fromCacheTs) {
   document.getElementById('nivi-loading').style.display = 'none';
+
+  // Cache timer
+  const timerEl = document.getElementById('nivi-cache-timer');
+  if (timerEl) {
+    const cacheKey = 'niviCache_' + _niviCurrentSym;
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey));
+      const ts = fromCacheTs || (cached && cached.ts);
+      if (ts) {
+        const mins = Math.round((Date.now() - ts) / 60000);
+        timerEl.innerText = mins < 1 ? '🟢 Abhi' : '🕐 ' + mins + ' min pehle';
+        timerEl.style.display = 'inline';
+      } else { timerEl.style.display = 'none'; }
+    } catch(e) { timerEl.style.display = 'none'; }
+  }
 
   // Price row
   const f = data.fundamental || {};
@@ -5302,8 +5321,11 @@ function renderNiviResponse(data) {
   // Technical indicators mini row
   const t = data.technical || {};
   const techEl = document.getElementById('nivi-tech-row');
+const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#22c55e' : '#ef4444') : '#94a3b8';
+  const macdVal   = (t.macd != null) ? (t.macd > 0 ? '+' : '') + t.macd.toFixed(2) : '--';
   const indicators = [
     { label: 'RSI', val: t.rsi14 != null ? t.rsi14.toFixed(1) : '--', color: t.rsi14 < 35 ? '#22c55e' : t.rsi14 > 70 ? '#ef4444' : '#f59e0b' },
+    { label: 'MACD', val: macdVal, color: macdColor },
     { label: 'MA20', val: t.ma20 ? '₹' + t.ma20 : '--', color: f.price > t.ma20 ? '#22c55e' : '#ef4444' },
     { label: 'MA50', val: t.ma50 ? '₹' + t.ma50 : '--', color: f.price > t.ma50 ? '#22c55e' : '#ef4444' },
     { label: '52W%', val: t.week52Pos != null ? t.week52Pos + '%' : '--', color: '#94a3b8' },
