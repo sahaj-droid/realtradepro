@@ -353,6 +353,21 @@ body.light .ticker-price{color:#e2e8f0;}
     <button onclick="startAPI3Edit()" id="changeURL3Btn" style="margin-top:6px;background:#4a1d96;color:#c4b5fd;border:1px solid #4a1d96;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change URL</button>
   </div>
 
+  <!-- GEMINI API KEY (Direct fallback for NIVI + AI News) -->
+  <div class="card" style="border:1px solid rgba(52,211,153,0.3);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><defs><linearGradient id="gsk1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient></defs><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="url(#gsk1)"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">GEMINI API KEY <span style="color:#4b6280;font-weight:400;">(NIVI Direct Fallback)</span></div>
+    </div>
+    <div style="font-size:9px;color:#4b6280;margin-bottom:8px;line-height:1.5;">Google AI Studio → Free key → 1500 calls/day. GAS fail thay to direct use thase.<br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com/apikey</a></div>
+    <input id="set-gemini-key" type="password" placeholder="AIza..." style="width:100%;background:#0a1628;border:1px solid #065f46;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button onclick="saveGeminiKey()" style="flex:1;background:#065f46;color:#34d399;border:none;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save Key</button>
+      <button onclick="clearGeminiKey()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
+    </div>
+    <div id="gemini-key-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
+  </div>
+
   <!-- Refresh Interval -->
   <div class="card">
     <div style="font-size:11px;color:#4b6280;margin-bottom:6px;font-weight:700;">AUTO REFRESH INTERVAL</div>
@@ -3786,6 +3801,7 @@ async function startApp(){
   startClock();
   setInterval(updateMarketStatus,60000);
   renderWLTabs();
+  initGeminiKeyDisplay();
   showLoader("Loading...");
   // Pull cloud data first (sync)
   await pullFromCloud();
@@ -4120,28 +4136,43 @@ Give a crisp market brief in Hindi/Gujarati mix (Roman script OK). Structure you
 
 Keep it concise, practical, no disclaimers. Use ₹ symbol. Max 200 words.`;
 
-  try {
+  // Try Direct Gemini first (if key set), else try GAS askMarket
+  const gemKey = localStorage.getItem('geminiApiKey');
+
+  async function tryGetAINews(){
+    // 1. Direct Gemini (preferred — faster + no GAS quota)
+    if(gemKey){
+      const resp = await directGeminiCall(prompt);
+      if(resp && resp.ok && resp.answer) return resp.answer;
+    }
+    // 2. GAS askMarket fallback
     const r = await fetch(`${API_NIVI}?type=askMarket&prompt=${encodeURIComponent(prompt)}&stocks=${encodeURIComponent(wl.slice(0,12).join(','))}`);
     const data = await r.json();
-    if(!data.ok && !data.summary && !data.text && !data.content) throw new Error(data.error || 'No response');
+    const txt = data.summary || data.text || data.content || data.answer || '';
+    if(!txt) throw new Error(data.error || 'No response from GAS');
+    return txt;
+  }
 
-    const rawText = data.summary || data.text || data.content || data.answer || '';
+  try {
+    const rawText = await tryGetAINews();
     const htmlOut = formatAINewsText(rawText);
-
-    // Cache
     try {
       localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({
-        ts: Date.now(),
-        syms: wl.slice(0,12).join(','),
-        html: htmlOut
+        ts: Date.now(), syms: wl.slice(0,12).join(','), html: htmlOut
       }));
     } catch(e){}
-
     renderAINewsResult(htmlOut, Date.now());
   } catch(err) {
-    // Fallback: show cached price summary with NIVI styling
-    const fallbackHtml = buildFallbackNewsSummary(stockLines);
-    document.getElementById('ai-news-body').innerHTML = fallbackHtml;
+    // Show helpful error with setup guide
+    const hasKey = !!gemKey;
+    document.getElementById('ai-news-body').innerHTML=`
+      <div style="padding:16px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">⚠️</div>
+        <div style="font-size:13px;font-weight:700;color:#f59e0b;margin-bottom:6px;">AI News unavailable</div>
+        <div style="font-size:11px;color:#4b6280;line-height:1.6;margin-bottom:12px;">${hasKey?'Gemini API error: '+err.message:'Settings → Gemini API Key add karo for AI News'}</div>
+        ${!hasKey?`<button onclick="tab('settings')" style="background:#065f46;color:#34d399;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">⚙️ Go to Settings</button>`:''}
+        ${buildFallbackNewsSummary(stockLines)}
+      </div>`;
   }
 }
 
@@ -4964,20 +4995,74 @@ async function openNivi(sym) {
     }
   } catch(e) {}
 
-  // Fetch fresh
+  // Fetch fresh — GAS first, Direct Gemini fallback
   try {
     const r = await fetch(`${API_NIVI}?type=askNivi&s=${encodeURIComponent(sym)}.NS`);
     const data = await r.json();
-    if (!data.ok) throw new Error(data.error || 'API error');
-    // Cache it
+    if (!data.ok) throw new Error(data.error || 'GAS API error');
     localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
     renderNiviResponse(data);
-  } catch(err) {
-    document.getElementById('nivi-loading').style.display = 'none';
-    document.getElementById('nivi-answer').style.display = 'block';
-    document.getElementById('nivi-bullets').innerHTML =
-      `<div style="color:#ef4444;font-size:12px;">⚠️ Error: ${err.message}</div>`;
-    document.getElementById('nivi-actions').style.display = 'flex';
+  } catch(gasErr) {
+    // GAS failed — try Direct Gemini if key is set
+    const gemKey = localStorage.getItem('geminiApiKey');
+    if(gemKey){
+      try{
+        document.getElementById('nivi-loading').querySelector('div:last-child')?.remove?.();
+        const loadMsg=document.getElementById('nivi-loading');
+        if(loadMsg) loadMsg.innerHTML=loadMsg.innerHTML+'<div style="font-size:10px;color:#f59e0b;margin-top:6px;">GAS unavailable — Direct Gemini use thaay che...</div>';
+
+        // Build context from cache
+        const cd=cache[sym]&&cache[sym].data;
+        if(!cd) throw new Error('No price data');
+        const diff=cd.regularMarketPrice-cd.chartPreviousClose;
+        const pct=((diff/cd.chartPreviousClose)*100).toFixed(2);
+        const sign=diff>=0?'+':'';
+
+        const prompt=`Aap 'Nivi' hain — ek bharosemand Hindi stock market expert.
+
+Stock: ${sym}
+CMP: ₹${cd.regularMarketPrice?.toFixed(2)} (${sign}${pct}%)
+Day High: ₹${cd.regularMarketDayHigh?.toFixed(2)} | Day Low: ₹${cd.regularMarketDayLow?.toFixed(2)}
+52W High: ₹${cd.fiftyTwoWeekHigh?.toFixed(2)} | 52W Low: ₹${cd.fiftyTwoWeekLow?.toFixed(2)}
+Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN')}
+P/E: ${cd.trailingPE?.toFixed(1)||'N/A'} | Mkt Cap: ₹${cd.marketCap?(cd.marketCap/1e7).toFixed(0)+'Cr':'N/A'}
+
+Bilkul shuddh Hindi mein, news anchor ki tarah clearly aur confidently, theek 3 alag bullet points dijiye. Har bullet point ek poora Hindi vakya ho. Koi English word nahi. Koi disclaimer nahi. Koi emoji nahi.
+Bullet format: • [vakya]`;
+
+        const resp=await directGeminiCall(prompt);
+        if(!resp||!resp.ok) throw new Error('Direct Gemini failed');
+
+        // Build synthetic response object
+        const synData={
+          ok:true,
+          fundamental:{
+            price:cd.regularMarketPrice,
+            change:diff,
+            changePct:parseFloat(pct),
+            week52High:cd.fiftyTwoWeekHigh,
+            week52Low:cd.fiftyTwoWeekLow,
+          },
+          technical:{
+            rsi14:null,ma20:null,ma50:null,week52Pos:null,volRatio:null
+          },
+          recommendation:{signal:'HOLD',score:0,reasons:['Direct mode — limited data']},
+          niviAdvice:resp
+        };
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data:synData }));
+        renderNiviResponse(synData);
+      }catch(dirErr){
+        document.getElementById('nivi-loading').style.display='none';
+        document.getElementById('nivi-answer').style.display='block';
+        document.getElementById('nivi-bullets').innerHTML=`<div style="color:#ef4444;font-size:12px;line-height:1.8;">⚠️ GAS Error: ${gasErr.message}<br><span style="color:#f59e0b;">Direct Gemini: ${dirErr.message}</span><br><span style="color:#4b6280;font-size:11px;">Settings → Gemini API Key set karo ya GAS API check karo</span></div>`;
+        document.getElementById('nivi-actions').style.display='flex';
+      }
+    } else {
+      document.getElementById('nivi-loading').style.display='none';
+      document.getElementById('nivi-answer').style.display='block';
+      document.getElementById('nivi-bullets').innerHTML=`<div style="color:#ef4444;font-size:12px;line-height:1.8;">⚠️ ${gasErr.message}<br><span style="color:#4b6280;font-size:11px;">Settings → Gemini API Key add karo for direct fallback</span></div>`;
+      document.getElementById('nivi-actions').style.display='flex';
+    }
   }
 }
 
@@ -5067,6 +5152,52 @@ function closeNivi() {
 }
 
 // --- SPEAK (Text-to-Speech) ---
+// ============================================================
+// GEMINI KEY MANAGEMENT
+// ============================================================
+function saveGeminiKey(){
+  const val=document.getElementById('set-gemini-key').value.trim();
+  if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
+  localStorage.setItem('geminiApiKey',val);
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Key saved — Direct Gemini active</span>';
+  document.getElementById('set-gemini-key').value='';
+  showPopup('Gemini key saved ✓');
+}
+function clearGeminiKey(){
+  localStorage.removeItem('geminiApiKey');
+  document.getElementById('set-gemini-key').value='';
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#4b6280;">Key cleared</span>';
+  showPopup('Gemini key cleared');
+}
+function initGeminiKeyDisplay(){
+  const k=localStorage.getItem('geminiApiKey');
+  const el=document.getElementById('gemini-key-status');
+  if(el) el.innerHTML=k
+    ?'<span style="color:#34d399;">✓ Key saved ('+k.slice(0,8)+'...) — Direct Gemini active</span>'
+    :'<span style="color:#4b6280;">No key saved — using GAS API only</span>';
+}
+
+// Direct Gemini API call (browser → Gemini, bypasses GAS)
+async function directGeminiCall(prompt){
+  const key=localStorage.getItem('geminiApiKey');
+  if(!key) return null;
+  const models=['gemini-2.0-flash','gemini-1.5-flash','gemini-1.5-flash-latest'];
+  for(const model of models){
+    try{
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+      });
+      const j=await r.json();
+      if(j.candidates&&j.candidates[0]){
+        return {ok:true,answer:j.candidates[0].content.parts[0].text,model};
+      }
+    }catch(e){}
+  }
+  return {ok:false,error:'All Gemini models failed'};
+}
+
 function niviSpeak() {
   if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
   niviStop();
