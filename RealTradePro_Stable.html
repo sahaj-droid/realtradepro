@@ -2065,62 +2065,75 @@ async function fetchFundamentals(sym){
       const r = await fetch(`${_qu}?type=quote&s=${encodeURIComponent(_symNS)}`, {signal: controller.signal});
       clearTimeout(tid);
       const j = await r.json();
-      // GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
-      if(j && !j.error && j.price) d = j;
-    } catch(e){}
-    // --- New Fundamental Fetch (Yahoo First) ---
-    const fundUrl = `${SCRIPT_URL}?type=quote&s=${encodeURIComponent(currSym)}&sheetId=${SHEET_ID}`;
-    fetch(fundUrl)
-      .then(r => r.json())
-      .then(q => {
-        if(q && !q.error) {
-          updateFundamentals(q);
-        }
-      })
-      .catch(e => console.error("Fund Error:", e));
-  }
-  // Last resort: cache for volume (batch data has volume but not pe/eps)
-  const _cacheD = cache[sym]&&cache[sym].data;
+// GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
+    if (j && !j.error && j.price) d = j;
+  } catch (e) { console.error("Initial fetch error:", e); }
 
-  let pe='--',eps='--',mktCap='--',volume='--';
-  let divYield='--',forwardPE='--',bookValue='--',forwardEps='--',earningsDate='--',exDivDate='--';
-  // For volume: use cache if quote didn't have it
-  if(!d && _cacheD) d = _cacheD;
-  // GAS quoteFetch field names: pe, eps, mktCap, bookValue, dividendYield, forwardPE, epsForward, earningsTimestamp, exDividendDate
-  // Yahoo v7/quote field names: trailingPE, epsTrailingTwelveMonths, marketCap, bookValue, dividendYield, forwardPE, epsForward
-  if(d){
-    var pe_v=safe(d.pe||d.trailingPE);
-    if(pe_v!==null&&!isNaN(pe_v)&&pe_v>0) pe=parseFloat(pe_v).toFixed(2);
-    var eps_v=safe(d.eps||d.epsTrailingTwelveMonths);
-    if(eps_v!==null&&!isNaN(eps_v)) eps='₹'+parseFloat(eps_v).toFixed(2);
-    var cap_v=safe(d.mktCap||d.marketCap);
-    if(cap_v!==null&&!isNaN(cap_v)) mktCap=fmtCap(cap_v);
-    // Volume: from cache (batch has volume, quote may also have it)
-    var vol_v=safe(d.volume||d.regularMarketVolume||(_cacheD&&(_cacheD.regularMarketVolume||_cacheD.volume))||d.averageDailyVolume3Month);
-    if(vol_v) volume=fmtVol(vol_v);
-    var dy=safe(d.dividendYield||d.trailingAnnualDividendYield);
-    if(dy!==null&&!isNaN(dy)&&dy>0){
-      divYield=(dy>1?dy:(dy*100)).toFixed(2)+'%';
+  // --- NEW IMPROVED FUNDAMENTAL FETCH (Async Strategy) ---
+  const fundUrl = `${SCRIPT_URL}?type=quote&s=${encodeURIComponent(currSym)}&sheetId=${SHEET_ID}`;
+  try {
+    const response = await fetch(fundUrl);
+    const q = await response.json();
+    if (q && !q.error) {
+      d = { ...d, ...q }; // Yahoo na data ne main object 'd' ma merge karo
     }
-    var fpe=safe(d.forwardPE||d.priceEpsCurrentYear);
-    if(fpe!==null&&!isNaN(fpe)&&fpe>0&&fpe<1000) forwardPE=parseFloat(fpe).toFixed(2);
-    var bv=safe(d.bookValue);
-    if(bv!==null&&!isNaN(bv)&&bv>0) bookValue='₹'+parseFloat(bv).toFixed(2);
-    var feps=safe(d.epsForward||d.epsCurrentYear);
-    if(feps!==null&&!isNaN(feps)) forwardEps='₹'+parseFloat(feps).toFixed(2);
-    var ets=safe(d.earningsTimestamp||d.earningsTimestampStart||d.earningsTimestampEnd);
-    if(ets!==null&&ets>0) earningsDate=fmtDate(ets);
-    var exd=safe(d.exDividendDate||d.dividendDate);
-    if(exd!==null&&exd>0) exDivDate=fmtDate(exd);
-  } else if(_cacheD){
-    // Absolute fallback — batch cache has volume but usually no PE
-    var vol_v2=safe(_cacheD.regularMarketVolume||_cacheD.volume);
-    if(vol_v2) volume=fmtVol(vol_v2);
+  } catch (e) {
+    console.error("Fund Fetch Error:", e);
   }
-  // Sheet override removed — Sheet GOOGLEFINANCE formula has async delay (unreliable)
-  const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
-    _source:'yahoo_quote'};
-  try{ localStorage.setItem(FUND_KEY,JSON.stringify({ts:Date.now(),data})); }catch(e){}
+
+  // Last resort: cache for volume
+  const _cacheD = cache[sym] && cache[sym].data;
+  let pe = '--', eps = '--', mktCap = '--', volume = '--';
+  let divYield = '--', forwardPE = '--', bookValue = '--', forwardEps = '--', earningsDate = '--', exDivDate = '--';
+
+  // Logic to fill variables from 'd' or cache
+  if (!d && _cacheD) d = _cacheD;
+
+  if (d) {
+    const safeNum = (v) => (v !== null && v !== undefined && !isNaN(v) && v !== "" ? v : null);
+
+    var pe_v = safeNum(d.pe || d.trailingPE);
+    if (pe_v && pe_v > 0) pe = parseFloat(pe_v).toFixed(2);
+
+    var eps_v = safeNum(d.eps || d.epsTrailingTwelveMonths);
+    if (eps_v) eps = '₹' + parseFloat(eps_v).toFixed(2);
+
+    var cap_v = safeNum(d.mktCap || d.marketCap);
+    if (cap_v) mktCap = fmtCap(cap_v);
+
+    var vol_v = safeNum(d.volume || d.regularMarketVolume || (_cacheD && (_cacheD.regularMarketVolume || _cacheD.volume)) || d.averageDailyVolume3Month);
+    if (vol_v) volume = fmtVol(vol_v);
+
+    var dy = safeNum(d.dividendYield || d.trailingAnnualDividendYield);
+    if (dy) divYield = (dy > 1 ? dy : (dy * 100)).toFixed(2) + '%';
+
+    var fpe = safeNum(d.forwardPE || d.priceEpsCurrentYear);
+    if (fpe && fpe > 0 && fpe < 1000) forwardPE = parseFloat(fpe).toFixed(2);
+
+    var bv = safeNum(d.bookValue);
+    if (bv && bv > 0) bookValue = '₹' + parseFloat(bv).toFixed(2);
+
+    var feps = safeNum(d.epsForward || d.epsCurrentYear);
+    if (feps) forwardEps = '₹' + parseFloat(feps).toFixed(2);
+
+    var ets = safeNum(d.earningsTimestamp || d.earningsTimestampStart || d.earningsTimestampEnd);
+    if (ets && ets > 0) earningsDate = (typeof fmtDate === 'function') ? fmtDate(ets) : new Date(ets * 1000).toLocaleDateString();
+
+    var exd = safeNum(d.exDividendDate || d.dividendDate);
+    if (exd && exd > 0) exDivDate = (typeof fmtDate === 'function') ? fmtDate(exd) : new Date(exd * 1000).toLocaleDateString();
+  }
+
+  const data = {
+    pe, eps, mktCap, volume, divYield, forwardPE, bookValue, forwardEps, earningsDate, exDivDate,
+    _source: 'yahoo_quote'
+  };
+
+  try { localStorage.setItem(FUND_KEY, JSON.stringify({ ts: Date.now(), data })); } catch (e) {}
+  
+  // Loader bandh karva mate ane UI update karva mate
+  if (typeof updateFundamentals === 'function') updateFundamentals(data);
+  if (typeof hideLoader === 'function') hideLoader();
+
   return data;
 }
 
