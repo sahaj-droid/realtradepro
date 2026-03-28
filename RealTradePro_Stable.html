@@ -1508,48 +1508,51 @@ async function renderWL(){
     let pct=(diff/d.chartPreviousClose*100)||0;
     html+=`
     <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" style="padding:6px 8px;position:relative;">
-        <!-- × remove button — top-right corner above CMP -->
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute;top:4px;right:6px;color:#ef4444;font-size:13px;background:none;border:none;cursor:pointer;padding:0;line-height:1;z-index:2;">&#x2715;</button>
-        <!-- ROW 1: Symbol | Day Bar | CMP -->
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
-          <div style="flex-shrink:0;min-width:72px;">
-            <div style="display:flex;align-items:center;gap:3px;">
-              <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;color:#e2e8f0;">${s}</span>
-            </div>
-            <!-- ACT button — bigger, centered -->
-            <div style="margin-top:3px;">
-              <button onclick="event.stopPropagation();toggleActions('${s}')" style="font-size:11px;font-weight:700;color:#38bdf8;background:#1e3a5f;border:1px solid #2d5a8e;border-radius:5px;padding:3px 10px;cursor:pointer;font-family:'Rajdhani',sans-serif;line-height:1.4;width:100%;text-align:center;">ACT</button>
-            </div>
+      <div class="card" style="padding:8px 10px; position:relative;">
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:4px; right:6px; color:#ef4444; font-size:13px; background:none; border:none; cursor:pointer; z-index:2;">&#x2715;</button>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <div style="min-width:72px;">
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#e2e8f0;">${s}</span>
           </div>
-          <div style="flex:1;">${buildDayBar(d)}</div>
-          <div style="flex-shrink:0;text-align:right;min-width:82px;margin-left:auto;padding-right:16px;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;">&#8377;${d.regularMarketPrice.toFixed(2)}</div>
-            <!-- Price change + % change in single row -->
-            <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
-              <span id="change-${s}" style="font-size:12px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':''}&#8377;${Math.abs(diff).toFixed(2)}</span>
-              <span style="font-size:12px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};">(${diff>=0?'+':''}${pct.toFixed(2)}%)</span>
+          <div style="flex:1;">
+            ${buildDayBar(d)}
+          </div>
+          <div style="min-width:85px; text-align:right;">
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <div style="min-width:72px;">
+            <button onclick="event.stopPropagation();toggleActions('${s}')" style="font-size:11px; font-weight:700; color:#38bdf8; background:#1e3a5f; border:1px solid #2d5a8e; border-radius:5px; padding:3px 0; width:100%; cursor:pointer; font-family:'Rajdhani',sans-serif;">ACT</button>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="min-width:85px; text-align:right;">
+            <div id="change-${s}" style="font-size:12px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'};">
+              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
         </div>
-        <!-- ROW 2: 52W label | 52W Bar -->
-        <div style="display:flex;align-items:center;gap:4px;">
-          <div style="flex-shrink:0;min-width:72px;font-size:10px;">${get52WLabel(d)}${getTargetBadge(s,d.regularMarketPrice)}</div>
-          <div style="flex:1;">${build52WBar(d)}</div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="min-width:72px; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+            ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
+          </div>
+          <div style="flex:1;">
+            ${build52WBar(d)}
+          </div>
+          <div style="min-width:85px;"></div>
         </div>
       </div>
-      <!-- ACTION PANEL (tap ACT to open) -->
       <div class="wl-actions-panel" id="act-${s}">
-        <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534;color:#86efac;">BUY</button>
-        <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d;color:#fca5a5;">SELL</button>
-        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#60a5fa;">CHART</button>
-        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#a78bfa;">NEWS</button>
-        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12;color:#fde68a;">ALERT</button>
-        <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96;color:#c4b5fd;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:5px;">
-  <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><defs><linearGradient id="nb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient></defs><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="url(#nb1)"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
-  NIVI AI
-</button>
+        <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac;">BUY</button>
+        <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5;">SELL</button>
+        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa;">CHART</button>
+        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa;">NEWS</button>
+        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a;">ALERT</button>
+        <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd;">TARGET</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px;">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
+          NIVI AI
+        </button>
       </div>
     </div>`;
   }
