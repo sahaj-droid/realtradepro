@@ -546,16 +546,21 @@ body.light .ticker-price{color:#e2e8f0;}
 </div>
 
 <!-- ADD GROUP MODAL -->
-<div id="addGroupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:280px;">
-    <div style="font-size:14px;font-weight:700;color:#38bdf8;margin-bottom:12px;">+ New Group</div>
-    <input id="newGroupName" placeholder="Group name (e.g. PSU, IT, Green)" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:white;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;">
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button onclick="saveGroup()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
-      <button onclick="document.getElementById('addGroupModal').style.display='none'" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+<!-- WATCHLIST NAME MODAL (Add / Rename) -->
+<div id="wlNameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:288px;">
+    <h2 id="wlNameModalTitle" style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:14px;letter-spacing:0.3px;">+ New Watchlist</h2>
+    <input id="wlNameInput" placeholder="Watchlist name..."
+      style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;font-weight:600;"
+      onkeydown="if(event.key==='Enter') confirmWLName();">
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="confirmWLName()" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+      <button onclick="closeWLNameModal()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
     </div>
   </div>
 </div>
+<!-- legacy id kept for backward compat -->
+<div id="addGroupModal" style="display:none;"></div>
 
 
 <!-- ALERT MODAL -->
@@ -683,7 +688,19 @@ body.light .ticker-price{color:#e2e8f0;}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <!-- Avatar ring -->
-        <div id="nivi-avatar-ring" style="width:36px;height:36px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;font-size:18px;background:#0a1628;transition:box-shadow 0.3s;">🤖</div>
+        <div id="nivi-avatar-ring" style="width:38px;height:38px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;background:#0a1628;transition:box-shadow 0.3s;padding:4px;">
+  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
+    <defs>
+      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient>
+      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EA4335"/><stop offset="100%" stop-color="#FBBC05"/></linearGradient>
+      <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#34A853"/><stop offset="100%" stop-color="#4285F4"/></linearGradient>
+    </defs>
+    <!-- Gemini star shape: 4 tapered lobes -->
+    <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g1)" opacity="0.95"/>
+    <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g2)" opacity="0.5" style="mix-blend-mode:screen"/>
+    <circle cx="14" cy="14" r="2.5" fill="white" opacity="0.9"/>
+  </svg>
+</div>
         <div>
           <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;">Nivi AI</div>
           <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;">--</div>
@@ -1067,10 +1084,12 @@ function renderWLTabs(){
     const isActive=(i===currentWL);
     html+=`<button class="group-btn${isActive?' active':''}"
       onclick="switchWL(${i})"
+      oncontextmenu="event.preventDefault();renameWL(${i})"
       ondblclick="renameWL(${i})"
-      title="Double-tap to rename"
+      title="Long press / double-tap to rename"
       style="${isActive?'border-color:#38bdf8;color:#38bdf8;':''}"
-    >${w.name}</button>`;
+      data-wlidx="${i}"
+    >${w.name} ${isActive?'&#9660;':''}</button>`;
   });
   if(watchlists.length<6){
     html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
@@ -1086,23 +1105,48 @@ function switchWL(idx){
   renderWL();
 }
 
+// WL Name Modal state
+let _wlModalMode='add', _wlModalIdx=-1;
+
 function addWL(){
-  const name=prompt("New watchlist name?","Watchlist "+(watchlists.length+1));
-  if(!name||!name.trim()) return;
-  watchlists.push({name:name.trim(),stocks:[]});
-  saveWatchlists();
-  switchWL(watchlists.length-1);
-  showPopup("'"+name.trim()+"' banayo!");
+  _wlModalMode='add';
+  _wlModalIdx=-1;
+  document.getElementById('wlNameModalTitle').innerText='+ New Watchlist';
+  document.getElementById('wlNameInput').value='Watchlist '+(watchlists.length+1);
+  const m=document.getElementById('wlNameModal');
+  m.style.display='flex';
+  setTimeout(()=>{ const inp=document.getElementById('wlNameInput'); inp.focus(); inp.select(); },100);
 }
 
 function renameWL(idx){
-  const cur=watchlists[idx].name;
-  const name=prompt("Rename watchlist:",cur);
-  if(!name||!name.trim()) return;
-  watchlists[idx].name=name.trim();
-  saveWatchlists();
-  renderWLTabs();
-  showPopup("Renamed to '"+name.trim()+"'");
+  _wlModalMode='rename';
+  _wlModalIdx=idx;
+  document.getElementById('wlNameModalTitle').innerText='Rename Watchlist';
+  document.getElementById('wlNameInput').value=watchlists[idx].name;
+  const m=document.getElementById('wlNameModal');
+  m.style.display='flex';
+  setTimeout(()=>{ const inp=document.getElementById('wlNameInput'); inp.focus(); inp.select(); },100);
+}
+
+function confirmWLName(){
+  const val=document.getElementById('wlNameInput').value.trim();
+  if(!val){ showPopup('Name required'); return; }
+  closeWLNameModal();
+  if(_wlModalMode==='add'){
+    watchlists.push({name:val,stocks:[]});
+    saveWatchlists();
+    switchWL(watchlists.length-1);
+    showPopup("'"+val+"' banayo!");
+  } else {
+    watchlists[_wlModalIdx].name=val;
+    saveWatchlists();
+    renderWLTabs();
+    showPopup("Renamed to '"+val+"'");
+  }
+}
+
+function closeWLNameModal(){
+  document.getElementById('wlNameModal').style.display='none';
 }
 
 function renderGroupTabs(){ renderWLTabs(); }
@@ -1194,10 +1238,19 @@ async function fetchYahooSuggestions(val, box) {
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
     if (!j.ok || !j.results || j.results.length === 0) return;
-    // Filter: prefer .NS (Indian stocks), remove already in watchlist
+    // STRICT: Only Indian NSE/BSE stocks (.NS or .BO exchange)
     const alreadyIn = new Set(wl);
+    const INDIAN_EXCHANGES = new Set(['NSI','BSE','NSE','NMS']);
     const results = j.results
-      .filter(r => !alreadyIn.has(r.symbol.replace('.NS','').replace('.BO','')))
+      .filter(r => {
+        const sym = r.symbol || '';
+        const exch = (r.exchange || r.exchDisp || '').toUpperCase();
+        // Must be .NS or .BO suffix, OR exchange is NSI/BSE
+        const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
+        const cleanSym = sym.replace('.NS','').replace('.BO','');
+        const notInWL = !alreadyIn.has(cleanSym);
+        return isIndian && notInWL;
+      })
       .slice(0, 7);
     if (results.length > 0 && _lastSearchVal === val) {
       renderSuggestions(results, box, false);
@@ -1490,7 +1543,10 @@ async function renderWL(){
         <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#a78bfa;">NEWS</button>
         <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12;color:#fde68a;">ALERT</button>
         <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96;color:#c4b5fd;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;grid-column:span 2;">🤖 NIVI</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:5px;">
+  <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><defs><linearGradient id="nb1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient></defs><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="url(#nb1)"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
+  NIVI AI
+</button>
       </div>
     </div>`;
   }
@@ -1933,11 +1989,11 @@ async function fetchFundamentals(sym){
   try {
     const apiUrl = localStorage.getItem('customAPI')||API;
     const controller = new AbortController();
-    const tid = setTimeout(()=>controller.abort(), 8000);
+    const tid = setTimeout(()=>controller.abort(), 15000);
     const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`, {signal: controller.signal});
     clearTimeout(tid);
     const j = await r.json();
-    if(j && !j.error && j.price) d = j;
+    if(j && !j.error && (j.price || j.regularMarketPrice)) d = j;
   } catch(e){}
   // Fallback to fetchFull meta
   if(!d) d = await fetchFull(sym, false);
@@ -1998,7 +2054,6 @@ async function openDetail(sym,isIndex){
       </div>
     </div>
     <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
-    <div id="circuitSection" style="margin-top:8px;"></div>
     <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
     <div id="bbSection" style="margin-top:8px;"></div>
     <div id="smartAlertSection" style="margin-top:8px;"></div>
@@ -2011,6 +2066,33 @@ async function openDetail(sym,isIndex){
   if(!isIndex){
     const fund=await fetchFundamentals(sym);
     const fs=document.getElementById("fundamentalsSection");
+    if(fs && !fund){
+      // fetchFundamentals failed — use cached quote data if available
+      const cd = cache[sym]&&cache[sym].data;
+      if(cd){
+        function _fc(v){ return (v===undefined||v===null||isNaN(v))?null:v; }
+        function _fmtV(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(1)+'Cr';if(v>=1e5)return(v/1e5).toFixed(1)+'L';return v.toLocaleString('en-IN');}
+        function _fmtC(v){if(!v||isNaN(v))return '--';if(v>=1e7)return'₹'+(v/1e7).toFixed(0)+'Cr';return '₹'+v.toLocaleString('en-IN');}
+        const pe=_fc(cd.trailingPE)?parseFloat(cd.trailingPE).toFixed(2):'--';
+        const eps=_fc(cd.epsTrailingTwelveMonths)?'₹'+parseFloat(cd.epsTrailingTwelveMonths).toFixed(2):'--';
+        const mktCap=_fmtC(cd.marketCap);
+        const vol=_fmtV(cd.regularMarketVolume||cd.averageDailyVolume3Month);
+        fs.innerHTML=`<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS <span style="color:#4b6280;font-weight:400;">(cached)</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;">
+            <div><div style="font-size:9px;color:#4b6280;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;">${pe}</div></div>
+            <div style="text-align:right;"><div style="font-size:9px;color:#4b6280;">MKT CAP</div><div style="font-size:11px;font-weight:700;">${mktCap}</div></div>
+          </div>
+          <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;">
+            <div><div style="font-size:9px;color:#4b6280;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;">${eps}</div></div>
+            <div style="text-align:right;"><div style="font-size:9px;color:#4b6280;">VOLUME</div><div style="font-size:11px;font-weight:700;">${vol}</div></div>
+          </div>
+          <div style="font-size:9px;color:#4b6280;text-align:center;padding:3px;">Full data unavailable — tap stock again to retry</div>
+        </div>`;
+      } else {
+        fs.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Fundamentals unavailable. Check API.</div>';
+      }
+    }
     if(fs&&fund){
       const fpe_v=fund.forwardPE||'--';
       const feps_v=fund.forwardEps||'--';
@@ -2113,6 +2195,7 @@ async function openDetail(sym,isIndex){
 // CIRCUIT LIMIT (from Yahoo Finance meta)
 // ======================================
 function renderCircuit(sym, d) {
+  return; // Removed by user request
   const cs = document.getElementById("circuitSection");
   if (!cs) return;
   const pc = d.chartPreviousClose || 0;
@@ -2282,7 +2365,14 @@ function buildDayBar(d){
   const lo=d.regularMarketDayLow, hi=d.regularMarketDayHigh, cur=d.regularMarketPrice;
   const range=hi-lo; if(range<=0) return '';
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
-  return '<div style="margin:1px 0;"><div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;font-weight:600;"><span>L:'+lo.toFixed(0)+'</span><span>H:'+hi.toFixed(0)+'</span></div><div style="background:#1e2d3d;border-radius:2px;height:2px;position:relative;margin-top:2px;"><div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div><div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:1px;"></div></div></div>';
+  return '<div style="margin:0;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#64748b;font-weight:700;line-height:1;">'
+    +'<span>L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
+    +'<span>H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span></div>'
+    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-top:2px;">'
+    +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+    +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:50%;box-shadow:0 0 2px rgba(255,255,255,0.6);"></div>'
+    +'</div></div>';
 }
 
 // -- 52W BAR (inline visual) --
@@ -2291,7 +2381,14 @@ function build52WBar(d){
   const lo=d.fiftyTwoWeekLow, hi=d.fiftyTwoWeekHigh, cur=d.regularMarketPrice;
   const range=hi-lo; if(range<=0) return '';
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
-  return '<div style="margin:1px 0;"><div style="display:flex;justify-content:space-between;font-size:10px;color:#64748b;font-weight:600;"><span>52L:'+lo.toFixed(0)+'</span><span>52H:'+hi.toFixed(0)+'</span></div><div style="background:#1e2d3d;border-radius:2px;height:2px;position:relative;margin-top:2px;"><div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div><div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:1px;"></div></div></div>';
+  return '<div style="margin:0;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#64748b;font-weight:700;line-height:1;">'
+    +'<span>52L:<span style="color:#4b6280;">'+lo.toFixed(0)+'</span></span>'
+    +'<span>52H:<span style="color:#38bdf8;">'+hi.toFixed(0)+'</span></span></div>'
+    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-top:2px;">'
+    +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>'
+    +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:#38bdf8;border-radius:50%;box-shadow:0 0 2px rgba(56,189,248,0.6);"></div>'
+    +'</div></div>';
 }
 
 function get52WLabel(d){
@@ -3142,10 +3239,12 @@ async function renderBollinger(sym){
   const hist=await fetchHistory(sym, range, interval);
 
   if(!hist||!hist.close||hist.close.length<(BB_CONFIG[_bbRange]?.bbPeriod||20)){
-    const isLocal = location.protocol === 'file:';
-    bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:8px;">
-      <div style="color:#f59e0b;font-weight:700;margin-bottom:3px;">${isLocal?'Open via GitHub Pages':'Not enough data'}</div>
-      <div style="color:#4b6280;font-size:9px;">${isLocal?'Local file cannot call GAS API':'Need more candles for BB calculation'}</div>
+    const minNeeded=BB_CONFIG[_bbRange]?.bbPeriod||20;
+    const got=hist?.close?.length||0;
+    bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:10px;">
+      <div style="color:#f59e0b;font-weight:700;margin-bottom:4px;">&#9888; BB Data Unavailable</div>
+      <div style="color:#4b6280;font-size:9px;line-height:1.5;">${got===0?'History API failed. Check GAS API or network.':'Only '+got+' candles — need '+minNeeded+' for '+_bbRange+'. Try a shorter range.'}</div>
+      <button onclick="renderBollinger('${sym}')" style="margin-top:8px;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Retry</button>
     </div>`;
     return;
   }
