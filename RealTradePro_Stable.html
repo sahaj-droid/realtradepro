@@ -805,7 +805,8 @@ const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFh
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 // ✨ NIVI AI — merged GAS v2 URL
-const API_NIVI = "https://script.google.com/macros/s/AKfycbz1oSX6l2yx4R5VHTdhrC1LzlV0maGXgac5oFraXlXF-06sGjTfC9ToYBpiy-haP-o1/exec";
+// API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
+const API_NIVI = localStorage.getItem('customAPI') || "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -2029,20 +2030,16 @@ function renderHist(){
 // FUNDAMENTALS (day-cached, from Yahoo meta)
 // ======================================
 async function fetchFundamentals(sym){
-  // v4 key - uses quote endpoint for richer data
-  const DAY_KEY='fundCache4_'+sym;
-  const today=new Date().toISOString().split('T')[0];
+  // v5: 7-day cache (PE/EPS change quarterly, not daily)
+  // Sheet integration removed for fundamentals — unreliable (formula async delay)
+  // Source: type=quote GAS endpoint → Yahoo Finance v7/quote (richest data)
+  const FUND_KEY='fundCache5_'+sym;
+  const CACHE_DAYS=7;
   try{
-    const stored=JSON.parse(localStorage.getItem(DAY_KEY)||'null');
-    if(stored&&stored.date===today) return stored.data;
+    const stored=JSON.parse(localStorage.getItem(FUND_KEY)||'null');
+    if(stored&&stored.ts&&(Date.now()-stored.ts)<(CACHE_DAYS*86400000)) return stored.data;
   }catch(e){}
-  // ✨ Google Sheets GOOGLEFINANCE — PE/EPS/MarketCap/BookValue/52W H/L only
-  // Live price + volume = always from Yahoo Finance (no delay)
-  // Sheet only fills fundamentals that don't need real-time data
-  let _sheetFund = null;
-  if(isSheetEnabled()){
-    try{ _sheetFund = await fetchFundSheet(sym); }catch(e){}
-  }
+  let _sheetFund = null; // Sheet bypass — kept for future use
   function fmtVol(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(2)+'Cr';if(v>=1e5)return(v/1e5).toFixed(2)+'L';return v.toLocaleString('en-IN');}
   function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
   function fmtDate(ts){
@@ -2059,41 +2056,37 @@ async function fetchFundamentals(sym){
     localStorage.getItem('customAPI2')||API2,
     localStorage.getItem('customAPI3')||API3
   ].filter(Boolean);
+  const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
   for(let _qu of _quoteUrls){
     if(d) break;
     try {
       const controller = new AbortController();
-      const tid = setTimeout(()=>controller.abort(), 12000);
-      const r = await fetch(`${_qu}?type=quote&s=${sym}.NS`, {signal: controller.signal});
+      const tid = setTimeout(()=>controller.abort(), 15000);
+      const r = await fetch(`${_qu}?type=quote&s=${encodeURIComponent(_symNS)}`, {signal: controller.signal});
       clearTimeout(tid);
       const j = await r.json();
-      if(j && !j.error && (j.price || j.regularMarketPrice || j.pe || j.eps || j.trailingPE)) d = j;
+      // GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
+      if(j && !j.error && j.price) d = j;
     } catch(e){}
   }
-  // Fallback: fetchFull fresh (NOT cache — batch endpoint misses PE/EPS)
-  // Only use cache as absolute last resort and only for price/vol fields
-  if(!d){
-    try{
-      const freshD = await fetchFull(sym, false);
-      // fetchFull batch doesn't have PE/EPS — only use if quote failed completely
-      if(freshD && (freshD.trailingPE || freshD.pe)) d = freshD;
-    }catch(e){}
-  }
-  // Last resort: cache for volume only (pe/eps won't be there from batch)
+  // Last resort: cache for volume (batch data has volume but not pe/eps)
   const _cacheD = cache[sym]&&cache[sym].data;
 
   let pe='--',eps='--',mktCap='--',volume='--';
   let divYield='--',forwardPE='--',bookValue='--',forwardEps='--',earningsDate='--',exDivDate='--';
   // For volume: use cache if quote didn't have it
   if(!d && _cacheD) d = _cacheD;
+  // GAS quoteFetch field names: pe, eps, mktCap, bookValue, dividendYield, forwardPE, epsForward, earningsTimestamp, exDividendDate
+  // Yahoo v7/quote field names: trailingPE, epsTrailingTwelveMonths, marketCap, bookValue, dividendYield, forwardPE, epsForward
   if(d){
-    var pe_v=safe(d.trailingPE||d.pe);
+    var pe_v=safe(d.pe||d.trailingPE);
     if(pe_v!==null&&!isNaN(pe_v)&&pe_v>0) pe=parseFloat(pe_v).toFixed(2);
-    var eps_v=safe(d.epsTrailingTwelveMonths||d.eps);
+    var eps_v=safe(d.eps||d.epsTrailingTwelveMonths);
     if(eps_v!==null&&!isNaN(eps_v)) eps='₹'+parseFloat(eps_v).toFixed(2);
-    var cap_v=safe(d.marketCap||d.mktCap);
+    var cap_v=safe(d.mktCap||d.marketCap);
     if(cap_v!==null&&!isNaN(cap_v)) mktCap=fmtCap(cap_v);
-    var vol_v=safe(d.regularMarketVolume||d.volume||d.averageDailyVolume3Month);
+    // Volume: from cache (batch has volume, quote may also have it)
+    var vol_v=safe(d.volume||d.regularMarketVolume||(_cacheD&&(_cacheD.regularMarketVolume||_cacheD.volume))||d.averageDailyVolume3Month);
     if(vol_v) volume=fmtVol(vol_v);
     var dy=safe(d.dividendYield||d.trailingAnnualDividendYield);
     if(dy!==null&&!isNaN(dy)&&dy>0){
@@ -2109,19 +2102,15 @@ async function fetchFundamentals(sym){
     if(ets!==null&&ets>0) earningsDate=fmtDate(ets);
     var exd=safe(d.exDividendDate||d.dividendDate);
     if(exd!==null&&exd>0) exDivDate=fmtDate(exd);
+  } else if(_cacheD){
+    // Absolute fallback — batch cache has volume but usually no PE
+    var vol_v2=safe(_cacheD.regularMarketVolume||_cacheD.volume);
+    if(vol_v2) volume=fmtVol(vol_v2);
   }
-  // ✨ Override PE/EPS/MarketCap/BookValue/52W H/L from Google Sheets if available
-  // Volume + Live Price stay from Yahoo Finance (real-time)
-  if(_sheetFund){
-    if(_sheetFund.pe !== null && _sheetFund.pe > 0) pe = parseFloat(_sheetFund.pe).toFixed(2);
-    if(_sheetFund.eps !== null) eps = '₹' + parseFloat(_sheetFund.eps).toFixed(2);
-    if(_sheetFund.marketCap !== null) mktCap = fmtCap(_sheetFund.marketCap);
-    if(_sheetFund.bookValue !== null && _sheetFund.bookValue > 0) bookValue = '₹' + parseFloat(_sheetFund.bookValue).toFixed(2);
-    // Note: 52W H/L from sheet used only if Yahoo didn't provide them
-  }
+  // Sheet override removed — Sheet GOOGLEFINANCE formula has async delay (unreliable)
   const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
-    _sheetSource:_sheetFund?'googlefinance':null};
-  try{ localStorage.setItem(DAY_KEY,JSON.stringify({date:today,data})); }catch(e){}
+    _source:'yahoo_quote'};
+  try{ localStorage.setItem(FUND_KEY,JSON.stringify({ts:Date.now(),data})); }catch(e){}
   return data;
 }
 
@@ -4295,7 +4284,8 @@ Keep it concise, practical, no disclaimers. Use ₹ symbol. Max 200 words.`;
       if(resp && resp.ok && resp.answer) return resp.answer;
     }
     // 2. GAS askMarket fallback
-    const r = await fetch(`${API_NIVI}?type=askMarket&prompt=${encodeURIComponent(prompt)}&stocks=${encodeURIComponent(wl.slice(0,12).join(','))}`);
+    const _mUrl = localStorage.getItem('customAPI') || API;
+    const r = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}&stocks=${encodeURIComponent(wl.slice(0,12).join(','))}`);
     const data = await r.json();
     const txt = data.summary || data.text || data.content || data.answer || '';
     if(!txt) throw new Error(data.error || 'No response from GAS');
@@ -5144,14 +5134,32 @@ async function openNivi(sym) {
     }
   } catch(e) {}
 
-  // Fetch fresh — GAS first, Direct Gemini fallback
+  // Fetch fresh — try all 3 GAS URLs, then Direct Gemini fallback
+  let _niviData = null;
+  let _gasErr = null;
+  const _niviUrls = [
+    localStorage.getItem('customAPI') || API,
+    localStorage.getItem('customAPI2') || API2,
+    localStorage.getItem('customAPI3') || API3
+  ].filter(Boolean);
+  for(const _nu of _niviUrls){
+    if(_niviData) break;
+    try{
+      const ctrl = new AbortController();
+      const tid = setTimeout(()=>ctrl.abort(), 25000); // Nivi needs more time (Gemini call inside)
+      const r = await fetch(`${_nu}?type=askNivi&s=${encodeURIComponent(sym)}.NS`, {signal:ctrl.signal});
+      clearTimeout(tid);
+      const data = await r.json();
+      if(data.ok) _niviData = data;
+      else _gasErr = new Error(data.error || 'GAS returned ok:false');
+    }catch(e){ _gasErr = e; }
+  }
+  if(_niviData){
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: _niviData }));
+    renderNiviResponse(_niviData);
+  } else {
+  const gasErr = _gasErr || new Error('All GAS URLs failed');
   try {
-    const r = await fetch(`${API_NIVI}?type=askNivi&s=${encodeURIComponent(sym)}.NS`);
-    const data = await r.json();
-    if (!data.ok) throw new Error(data.error || 'GAS API error');
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
-    renderNiviResponse(data);
-  } catch(gasErr) {
     // GAS failed — try Direct Gemini if key is set
     const gemKey = localStorage.getItem('geminiApiKey');
     if(gemKey){
@@ -5212,6 +5220,12 @@ Bullet format: • [vakya]`;
       document.getElementById('nivi-bullets').innerHTML=`<div style="color:#ef4444;font-size:12px;line-height:1.8;">⚠️ ${gasErr.message}<br><span style="color:#4b6280;font-size:11px;">Settings → Gemini API Key add karo for direct fallback</span></div>`;
       document.getElementById('nivi-actions').style.display='flex';
     }
+  } catch(outerErr){
+    document.getElementById('nivi-loading').style.display='none';
+    document.getElementById('nivi-answer').style.display='block';
+    document.getElementById('nivi-bullets').innerHTML=`<div style="color:#ef4444;font-size:12px;">⚠️ ${outerErr.message}</div>`;
+    document.getElementById('nivi-actions').style.display='flex';
+  }
   }
 }
 
