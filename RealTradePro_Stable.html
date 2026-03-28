@@ -727,79 +727,88 @@ body.light .ticker-price{color:#e2e8f0;}
 </div>
 
 <!-- ============================================================ -->
-<!-- 🤖 NIVI AI MODAL                                             -->
-<!-- ============================================================ -->
+<!-- 🤖 NIVI AI MODAL -->
 <div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:flex-end;justify-content:center;">
-  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;padding:18px 16px 28px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;width:100%;max-width:440px;height:88vh;display:flex;flex-direction:column;overflow:hidden;">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <!-- Avatar ring -->
-        <div id="nivi-avatar-ring" style="width:38px;height:38px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;background:#0a1628;transition:box-shadow 0.3s;padding:4px;">
-  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" width="26" height="26">
-    <defs>
-      <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient>
-      <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EA4335"/><stop offset="100%" stop-color="#FBBC05"/></linearGradient>
-      <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#34A853"/><stop offset="100%" stop-color="#4285F4"/></linearGradient>
-    </defs>
-    <!-- Gemini star shape: 4 tapered lobes -->
-    <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g1)" opacity="0.95"/>
-    <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g2)" opacity="0.5" style="mix-blend-mode:screen"/>
-    <circle cx="14" cy="14" r="2.5" fill="white" opacity="0.9"/>
-  </svg>
-</div>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;">Nivi AI</div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;">--</div>
-            <div id="nivi-cache-timer" style="font-size:9px;color:#4b6280;display:none;">•</div>
+    <!-- FIXED TOP: Header + Price + Tech chips -->
+    <div style="padding:14px 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(6,95,70,0.3);">
+
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="nivi-avatar-ring" style="width:34px;height:34px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;background:#0a1628;transition:box-shadow 0.3s;flex-shrink:0;">
+            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EA4335"/><stop offset="100%" stop-color="#FBBC05"/></linearGradient>
+              </defs>
+              <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g1)" opacity="0.95"/>
+              <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g2)" opacity="0.5" style="mix-blend-mode:screen"/>
+              <circle cx="14" cy="14" r="2.5" fill="white" opacity="0.9"/>
+            </svg>
           </div>
-      </div>
-      <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕ Close</button>
-    </div>
-
-    <!-- Price + Rec Badge -->
-    <div id="nivi-price-row" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:10px 12px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div id="nivi-price" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#e2e8f0;">--</div>
-          <div id="nivi-change" style="font-size:11px;font-weight:700;color:#94a3b8;">--</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;line-height:1.2;">Nivi AI</div>
+            <div style="display:flex;gap:5px;align-items:center;">
+              <div id="nivi-sym-label" style="font-size:10px;color:#4b6280;font-family:'JetBrains Mono',monospace;"></div>
+              <div id="nivi-cache-timer" style="font-size:9px;color:#4b6280;display:none;"></div>
+            </div>
+          </div>
         </div>
-        <div id="nivi-rec-badge" style="font-size:13px;font-weight:700;padding:6px 14px;border-radius:8px;text-align:center;letter-spacing:0.5px;">--</div>
+        <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕ Close</button>
+      </div>
+
+      <!-- Price + Rec Badge (compact) -->
+      <div id="nivi-price-row" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div id="nivi-price" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:#e2e8f0;line-height:1.2;">--</div>
+            <div id="nivi-change" style="font-size:10px;font-weight:700;color:#94a3b8;">--</div>
+          </div>
+          <div id="nivi-rec-badge" style="font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;text-align:center;">--</div>
+        </div>
+      </div>
+
+      <!-- Tech chips row -->
+      <div id="nivi-tech-row" style="display:none;gap:4px;flex-wrap:nowrap;overflow-x:auto;"></div>
+    </div>
+
+    <!-- SCROLLABLE MIDDLE: Loading + AI bullets -->
+    <div style="flex:1;overflow-y:auto;padding:12px 16px;-webkit-overflow-scrolling:touch;">
+
+      <!-- Loading -->
+      <div id="nivi-loading" style="text-align:center;padding:40px 0;">
+        <div class="spinner" style="margin:0 auto 10px;"></div>
+        <div style="font-size:12px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi सोच रही है...</div>
+      </div>
+
+      <!-- AI Bullets -->
+      <div id="nivi-answer" style="display:none;">
+        <div id="nivi-bullets" style="font-size:13px;color:#e2e8f0;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:normal;overflow-wrap:break-word;white-space:normal;"></div>
       </div>
     </div>
 
-    <!-- Technical Indicators mini-row -->
-    <div id="nivi-tech-row" style="display:none;gap:5px;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <!-- FIXED BOTTOM: Disclaimer + Buttons -->
+    <div style="padding:10px 16px 20px;flex-shrink:0;border-top:1px solid rgba(6,95,70,0.3);">
 
-    <!-- Loading spinner -->
-    <div id="nivi-loading" style="text-align:center;padding:30px 0;">
-      <div class="spinner" style="margin:0 auto 10px;"></div>
-      <div style="font-size:12px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
+      <!-- Disclaimer (compact) -->
+      <div id="nivi-disclaimer" style="display:none;margin-bottom:8px;">
+        <div style="font-size:9px;color:#4b6280;line-height:1.4;font-family:'Rajdhani',sans-serif;">⚠️ केवल जानकारी हेतु। निवेश से पूर्व वित्तीय सलाहकार से परामर्श लें।</div>
+      </div>
+
+      <!-- Action buttons — 4 in a row -->
+      <div id="nivi-actions" style="display:none;gap:6px;display:none;">
+        <div style="display:flex;gap:6px;width:100%;">
+          <button id="nivi-speak-btn" onclick="niviSpeak()" style="flex:1;background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">🔊 Awaaz</button>
+          <button id="nivi-stop-btn" onclick="niviStop()" style="flex:1;display:none;background:#7f1d1d;color:#fca5a5;border:1px solid #7f1d1d;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">⏹ Stop</button>
+          <button onclick="niviCopy()" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">📋 Copy</button>
+          <button onclick="niviRefresh()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">🔄 Refresh</button>
+        </div>
+      </div>
     </div>
-
-    <!-- AI Response (3 bullets) -->
-    <div id="nivi-answer" style="display:none;margin-bottom:12px;">
-      <div id="nivi-bullets" style="font-size:13px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;overflow-wrap:break-word;"></div>
-    </div>
-
-    <!-- Disclaimer -->
-    <div id="nivi-disclaimer" style="display:none;background:#111;border-radius:8px;padding:8px 10px;margin-bottom:10px;">
-      <div style="font-size:10px;color:#4b6280;line-height:1.5;font-family:'Rajdhani',sans-serif;">⚠️ यह सलाह केवल जानकारी के लिए है। निवेश से पहले अपने वित्तीय सलाहकार से परामर्श लें। Nivi SEBI registered advisor नहीं है।</div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div id="nivi-actions" style="display:none;gap:8px;flex-wrap:wrap;">
-      <button id="nivi-speak-btn" onclick="niviSpeak()" style="flex:1;background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊 Awaaz</button>
-      <button id="nivi-stop-btn" onclick="niviStop()" style="flex:1;display:none;background:#7f1d1d;color:#fca5a5;border:1px solid #7f1d1d;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">⏹ Stop</button>
-      <button onclick="niviCopy()" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">📋 Copy</button>
-      <button onclick="niviRefresh()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔄 Refresh</button>
-    </div>
-
   </div>
 </div>
-
 </div><!-- end mainApp -->
 
 <script>
@@ -5358,14 +5367,15 @@ const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#
   if (nivi.ok && nivi.answer) {
     // Split into bullet points and render
     const lines = nivi.answer.split('\n').filter(l => l.trim());
+const lines = nivi.answer.split('\n').filter(l => l.trim());
     bullets.innerHTML = lines.map((line, i) => {
       const clean = line.replace(/^[•\-\*]\s*/, '').trim();
-      return `<div style="display:flex;gap:8px;padding:8px 0;${i < lines.length-1 ? 'border-bottom:1px solid rgba(255,255,255,0.05)' : ''}">
-        <span style="color:#34d399;font-size:14px;flex-shrink:0;">•</span>
-        <span style="color:#e2e8f0;font-size:13px;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:keep-all;">${clean}</span>
+      if (!clean) return '';
+      return `<div style="display:flex;gap:8px;padding:9px 0;${i < lines.length-1 ? 'border-bottom:1px solid rgba(255,255,255,0.06)' : ''}">
+        <span style="color:#34d399;font-size:13px;flex-shrink:0;margin-top:2px;">•</span>
+        <span style="color:#e2e8f0;font-size:13px;line-height:1.75;font-family:'Noto Sans Devanagari','Mangal','Arial Unicode MS',sans-serif;word-break:normal;overflow-wrap:break-word;display:block;width:100%;">${clean}</span>
       </div>`;
     }).join('');
-
     // Auto-speak if user prefers voice
     const voicePref = localStorage.getItem('niviVoicePref');
     if (voicePref === 'voice') {
