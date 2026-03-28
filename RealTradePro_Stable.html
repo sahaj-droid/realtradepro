@@ -226,18 +226,18 @@ body.light .ticker-price{color:#e2e8f0;}
   </div>
 </div>
 
-<!-- SORT + GROUP BAR -->
+<!-- SORT + WATCHLIST TABS BAR -->
 <div id="filterBar" class="px-3 pb-2">
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
     <span style="font-size:10px;color:#4b6280;">Sort:</span>
     <button onclick="sortAZ()" class="sort-btn">A-Z</button>
     <button onclick="sortPrice()" class="sort-btn">Price</button>
     <button onclick="sortPercent()" class="sort-btn">%</button>
-    <button onclick="showAddGroupModal()" style="margin-left:auto;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Group</button>
+    <button onclick="triggerWatchlistCSVImport()" style="margin-left:auto;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128229; CSV</button>
   </div>
-  <!-- Group filter tabs -->
-  <div id="groupTabs" style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;">
-    <button class="group-btn active" onclick="filterGroup('ALL')" id="grp-ALL">All</button>
+  <!-- Watchlist Tabs: fixed 3 + add, left-right scrollable, rename on long press -->
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;align-items:center;" id="wlTabsBar">
+    <!-- rendered by renderWLTabs() -->
   </div>
 </div>
 
@@ -744,6 +744,10 @@ const API_NIVI = "https://script.google.com/macros/s/AKfycbz1oSX6l2yx4R5VHTdhrC1
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
+// MULTI-WATCHLIST SYSTEM
+// watchlists: [{name:"My WL", stocks:["SBIN","TCS"]}, ...]
+let watchlists=[{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
+let currentWL=0; // index of active watchlist
 let currentTradeType="CNC"; // CNC or MIS
 // -- FONT SIZE TOGGLE --
 const FONT_SIZES = {S:'100%', M:'112%', L:'125%'};
@@ -959,6 +963,30 @@ try{isDark=localStorage.getItem("theme")!=="light";}catch(e){}
 (function(){ const fs=localStorage.getItem('fontSize')||'medium'; document.documentElement.setAttribute('data-fsize',fs); })();
 try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 
+// MULTI-WATCHLIST: load from localStorage, migrate old wl[] into WL1 if needed
+(function(){
+  try{
+    const saved=JSON.parse(localStorage.getItem("watchlists"));
+    if(saved&&Array.isArray(saved)&&saved.length>0){
+      watchlists=saved;
+    } else {
+      // Migrate: put existing wl[] into Watchlist 1
+      watchlists=[
+        {name:"Watchlist 1",stocks:[...wl]},
+        {name:"Watchlist 2",stocks:[]},
+        {name:"Watchlist 3",stocks:[]}
+      ];
+      saveWatchlists();
+    }
+  }catch(e){
+    watchlists=[{name:"Watchlist 1",stocks:[...wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
+  }
+  try{currentWL=parseInt(localStorage.getItem("currentWL"))||0;}catch(e){}
+  if(currentWL>=watchlists.length) currentWL=0;
+  // keep global wl in sync with active watchlist for legacy code compatibility
+  wl=watchlists[currentWL].stocks;
+})();
+
 if(!isDark){ document.body.classList.add("light"); }
 
 const indicesList=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
@@ -1024,60 +1052,97 @@ function hideLoader(){
 // ======================================
 // WATCHLIST GROUPS
 // ======================================
-function renderGroupTabs(){
-  const bar=document.getElementById("groupTabs");
-  let html=`<button class="group-btn ${currentGroup==='ALL'?'active':''}" onclick="filterGroup('ALL')" id="grp-ALL">All</button>`;
-  Object.keys(groups).forEach(g=>{
-    html+=`<button class="group-btn ${currentGroup===g?'active':''}" onclick="filterGroup('${g}')" id="grp-${g}">${g} <span onclick="event.stopPropagation();deleteGroup('${g}')" style="color:#ef4444;margin-left:3px;font-size:10px;">x</span></button>`;
+function saveWatchlists(){
+  localStorage.setItem("watchlists",JSON.stringify(watchlists));
+  localStorage.setItem("currentWL",currentWL);
+  wl = watchlists[currentWL].stocks;
+  localStorage.setItem("wl",JSON.stringify(wl));
+}
+
+function renderWLTabs(){
+  const bar=document.getElementById("wlTabsBar");
+  if(!bar) return;
+  let html="";
+  watchlists.forEach((w,i)=>{
+    const isActive=(i===currentWL);
+    html+=`<button class="group-btn${isActive?' active':''}"
+      onclick="switchWL(${i})"
+      ondblclick="renameWL(${i})"
+      title="Double-tap to rename"
+      style="${isActive?'border-color:#38bdf8;color:#38bdf8;':''}"
+    >${w.name}</button>`;
   });
+  if(watchlists.length<6){
+    html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
+  }
   bar.innerHTML=html;
 }
 
-function filterGroup(g){
-  currentGroup=g;
-  renderGroupTabs();
+function switchWL(idx){
+  currentWL=idx;
+  wl=watchlists[currentWL].stocks;
+  localStorage.setItem("currentWL",currentWL);
+  renderWLTabs();
   renderWL();
 }
 
-function showAddGroupModal(){
-  document.getElementById("newGroupName").value="";
-  document.getElementById("addGroupModal").style.display="flex";
+function addWL(){
+  const name=prompt("New watchlist name?","Watchlist "+(watchlists.length+1));
+  if(!name||!name.trim()) return;
+  watchlists.push({name:name.trim(),stocks:[]});
+  saveWatchlists();
+  switchWL(watchlists.length-1);
+  showPopup("'"+name.trim()+"' banayo!");
 }
 
-function saveGroup(){
-  const name=document.getElementById("newGroupName").value.trim().toUpperCase();
-  if(!name){ showPopup("Group name required"); return; }
-  if(!groups[name]) groups[name]=[];
-  localStorage.setItem("groups",JSON.stringify(groups));
-  document.getElementById("addGroupModal").style.display="none";
-  renderGroupTabs();
-  showPopup("Group '"+name+"' banayo!");
+function renameWL(idx){
+  const cur=watchlists[idx].name;
+  const name=prompt("Rename watchlist:",cur);
+  if(!name||!name.trim()) return;
+  watchlists[idx].name=name.trim();
+  saveWatchlists();
+  renderWLTabs();
+  showPopup("Renamed to '"+name.trim()+"'");
 }
 
-function deleteGroup(g){
-  if(!confirm(`Delete group "${g}"? Stocks will remain in watchlist.`)) return;
-  delete groups[g];
-  localStorage.setItem("groups",JSON.stringify(groups));
-  if(currentGroup===g) currentGroup="ALL";
-  renderGroupTabs();
-  renderWL();
-  showPopup("Group deleted");
-}
+function renderGroupTabs(){ renderWLTabs(); }
+function filterGroup(g){}
+function showAddGroupModal(){ addWL(); }
+function saveGroup(){}
+function deleteGroup(g){}
+function addToGroup(sym){}
 
-function addToGroup(sym){
-  const gNames=Object.keys(groups);
-  if(gNames.length===0){ showPopup("Please create a group first!"); return; }
-  let opts=gNames.map(g=>`<option value="${g}">${g}</option>`).join("");
-  const g=prompt("Which group to add to?\n"+gNames.join(", "));
-  if(!g||!groups[g.toUpperCase()]){ showPopup("Invalid group name"); return; }
-  const grp=g.toUpperCase();
-  if(!groups[grp].includes(sym)){
-    groups[grp].push(sym);
-    localStorage.setItem("groups",JSON.stringify(groups));
-    showPopup(""+sym+" added to "+grp);
-  } else {
-    showPopup(sym+" is already in "+grp);
+function triggerWatchlistCSVImport(){
+  let inp=document.getElementById("wlCSVInput");
+  if(!inp){
+    inp=document.createElement("input");
+    inp.type="file"; inp.id="wlCSVInput"; inp.accept=".csv,.txt";
+    inp.style.display="none";
+    inp.onchange=handleWatchlistCSV;
+    document.body.appendChild(inp);
   }
+  inp.value=""; inp.click();
+}
+
+async function handleWatchlistCSV(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const text=await file.text();
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  let added=0,skipped=0,already=0;
+  const cur=watchlists[currentWL];
+  for(let line of lines){
+    const sym=line.split(",")[0].replace(/\.NS$/i,"").toUpperCase().trim();
+    if(!sym||sym.length<1||sym.length>20){ skipped++; continue; }
+    if(/^(SYMBOL|STOCK|NAME|SCRIP)/i.test(sym)){ continue; }
+    if(cur.stocks.includes(sym)){ already++; continue; }
+    cur.stocks.push(sym);
+    added++;
+  }
+  saveWatchlists();
+  renderWLTabs();
+  await renderWL();
+  showPopup(`CSV: ${added} added, ${already} already exist, ${skipped} skipped`);
 }
 
 // ======================================
@@ -1331,13 +1396,15 @@ async function addStock(sym){
   hideLoader();
   if(!d||!d.regularMarketPrice){showPopup("Invalid Stock: "+sym);return;}
   cache[sym]={data:d,time:Date.now()};
-  if(wl.includes(sym)){
-    if(dupWarnEnabled) showPopup(sym+' already in watchlist');
+  const cur=watchlists[currentWL];
+  if(cur.stocks.includes(sym)){
+    if(dupWarnEnabled) showPopup(sym+' already in '+cur.name);
     document.getElementById("searchBox").value="";
     return;
   }
-  wl.unshift(sym);
-  localStorage.setItem("wl",JSON.stringify(wl));
+  cur.stocks.unshift(sym);
+  wl=cur.stocks;
+  saveWatchlists();
   document.getElementById("searchBox").value="";
   hideSuggestions();
   renderWL();
@@ -1346,15 +1413,15 @@ async function addStock(sym){
 function removeStock(sym){
   const rmbox=document.getElementById("remove-modal-box");
   if(!rmbox){ if(confirm('Remove '+sym+' from watchlist?')){ doRemoveStock(sym); } return; }
-  document.getElementById("remove-title").innerText="Remove "+sym+" from watchlist?";
+  document.getElementById("remove-title").innerText="Remove "+sym+" from "+watchlists[currentWL].name+"?";
   document.getElementById("remove-confirm-sym").value=sym;
   rmbox.style.display="flex";
 }
 function doRemoveStock(sym){
-  wl=wl.filter(x=>x!==sym);
-  Object.keys(groups).forEach(g=>{ groups[g]=groups[g].filter(x=>x!==sym); });
-  localStorage.setItem("wl",JSON.stringify(wl));
-  localStorage.setItem("groups",JSON.stringify(groups));
+  const cur=watchlists[currentWL];
+  cur.stocks=cur.stocks.filter(x=>x!==sym);
+  wl=cur.stocks;
+  saveWatchlists();
   renderWL();
 }
 function closeRemoveModal(){
@@ -1370,11 +1437,11 @@ function confirmRemove(){
 // RENDER WATCHLIST
 // ======================================
 async function renderWL(){
-  // filter by group
-  let displayList=wl;
-  if(currentGroup!=="ALL"&&groups[currentGroup]){
-    displayList=wl.filter(s=>groups[currentGroup].includes(s));
-  }
+  // Use active watchlist stocks
+  let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
+
+  // Apply sort if needed (sort displayList in place)
+  if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
 
   let html="";
   for(let s of displayList){
@@ -1385,34 +1452,35 @@ async function renderWL(){
     let pct=(diff/d.chartPreviousClose*100)||0;
     html+=`
     <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" style="padding:6px 8px;">
+      <div class="card" style="padding:6px 8px;position:relative;">
+        <!-- × remove button — top-right corner above CMP -->
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute;top:4px;right:6px;color:#ef4444;font-size:13px;background:none;border:none;cursor:pointer;padding:0;line-height:1;z-index:2;">&#x2715;</button>
         <!-- ROW 1: Symbol | Day Bar | CMP -->
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;">
           <div style="flex-shrink:0;min-width:72px;">
             <div style="display:flex;align-items:center;gap:3px;">
               <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;color:#e2e8f0;">${s}</span>
-              <button onclick="event.stopPropagation();removeStock('${s}')" style="color:#ef4444;font-size:11px;background:none;border:none;cursor:pointer;padding:0;line-height:1;">x</button>
             </div>
-            <div style="display:flex;align-items:center;gap:3px;margin-top:1px;">
-              <div onclick="event.stopPropagation();addToGroup('${s}')" style="font-size:9px;color:#4b6280;cursor:pointer;">+group</div>
-              <button onclick="event.stopPropagation();toggleActions('${s}')" style="font-size:9px;color:#38bdf8;background:#1e3a5f;border:1px solid #2d5a8e;border-radius:3px;padding:1px 5px;cursor:pointer;font-family:'Rajdhani',sans-serif;line-height:1.3;">ACT</button>
+            <!-- ACT button — bigger, centered -->
+            <div style="margin-top:3px;">
+              <button onclick="event.stopPropagation();toggleActions('${s}')" style="font-size:11px;font-weight:700;color:#38bdf8;background:#1e3a5f;border:1px solid #2d5a8e;border-radius:5px;padding:3px 10px;cursor:pointer;font-family:'Rajdhani',sans-serif;line-height:1.4;width:100%;text-align:center;">ACT</button>
             </div>
           </div>
           <div style="flex:1;">${buildDayBar(d)}</div>
-          <div style="flex-shrink:0;text-align:right;min-width:82px;margin-left:auto;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;">₹${d.regularMarketPrice.toFixed(2)}</div>
+          <div style="flex-shrink:0;text-align:right;min-width:82px;margin-left:auto;padding-right:16px;">
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;">&#8377;${d.regularMarketPrice.toFixed(2)}</div>
+            <!-- Price change + % change in single row -->
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+              <span id="change-${s}" style="font-size:12px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':''}&#8377;${Math.abs(diff).toFixed(2)}</span>
+              <span style="font-size:12px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};">(${diff>=0?'+':''}${pct.toFixed(2)}%)</span>
+            </div>
           </div>
         </div>
-        <!-- ROW 2: 52W label | 52W Bar | % change -->
+        <!-- ROW 2: 52W label | 52W Bar -->
         <div style="display:flex;align-items:center;gap:4px;">
           <div style="flex-shrink:0;min-width:72px;font-size:10px;">${get52WLabel(d)}${getTargetBadge(s,d.regularMarketPrice)}</div>
           <div style="flex:1;">${build52WBar(d)}</div>
-          <div style="flex-shrink:0;text-align:right;min-width:82px;margin-left:auto;">
-            <div id="change-${s}" style="font-size:14px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':'-'}${pct.toFixed(2)}%</div>
-            <div style="font-size:12px;font-weight:600;color:${diff>=0?'#22c55e':'#ef4444'};">${diff>=0?'+':''}₹${Math.abs(diff).toFixed(2)}</div>
-          </div>
         </div>
-
       </div>
       <!-- ACTION PANEL (tap ACT to open) -->
       <div class="wl-actions-panel" id="act-${s}">
@@ -1432,7 +1500,7 @@ async function renderWL(){
     // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
     // Auto-load disabled to prevent quota exhaustion (20k/day limit)
   } else {
-    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${currentGroup!=='ALL'?'No stocks in this group':'Type stock name in search box (Press Enter)'}</div>`;
+    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
   }
 }
 
@@ -2883,9 +2951,18 @@ function checkAlerts(sym,currentPrice){
   if(updated) localStorage.setItem("alerts",JSON.stringify(alerts));
 }
 
-function sortAZ(){wl.sort((a,b)=>azAsc?a.localeCompare(b):b.localeCompare(a));azAsc=!azAsc;renderWL();}
-function sortPrice(){wl.sort((a,b)=>{let pa=cache[a]?.data?.regularMarketPrice||0,pb=cache[b]?.data?.regularMarketPrice||0;return priceAsc?pa-pb:pb-pa;});priceAsc=!priceAsc;renderWL();}
-function sortPercent(){wl.sort((a,b)=>{let da=cache[a]?.data,db=cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return percentAsc?pa-pb:pb-pa;});percentAsc=!percentAsc;renderWL();}
+function sortAZ(){
+  watchlists[currentWL].stocks.sort((a,b)=>azAsc?a.localeCompare(b):b.localeCompare(a));
+  azAsc=!azAsc; saveWatchlists(); renderWL();
+}
+function sortPrice(){
+  watchlists[currentWL].stocks.sort((a,b)=>{let pa=cache[a]?.data?.regularMarketPrice||0,pb=cache[b]?.data?.regularMarketPrice||0;return priceAsc?pa-pb:pb-pa;});
+  priceAsc=!priceAsc; saveWatchlists(); renderWL();
+}
+function sortPercent(){
+  watchlists[currentWL].stocks.sort((a,b)=>{let da=cache[a]?.data,db=cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return percentAsc?pa-pb:pb-pa;});
+  percentAsc=!percentAsc; saveWatchlists(); renderWL();
+}
 
 // ======================================
 // TAB
@@ -3508,7 +3585,7 @@ async function startApp(){
   updateMarketStatus();
   startClock();
   setInterval(updateMarketStatus,60000);
-  renderGroupTabs();
+  renderWLTabs();
   showLoader("Loading...");
   // Pull cloud data first (sync)
   await pullFromCloud();
@@ -4429,7 +4506,7 @@ async function pushToCloud(showMsg = true) {
       cloudSave('wl', wl),
       cloudSave('h', h),
       cloudSave('hist', hist),
-      cloudSave('groups', groups)
+      cloudSave('watchlists', watchlists)
     ]);
     _lastSyncTime = Date.now();
     localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
@@ -4450,18 +4527,25 @@ async function pullFromCloud(showMsg = false) {
   const syncBtn = document.getElementById('syncStatusBtn');
   if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
   try {
-    const [cwl, ch, chist, cgroups] = await Promise.all([
+    const [cwl, ch, chist, cwatchlists] = await Promise.all([
       cloudLoad('wl'),
       cloudLoad('h'),
       cloudLoad('hist'),
-      cloudLoad('groups')
+      cloudLoad('watchlists')
     ]);
 
     let changed = false;
 
-    // Cloud always wins on pull (both manual and auto)
-    if (cwl && Array.isArray(cwl) && cwl.length > 0) {
+    if (cwatchlists && Array.isArray(cwatchlists) && cwatchlists.length > 0) {
+      watchlists = cwatchlists;
+      localStorage.setItem('watchlists', JSON.stringify(watchlists));
+      wl = watchlists[currentWL]?.stocks || [];
+      localStorage.setItem('wl', JSON.stringify(wl));
+      changed = true;
+    } else if (cwl && Array.isArray(cwl) && cwl.length > 0) {
+      // fallback: old cloud data without watchlists
       wl = cwl;
+      watchlists[0].stocks = cwl;
       localStorage.setItem('wl', JSON.stringify(wl));
       changed = true;
     }
@@ -4475,11 +4559,6 @@ async function pullFromCloud(showMsg = false) {
       localStorage.setItem('hist', JSON.stringify(hist));
       changed = true;
     }
-    if (cgroups && typeof cgroups === 'object' && Object.keys(cgroups).length > 0) {
-      groups = cgroups;
-      localStorage.setItem('groups', JSON.stringify(groups));
-      changed = true;
-    }
 
     _lastSyncTime = Date.now();
     localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
@@ -4489,7 +4568,7 @@ async function pullFromCloud(showMsg = false) {
     setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
 
     if (changed) {
-      renderGroupTabs();
+      renderWLTabs();
       renderWL();
       if (showMsg) showPopup('Data loaded from cloud ✓');
     } else {
