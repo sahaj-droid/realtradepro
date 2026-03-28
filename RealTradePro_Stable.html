@@ -1495,7 +1495,7 @@ function confirmRemove(){
 async function renderWL(){
   // Use active watchlist stocks
   let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
-
+let html = "";
   // Apply sort if needed (sort displayList in place)
 if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
 
