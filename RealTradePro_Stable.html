@@ -5366,7 +5366,6 @@ const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#
   if (nivi.ok && nivi.answer) {
     // Split into bullet points and render
     const lines = nivi.answer.split('\n').filter(l => l.trim());
-    const lines = nivi.answer.split('\n').filter(l => l.trim());
     bullets.innerHTML = lines.map((line, i) => {
       const clean = line.replace(/^[•\-\*]\s*/, '').trim();
       if (!clean) return '';
