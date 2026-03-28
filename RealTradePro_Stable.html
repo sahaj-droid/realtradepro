@@ -3763,18 +3763,26 @@ startRefresh();
     
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
-  btn.style.opacity="0.4";btn.style.pointerEvents="none";btn.innerHTML="...";
+  if(btn) { btn.style.opacity="0.4"; btn.style.pointerEvents="none"; }
+  
   showLoader("Refreshing...");
-  cache={};
+  
+  // Cache clear karva ne badle khali time expire karo jethi juno data render thaine rahe
+  for(let k in cache) { cache[k].time = 0; }
+  
+  // Banne ne ek sathe fetch karo
   await Promise.all([
     batchFetchStocks(wl),
     Promise.all(indicesList.map(i=>fetchFull(i.sym,true)))
   ]);
-  hideLoader();
-  renderWL();updatePrices();
+  
+  // Data avi gaya pachhi j render ane price update karo
+  await renderWL(); 
+  updatePrices();
   updatePriceTicker();
-  setTimeout(()=>runAllTechnicalAlerts(),2000);
-  btn.style.opacity="1";btn.style.pointerEvents="auto";btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>';
+  
+  hideLoader();
+  if(btn) { btn.style.opacity="1"; btn.style.pointerEvents="auto"; }
   showPopup("Refreshed!");
 }
 
