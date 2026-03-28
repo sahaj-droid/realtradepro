@@ -2068,6 +2068,16 @@ async function fetchFundamentals(sym){
       // GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
       if(j && !j.error && j.price) d = j;
     } catch(e){}
+    // --- New Fundamental Fetch (Yahoo First) ---
+    const fundUrl = `${SCRIPT_URL}?type=quote&s=${encodeURIComponent(currSym)}&sheetId=${SHEET_ID}`;
+    fetch(fundUrl)
+      .then(r => r.json())
+      .then(q => {
+        if(q && !q.error) {
+          updateFundamentals(q);
+        }
+      })
+      .catch(e => console.error("Fund Error:", e));
   }
   // Last resort: cache for volume (batch data has volume but not pe/eps)
   const _cacheD = cache[sym]&&cache[sym].data;
