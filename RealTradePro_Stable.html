@@ -730,7 +730,7 @@ body.light .ticker-price{color:#e2e8f0;}
 <!-- 🤖 NIVI AI MODAL                                             -->
 <!-- ============================================================ -->
 <div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:flex-end;justify-content:center;">
-  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;padding:18px 16px 28px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;">
+  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;padding:18px 16px 28px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -4254,8 +4254,8 @@ async function renderNews() {
   el.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div>
-        <div style="font-size:14px;font-weight:700;color:#34d399;letter-spacing:0.5px;">NIVI Market Brief</div>
-        <div style="font-size:10px;color:#4b6280;margin-top:1px;">आपकी watchlist का AI विश्लेषण</div>
+        <div style="font-size:14px;font-weight:700;color:#34d399;letter-spacing:0.5px;">निवी मार्केट ब्रीफ</div>
+        <div style="font-size:10px;color:#4b6280;margin-top:1px;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
       </div>
       <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
     </div>
@@ -4444,8 +4444,16 @@ function niviNewsSpeak() {
   const text = expandTickersForSpeech(rawText);
   niviNewsStop();
   _niviNewsSpeech = new SpeechSynthesisUtterance(text);
-  _niviNewsSpeech.lang = 'hi-IN';
-  _niviNewsSpeech.rate = 0.95;
+  _niviNewsSpeech.lang  = 'hi-IN';
+  _niviNewsSpeech.rate  = 0.88;
+  _niviNewsSpeech.pitch = 1.15;
+  const _nvsVoices = speechSynthesis.getVoices();
+  const _nvsFemale =
+    _nvsVoices.find(v => v.lang === 'hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
+    _nvsVoices.find(v => v.lang === 'hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
+    _nvsVoices.find(v => v.lang === 'hi-IN' && !/male/i.test(v.name)) ||
+    _nvsVoices.find(v => v.lang === 'hi-IN');
+  if (_nvsFemale) _niviNewsSpeech.voice = _nvsFemale;
   _niviNewsSpeech.onend = () => { const s=document.getElementById('nivi-news-stop'); if(s) s.style.display='none'; };
   window.speechSynthesis.speak(_niviNewsSpeech);
   const s = document.getElementById('nivi-news-stop');
@@ -5549,10 +5557,16 @@ function niviSpeak() {
   _niviUtterance.pitch = 1.0;
 
   // Try Google Hindi voice
+  // Female Hindi voice — priority order
   const voices = speechSynthesis.getVoices();
-  const hiVoice = voices.find(v => v.lang === 'hi-IN' && v.name.includes('Google'))
-                || voices.find(v => v.lang === 'hi-IN');
+  const hiVoice =
+    voices.find(v => v.lang === 'hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
+    voices.find(v => v.lang === 'hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang === 'hi-IN' && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang === 'hi-IN');
   if (hiVoice) _niviUtterance.voice = hiVoice;
+  _niviUtterance.pitch = 1.15;
+  _niviUtterance.rate  = 0.88;
 
   _niviUtterance.onstart = () => {
     _niviSpeaking = true;
