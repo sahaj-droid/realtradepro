@@ -1532,10 +1532,10 @@ async function renderWL(){
             ${build52WBar(d)}
           </div>
           <div style="min-width:85px; text-align:right;">
-            <div id="change-${s}" style="font-size:12px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'};">
-              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
+          <div id="change-${s}" style="font-size:11px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
+          ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
+                </div>
             </div>
-          </div>
         </div>
       </div>
 
