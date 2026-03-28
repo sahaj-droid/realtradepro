@@ -2052,17 +2052,24 @@ async function fetchFundamentals(sym){
     return dt.getDate()+' '+months[dt.getMonth()]+' '+dt.getFullYear();
   }
   function safe(v){ return (v===undefined||v===null||v!==v)?null:v; }
-  // Try quote endpoint first (richer data), fallback to chart meta
+  // Try quote endpoint — all 3 API URLs as fallback
   let d = null;
-  try {
-    const apiUrl = localStorage.getItem('customAPI')||API;
-    const controller = new AbortController();
-    const tid = setTimeout(()=>controller.abort(), 15000); // increased to 15s
-    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`, {signal: controller.signal});
-    clearTimeout(tid);
-    const j = await r.json();
-    if(j && !j.error && (j.price || j.regularMarketPrice)) d = j;
-  } catch(e){}
+  const _quoteUrls = [
+    localStorage.getItem('customAPI')||API,
+    localStorage.getItem('customAPI2')||API2,
+    localStorage.getItem('customAPI3')||API3
+  ].filter(Boolean);
+  for(let _qu of _quoteUrls){
+    if(d) break;
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(()=>controller.abort(), 12000);
+      const r = await fetch(`${_qu}?type=quote&s=${sym}.NS`, {signal: controller.signal});
+      clearTimeout(tid);
+      const j = await r.json();
+      if(j && !j.error && (j.price || j.regularMarketPrice)) d = j;
+    } catch(e){}
+  }
   // Fallback to fetchFull meta
   if(!d) d = await fetchFull(sym, false);
   if(!d) d = cache[sym]&&cache[sym].data;
@@ -2215,46 +2222,11 @@ async function openDetail(sym,isIndex){
             <div style="font-size:11px;font-weight:700;color:${exd_v!=='--'?'#22c55e':'#e2e8f0'};">${exd_v}</div>
           </div>
         </div>
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">
-          <button onclick="window.open('https://www.nseindia.com/get-quotes/equity?symbol=${sym}','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE</button>
-          <button onclick="window.open('https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${sym}','_blank')" style="background:#0f2a40;color:#a78bfa;border:1px solid #2d1a5e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Filings</button>
-          <button onclick="window.open('https://www.screener.in/company/${sym}/','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Screener</button>
-          <button onclick="window.open('https://www.moneycontrol.com/','_blank')" style="background:#0f2a40;color:#fbbf24;border:1px solid #713f12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
-          <button onclick="window.open('https://www.tickertape.in/','_blank')" style="background:#0f2a40;color:#fb7185;border:1px solid #4c0519;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
-          <button onclick="window.open('https://trendlyne.com/','_blank')" style="background:#0f2a40;color:#c4b5fd;border:1px solid #3b1f6e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Trend</button>
-          <button onclick="window.open('https://tijorifinance.com/company/${sym}','_blank')" style="background:#0f2a40;color:#6ee7b7;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
-          <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
-        </div>`;
+        `;
     } else if(fs){
       fs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Fundamentals not available (open on GitHub Pages for full data)</div>`;
     }
-    // Always show Quick Links for non-index stocks
-    {
-      const _ql = document.getElementById('fundamentalsSection');
-      if(_ql && !isIndex) {
-        const _cleanSym = sym.replace(/\.NS$|\.BO$/i,'');
-        const _qlHtml = `<div style="margin-top:8px;">
-          <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">
-            <button onclick="window.open('https://www.nseindia.com/get-quotes/equity?symbol=${_cleanSym}','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE</button>
-            <button onclick="window.open('https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${_cleanSym}','_blank')" style="background:#0f2a40;color:#a78bfa;border:1px solid #2d1a5e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Filings</button>
-            <button onclick="window.open('https://www.screener.in/company/${_cleanSym}/','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Screener</button>
-            <button onclick="window.open('https://www.moneycontrol.com/','_blank')" style="background:#0f2a40;color:#fbbf24;border:1px solid #713f12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
-            <button onclick="window.open('https://www.tickertape.in/stocks/${_cleanSym}','_blank')" style="background:#0f2a40;color:#fb7185;border:1px solid #4c0519;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
-            <button onclick="window.open('https://trendlyne.com/equity/share/${_cleanSym}/','_blank')" style="background:#0f2a40;color:#c4b5fd;border:1px solid #3b1f6e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Trend</button>
-            <button onclick="window.open('https://tijorifinance.com/company/${_cleanSym}','_blank')" style="background:#0f2a40;color:#6ee7b7;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
-            <button onclick="window.open('https://chartink.com/stocks/${_cleanSym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
-          </div></div>`;
-        // Append only if not already there
-        if(!_ql.querySelector('.ql-appended')) {
-          const _qlDiv = document.createElement('div');
-          _qlDiv.className = 'ql-appended';
-          _qlDiv.innerHTML = _qlHtml;
-          _ql.appendChild(_qlDiv);
-        }
-      }
-    }
+    // Quick Links rendered via renderQuickLinks() into quickLinksSection div
     // Load technical data
     // Safety: clear loading after 10s if still stuck
     const _techTimeout = setTimeout(()=>{
