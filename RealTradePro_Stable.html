@@ -1509,38 +1509,36 @@ async function renderWL(){
     html+=`
 <div class="wl-card-wrap" id="wrap-${s}">
       <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        
         <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:13px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
-
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div style="min-width:75px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+          <div style="width:75px; flex-shrink:0;">
             <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:160px;"> ${buildDayBar(d)}
+            <div style="width:100%; max-width:140px;">
+              ${buildDayBar(d)}
             </div>
           </div>
-          <div style="min-width:105px; flex-shrink:0; text-align:right;">
+          <div style="width:105px; flex-shrink:0; text-align:right;">
             <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
-
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="min-width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
             ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:160px;"> ${build52WBar(d)}
+            <div style="width:100%; max-width:140px;">
+              ${build52WBar(d)}
             </div>
           </div>
-          <div style="min-width:105px; flex-shrink:0; text-align:right;">
+          <div style="width:105px; flex-shrink:0; text-align:right;">
             <div id="change-${s}" style="font-size:11px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
               ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
         </div>
       </div>
-
       <div class="wl-actions-panel" id="act-${s}">
         <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
         <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
@@ -1554,7 +1552,8 @@ async function renderWL(){
         </button>
       </div>
     </div>`;
-  }  const watchlistDiv=document.getElementById("watchlist");
+  }
+  const watchlistDiv=document.getElementById("watchlist");
   if(html){
     watchlistDiv.innerHTML=html;
     // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
