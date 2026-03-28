@@ -4760,7 +4760,7 @@ function renderSmartAlertSuggestions(sym, d) {
     }
   });
   // Holdings stop-loss (avg - 8%)
-  const holding = holdings.find(h => h.sym === sym);
+  const holding = (Array.isArray(h) ? h : []).find(hh => hh.sym === sym);
   if (holding) {
     const sl = (holding.avg * 0.92);
     suggestions.push({label:'Stop Loss: ₹' + sl.toFixed(2), price: parseFloat(sl.toFixed(2)), color:'#ef4444', bg:'rgba(239,68,68,0.12)'});
