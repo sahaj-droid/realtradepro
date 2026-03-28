@@ -4255,7 +4255,7 @@ async function renderNews() {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div>
         <div style="font-size:14px;font-weight:700;color:#34d399;letter-spacing:0.5px;">NIVI Market Brief</div>
-        <div style="font-size:10px;color:#4b6280;margin-top:1px;">AI summary of your watchlist</div>
+        <div style="font-size:10px;color:#4b6280;margin-top:1px;">आपकी watchlist का AI विश्लेषण</div>
       </div>
       <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
     </div>
@@ -4439,8 +4439,9 @@ var _niviNewsSpeech = null;
 function niviNewsSpeak() {
   const body = document.getElementById('ai-news-body');
   if(!body) return;
-  const text = body.innerText.replace(/[^\w\s.,!?%₹+\-]/g,' ').substring(0,600);
-  if(!text) return;
+  const rawText = body.innerText.replace(/[^\w\s.,!?%₹+\-]/g,' ').substring(0,600);
+  if(!rawText) return;
+  const text = expandTickersForSpeech(rawText);
   niviNewsStop();
   _niviNewsSpeech = new SpeechSynthesisUtterance(text);
   _niviNewsSpeech.lang = 'hi-IN';
@@ -5495,13 +5496,52 @@ async function directGeminiCall(prompt){
   }
   return {ok:false,error:'All Gemini models failed'};
 }
-
+function expandTickersForSpeech(text) {
+  // NSE ticker → spoken name mapping
+  const tickerNames = {
+    'SBIN':'State Bank of India','RELIANCE':'Reliance Industries','TCS':'Tata Consultancy Services',
+    'INFY':'Infosys','WIPRO':'Wipro','HDFCBANK':'HDFC Bank','ICICIBANK':'ICICI Bank',
+    'AXISBANK':'Axis Bank','KOTAKBANK':'Kotak Mahindra Bank','BAJFINANCE':'Bajaj Finance',
+    'BAJAJFINSV':'Bajaj Finserv','BHARTIARTL':'Bharti Airtel','ITC':'ITC Limited',
+    'HINDUNILVR':'Hindustan Unilever','ASIANPAINT':'Asian Paints','MARUTI':'Maruti Suzuki',
+    'TATAMOTORS':'Tata Motors','TATASTEEL':'Tata Steel','NTPC':'NTPC Limited',
+    'POWERGRID':'Power Grid','SUNPHARMA':'Sun Pharma','DRREDDY':'Dr Reddys',
+    'CIPLA':'Cipla','DIVISLAB':'Divis Labs','APOLLOHOSP':'Apollo Hospitals',
+    'LT':'Larsen and Toubro','LTIM':'LTI Mindtree','TECHM':'Tech Mahindra',
+    'HCLTECH':'HCL Technologies','ONGC':'ONGC','COALINDIA':'Coal India',
+    'ADANIENT':'Adani Enterprises','ADANIPORTS':'Adani Ports','ADANIGREEN':'Adani Green',
+    'JSWSTEEL':'JSW Steel','HINDALCO':'Hindalco','ULTRACEMCO':'Ultratech Cement',
+    'GRASIM':'Grasim Industries','NESTLEIND':'Nestle India','BRITANNIA':'Britannia',
+    'PIDILITIND':'Pidilite','HAVELLS':'Havells','TITAN':'Titan Company',
+    'DMART':'DMart','ZOMATO':'Zomato','NYKAA':'Nykaa','PAYTM':'Paytm',
+    'IRCTC':'IRCTC','HAL':'HAL','BEL':'Bharat Electronics','BPCL':'BPCL',
+    'IOC':'Indian Oil','GAIL':'GAIL India','TATAPOWER':'Tata Power',
+    'NHPC':'NHPC','SJVN':'SJVN','RECLTD':'REC Limited','PFC':'Power Finance',
+    'BANKBARODA':'Bank of Baroda','PNB':'Punjab National Bank','CANBK':'Canara Bank',
+    'INDUSINDBK':'IndusInd Bank','FEDERALBNK':'Federal Bank','IDFCFIRSTB':'IDFC First Bank',
+    'MUTHOOTFIN':'Muthoot Finance','CHOLAFIN':'Chola Finance','HDFCLIFE':'HDFC Life',
+    'SBILIFE':'SBI Life','ICICIlombard':'ICICI Lombard','POLICYBZR':'Policy Bazaar',
+    'AUROPHARMA':'Aurobindo Pharma','TORNTPHARM':'Torrent Pharma','LUPIN':'Lupin',
+    'ALKEM':'Alkem Labs','MANKIND':'Mankind Pharma','PERSISTENT':'Persistent Systems',
+    'MPHASIS':'Mphasis','COFORGE':'Coforge','KPITTECH':'KPIT Technologies',
+    'DIXON':'Dixon Technologies','AMBER':'Amber Enterprises','KAYNES':'Kaynes Technology',
+    'TRENT':'Trent','ABFRL':'ABFRL','PAGEIND':'Page Industries',
+    'MOTHERSON':'Motherson Sumi','BOSCHLTD':'Bosch','BALKRISIND':'Balkrishna Industries',
+    'ETERNAL':'Eternal','CPPLUS':'CP Plus','JKTYRE':'JK Tyre','MOIL':'MOIL',
+    'FORCEMOT':'Force Motors','YATHARTH':'Yatharth Hospital'
+  };
+  // Replace each ticker (whole word, case-insensitive) with its spoken name
+  return text.replace(/\b([A-Z]{2,12})(\.NS|\.BO)?\b/g, function(match, ticker) {
+    return tickerNames[ticker] || ticker;
+  });
+}
 function niviSpeak() {
   if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
   niviStop();
   const bullets = document.getElementById('nivi-bullets');
-  const text = bullets ? bullets.innerText : '';
-  if (!text) return;
+  const rawText = bullets ? bullets.innerText : '';
+  if (!rawText) return;
+  const text = expandTickersForSpeech(rawText);
 
   _niviUtterance = new SpeechSynthesisUtterance(text);
   _niviUtterance.lang  = 'hi-IN';
