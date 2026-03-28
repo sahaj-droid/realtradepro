@@ -81,6 +81,9 @@ body.light #news [style*="color:#94a3b8"] { color:#475569 !important; }
 body.light #news [style*="color:#4b6280"] { color:#64748b !important; }
 body.light #news .group-btn { background:#e2e8f0 !important; color:#475569 !important; border-color:#cbd5e0 !important; }
 body.light #news .group-btn.active { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
+body.light #news [style*="background:linear-gradient(135deg,#0a1e14"] { background:#f0fdf4 !important; }
+body.light #news [style*="color:#34d399"] { color:#059669 !important; }
+body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; }
 
 .tab { display:none }
 .tab.active { display:block }
@@ -458,7 +461,7 @@ body.light .ticker-price{color:#e2e8f0;}
     <button class="bot-nav-btn" id="nav-indices" onclick="tab('indices')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Gainers</button>
     <button class="bot-nav-btn" id="nav-holdings" onclick="tab('holdings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Holdings</button>
     <button class="bot-nav-btn" id="nav-history" onclick="tab('history')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>History</button>
-    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a4 4 0 01-4-4V6"/><path d="M14 2v4a2 2 0 002 2h4"/><path d="M10 12h4M10 16h4"/></svg></span>News</button>
+    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2C12 2 13.2 9.5 18.5 12C13.2 14.5 12 22 12 22C12 22 10.8 14.5 5.5 12C10.8 9.5 12 2 12 2Z" fill="currentColor" stroke="none"/></svg></span>AI News</button>
     <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
   </div>
 </div>
@@ -1989,7 +1992,7 @@ async function fetchFundamentals(sym){
   try {
     const apiUrl = localStorage.getItem('customAPI')||API;
     const controller = new AbortController();
-    const tid = setTimeout(()=>controller.abort(), 15000);
+    const tid = setTimeout(()=>controller.abort(), 8000);
     const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`, {signal: controller.signal});
     clearTimeout(tid);
     const j = await r.json();
@@ -2149,12 +2152,38 @@ async function openDetail(sym,isIndex){
     } else if(fs){
       fs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Fundamentals not available (open on GitHub Pages for full data)</div>`;
     }
+    // Always show Quick Links for non-index stocks
+    {
+      const _ql = document.getElementById('fundamentalsSection');
+      if(_ql && !isIndex) {
+        const _cleanSym = sym.replace(/\.NS$|\.BO$/i,'');
+        const _qlHtml = `<div style="margin-top:8px;">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">
+            <button onclick="window.open('https://www.nseindia.com/get-quotes/equity?symbol=${_cleanSym}','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE</button>
+            <button onclick="window.open('https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${_cleanSym}','_blank')" style="background:#0f2a40;color:#a78bfa;border:1px solid #2d1a5e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Filings</button>
+            <button onclick="window.open('https://www.screener.in/company/${_cleanSym}/','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Screener</button>
+            <button onclick="window.open('https://www.moneycontrol.com/','_blank')" style="background:#0f2a40;color:#fbbf24;border:1px solid #713f12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
+            <button onclick="window.open('https://www.tickertape.in/stocks/${_cleanSym}','_blank')" style="background:#0f2a40;color:#fb7185;border:1px solid #4c0519;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
+            <button onclick="window.open('https://trendlyne.com/equity/share/${_cleanSym}/','_blank')" style="background:#0f2a40;color:#c4b5fd;border:1px solid #3b1f6e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Trend</button>
+            <button onclick="window.open('https://tijorifinance.com/company/${_cleanSym}','_blank')" style="background:#0f2a40;color:#6ee7b7;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
+            <button onclick="window.open('https://chartink.com/stocks/${_cleanSym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
+          </div></div>`;
+        // Append only if not already there
+        if(!_ql.querySelector('.ql-appended')) {
+          const _qlDiv = document.createElement('div');
+          _qlDiv.className = 'ql-appended';
+          _qlDiv.innerHTML = _qlHtml;
+          _ql.appendChild(_qlDiv);
+        }
+      }
+    }
     // Load technical data
     // Safety: clear loading after 10s if still stuck
     const _techTimeout = setTimeout(()=>{
       const ts=document.getElementById('techSection');
-      if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>';
-    }, 10000);
+      if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable. <a onclick="fetchHistory(\''+sym+'\').then(h=>{if(h)location.reload();})" style="color:#38bdf8;cursor:pointer;">Retry</a></div>';
+    }, 12000);
     fetchHistory(sym).then(hist=>{
       clearTimeout(_techTimeout);
       const ts=document.getElementById("techSection");
@@ -2366,10 +2395,11 @@ function buildDayBar(d){
   const range=hi-lo; if(range<=0) return '';
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
   return '<div style="margin:0;">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#64748b;font-weight:700;line-height:1;">'
-    +'<span>L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
-    +'<span>H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span></div>'
-    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-top:2px;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;line-height:1;margin-bottom:2px;">'
+    +'<span style="color:#ef4444;">'+lo.toFixed(2)+'</span>'
+    +'<span style="color:#4b6280;font-size:8px;font-weight:600;">DAY</span>'
+    +'<span style="color:#22c55e;">'+hi.toFixed(2)+'</span></div>'
+    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
     +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
     +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:50%;box-shadow:0 0 2px rgba(255,255,255,0.6);"></div>'
     +'</div></div>';
@@ -2381,12 +2411,13 @@ function build52WBar(d){
   const lo=d.fiftyTwoWeekLow, hi=d.fiftyTwoWeekHigh, cur=d.regularMarketPrice;
   const range=hi-lo; if(range<=0) return '';
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
-  return '<div style="margin:0;">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:#64748b;font-weight:700;line-height:1;">'
-    +'<span>52L:<span style="color:#4b6280;">'+lo.toFixed(0)+'</span></span>'
-    +'<span>52H:<span style="color:#38bdf8;">'+hi.toFixed(0)+'</span></span></div>'
-    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-top:2px;">'
-    +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>'
+  return '<div style="margin:0;margin-top:4px;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;line-height:1;margin-bottom:2px;">'
+    +'<span style="color:#ef4444;">'+lo.toFixed(2)+'</span>'
+    +'<span style="color:#4b6280;font-size:8px;font-weight:600;">52W</span>'
+    +'<span style="color:#22c55e;">'+hi.toFixed(2)+'</span></div>'
+    +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
+    +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
     +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:4px;height:4px;background:#38bdf8;border-radius:50%;box-shadow:0 0 2px rgba(56,189,248,0.6);"></div>'
     +'</div></div>';
 }
@@ -3529,7 +3560,7 @@ const FEATURE_DATA = [
     {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
   ]},
   {cat:"NEWS", color:"#38bdf8", items:[
-    {name:"Live RSS Feed", desc:"Google News RSS via GAS proxy. Real-time. GitHub Pages only."},
+    {name:"NIVI AI Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Gemini analyze kare. 30-min cache."},
     {name:"Stock Filter", desc:"Fetches top 5 watchlist stocks. 5 min cache to save GAS quota."},
     {name:"Tabs", desc:"All / Corporate / Market filter tabs."},
     {name:"Stock Chips", desc:"Filter by individual stock (watchlist-based chips)."},
@@ -3942,77 +3973,198 @@ async function renderNews() {
   const el = document.getElementById('news');
   if(!el) return;
 
-  // Show loading state
-  const chipSyms = ['ALL', ...wl.slice(0,8)];
-  const chips = chipSyms.map(s =>
-    `<button class="group-btn${newsActiveFilter===s?' active':''}" onclick="setNewsFilter('${s}')">${s==='ALL'?'All':s}</button>`
-  ).join('');
+  // Cache: 30 min
+  const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
+  const AI_NEWS_CACHE_MS = 30 * 60 * 1000;
 
+  // Show loading
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:700;color:#38bdf8;">Live News</div>
-      <button onclick="newsCache=null;newsCacheTime=0;renderNews()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:#34d399;letter-spacing:0.5px;">NIVI Market Brief</div>
+        <div style="font-size:10px;color:#4b6280;margin-top:1px;">AI summary of your watchlist</div>
+      </div>
+      <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
     </div>
-    <div style="text-align:center;color:#38bdf8;padding:20px;font-size:12px;">Fetching live news...</div>`;
-
-  const allNews = await loadAllNews();
-
-  // Filter
-  let filtered = allNews.filter(n => {
-    if(newsActiveFilter !== 'ALL' && n.sym !== newsActiveFilter) return false;
-    if(newsActiveTab === 'corporate' && n.type !== 'corporate') return false;
-    if(newsActiveTab === 'market' && n.type !== 'market') return false;
-    return true;
-  });
-
-  const sentColors = {positive:'#22c55e', negative:'#ef4444', neutral:'#f59e0b'};
-  const sentIcons = {positive:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>', negative:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>', neutral:'<svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>'};
-  const borderColors = {positive:'#22c55e', negative:'#ef4444', neutral:'#f59e0b'};
-
-  const cards = filtered.map(n => {
-    const sent = getNewsSentiment(n.title);
-    const tag = getNewsTag(n.title);
-    const summary = smartSummaryTemplate(n.title, n.sym, sent);
-    const tagHtml = tag ? `<span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:rgba(56,189,248,0.1);color:#38bdf8;">${tag.label}</span>` : '';
-    const linkHtml = n.link ? `<a href="${n.link}" target="_blank" style="font-size:9px;color:#38bdf8;text-decoration:none;">Read &gt;&gt;</a>` : '';
-    return `<div style="background:linear-gradient(145deg,#111827,#1a2332);border:1px solid rgba(255,255,255,0.06);border-left:3px solid ${borderColors[sent]||'#f59e0b'};border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
-        <span style="background:#1e3a5f;color:#38bdf8;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${n.sym}</span>
-        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#0f1e33;color:#4ade80;">LIVE</span>
-        <span style="font-size:9px;color:#4b6280;margin-left:auto;">${n.time}</span>
-      </div>
-      <div style="font-size:11px;font-weight:600;color:#e2e8f0;line-height:1.5;margin-bottom:6px;">${n.title}</div>
-      <div style="background:#0a1628;border-radius:6px;padding:6px 8px;margin-bottom:6px;">
-        <div style="font-size:9px;color:#4b6280;font-weight:700;margin-bottom:2px;letter-spacing:0.5px;">SMART SUMMARY</div>
-        <div style="font-size:11px;color:#94a3b8;line-height:1.4;">${summary}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="display:flex;gap:5px;align-items:center;">
-          <span style="font-size:10px;font-weight:700;color:${sentColors[sent]||'#f59e0b'};">${sentIcons[sent]} ${sent.charAt(0).toUpperCase()+sent.slice(1)}</span>
-          ${tagHtml}
-        </div>
-        ${linkHtml}
+    <div id="ai-news-body">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 10px;gap:10px;">
+        <svg viewBox="0 0 40 40" width="36" height="36"><defs><linearGradient id="ng1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#38bdf8"/></linearGradient></defs><circle cx="20" cy="20" r="18" fill="none" stroke="url(#ng1)" stroke-width="2" stroke-dasharray="4 3"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="2s" repeatCount="indefinite"/></circle><path d="M20 4C20 4 21.4 13.6 28.5 20C21.4 26.4 20 36 20 36C20 36 18.6 26.4 11.5 20C18.6 13.6 20 4 20 4Z" fill="url(#ng1)" opacity="0.9"/></svg>
+        <div style="font-size:12px;color:#34d399;font-weight:700;">NIVI soch rahi hai...</div>
+        <div style="font-size:10px;color:#4b6280;text-align:center;">Watchlist stocks analyze kar rahi hai</div>
       </div>
     </div>`;
+
+  // Check cache
+  try {
+    const cached = JSON.parse(localStorage.getItem(AI_NEWS_CACHE_KEY));
+    if(cached && cached.syms === wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
+      renderAINewsResult(cached.html, cached.ts);
+      return;
+    }
+  } catch(e){}
+
+  // Build watchlist price context from cache
+  const stockLines = wl.slice(0, 12).map(s => {
+    const d = cache[s] && cache[s].data;
+    if(!d) return null;
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct = ((diff / d.chartPreviousClose) * 100).toFixed(2);
+    const sign = diff >= 0 ? '+' : '';
+    return `${s}: \u20b9${d.regularMarketPrice.toFixed(2)} (${sign}${pct}%)`;
+  }).filter(Boolean);
+
+  const stockContext = stockLines.length > 0
+    ? stockLines.join(', ')
+    : 'No cached price data available';
+
+  const today = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  const prompt = `You are NIVI, an expert Indian stock market analyst. Today is ${today}.
+
+User's watchlist stocks with current prices:
+${stockContext}
+
+Watchlist: ${wl.slice(0,12).join(', ')}
+
+Give a crisp market brief in Hindi/Gujarati mix (Roman script OK). Structure your response as:
+
+**AAJKA MARKET MOOD**
+[1-2 lines about overall market sentiment today - bullish/bearish/sideways]
+
+**WATCHLIST HIGHLIGHTS**
+[For top 3-4 movers in the watchlist, give 1 line insight each: what's moving and why (based on sector/recent trends)]
+
+**SECTOR WATCH**
+[Which sectors are in focus today - IT, Banking, PSU, Green Energy, etc. - 2-3 lines]
+
+**NIVI'S TIP**
+[One actionable insight: what to watch, key level, or caution - 2 lines max]
+
+Keep it concise, practical, no disclaimers. Use ₹ symbol. Max 200 words.`;
+
+  try {
+    const r = await fetch(`${API_NIVI}?type=askMarket&prompt=${encodeURIComponent(prompt)}&stocks=${encodeURIComponent(wl.slice(0,12).join(','))}`);
+    const data = await r.json();
+    if(!data.ok && !data.summary && !data.text && !data.content) throw new Error(data.error || 'No response');
+
+    const rawText = data.summary || data.text || data.content || data.answer || '';
+    const htmlOut = formatAINewsText(rawText);
+
+    // Cache
+    try {
+      localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        syms: wl.slice(0,12).join(','),
+        html: htmlOut
+      }));
+    } catch(e){}
+
+    renderAINewsResult(htmlOut, Date.now());
+  } catch(err) {
+    // Fallback: show cached price summary with NIVI styling
+    const fallbackHtml = buildFallbackNewsSummary(stockLines);
+    document.getElementById('ai-news-body').innerHTML = fallbackHtml;
+  }
+}
+
+function aiNewsCacheClear() {
+  localStorage.removeItem('aiNewsCache_v2');
+}
+
+function formatAINewsText(raw) {
+  if(!raw) return '<div style="color:#4b6280;font-size:12px;">No data received.</div>';
+  // Convert **heading** to styled divs, newlines to <br>
+  let html = raw
+    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:10px;font-weight:700;color:#34d399;letter-spacing:0.8px;margin-top:12px;margin-bottom:4px;">$1</div>')
+    .replace(/\n/g, '<br>');
+  return html;
+}
+
+function renderAINewsResult(htmlContent, ts) {
+  const timeAgo = ts ? Math.round((Date.now()-ts)/60000) : 0;
+  const timeStr = timeAgo < 1 ? 'Abhi' : timeAgo + ' min pehle';
+  const body = document.getElementById('ai-news-body');
+  if(!body) return;
+  body.innerHTML = `
+    <div style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:12px;color:#e2e8f0;line-height:1.9;">${htmlContent}</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+      <div style="font-size:9px;color:#4b6280;">Updated: ${timeStr} &bull; Watchlist: ${wl.slice(0,12).length} stocks</div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="niviNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128266; Awaaz</button>
+        <button onclick="niviNewsStop()" id="nivi-news-stop" style="display:none;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#9635; Stop</button>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:10px;background:#0a1628;border-radius:8px;border:1px solid #1e2d3d;">
+      <div style="font-size:9px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">TODAY'S MOVERS (WATCHLIST)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${buildMoverChips()}</div>
+    </div>`;
+}
+
+function buildMoverChips() {
+  return wl.slice(0,15).map(s => {
+    const d = cache[s] && cache[s].data;
+    if(!d) return '';
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct = ((diff / d.chartPreviousClose) * 100);
+    const isUp = diff >= 0;
+    const col = isUp ? '#22c55e' : '#ef4444';
+    const bg = isUp ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+    const bdr = isUp ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)';
+    return `<div style="background:${bg};border:1px solid ${bdr};border-radius:6px;padding:4px 8px;display:flex;flex-direction:column;align-items:center;min-width:64px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#e2e8f0;">${s}</div>
+      <div style="font-size:10px;font-weight:700;color:${col};">${isUp?'+':''}${pct.toFixed(2)}%</div>
+    </div>`;
   }).join('');
+}
 
-  const emptyHtml = filtered.length === 0
-    ? `<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No news found. Try refreshing.</div>`
-    : '';
+function buildFallbackNewsSummary(stockLines) {
+  const gainers = wl.map(s => {
+    const d = cache[s] && cache[s].data;
+    if(!d) return null;
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct = ((diff / d.chartPreviousClose) * 100);
+    return {s, pct};
+  }).filter(Boolean).sort((a,b) => b.pct - a.pct);
 
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:13px;font-weight:700;color:#38bdf8;">Live News</div>
-      <button onclick="newsCache=null;newsCacheTime=0;renderNews()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#8635; Refresh</button>
+  const top3 = gainers.slice(0,3).map(x => `${x.s} ${x.pct>=0?'+':''}${x.pct.toFixed(2)}%`).join(' &bull; ');
+  const bot3 = gainers.slice(-3).reverse().map(x => `${x.s} ${x.pct>=0?'+':''}${x.pct.toFixed(2)}%`).join(' &bull; ');
+
+  return `
+    <div style="background:#0a1e14;border:1px solid rgba(52,211,153,0.15);border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:9px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;margin-bottom:8px;">NIVI OFFLINE - LOCAL SUMMARY</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">API connect nahi ho paya. Watchlist ka local data:</div>
+      <div style="font-size:10px;font-weight:700;color:#34d399;margin-bottom:4px;letter-spacing:0.5px;">TOP GAINERS</div>
+      <div style="font-size:11px;color:#22c55e;margin-bottom:10px;">${top3||'Data nahi'}</div>
+      <div style="font-size:10px;font-weight:700;color:#ef4444;margin-bottom:4px;letter-spacing:0.5px;">TOP LOSERS</div>
+      <div style="font-size:11px;color:#ef4444;">${bot3||'Data nahi'}</div>
     </div>
-    <div style="display:flex;gap:5px;margin-bottom:8px;">
-      <button onclick="setNewsTab('all')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='all'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='all'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='all'?'#38bdf8':'#2d3f52'};">All</button>
-      <button onclick="setNewsTab('corporate')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='corporate'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='corporate'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='corporate'?'#38bdf8':'#2d3f52'};">Corporate</button>
-      <button onclick="setNewsTab('market')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:${newsActiveTab==='market'?'#1e3a5f':'#1e2d3d'};color:${newsActiveTab==='market'?'#38bdf8':'#94a3b8'};border:1px solid ${newsActiveTab==='market'?'#38bdf8':'#2d3f52'};">Market</button>
-    </div>
-    <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">${chips}</div>
-    ${cards}${emptyHtml}
-`;
+    <div style="padding:10px;background:#0a1628;border-radius:8px;border:1px solid #1e2d3d;">
+      <div style="font-size:9px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">ALL MOVERS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${buildMoverChips()}</div>
+    </div>`;
+}
+
+var _niviNewsSpeech = null;
+function niviNewsSpeak() {
+  const body = document.getElementById('ai-news-body');
+  if(!body) return;
+  const text = body.innerText.replace(/[^\w\s.,!?%₹+\-]/g,' ').substring(0,600);
+  if(!text) return;
+  niviNewsStop();
+  _niviNewsSpeech = new SpeechSynthesisUtterance(text);
+  _niviNewsSpeech.lang = 'hi-IN';
+  _niviNewsSpeech.rate = 0.95;
+  _niviNewsSpeech.onend = () => { const s=document.getElementById('nivi-news-stop'); if(s) s.style.display='none'; };
+  window.speechSynthesis.speak(_niviNewsSpeech);
+  const s = document.getElementById('nivi-news-stop');
+  if(s) s.style.display='inline-block';
+}
+function niviNewsStop() {
+  window.speechSynthesis.cancel();
+  const s = document.getElementById('nivi-news-stop');
+  if(s) s.style.display='none';
 }
 
 function setNewsFilter(sym) {
