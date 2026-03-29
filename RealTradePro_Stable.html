@@ -4799,7 +4799,7 @@ Max 180 words. Sirf Hindi Devanagari.
       if (r && r.ok) rawText = r.answer;
     }
     if (!rawText) {
-      const _mUrl = localStorage.getItem('customAPI') || API;
+      const _mUrl = API_NIVI;
       const r    = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       rawText = data.answer || data.text || data.summary || null;
@@ -4887,7 +4887,7 @@ const prompt =
   }
   if (!answer) {
     try {
-      const _nu  = localStorage.getItem('customAPI') || API;
+      const _nu  = API_NIVI;
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       answer = data.answer || data.text || data.summary || null;
@@ -5771,7 +5771,7 @@ async function openNivi(sym) {
   _niviShowLoading(true);
   let _niviData = null, _gasErr = null;
   const _niviUrls = [
-    localStorage.getItem('customAPI') || API,
+    API_NIVI,
     localStorage.getItem('customAPI2') || API2,
     localStorage.getItem('customAPI3') || API3
   ].filter(Boolean);
