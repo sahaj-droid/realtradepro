@@ -4477,12 +4477,13 @@ async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
 
-  // Measure actual top offset dynamically for pixel-perfect fit
+  // Measure actual top + bottom offsets dynamically for pixel-perfect fit on any screen
   const _hdr = document.querySelector('.app-header');
   const _topOff = _hdr ? Math.round(_hdr.getBoundingClientRect().bottom) : 104;
-  const _botNav = 56; // bottom nav height px
+  const _botNavEl = document.querySelector('.fixed.bottom-0');
+  const _botOff = _botNavEl ? Math.round(window.innerHeight - _botNavEl.getBoundingClientRect().top) : 56;
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_topOff}px;bottom:${_botNav}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
+  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_topOff}px;bottom:${_botOff}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
     <!-- TOP: Header + Market Brief toggle -->
     <div style="flex-shrink:0;padding-bottom:6px;">
@@ -4722,7 +4723,10 @@ function _tabRenderChat(speakLast) {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
   if (_tabChatHistory.length === 0) {
-    area.innerHTML = `<div style="text-align:center;padding:16px 0;color:#2d4a3e;font-size:11px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">Nivi se kuch bhi poochho ⬇️</div>`;
+    area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px 0;color:#1e3a2e;">
+      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#1e3a2e"/></svg>
+      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Nivi se kuch bhi poochho ⬇️<br><span style="font-size:10px;color:#1a3020;">Ya neeche chips tap karo</span></div>
+    </div>`;
     return;
   }
   area.innerHTML = _tabChatHistory.map(msg => {
