@@ -4515,25 +4515,13 @@ async function renderNews() {
     <!-- ===== CHAT SECTION ===== -->
     <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
-      <!-- Market Brief header -->
+<!-- Collapsible Market Brief -->
       <div style="flex-shrink:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
-            <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
+        <div id="tab-brief-card" style="display:none;background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
+          <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
+            ${buildMoverChips()}
           </div>
-          <div style="display:flex;gap:5px;">
-            <button onclick="_tabClearHistory()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑</button>
-            <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
-          </div>
-        </div>
-        <!-- Mover chips -->
-        <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
-          ${buildMoverChips()}
-        </div>
-        <!-- Market Brief card -->
-        <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
-          <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:110px;overflow:hidden;transition:max-height 0.3s;">
+          <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
             <div style="text-align:center;padding:8px 0;">
               <div class="spinner" style="margin:0 auto 5px;"></div>
               <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
@@ -4541,10 +4529,7 @@ async function renderNews() {
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
             <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
-            <div style="display:flex;gap:5px;">
-              <button onclick="_tabBriefToggle()" id="tab-brief-expand-btn" style="background:transparent;color:#4b6280;border:none;font-size:10px;cursor:pointer;font-family:'Rajdhani',sans-serif;">▼ विस्तार</button>
-              <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
-            </div>
+            <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
           </div>
         </div>
       </div>
@@ -4557,6 +4542,8 @@ async function renderNews() {
       <!-- Bottom: chips + input -->
       <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;">
         <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
+          <button id="tab-mood-toggle-btn" onclick="_tabToggleMood()" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">📊 बाज़ार मूड</button>
+          <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')"
           <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
           <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
           <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
@@ -4726,13 +4713,14 @@ function _tabSetBriefHtml(html, ts) {
 }
 
 let _tabBriefExpanded = false;
-function _tabBriefToggle() {
-  const body = document.getElementById('tab-brief-body');
-  const btn  = document.getElementById('tab-brief-expand-btn');
-  if (!body) return;
-  _tabBriefExpanded = !_tabBriefExpanded;
-  body.style.maxHeight = _tabBriefExpanded ? '600px' : '120px';
-  if (btn) btn.innerText = _tabBriefExpanded ? '▲ छोटा करें' : '▼ विस्तार';
+function _tabBriefToggle() {}
+function _tabToggleMood() {
+  const card = document.getElementById('tab-brief-card');
+  const btn  = document.getElementById('tab-mood-toggle-btn');
+  if (!card) return;
+  const open = card.style.display !== 'none';
+  card.style.display = open ? 'none' : 'block';
+  if (btn) btn.style.background = open ? '#0f2a1a' : '#065f46';
 }
 
 async function _tabSend() {
