@@ -4263,6 +4263,31 @@ let _tabRecognition = null;
 let _tabSpeaking    = false;
 let _tabUtterance   = null;
 
+function buildMoverChips() {
+  if (!wl || wl.length === 0) return '';
+  const stocks = wl.map(s => {
+    const d = cache[s]?.data;
+    if (!d || !d.regularMarketPrice || !d.chartPreviousClose) return null;
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct = (diff / d.chartPreviousClose * 100) || 0;
+    return { sym: s, pct, price: d.regularMarketPrice };
+  }).filter(Boolean);
+
+  if (stocks.length === 0) return '';
+
+  const sorted = [...stocks].sort((a, b) => b.pct - a.pct);
+  let html = '';
+  sorted.forEach(s => {
+    const isGainer = s.pct >= 0;
+    const color = isGainer ? '#22c55e' : '#ef4444';
+    const bg    = isGainer ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)';
+    const border= isGainer ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
+    const sign  = isGainer ? '+' : '';
+    html += `<span onclick="openStockDetail('${s.sym}')" style="flex-shrink:0;cursor:pointer;background:${bg};border:1px solid ${border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:${color};font-family:'Rajdhani',sans-serif;white-space:nowrap;">${s.sym} ${sign}${s.pct.toFixed(2)}%</span>`;
+  });
+  return html;
+}
+
 async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
