@@ -4446,7 +4446,7 @@ let newsActiveTab = 'all';
 // =============================================
 function _niviSubTab(tab) {
   const isChat = tab === 'chat';
-  document.getElementById('nivi-section-chat').style.display = isChat ? 'block' : 'none';
+  document.getElementById('nivi-section-chat').style.display = isChat ? 'flex' : 'none';
   document.getElementById('nivi-section-news').style.display = isChat ? 'none' : 'flex';
   const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;';
   const inactive = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;';
