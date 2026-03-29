@@ -644,10 +644,46 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <!-- DETAILS MODAL -->
 <div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="z-index:200;">
-  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);max-height:88vh;overflow-y:auto;">
-    <h2 id="d-title" style="font-size:18px;font-weight:700;color:#38bdf8;margin-bottom:12px;"></h2>
-    <div id="d-body" style="font-size:13px;line-height:1.8;color:#cbd5e1;"></div>
-    <button onclick="closeDetail()" class="w-full mt-4 py-2 rounded-lg text-sm font-bold" style="background:#1e2d3d;color:#94a3b8;">Close</button>
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:12px;width:min(360px,96vw);max-height:92vh;display:flex;flex-direction:column;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
+      <h2 id="d-title" style="font-size:18px;font-weight:700;color:#38bdf8;margin:0;"></h2>
+      <button onclick="closeDetail()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab buttons -->
+    <div style="display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;">
+      <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">📈 Price</button>
+      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">📊 Fund</button>
+      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">⚡ Tech</button>
+      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">〰 BB</button>
+      <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">🔗 Links</button>
+    </div>
+    <!-- Tab content (scrollable) -->
+    <div style="flex:1;overflow-y:auto;min-height:0;">
+      <!-- Tab: Price + Chart -->
+      <div id="dtab-price" style="display:block;">
+        <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
+        <div id="d-chart" style="margin-top:8px;border-radius:10px;overflow:hidden;"></div>
+      </div>
+      <!-- Tab: Fundamentals -->
+      <div id="dtab-fund" style="display:none;">
+        <div id="fundamentalsSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div></div>
+      </div>
+      <!-- Tab: Technical -->
+      <div id="dtab-tech" style="display:none;">
+        <div id="techSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div></div>
+        <div id="smartAlertSection" style="margin-top:8px;"></div>
+      </div>
+      <!-- Tab: Bollinger -->
+      <div id="dtab-bb" style="display:none;">
+        <div id="bbSection"></div>
+      </div>
+      <!-- Tab: Links -->
+      <div id="dtab-links" style="display:none;">
+        <div id="quickLinksSection"></div>
+        <button id="d-tv-btn" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">📊 View Full Chart on TradingView</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2271,6 +2307,18 @@ function _renderFundamentalsHTML(fs, fund, isCached){
 async function openDetail(sym,isIndex){
   let d=await fetchFull(sym,isIndex);if(!d)return;
   document.getElementById("d-title").innerText=sym;
+  // Reset all tabs to default state
+  switchDetailTab('price');
+  // Reset section contents
+  document.getElementById("fundamentalsSection").innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div>';
+  document.getElementById("techSection").innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div>';
+  document.getElementById("smartAlertSection").innerHTML='';
+  document.getElementById("bbSection").innerHTML='';
+  document.getElementById("quickLinksSection").innerHTML='';
+  // TradingView button
+  const tvBtn = document.getElementById("d-tv-btn");
+  if(tvBtn) tvBtn.onclick = ()=>chart(sym, isIndex?true:false);
+  // Price tab content
   document.getElementById("d-body").innerHTML=`
     <div style="display:flex;flex-direction:column;gap:3px;">
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
@@ -2288,13 +2336,14 @@ async function openDetail(sym,isIndex){
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
       </div>
-    </div>
-    <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
-    <div id="techSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading technical data...</div></div>
-    <div id="bbSection" style="margin-top:8px;"></div>
-    <div id="smartAlertSection" style="margin-top:8px;"></div>
-    <div id="quickLinksSection" style="margin-top:8px;"></div>
-    <button onclick="chart('${sym}',${isIndex?true:false})" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">\ud83d\udcca View Chart on TradingView</button>`;
+    </div>`;
+  // TradingView mini widget
+  const chartDiv = document.getElementById("d-chart");
+  if(chartDiv && !isIndex){
+    chartDiv.innerHTML=`<iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tv_${sym}&symbol=NSE%3A${sym}&interval=D&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f1e33&theme=dark&style=1&timezone=Asia%2FKolkata&withdateranges=0&showpopupbutton=0&studies=[]&hidevolume=0&scalemode=0&scaleposition=right&charttype=candlesticks&fontsize=10" style="width:100%;height:220px;border:none;border-radius:8px;" allowtransparency="true" scrolling="no"></iframe>`;
+  } else if(chartDiv) {
+    chartDiv.innerHTML='';
+  }
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
@@ -2503,6 +2552,18 @@ async function renderBulkDeals(sym) {
     ${rows}`;
 }
 
+function switchDetailTab(tab){
+  const tabs=['price','fund','tech','bb','links'];
+  tabs.forEach(t=>{
+    const el=document.getElementById('dtab-'+t);
+    const btn=document.getElementById('dtab-btn-'+t);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+    if(btn){
+      if(t===tab){ btn.style.background='#065f46'; btn.style.color='#34d399'; btn.style.borderColor='#065f46'; }
+      else{ btn.style.background='transparent'; btn.style.color='#4b6280'; btn.style.borderColor='#1e3a5f'; }
+    }
+  });
+}
 function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
 
 function openModal(type,sym,price){
