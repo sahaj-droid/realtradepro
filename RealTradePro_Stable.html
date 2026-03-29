@@ -4646,7 +4646,7 @@ async function _tabLoadBrief() {
     }
   } catch(e) {}
 
-const stockLines = wl.slice(0,12).map(s => {
+const stockLines = wl.slice(0, 12).map(s => {
   const d = cache[s] && cache[s].data;
   if (!d) return null;
 
@@ -4654,36 +4654,42 @@ const stockLines = wl.slice(0,12).map(s => {
   const prev  = d.chartPreviousClose || 0;
   const diff  = price - prev;
 
-  const pct = prev
-    ? ((diff / prev) * 100).toFixed(2)
-    : '0.00';
+  const pct = prev ? ((diff / prev) * 100).toFixed(2) : '0.00';
 
-  return `${s}: ₹${price.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+  return `${s}: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)`;
 }).filter(Boolean);
-  
-    const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-  
-    const prompt =
-  `You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
-  Aaj ki tarikh: ${today}
-  Watchlist: ${stockLines.join(', ') || 'data nahi'}
-  
-  Bilkul shuddh Hindi Devanagari mein jawab do:
-  
-  **आज का बाज़ार मूड**
-  [1-2 sentences]
-  
-  **वॉचलिस्ट की खास बातें**
-  [Top 3 movers — 1-1 line]
-  
-  **सेक्टर नज़र**
-  [2 lines]
-  
-  **निवी की सलाह**
-  [2 lines max]
-  
-  Max 180 words. Sirf Hindi Devanagari.`;
 
+
+const today = new Date().toLocaleDateString('hi-IN', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+
+const prompt = `
+You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
+
+Aaj ki tarikh: ${today}
+Watchlist: ${stockLines.join(', ') || "data nahi"}
+
+Bilkul shuddh Hindi Devanagari mein jawab do:
+
+**आज का बाज़ार मूड**
+[1-2 sentences]
+
+**वॉचलिस्ट की खास बातें**
+[Top 3 movers — 1-1 line]
+
+**सेक्टर नज़र**
+[2 lines]
+
+**निवी की सलाह**
+[2 lines max]
+
+Max 180 words. Sirf Hindi Devanagari.
+`;
   try {
     const gemKey = localStorage.getItem('geminiApiKey');
     let rawText = null;
