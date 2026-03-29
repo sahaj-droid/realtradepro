@@ -923,6 +923,15 @@ body.light .ticker-price{color:#e2e8f0;}
 </div><!-- end mainApp -->
 
 <script>
+(function(){
+  const PASS = "2512";
+  const key = "rtp_auth";
+  if(localStorage.getItem(key) !== PASS){
+    const entered = prompt("🔐 RealTradePro — Password દાખલ કરો:");
+    if(entered !== PASS){ document.body.innerHTML='<div style="background:#0a0f1a;color:#ef4444;height:100vh;display:flex;align-items:center;justify-content:center;font-size:18px;font-family:sans-serif;">❌ Access Denied</div>'; return; }
+    localStorage.setItem(key, PASS);
+  }
+})();  
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
