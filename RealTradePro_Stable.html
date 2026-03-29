@@ -4526,7 +4526,7 @@ async function renderNews() {
     </div>
 
     <!-- BOTTOM: Quick chips + Input + Mic + Send — always sticks to bottom -->
-    <div style="flex-shrink:0;padding:6px 0 8px 0;border-top:1px solid rgba(6,95,70,0.3);">
+    <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;">
 
       <!-- Quick chips -->
       <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
@@ -5557,7 +5557,6 @@ function _niviWatchlistCtx() {
 
 // --- OPEN NIVI MODAL ---
 async function openNivi(sym) {
-  _niviCurrentSym = sym;
   const modal = document.getElementById('niviModal');
   modal.style.display = 'flex';
   document.getElementById('nivi-sym-label').innerText = sym;
@@ -5565,13 +5564,14 @@ async function openNivi(sym) {
   document.getElementById('nivi-tech-row').style.display  = 'none';
   niviStop();
 
-  // If chat history exists for this sym, just re-render — don't refetch
-  if (_niviChatHistory.length > 0 && _niviCurrentSym === sym) {
+  // If same stock already open with chat history — just re-render, don't refetch
+  if (_niviCurrentSym === sym && _niviChatHistory.length > 0) {
     _niviRenderChat();
     return;
   }
 
-  // Clear chat for new stock
+  // New stock — clear previous chat and set new sym
+  _niviCurrentSym = sym;
   _niviChatHistory = [];
   _niviRenderChat();
 
