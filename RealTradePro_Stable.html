@@ -173,7 +173,11 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <!-- == ALERT POPUP == -->
 <div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
-
+  
+<style>
+#news { --nivi-top: 104px; --nivi-bot: 56px; }
+</style>
+  
 <!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
@@ -4478,12 +4482,8 @@ async function renderNews() {
   if (!el) return;
 
   // Measure actual top + bottom offsets dynamically for pixel-perfect fit on any screen
-const _hdr = document.querySelector('.app-header');
-const _topOff = _hdr ? Math.round(_hdr.getBoundingClientRect().bottom + window.scrollY) : 104;
-const _botNavEl = document.querySelector('.fixed.bottom-0');
-const _botOff = _botNavEl ? Math.round(window.innerHeight - _botNavEl.getBoundingClientRect().top) : 56;
-  el.innerHTML = `
-  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_topOff}px;bottom:${_botOff}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
+el.innerHTML = `
+  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:0;bottom:0;padding-top:var(--nivi-top,104px);padding-bottom:var(--nivi-bot,56px);overflow:hidden;padding-left:12px;padding-right:12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
     <!-- TOP: Header + Market Brief toggle -->
     <div style="flex-shrink:0;padding-bottom:6px;">
