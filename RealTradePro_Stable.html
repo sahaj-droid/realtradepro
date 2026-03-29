@@ -4615,7 +4615,7 @@ async function renderNews() {
 
     <!-- Sub-tab buttons -->
     <div style="flex-shrink:0;padding-bottom:6px;">
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
         <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
           style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">
           💬 Chat
@@ -4623,12 +4623,16 @@ async function renderNews() {
         <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
           style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">
           📰 News
+</button>
+        <button onclick="_tabClearHistory()" title="Chat clear karo"
+          style="flex-shrink:0;background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;line-height:1;">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4H5z" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
     </div>
 
     <!-- ===== CHAT SECTION ===== -->
-    <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+<div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
 <!-- Collapsible Market Brief -->
       <div style="flex-shrink:0;">
@@ -4711,10 +4715,14 @@ async function renderNews() {
         </div>
         <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.85;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
         <div style="margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px;">
-          <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
-            style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
-            📋 Source headlines
-          </button>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+            <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
+              style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
+              📋 Source headlines
+            </button>
+            <button id="niviNewsSpeak" onclick="niviNewsSpeak()"
+              style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊 Sunao</button>
+          </div>
           <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
         </div>
       </div>
@@ -6340,7 +6348,25 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // ============================================================
 // NIVI NEWS SEARCH
 // ============================================================
-var _niviNewsHeadlines = [];
+function niviNewsSpeak() {
+  if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
+  speechSynthesis.cancel();
+  var bullets = document.getElementById('niviNewsBullets');
+  if (!bullets) return;
+  var text = bullets.innerText.replace(/•/g, '').trim();
+  if (!text) { showPopup('Pehle news search karo'); return; }
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'hi-IN';
+  u.rate = 0.85;
+  var voices = speechSynthesis.getVoices();
+  var hv = voices.find(function(v){ return v.lang==='hi-IN' && !/male/i.test(v.name); })
+         || voices.find(function(v){ return v.lang==='hi-IN'; });
+  if (hv) u.voice = hv;
+  var btn = document.getElementById('niviNewsSpeak');
+  u.onstart = function(){ if(btn){ btn.textContent='⏹ Stop'; btn.onclick=function(){ speechSynthesis.cancel(); }; } };
+  u.onend = u.onerror = function(){ if(btn){ btn.textContent='🔊 Sunao'; btn.onclick=niviNewsSpeak; } };
+  speechSynthesis.speak(u);
+}
 
 function niviNewsSearch() {
   var sym = (document.getElementById('niviNewsInput').value || '').trim().toUpperCase();
@@ -6376,9 +6402,9 @@ function niviNewsSearch() {
       var html  = lines.map(function(line) {
         var clean = line.replace(/^[•\-\*]\s*/, '').trim();
         if (!clean) return '';
-        return '<div style="display:flex;gap:8px;margin-bottom:8px;">'
+return '<div style="display:flex;gap:8px;margin-bottom:8px;">'
           + '<span style="color:#34d399;font-size:14px;flex-shrink:0;margin-top:1px;">•</span>'
-          + '<span>' + clean + '</span></div>';
+          + '<span style="font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">' + clean + '</span></div>';
       }).join('');
       document.getElementById('niviNewsBullets').innerHTML = html || '<div style="color:#4b6280;">Summary available nahi.</div>';
 
