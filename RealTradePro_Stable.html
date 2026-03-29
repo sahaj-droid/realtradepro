@@ -4445,7 +4445,7 @@ let newsActiveTab = 'all';
 // Market Brief (top) + Chat + Mic + Chips
 // =============================================
   function _niviSubTab(tab) {
-  document.getElementById('nivi-section-chat').style.display = tab === 'chat' ? 'contents' : 'none';
+  document.getElementById('nivi-section-chat').style.display = tab === 'chat' ? 'flex' : 'none';
   document.getElementById('nivi-section-news').style.display = tab === 'news' ? 'flex' : 'none';
   const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;';
   const inactive = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;';
@@ -4583,7 +4583,7 @@ async function renderNews() {
 <div id="nivi-section-news" style="display:none;flex:1;overflow-y:auto;padding:8px 0;">
   <div style="text-align:center;padding:20px 0;">
     <div style="font-size:13px;color:#34d399;font-family:'Noto Sans Devanagari',sans-serif;">📰 Nivi News</div>
-    <div style="font-size:11px;color:#4b6280;margin-top:6px;">Coming Soon — Stock search karke news summary milegi</div>
+    <div style="font-size:11px;color:#4b6280;margin-top:6px;">Coming Soon — You will get a news summary after searching for a stock.</div>
   </div>
 </div>
   </div>`;
@@ -4667,7 +4667,7 @@ Max 180 words. Sirf Hindi Devanagari.`;
     _tabSetBriefHtml(htmlOut, Date.now());
   } catch(err) {
     const briefBody = document.getElementById('tab-brief-body');
-    if (briefBody) briefBody.innerHTML = `<div style="font-size:11px;color:#f59e0b;padding:4px 0;">⚠️ Market brief load nahi hua. Refresh karein.</div>`;
+    if (briefBody) briefBody.innerHTML = `<div style="font-size:11px;color:#f59e0b;padding:4px 0;">⚠️ Market brief did not load. Please refresh..</div>`;
   }
 }
 
