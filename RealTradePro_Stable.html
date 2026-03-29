@@ -4581,45 +4581,28 @@ async function renderNews() {
     </div><!-- end nivi-section-chat -->
     <!-- NEWS SECTION (hidden by default) -->
 <!-- NEWS SECTION -->
-<div id="nivi-section-news" style="display:none;flex:1;overflow-y:auto;padding:8px 0;">
+<div id="nivi-section-news" style="display:none;flex:1;overflow-y:auto;padding:8px 4px;">
 
-  <!-- Search Bar -->
+  <!-- Search Bar only -->
   <div style="display:flex;gap:6px;margin-bottom:10px;">
-    <input id="niviNewsInput" type="text" placeholder="Stock symbol daalo... RELIANCE, SBIN"
+    <input id="niviNewsInput" type="text" placeholder="Company naam daalo... RELIANCE, SBIN"
       onkeydown="if(event.key==='Enter')niviNewsSearch()"
-      style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;
-             font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
+      style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
     <button onclick="niviNewsSearch()"
-      style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 13px;
-             font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">
-      🔍 खोजो
-    </button>
-  </div>
-
-  <!-- Quick Chips -->
-  <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
-    <span style="font-size:10px;color:#4b6280;align-self:center;">Quick:</span>
-    ${['RELIANCE','SBIN','TCS','HDFCBANK','INFY','TATAMOTORS'].map(s =>
-      `<button onclick="document.getElementById('niviNewsInput').value='${s}';niviNewsSearch()"
-        style="padding:3px 10px;border-radius:14px;border:1px solid #1e3a5f;background:transparent;
-               color:#94a3b8;cursor:pointer;font-size:11px;font-family:'Rajdhani',sans-serif;">${s}</button>`
-    ).join('')}
+      style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;flex-shrink:0;">🔍</button>
   </div>
 
   <!-- Loading -->
   <div id="niviNewsLoading" style="display:none;text-align:center;padding:20px 0;">
-    <div style="font-size:22px;animation:spin 1s linear infinite;display:inline-block;">⚙️</div>
-    <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi news padh rahi hai...</div>
+    <div style="font-size:22px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
+    <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">News fetch ho rahi hai...</div>
   </div>
 
   <!-- Error -->
-  <div id="niviNewsError" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);
-       padding:10px;border-radius:10px;font-family:'Rajdhani',sans-serif;"></div>
+  <div id="niviNewsError" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);padding:10px;border-radius:10px;font-family:'Rajdhani',sans-serif;margin-bottom:8px;"></div>
 
   <!-- Result Card -->
   <div id="niviNewsSummaryCard" style="display:none;background:#0d1f35;border:1px solid #1e3a5f;border-radius:14px;padding:14px;">
-
-    <!-- Card Header -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
       <span style="font-size:18px;">📰</span>
       <div>
@@ -4627,22 +4610,17 @@ async function renderNews() {
         <div id="niviNewsMetaLabel" style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Rajdhani',sans-serif;"></div>
       </div>
     </div>
-
-    <!-- AI Bullets -->
-    <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.8;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
-
-    <!-- Headlines Toggle -->
+    <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.85;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
     <div style="margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px;">
       <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
         style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
-        📋 Headlines dekhein / chupaayein
+        📋 Source headlines
       </button>
       <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
     </div>
   </div>
-
 </div>
-  </div>`;
+</div>`;
 
   // Load market brief
   _tabLoadBrief();
@@ -4779,13 +4757,12 @@ async function _tabAsk(question) {
   const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
   const prompt =
-`Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein jawab deti hain.
-Aaj ki tarikh: ${today}
-User ki watchlist: ${wlCtx || 'data nahi'}
+`You are Nivi, an expert Indian stock market analyst. You MUST reply ONLY in Hindi using Devanagari script (हिंदी में देवनागरी लिपि). Absolutely no English words, no Hinglish, no Roman script.
+Today: ${today}
+User watchlist: ${wlCtx || 'data nahi'}
+User question: ${question}
 
-User ka sawaal: ${question}
-
-Bilkul shuddh Hindi mein (Devanagari script), concise aur practical jawab dijiye. Max 4 lines. Koi English nahi. Koi disclaimer nahi.`;
+Instructions: Reply in pure Hindi Devanagari only. Max 4 lines. No English. No disclaimer. No Roman letters.`;
 
   _tabShowLoading(true);
   let answer = null;
