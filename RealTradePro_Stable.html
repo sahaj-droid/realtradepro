@@ -664,6 +664,7 @@ body.light .ticker-price{color:#e2e8f0;}
       <div id="dtab-price" style="display:block;">
         <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
         <div id="d-chart" style="margin-top:8px;border-radius:10px;overflow:hidden;"></div>
+        <button id="d-tv-btn2" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:8px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:Rajdhani,sans-serif;">📊 View Full Chart on TradingView</button>
       </div>
       <!-- Tab: Fundamentals -->
       <div id="dtab-fund" style="display:none;">
@@ -2317,7 +2318,7 @@ async function openDetail(sym,isIndex){
   document.getElementById("quickLinksSection").innerHTML='';
   // TradingView button
   const tvBtn = document.getElementById("d-tv-btn");
-  if(tvBtn) tvBtn.onclick = ()=>chart(sym, isIndex?true:false);
+  if(tvBtn) tvBtn.onclick = ()=>chart(sym, isIndex?true:false); const tvBtn2=document.getElementById("d-tv-btn2"); if(tvBtn2) tvBtn2.onclick=()=>chart(sym, isIndex?true:false);
   // Price tab content
   document.getElementById("d-body").innerHTML=`
     <div style="display:flex;flex-direction:column;gap:3px;">
