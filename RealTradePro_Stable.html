@@ -4646,36 +4646,43 @@ async function _tabLoadBrief() {
     }
   } catch(e) {}
 
-  const stockLines = wl.slice(0,12).map(s => {
-    const d = cache[s] && cache[s].data;
-    if (!d) return null;
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
-    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
-  }).filter(Boolean);
+const stockLines = wl.slice(0,12).map(s => {
+  const d = cache[s] && cache[s].data;
+  if (!d) return null;
 
-  const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const price = d.regularMarketPrice || 0;
+  const prev  = d.chartPreviousClose || 0;
+  const diff  = price - prev;
 
-  const prompt =
-`You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
-Aaj ki tarikh: ${today}
-Watchlist: ${stockLines.join(', ') || 'data nahi'}
+  const pct = prev
+    ? ((diff / prev) * 100).toFixed(2)
+    : '0.00';
 
-Bilkul shuddh Hindi Devanagari mein jawab do:
-
-**आज का बाज़ार मूड**
-[1-2 sentences]
-
-**वॉचलिस्ट की खास बातें**
-[Top 3 movers — 1-1 line]
-
-**सेक्टर नज़र**
-[2 lines]
-
-**निवी की सलाह**
-[2 lines max]
-
-Max 180 words. Sirf Hindi Devanagari.`;
+  return `${s}: ₹${price.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+}).filter(Boolean);
+  
+    const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  
+    const prompt =
+  `You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
+  Aaj ki tarikh: ${today}
+  Watchlist: ${stockLines.join(', ') || 'data nahi'}
+  
+  Bilkul shuddh Hindi Devanagari mein jawab do:
+  
+  **आज का बाज़ार मूड**
+  [1-2 sentences]
+  
+  **वॉचलिस्ट की खास बातें**
+  [Top 3 movers — 1-1 line]
+  
+  **सेक्टर नज़र**
+  [2 lines]
+  
+  **निवी की सलाह**
+  [2 lines max]
+  
+  Max 180 words. Sirf Hindi Devanagari.`;
 
   try {
     const gemKey = localStorage.getItem('geminiApiKey');
