@@ -4478,10 +4478,10 @@ async function renderNews() {
   if (!el) return;
 
   // Measure actual top + bottom offsets dynamically for pixel-perfect fit on any screen
-  const _hdr = document.querySelector('.app-header');
-  const _topOff = _hdr ? Math.round(_hdr.getBoundingClientRect().bottom) : 104;
-  const _botNavEl = document.querySelector('.fixed.bottom-0');
-  const _botOff = _botNavEl ? Math.round(window.innerHeight - _botNavEl.getBoundingClientRect().top) : 56;
+const _hdr = document.querySelector('.app-header');
+const _topOff = _hdr ? Math.round(_hdr.getBoundingClientRect().bottom + window.scrollY) : 104;
+const _botNavEl = document.querySelector('.fixed.bottom-0');
+const _botOff = _botNavEl ? Math.round(window.innerHeight - _botNavEl.getBoundingClientRect().top) : 56;
   el.innerHTML = `
   <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_topOff}px;bottom:${_botOff}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
