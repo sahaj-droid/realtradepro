@@ -4444,15 +4444,16 @@ let newsActiveTab = 'all';
 // ASK NIVI TAB — Chat UI v3
 // Market Brief (top) + Chat + Mic + Chips
 // =============================================
-  function _niviSubTab(tab) {
-  document.getElementById('nivi-section-chat').style.display = tab === 'chat' ? 'block' : 'none';
-  document.getElementById('nivi-section-news').style.display = tab === 'news' ? 'flex' : 'none';
+function _niviSubTab(tab) {
+  const isChat = tab === 'chat';
+  document.getElementById('nivi-section-chat').style.display = isChat ? 'block' : 'none';
+  document.getElementById('nivi-section-news').style.display = isChat ? 'none' : 'flex';
   const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;';
   const inactive = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;';
-  document.getElementById('nivi-subtab-chat').style.cssText = tab === 'chat' ? active : inactive;
-  document.getElementById('nivi-subtab-news').style.cssText = tab === 'news' ? active : inactive;
+  document.getElementById('nivi-subtab-chat').style.cssText = isChat ? active : inactive;
+  document.getElementById('nivi-subtab-news').style.cssText = isChat ? inactive : active;
 }
-let _tabChatHistory = [];   // [{role:'user'|'nivi', text, ts}]
+let _tabChatHistory = [];
 let _tabMicActive   = false;
 let _tabRecognition = null;
 let _tabSpeaking    = false;
@@ -4467,9 +4468,7 @@ function buildMoverChips() {
     const pct = (diff / d.chartPreviousClose * 100) || 0;
     return { sym: s, pct, price: d.regularMarketPrice };
   }).filter(Boolean);
-
   if (stocks.length === 0) return '';
-
   const sorted = [...stocks].sort((a, b) => b.pct - a.pct);
   let html = '';
   sorted.forEach(s => {
@@ -4487,11 +4486,10 @@ async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
 
-  // offsetHeight = scroll-safe, works on all screen sizes
-  const _appHdr   = document.querySelector('.app-header');
+  const _appHdr    = document.querySelector('.app-header');
   const _statusBar = document.getElementById('marketStatus')?.parentElement;
-  const _ticker   = document.getElementById('priceTicker');
-  const _botNav   = document.querySelector('.fixed.bottom-0');
+  const _ticker    = document.getElementById('priceTicker');
+  const _botNav    = document.querySelector('.fixed.bottom-0');
   const _top = (_appHdr ? _appHdr.offsetHeight : 44)
              + (_statusBar ? _statusBar.offsetHeight : 22)
              + (_ticker && _ticker.style.display !== 'none' ? _ticker.offsetHeight : 0);
@@ -4500,132 +4498,133 @@ async function renderNews() {
   el.innerHTML = `
   <div style="display:flex;flex-direction:column;position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:448px;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
-    <!-- TOP: Header + Market Brief toggle -->
-    <div style="flex-shrink:0;padding-bottom:6px;">
     <!-- Sub-tab buttons -->
-<div style="display:flex;gap:6px;margin-bottom:8px;">
-  <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
-    style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">
-    💬 Chat
-  </button>
-  <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
-    style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">
-    📰 News
-  </button>
-</div>
-<div id="nivi-section-chat">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
-          <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
-        </div>
-        <div style="display:flex;gap:5px;">
-          <button onclick="_tabClearHistory()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑</button>
-          <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
-        </div>
+    <div style="flex-shrink:0;padding-bottom:6px;">
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
+          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">
+          💬 Chat
+        </button>
+        <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
+          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">
+          📰 News
+        </button>
       </div>
+    </div>
 
-      <!-- Mover chips (always visible) -->
-      <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
-        ${buildMoverChips()}
-      </div>
+    <!-- ===== CHAT SECTION ===== -->
+    <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
-      <!-- Market Brief card (collapsible) -->
-      <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
-        <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:110px;overflow:hidden;transition:max-height 0.3s;">
-          <div style="text-align:center;padding:8px 0;">
-            <div class="spinner" style="margin:0 auto 5px;"></div>
-            <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
+      <!-- Market Brief header -->
+      <div style="flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
+            <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
           </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-          <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
           <div style="display:flex;gap:5px;">
-            <button onclick="_tabBriefToggle()" id="tab-brief-expand-btn" style="background:transparent;color:#4b6280;border:none;font-size:10px;cursor:pointer;font-family:'Rajdhani',sans-serif;">▼ विस्तार</button>
-            <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
+            <button onclick="_tabClearHistory()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑</button>
+            <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
+          </div>
+        </div>
+        <!-- Mover chips -->
+        <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
+          ${buildMoverChips()}
+        </div>
+        <!-- Market Brief card -->
+        <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
+          <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:110px;overflow:hidden;transition:max-height 0.3s;">
+            <div style="text-align:center;padding:8px 0;">
+              <div class="spinner" style="margin:0 auto 5px;"></div>
+              <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+            <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
+            <div style="display:flex;gap:5px;">
+              <button onclick="_tabBriefToggle()" id="tab-brief-expand-btn" style="background:transparent;color:#4b6280;border:none;font-size:10px;cursor:pointer;font-family:'Rajdhani',sans-serif;">▼ विस्तार</button>
+              <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- MIDDLE: Chat bubbles — flex:1 fills remaining space -->
-    <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
-      <!-- messages render here -->
-    </div>
-
-    <!-- BOTTOM: Quick chips + Input + Mic + Send — always sticks to bottom -->
-    <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;">
-
-      <!-- Quick chips -->
-      <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
-        <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
-        <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
-        <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
-        <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
-        <button onclick="_tabChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
-        <button onclick="_tabChip('अभी कौन से स्टॉक में सबसे ज़्यादा volume है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🔥 Volume</button>
+      <!-- Chat bubbles -->
+      <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
+        <!-- messages render here -->
       </div>
 
-      <!-- Input row -->
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input id="tab-nivi-input" type="text" placeholder="Ask anything to Nivi..."
-          onkeydown="if(event.key==='Enter')_tabSend()"
-          style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
-        <button id="tab-mic-btn" onclick="_tabMicToggle()" title="Voice Input"
-          style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;line-height:1;">🎙️</button>
-        <button onclick="_tabSend()"
-          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+      <!-- Bottom: chips + input -->
+      <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;">
+        <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
+          <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
+          <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
+          <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
+          <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
+          <button onclick="_tabChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
+          <button onclick="_tabChip('अभी कौन से स्टॉक में सबसे ज़्यादा volume है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🔥 Volume</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="tab-nivi-input" type="text" placeholder="Ask anything to Nivi..."
+            onkeydown="if(event.key==='Enter')_tabSend()"
+            style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
+          <button id="tab-mic-btn" onclick="_tabMicToggle()" title="Voice Input"
+            style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;line-height:1;">🎙️</button>
+          <button onclick="_tabSend()"
+            style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+        </div>
+        <div id="tab-mic-status" style="font-size:9px;color:#f59e0b;margin-top:3px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... दोबारा दबाएं रोकने के लिए</div>
       </div>
-      <div id="tab-mic-status" style="font-size:9px;color:#f59e0b;margin-top:3px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... दोबारा दबाएं रोकने के लिए</div>
-    </div>
+
     </div><!-- end nivi-section-chat -->
-    <!-- NEWS SECTION (hidden by default) -->
-<!-- NEWS SECTION -->
-<div id="nivi-section-news" style="display:none;flex:1;overflow-y:auto;padding:8px 4px;">
 
-  <!-- Search Bar only -->
-  <div style="display:flex;gap:6px;margin-bottom:10px;">
-    <input id="niviNewsInput" type="text" placeholder="Company naam daalo... RELIANCE, SBIN"
-      onkeydown="if(event.key==='Enter')niviNewsSearch()"
-      style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
-    <button onclick="niviNewsSearch()"
-      style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;flex-shrink:0;">🔍</button>
-  </div>
+    <!-- ===== NEWS SECTION ===== -->
+    <div id="nivi-section-news" style="display:none;flex:1;overflow-y:auto;padding:8px 4px;">
 
-  <!-- Loading -->
-  <div id="niviNewsLoading" style="display:none;text-align:center;padding:20px 0;">
-    <div style="font-size:22px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
-    <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">News fetch ho rahi hai...</div>
-  </div>
-
-  <!-- Error -->
-  <div id="niviNewsError" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);padding:10px;border-radius:10px;font-family:'Rajdhani',sans-serif;margin-bottom:8px;"></div>
-
-  <!-- Result Card -->
-  <div id="niviNewsSummaryCard" style="display:none;background:#0d1f35;border:1px solid #1e3a5f;border-radius:14px;padding:14px;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-      <span style="font-size:18px;">📰</span>
-      <div>
-        <div id="niviNewsSymLabel" style="font-weight:700;font-size:13px;color:#34d399;font-family:'Rajdhani',sans-serif;"></div>
-        <div id="niviNewsMetaLabel" style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Rajdhani',sans-serif;"></div>
+      <!-- Search Bar -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <input id="niviNewsInput" type="text" placeholder="Company naam daalo... RELIANCE, SBIN"
+          onkeydown="if(event.key==='Enter')niviNewsSearch()"
+          style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
+        <button onclick="niviNewsSearch()"
+          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;flex-shrink:0;">🔍</button>
       </div>
-    </div>
-    <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.85;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
-    <div style="margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px;">
-      <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
-        style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
-        📋 Source headlines
-      </button>
-      <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
-    </div>
-  </div>
-</div>
-</div>`;
+
+      <!-- Loading -->
+      <div id="niviNewsLoading" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:22px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
+        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">News fetch ho rahi hai...</div>
+      </div>
+
+      <!-- Error -->
+      <div id="niviNewsError" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);padding:10px;border-radius:10px;font-family:'Rajdhani',sans-serif;margin-bottom:8px;"></div>
+
+      <!-- Result Card -->
+      <div id="niviNewsSummaryCard" style="display:none;background:#0d1f35;border:1px solid #1e3a5f;border-radius:14px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:18px;">📰</span>
+          <div>
+            <div id="niviNewsSymLabel" style="font-weight:700;font-size:13px;color:#34d399;font-family:'Rajdhani',sans-serif;"></div>
+            <div id="niviNewsMetaLabel" style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Rajdhani',sans-serif;"></div>
+          </div>
+        </div>
+        <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.85;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
+        <div style="margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px;">
+          <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
+            style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
+            📋 Source headlines
+          </button>
+          <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
+        </div>
+      </div>
+
+    </div><!-- end nivi-section-news -->
+
+  </div>\`;
 
   // Load market brief
   _tabLoadBrief();
   _niviSubTab('chat');
-// Load saved chat history
   if (_tabChatHistory.length === 0) {
     try {
       const saved = JSON.parse(localStorage.getItem('niviTabChat'));
@@ -4633,16 +4632,12 @@ async function renderNews() {
     } catch(e) {}
   }
   _tabRenderChat();
-  // Re-render existing chat if any
-  _tabRenderChat();
 }
 
 // --- MARKET BRIEF LOADER ---
 async function _tabLoadBrief() {
   const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
   const AI_NEWS_CACHE_MS  = 30 * 60 * 1000;
-
-  // Check cache
   try {
     const cached = JSON.parse(localStorage.getItem(AI_NEWS_CACHE_KEY));
     if (cached && cached.syms === wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
@@ -4651,7 +4646,6 @@ async function _tabLoadBrief() {
     }
   } catch(e) {}
 
-  // Build context
   const stockLines = wl.slice(0,12).map(s => {
     const d = cache[s] && cache[s].data;
     if (!d) return null;
@@ -4663,23 +4657,23 @@ async function _tabLoadBrief() {
   const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
   const prompt =
-`Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein jawab deti hain.
+`You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
 Aaj ki tarikh: ${today}
-Watchlist stocks: ${stockLines.join(', ') || 'data nahi'}
+Watchlist: ${stockLines.join(', ') || 'data nahi'}
 
-Neeche diye format mein bilkul shuddh Hindi (Devanagari) mein jawab dijiye. Koi English nahi.
+Bilkul shuddh Hindi Devanagari mein jawab do:
 
-**आजका बाज़ार मूड**
-[1-2 sentences — overall market sentiment aaj]
+**आज का बाज़ार मूड**
+[1-2 sentences]
 
 **वॉचलिस्ट की खास बातें**
-[Top 3 movers ke baare mein 1-1 line]
+[Top 3 movers — 1-1 line]
 
 **सेक्टर नज़र**
-[Kaun se sectors mein action hai — 2 lines]
+[2 lines]
 
 **निवी की सलाह**
-[Ek actionable insight — 2 lines max]
+[2 lines max]
 
 Max 180 words. Sirf Hindi Devanagari.`;
 
@@ -4702,7 +4696,7 @@ Max 180 words. Sirf Hindi Devanagari.`;
     _tabSetBriefHtml(htmlOut, Date.now());
   } catch(err) {
     const briefBody = document.getElementById('tab-brief-body');
-    if (briefBody) briefBody.innerHTML = `<div style="font-size:11px;color:#f59e0b;padding:4px 0;">⚠️ Market brief did not load. Please refresh..</div>`;
+    if (briefBody) briefBody.innerHTML = `<div style="font-size:11px;color:#f59e0b;padding:4px 0;">⚠️ Market brief load nahi hua. Refresh karo.</div>`;
   }
 }
 
@@ -4728,7 +4722,6 @@ function _tabBriefToggle() {
   if (btn) btn.innerText = _tabBriefExpanded ? '▲ छोटा करें' : '▼ विस्तार';
 }
 
-// --- CHAT SEND ---
 async function _tabSend() {
   const inp = document.getElementById('tab-nivi-input');
   const q   = inp ? inp.value.trim() : '';
@@ -4745,7 +4738,6 @@ async function _tabAsk(question) {
   _tabChatHistory.push({role:'user', text:question, ts:Date.now()});
   _tabRenderChat();
 
-  // Build context
   const wlCtx = wl.slice(0,12).map(s => {
     const d = cache[s] && cache[s].data;
     if (!d) return null;
@@ -4757,12 +4749,12 @@ async function _tabAsk(question) {
   const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
   const prompt =
-`You are Nivi, an expert Indian stock market analyst. You MUST reply ONLY in Hindi using Devanagari script (हिंदी में देवनागरी लिपि). Absolutely no English words, no Hinglish, no Roman script.
+`You are Nivi, an expert Indian stock market analyst. You MUST reply ONLY in Hindi using Devanagari script (हिंदी में देवनागरी लिपि). Absolutely no English words, no Hinglish, no Roman script whatsoever.
 Today: ${today}
 User watchlist: ${wlCtx || 'data nahi'}
 User question: ${question}
 
-Instructions: Reply in pure Hindi Devanagari only. Max 4 lines. No English. No disclaimer. No Roman letters.`;
+Reply in pure Hindi Devanagari only. Max 4 lines. No English. No disclaimer. No Roman letters.`;
 
   _tabShowLoading(true);
   let answer = null;
@@ -4784,10 +4776,9 @@ Instructions: Reply in pure Hindi Devanagari only. Max 4 lines. No English. No d
   _tabShowLoading(false);
   _tabChatHistory.push({role:'nivi', text: answer || '⚠️ कोई जवाब नहीं मिला।', ts:Date.now()});
   try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e){}
-  _tabRenderChat(_getNiviAutoSpeak()); // speak only if auto-speak ON
+  _tabRenderChat(_getNiviAutoSpeak());
 }
 
-// --- RENDER CHAT BUBBLES ---
 function _tabRenderChat(speakLast) {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
@@ -4816,8 +4807,6 @@ function _tabRenderChat(speakLast) {
     }
   }).join('');
   area.scrollTop = area.scrollHeight;
-
-  // Auto-speak last Nivi message
   if (speakLast) {
     const last = [..._tabChatHistory].reverse().find(m => m.role === 'nivi');
     if (last) setTimeout(() => _tabSpeak(last.text), 400);
@@ -4842,7 +4831,6 @@ function _tabShowLoading(show) {
   }
 }
 
-// --- VOICE INPUT (MIC) ---
 function _tabMicToggle() {
   if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
     showPopup('Voice input browser mein support nahi hai'); return;
@@ -4857,12 +4845,10 @@ function _tabMicToggle() {
   _tabRecognition.interimResults = false;
   _tabRecognition.maxAlternatives = 1;
   _tabMicActive = true;
-
   const micBtn    = document.getElementById('tab-mic-btn');
   const micStatus = document.getElementById('tab-mic-status');
   if (micBtn)    { micBtn.style.background = '#7f1d1d'; micBtn.style.borderColor = '#ef4444'; }
   if (micStatus) micStatus.style.display = 'block';
-
   _tabRecognition.onresult = (e) => {
     const transcript = e.results[0][0].transcript;
     const inp = document.getElementById('tab-nivi-input');
@@ -4883,7 +4869,6 @@ function _tabMicToggle() {
   _tabRecognition.start();
 }
 
-// --- TTS FOR CHAT ---
 function _tabSpeak(text) {
   if (!window.speechSynthesis || !text) return;
   window.speechSynthesis.cancel();
@@ -4892,8 +4877,8 @@ function _tabSpeak(text) {
   _tabUtterance.lang  = 'hi-IN';
   _tabUtterance.rate  = _getNiviRate();
   _tabUtterance.pitch = _getNiviPitch();
-  const voices   = speechSynthesis.getVoices();
-  const female   =
+  const voices = speechSynthesis.getVoices();
+  const female =
     voices.find(v => v.lang==='hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
     voices.find(v => v.lang==='hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
     voices.find(v => v.lang==='hi-IN' && !/male/i.test(v.name)) ||
@@ -4911,6 +4896,7 @@ function _tabNewsSpeak() {
 function aiNewsCacheClear() {
   localStorage.removeItem('aiNewsCache_v2');
 }
+
 function _tabClearHistory() {
   _tabChatHistory = [];
   localStorage.removeItem('niviTabChat');
