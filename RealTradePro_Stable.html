@@ -797,7 +797,7 @@ body.light .ticker-price{color:#e2e8f0;}
 </div>
 
 <!-- ============================================================ -->
-<!-- 🤖 NIVI AI MODAL — Chat UI v3 -->
+<!-- 🤖 Ask Nivi MODAL — Chat UI v3 -->
 <div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;align-items:flex-end;justify-content:center;">
   <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;width:100%;max-width:440px;height:90vh;display:flex;flex-direction:column;overflow:hidden;">
 
@@ -817,7 +817,7 @@ body.light .ticker-price{color:#e2e8f0;}
             </svg>
           </div>
           <div>
-            <div style="font-size:13px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;line-height:1.1;">Nivi AI</div>
+            <div style="font-size:13px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;line-height:1.1;">Ask Nivi</div>
             <div style="display:flex;gap:5px;align-items:center;">
               <div id="nivi-sym-label" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;"></div>
               <div id="nivi-cache-timer" style="font-size:9px;color:#4b6280;display:none;"></div>
@@ -867,7 +867,7 @@ body.light .ticker-price{color:#e2e8f0;}
 
       <!-- Input row: text + mic + send -->
       <div style="display:flex;gap:6px;align-items:center;">
-        <input id="nivi-input" type="text" placeholder="Nivi se kuch bhi poochho..." onkeydown="if(event.key==='Enter')niviSend()"
+        <input id="nivi-input" type="text" placeholder="Ask anything to Nivi..." onkeydown="if(event.key==='Enter')niviSend()"
           style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;"/>
         <button id="nivi-mic-btn" onclick="niviMicToggle()" title="Voice Input"
           style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;">🎙️</button>
@@ -887,7 +887,7 @@ body.light .ticker-price{color:#e2e8f0;}
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
-// ✨ NIVI AI — merged GAS v2 URL
+// ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = localStorage.getItem('customAPI') || "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
@@ -1677,7 +1677,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
         <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
         <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
           <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
-          <span style="font-size:13px;">NIVI AI</span>
+          <span style="font-size:13px;">Ask Nivi</span>
         </button>
       </div>
     </div>`;
@@ -4020,7 +4020,7 @@ const FEATURE_DATA = [
     {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
   ]},
   {cat:"Ask Nivi", color:"#38bdf8", items:[
-    {name:"NIVI AI Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Gemini analyze kare. 30-min cache."},
+    {name:"Ask Nivi Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Gemini analyze kare. 30-min cache."},
     {name:"Stock Filter", desc:"Fetches top 5 watchlist stocks. 5 min cache to save GAS quota."},
     {name:"Tabs", desc:"All / Corporate / Market filter tabs."},
     {name:"Stock Chips", desc:"Filter by individual stock (watchlist-based chips)."},
@@ -4541,7 +4541,7 @@ async function renderNews() {
 
       <!-- Input row -->
       <div style="display:flex;gap:6px;align-items:center;">
-        <input id="tab-nivi-input" type="text" placeholder="Nivi se kuch bhi poochho..."
+        <input id="tab-nivi-input" type="text" placeholder="Ask anything to Nivi..."
           onkeydown="if(event.key==='Enter')_tabSend()"
           style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
         <button id="tab-mic-btn" onclick="_tabMicToggle()" title="Voice Input"
@@ -4725,7 +4725,7 @@ function _tabRenderChat(speakLast) {
   if (_tabChatHistory.length === 0) {
     area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px 0;color:#1e3a2e;">
       <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#1e3a2e"/></svg>
-      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Nivi se kuch bhi poochho ⬇️<br><span style="font-size:10px;color:#1a3020;">Ya neeche chips tap karo</span></div>
+      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi ⬇️<br><span style="font-size:10px;color:#1a3020;">or tap on below chips</span></div>
     </div>`;
     return;
   }
@@ -5538,7 +5538,7 @@ function setFontSize(size) {
 // ======================================
 
 // ======================================
-// 🤖 NIVI AI — Chat UI v3
+// 🤖 Ask Nivi — Chat UI v3
 // ======================================
 let _niviCurrentSym = '';
 let _niviSpeaking   = false;
