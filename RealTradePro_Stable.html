@@ -368,6 +368,61 @@ body.light .ticker-price{color:#e2e8f0;}
     <div id="gemini-key-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
   </div>
 
+  <!-- NIVI VOICE SETTINGS -->
+  <div class="card" style="border:1px solid rgba(52,211,153,0.2);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">NIVI VOICE SETTINGS</div>
+    </div>
+
+    <!-- Auto Speak Toggle -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div>
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Auto Speak</div>
+        <div style="font-size:9px;color:#4b6280;">Nivi ka jawab auto bolegi</div>
+      </div>
+      <button id="nivi-autospeak-btn" onclick="toggleNiviAutoSpeak()"
+        style="background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
+    </div>
+
+    <!-- Voice Speed Slider -->
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Voice Speed</div>
+        <div id="nivi-speed-label" style="font-size:11px;color:#34d399;font-weight:700;">Normal</div>
+      </div>
+      <input type="range" id="nivi-speed-slider" min="0.5" max="1.5" step="0.1" value="0.88"
+        oninput="updateNiviSpeed(this.value)"
+        style="width:100%;accent-color:#34d399;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b6280;margin-top:2px;">
+        <span>Dheere</span><span>Normal</span><span>Tez</span>
+      </div>
+    </div>
+
+    <!-- Voice Pitch -->
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Voice Pitch</div>
+        <div id="nivi-pitch-label" style="font-size:11px;color:#34d399;font-weight:700;">Normal</div>
+      </div>
+      <input type="range" id="nivi-pitch-slider" min="0.8" max="1.4" step="0.05" value="1.15"
+        oninput="updateNiviPitch(this.value)"
+        style="width:100%;accent-color:#34d399;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b6280;margin-top:2px;">
+        <span>Mota (Deep)</span><span>Normal</span><span>Patli (High)</span>
+      </div>
+    </div>
+
+    <!-- Test Voice Button -->
+    <button onclick="niviVoiceTest()"
+      style="width:100%;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+      🔊 Voice Test Karo
+    </button>
+    <div style="font-size:9px;color:#4b6280;margin-top:6px;line-height:1.5;">
+      💡 Best voice ke liye: Play Store → <b style="color:#e2e8f0;">Microsoft TTS</b> install karo → Android Settings → Accessibility → TTS → Microsoft select karo → "Neerja" (Hindi Female) milegi.
+    </div>
+  </div>
+
 
   <!-- GOOGLE SHEETS INTEGRATION -->
   <div class="card" style="border:1px solid rgba(66,133,244,0.35);">
@@ -611,15 +666,29 @@ body.light .ticker-price{color:#e2e8f0;}
 <div id="addGroupModal" style="display:none;"></div>
 
 
-<!-- ALERT MODAL -->
+<!-- ALERT MODAL — Upgraded -->
 <div id="alertModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid #713f12;border-radius:16px;padding:20px;width:280px;">
-    <h2 id="alert-title" style="font-size:16px;font-weight:700;margin-bottom:12px;color:#fde68a;">Set Alert</h2>
-    <input id="alert-price" placeholder="Alert Price (₹)" type="number" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #713f12;color:white;outline:none;">
-    <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Triggers when price reaches within ₹1 of target.</div>
+  <div style="background:#0f1e33;border:1px solid #713f12;border-radius:16px;padding:18px;width:300px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div id="alert-title" style="font-size:14px;font-weight:700;color:#fde68a;">🔔 Alert Set Karo</div>
+      <button onclick="closeAlertModal()" style="background:transparent;border:none;color:#4b6280;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Current price display -->
+    <div id="alert-current-price" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e2e8f0;"></div>
+    <!-- Above / Below toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="alert-above-btn" onclick="setAlertDir('above')"
+        style="flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#166534;color:#86efac;border:1px solid #166534;">▲ Upar (Above)</button>
+      <button id="alert-below-btn" onclick="setAlertDir('below')"
+        style="flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">▼ Neeche (Below)</button>
+    </div>
+    <input id="alert-price" placeholder="Alert Price (₹)" type="number"
+      style="width:100%;background:#0a1628;border:1px solid #713f12;color:white;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px;">
+    <div style="font-size:9px;color:#4b6280;margin-bottom:12px;">Price is reached when trigger fires. Repeat alerts: app open ho to bar bar aavse.</div>
+    <!-- Existing alerts list -->
+    <div id="alert-existing-list" style="margin-bottom:10px;"></div>
     <div style="display:flex;gap:8px;">
-      <button onclick="confirmAlert()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#713f12;color:#fde68a;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Set Alert</button>
+      <button onclick="confirmAlert()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#713f12;color:#fde68a;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔔 Set Alert</button>
       <button onclick="closeAlertModal()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
     </div>
   </div>
@@ -3030,6 +3099,69 @@ async function fetchFull(sym,isIndex=false){
   showError("All APIs failed  -  Check quota or URLs in Settings");
   return null;
 }
+// =============================================
+// NIVI VOICE SETTINGS
+// =============================================
+function _getNiviRate()  { return parseFloat(localStorage.getItem('niviRate')  || '0.88'); }
+function _getNiviPitch() { return parseFloat(localStorage.getItem('niviPitch') || '1.15'); }
+function _getNiviAutoSpeak() { return localStorage.getItem('niviAutoSpeak') !== 'off'; }
+
+function toggleNiviAutoSpeak() {
+  const on = _getNiviAutoSpeak();
+  localStorage.setItem('niviAutoSpeak', on ? 'off' : 'on');
+  _updateNiviSettingsUI();
+  showPopup('Auto Speak ' + (on ? 'OFF' : 'ON'));
+}
+
+function updateNiviSpeed(val) {
+  localStorage.setItem('niviRate', val);
+  const labels = { 0.5:'Bahut Dheere', 0.6:'Dheere', 0.7:'Thoda Dheere', 0.8:'Normal se Kam',
+    0.9:'Normal', 1.0:'Normal+', 1.1:'Thoda Tez', 1.2:'Tez', 1.3:'Bahut Tez', 1.4:'Fast', 1.5:'Very Fast' };
+  const label = labels[parseFloat(val).toFixed(1)] || 'Custom';
+  const el = document.getElementById('nivi-speed-label');
+  if (el) el.innerText = label;
+}
+
+function updateNiviPitch(val) {
+  localStorage.setItem('niviPitch', val);
+  const v = parseFloat(val);
+  const label = v < 0.95 ? 'Mota (Deep)' : v > 1.2 ? 'Patla (High)' : 'Normal';
+  const el = document.getElementById('nivi-pitch-label');
+  if (el) el.innerText = label;
+}
+
+function niviVoiceTest() {
+  if (!window.speechSynthesis) { showPopup('TTS support nahi hai'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('नमस्ते! मैं निवी हूँ। आपकी स्टॉक मार्केट सहायक।');
+  u.lang  = 'hi-IN';
+  u.rate  = _getNiviRate();
+  u.pitch = _getNiviPitch();
+  const voices  = speechSynthesis.getVoices();
+  const female  =
+    voices.find(v => v.lang==='hi-IN' && /neerja|female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN' && v.name.includes('Microsoft') && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN' && v.name.includes('Google')    && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN' && !/male/i.test(v.name)) ||
+    voices.find(v => v.lang==='hi-IN');
+  if (female) { u.voice = female; showPopup('Voice: ' + female.name); }
+  window.speechSynthesis.speak(u);
+}
+
+function _updateNiviSettingsUI() {
+  const btn = document.getElementById('nivi-autospeak-btn');
+  if (btn) {
+    const on = _getNiviAutoSpeak();
+    btn.innerText         = on ? 'ON' : 'OFF';
+    btn.style.background  = on ? '#065f46' : '#1e2d3d';
+    btn.style.color       = on ? '#34d399' : '#94a3b8';
+    btn.style.borderColor = on ? '#065f46' : '#2d3f52';
+  }
+  const speedSlider = document.getElementById('nivi-speed-slider');
+  if (speedSlider) { speedSlider.value = _getNiviRate(); updateNiviSpeed(_getNiviRate()); }
+  const pitchSlider = document.getElementById('nivi-pitch-slider');
+  if (pitchSlider) { pitchSlider.value = _getNiviPitch(); updateNiviPitch(_getNiviPitch()); }
+}
 
 function loadSettingsUI(){
   const d1=document.getElementById("set-api-display");
@@ -3201,42 +3333,94 @@ function chart(sym,isIndex){
   window.open("https://www.tradingview.com/chart/?symbol="+exchange+":"+finalSym);
 }
 
-// -- ALERT MODAL --
-var currentAlertSym="";
-function setAlert(sym){
-  currentAlertSym=sym;
-  document.getElementById("alert-title").innerText="Set Alert  -  "+sym;
-  document.getElementById("alert-price").value="";
-  var d=cache[sym]&&cache[sym].data;
-  if(d) document.getElementById("alert-price").placeholder="Current: "+d.regularMarketPrice.toFixed(2);
-  document.getElementById("alertModal").style.display="flex";
-}
-function closeAlertModal(){
-  document.getElementById("alertModal").style.display="none";
-}
-function confirmAlert(){
-  var price=parseFloat(document.getElementById("alert-price").value);
-  if(!price||isNaN(price)){ showPopup("Enter valid price"); return; }
-  alerts.push({sym:currentAlertSym,price:price,triggered:false});
-  localStorage.setItem("alerts",JSON.stringify(alerts));
-  closeAlertModal();
-  showPopup("Alert set: "+currentAlertSym+" @ Rs."+price);
+// -- ALERT MODAL — Upgraded --
+var currentAlertSym = "";
+var _alertDir = "above"; // "above" | "below"
+
+function setAlertDir(dir) {
+  _alertDir = dir;
+  document.getElementById('alert-above-btn').style.background = dir==='above' ? '#166534' : '#1e2d3d';
+  document.getElementById('alert-above-btn').style.color      = dir==='above' ? '#86efac' : '#94a3b8';
+  document.getElementById('alert-above-btn').style.borderColor= dir==='above' ? '#166534' : '#2d3f52';
+  document.getElementById('alert-below-btn').style.background = dir==='below' ? '#7f1d1d' : '#1e2d3d';
+  document.getElementById('alert-below-btn').style.color      = dir==='below' ? '#fca5a5' : '#94a3b8';
+  document.getElementById('alert-below-btn').style.borderColor= dir==='below' ? '#7f1d1d' : '#2d3f52';
 }
 
-// -- CHECK ALERTS --
-function checkAlerts(sym,currentPrice){
-  var updated=false;
-  alerts.forEach(function(a){
-    if(a.sym===sym&&!a.triggered&&Math.abs(currentPrice-parseFloat(a.price))<=1){
-      showPopup("ALERT: "+sym+" near Rs."+a.price,5000);
+function setAlert(sym) {
+  currentAlertSym = sym;
+  _alertDir = "above";
+  setAlertDir("above");
+  document.getElementById("alert-title").innerText = "🔔 Alert — " + sym;
+  document.getElementById("alert-price").value = "";
+  var d = cache[sym] && cache[sym].data;
+  var price = d ? d.regularMarketPrice : 0;
+  document.getElementById("alert-current-price").innerText =
+    "CMP: ₹" + (price ? price.toFixed(2) : "--");
+  document.getElementById("alert-price").placeholder = "e.g. " + (price ? (price*1.05).toFixed(0) : "500");
+  // Show existing alerts for this sym
+  var existing = alerts.filter(a => a.sym===sym && !a.triggered);
+  var listEl = document.getElementById("alert-existing-list");
+  if (existing.length > 0) {
+    listEl.innerHTML = '<div style="font-size:9px;color:#4b6280;margin-bottom:4px;font-weight:700;">EXISTING ALERTS</div>' +
+      existing.map((a,i) =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;background:#0a1628;border-radius:6px;padding:5px 8px;margin-bottom:3px;">
+          <span style="font-size:11px;color:${a.dir==='below'?'#fca5a5':'#86efac'};">${a.dir==='below'?'▼':'▲'} ₹${a.price}</span>
+          <button onclick="removeAlert('${sym}',${a.price})" style="background:transparent;border:none;color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+        </div>`
+      ).join('');
+  } else {
+    listEl.innerHTML = '';
+  }
+  document.getElementById("alertModal").style.display = "flex";
+}
+
+function removeAlert(sym, price) {
+  alerts = alerts.filter(a => !(a.sym===sym && a.price===price));
+  localStorage.setItem("alerts", JSON.stringify(alerts));
+  setAlert(sym); // refresh modal
+}
+
+function closeAlertModal() {
+  document.getElementById("alertModal").style.display = "none";
+}
+
+function confirmAlert() {
+  var price = parseFloat(document.getElementById("alert-price").value);
+  if (!price || isNaN(price)) { showPopup("Valid price daakho"); return; }
+  // Remove duplicate
+  alerts = alerts.filter(a => !(a.sym===currentAlertSym && a.price===price));
+  alerts.push({ sym:currentAlertSym, price:price, dir:_alertDir, triggered:false });
+  localStorage.setItem("alerts", JSON.stringify(alerts));
+  closeAlertModal();
+  showPopup("🔔 Alert set: " + currentAlertSym + " " + (_alertDir==='above'?'▲':'▼') + " ₹" + price);
+  // Request browser notification permission
+  if (Notification && Notification.permission === 'default') Notification.requestPermission();
+}
+// -- CHECK ALERTS — Upgraded --
+function checkAlerts(sym, currentPrice) {
+  var updated = false;
+  alerts.forEach(function(a) {
+    if (a.sym !== sym || a.triggered) return;
+    var hit = false;
+    if (a.dir === 'above' && currentPrice >= parseFloat(a.price)) hit = true;
+    if (a.dir === 'below' && currentPrice <= parseFloat(a.price)) hit = true;
+    if (!a.dir && Math.abs(currentPrice - parseFloat(a.price)) <= 1) hit = true; // legacy
+    if (hit) {
+      var msg = "🔔 " + sym + " " + (a.dir==='below'?'▼':'▲') + " ₹" + a.price + " — CMP ₹" + currentPrice.toFixed(2);
+      showPopup(msg, 6000);
       playAlertSound();
-      a.triggered=true;
-      a.triggeredAt=new Date().toLocaleString("en-IN");
-      a.triggeredPrice=currentPrice;
-      updated=true;
+      // Browser push notification
+      if (Notification && Notification.permission === 'granted') {
+        new Notification("RealTraderPro Alert", { body: msg, icon: '/favicon.ico' });
+      }
+      a.triggered    = true;
+      a.triggeredAt  = new Date().toLocaleString("en-IN");
+      a.triggeredPrice = currentPrice;
+      updated = true;
     }
   });
-  if(updated) localStorage.setItem("alerts",JSON.stringify(alerts));
+  if (updated) localStorage.setItem("alerts", JSON.stringify(alerts));
 }
 
 function sortAZ(){
@@ -4302,8 +4486,10 @@ async function renderNews() {
           <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
           <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
         </div>
-        <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
-      </div>
+        <div style="display:flex;gap:5px;">
+          <button onclick="_tabClearHistory()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑</button>
+          <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
+        </div>
 
       <!-- Mover chips (always visible) -->
       <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:8px;">
@@ -4362,7 +4548,14 @@ async function renderNews() {
 
   // Load market brief
   _tabLoadBrief();
-
+// Load saved chat history
+  if (_tabChatHistory.length === 0) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('niviTabChat'));
+      if (saved && saved.length > 0) _tabChatHistory = saved;
+    } catch(e) {}
+  }
+  _tabRenderChat();
   // Re-render existing chat if any
   _tabRenderChat();
 }
@@ -4514,7 +4707,8 @@ Bilkul shuddh Hindi mein (Devanagari script), concise aur practical jawab dijiye
 
   _tabShowLoading(false);
   _tabChatHistory.push({role:'nivi', text: answer || '⚠️ कोई जवाब नहीं मिला।', ts:Date.now()});
-  _tabRenderChat(true); // true = speak last answer
+  try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e){}
+  _tabRenderChat(_getNiviAutoSpeak()); // speak only if auto-speak ON
 }
 
 // --- RENDER CHAT BUBBLES ---
@@ -4617,8 +4811,8 @@ function _tabSpeak(text) {
   const clean = text.replace(/[^\w\s.,!?%₹+\-।]/g,' ').substring(0, 500);
   _tabUtterance = new SpeechSynthesisUtterance(expandTickersForSpeech(clean));
   _tabUtterance.lang  = 'hi-IN';
-  _tabUtterance.rate  = 0.88;
-  _tabUtterance.pitch = 1.15;
+  _tabUtterance.rate  = _getNiviRate();
+  _tabUtterance.pitch = _getNiviPitch();
   const voices   = speechSynthesis.getVoices();
   const female   =
     voices.find(v => v.lang==='hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
@@ -4637,6 +4831,12 @@ function _tabNewsSpeak() {
 
 function aiNewsCacheClear() {
   localStorage.removeItem('aiNewsCache_v2');
+}
+function _tabClearHistory() {
+  _tabChatHistory = [];
+  localStorage.removeItem('niviTabChat');
+  _tabRenderChat();
+  showPopup('Chat history clear!');
 }
 
 function formatAINewsText(raw) {
@@ -5827,8 +6027,8 @@ function niviSpeak() {
     voices.find(v => v.lang === 'hi-IN' && !/male/i.test(v.name)) ||
     voices.find(v => v.lang === 'hi-IN');
   if (hiVoice) _niviUtterance.voice = hiVoice;
-  _niviUtterance.pitch = 1.15;
-  _niviUtterance.rate  = 0.88;
+  _niviUtterance.pitch = _getNiviPitch();
+  _niviUtterance.rate  = _getNiviRate();
 
   _niviUtterance.onstart = () => {
     _niviSpeaking = true;
