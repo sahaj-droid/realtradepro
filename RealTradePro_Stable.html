@@ -4445,7 +4445,7 @@ let newsActiveTab = 'all';
 // Market Brief (top) + Chat + Mic + Chips
 // =============================================
   function _niviSubTab(tab) {
-  document.getElementById('nivi-section-chat').style.display = tab === 'chat' ? 'flex' : 'none';
+  document.getElementById('nivi-section-chat').style.display = tab === 'chat' ? 'block' : 'none';
   document.getElementById('nivi-section-news').style.display = tab === 'news' ? 'flex' : 'none';
   const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;';
   const inactive = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;';
