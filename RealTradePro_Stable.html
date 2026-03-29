@@ -2276,14 +2276,14 @@ async function openDetail(sym,isIndex){
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:11px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:11px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
       </div>
     </div>
     <div id="fundamentalsSection" style="margin-top:8px;"><div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading fundamentals...</div></div>
@@ -4477,7 +4477,7 @@ async function renderNews() {
   if (!el) return;
 
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 120px);overflow:hidden;">
+  <div style="display:flex;flex-direction:column;height:calc(100svh - 115px);overflow:hidden;position:relative;">
 
     <!-- TOP: Header + Market Brief toggle -->
     <div style="flex-shrink:0;padding:0 0 8px 0;">
