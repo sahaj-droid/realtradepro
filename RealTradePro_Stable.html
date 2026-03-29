@@ -4490,7 +4490,7 @@ async function renderNews() {
   const _bot = _botNav ? _botNav.offsetHeight : 56;
 
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
+  <div style="display:flex;flex-direction:column;position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:448px;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
     <!-- TOP: Header + Market Brief toggle -->
     <div style="flex-shrink:0;padding-bottom:6px;">
