@@ -5812,7 +5812,7 @@ async function openNivi(sym) {
       if (cd) {
         const diff = cd.regularMarketPrice - cd.chartPreviousClose;
         const pct  = ((diff / cd.chartPreviousClose) * 100).toFixed(2);
-        const prompt = `Aap 'Nivi' hain — ek expert Hindi stock market analyst.\nStock: ${sym}\nCMP: ₹${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)\nDay High: ₹${cd.regularMarketDayHigh?.toFixed(2)} | Low: ₹${cd.regularMarketDayLow?.toFixed(2)}\n52W High: ₹${cd.fiftyTwoWeekHigh?.toFixed(2)} | Low: ₹${cd.fiftyTwoWeekLow?.toFixed(2)}\nSirf shuddh Hindi mein 3 bullet points dijiye. Bullet format: • [vakya]`;
+        const prompt = `आप 'निवी' हैं — एक विशेषज्ञ भारतीय शेयर बाज़ार विश्लेषक।\nस्टॉक: ${sym}\nCMP: ₹${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)\nदिन का उच्च: ₹${cd.regularMarketDayHigh?.toFixed(2)} | निम्न: ₹${cd.regularMarketDayLow?.toFixed(2)}\n52 सप्ताह उच्च: ₹${cd.fiftyTwoWeekHigh?.toFixed(2)} | निम्न: ₹${cd.fiftyTwoWeekLow?.toFixed(2)}\nकेवल शुद्ध हिंदी देवनागरी लिपि में 3 bullet points दीजिए। अंग्रेज़ी या Hinglish बिल्कुल नहीं। Bullet format: • [वाक्य]`;
         const resp = await directGeminiCall(prompt);
         _niviShowLoading(false);
         if (resp && resp.ok) {
