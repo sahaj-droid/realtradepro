@@ -83,6 +83,7 @@ body.light #news .group-btn { background:#e2e8f0 !important; color:#475569 !impo
 body.light #news .group-btn.active { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
 body.light #news [style*="background:linear-gradient(135deg,#0a1e14"] { background:#f0fdf4 !important; }
 body.light #news [style*="color:#34d399"] { color:#059669 !important; }
+body.light #news [style*="background:#0a0f1a"] { background:#f0f4f8 !important; }
 body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; }
 
 .tab { display:none }
@@ -533,7 +534,7 @@ body.light .ticker-price{color:#e2e8f0;}
   </div>
   <div id="earningsCalContent"><div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">Loading...</div></div>
 </div>
-<div id="news" class="tab p-3"></div>
+<div id="news" class="tab" style="padding:0;"></div>
 
 <!-- JOURNAL ADD MODAL -->
 <div id="journalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
@@ -4476,12 +4477,16 @@ async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
 
+  // Measure actual top offset dynamically for pixel-perfect fit
+  const _hdr = document.querySelector('.app-header');
+  const _topOff = _hdr ? Math.round(_hdr.getBoundingClientRect().bottom) : 104;
+  const _botNav = 56; // bottom nav height px
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;height:calc(100svh - 115px);overflow:hidden;position:relative;">
+  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_topOff}px;bottom:${_botNav}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
     <!-- TOP: Header + Market Brief toggle -->
-    <div style="flex-shrink:0;padding:0 0 8px 0;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <div style="flex-shrink:0;padding-bottom:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <div>
           <div style="font-size:14px;font-weight:700;color:#34d399;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">निवी मार्केट ब्रीफ</div>
           <div style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">आपकी वॉचलिस्ट का AI विश्लेषण</div>
@@ -4490,21 +4495,22 @@ async function renderNews() {
           <button onclick="_tabClearHistory()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;padding:4px 8px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑</button>
           <button onclick="aiNewsCacheClear();renderNews();" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">↻ Refresh</button>
         </div>
+      </div>
 
       <!-- Mover chips (always visible) -->
-      <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:8px;">
+      <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
         ${buildMoverChips()}
       </div>
 
       <!-- Market Brief card (collapsible) -->
-      <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:10px 12px;margin-bottom:8px;">
-        <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:120px;overflow:hidden;transition:max-height 0.3s;">
-          <div style="text-align:center;padding:10px 0;">
-            <div class="spinner" style="margin:0 auto 6px;"></div>
+      <div id="tab-brief-card" style="background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
+        <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;max-height:110px;overflow:hidden;transition:max-height 0.3s;">
+          <div style="text-align:center;padding:8px 0;">
+            <div class="spinner" style="margin:0 auto 5px;"></div>
             <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
           <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
           <div style="display:flex;gap:5px;">
             <button onclick="_tabBriefToggle()" id="tab-brief-expand-btn" style="background:transparent;color:#4b6280;border:none;font-size:10px;cursor:pointer;font-family:'Rajdhani',sans-serif;">▼ विस्तार</button>
@@ -4514,16 +4520,16 @@ async function renderNews() {
       </div>
     </div>
 
-    <!-- MIDDLE: Chat bubbles -->
-    <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0 8px 0;-webkit-overflow-scrolling:touch;min-height:0;">
+    <!-- MIDDLE: Chat bubbles — flex:1 fills remaining space -->
+    <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
       <!-- messages render here -->
     </div>
 
-    <!-- BOTTOM: Quick chips + Input + Mic + Send -->
-    <div style="flex-shrink:0;padding-top:8px;border-top:1px solid rgba(6,95,70,0.3);">
+    <!-- BOTTOM: Quick chips + Input + Mic + Send — always sticks to bottom -->
+    <div style="flex-shrink:0;padding:6px 0 8px 0;border-top:1px solid rgba(6,95,70,0.3);">
 
       <!-- Quick chips -->
-      <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:7px;padding-bottom:2px;scrollbar-width:none;">
+      <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
         <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
         <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
         <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
