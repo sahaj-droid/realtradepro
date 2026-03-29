@@ -4658,8 +4658,7 @@ async function renderNews() {
       <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;position:sticky;bottom:0;z-index:2;">
         <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
           <button id="tab-mood-toggle-btn" onclick="_tabToggleMood()" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">📊 बाज़ार मूड</button>
-          <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')"
-          <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
+          <<button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
           <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
           <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
           <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
@@ -4864,14 +4863,20 @@ async function _tabAsk(question) {
 
   const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
-  const prompt =
-`You are Nivi, an expert Indian stock market analyst. You MUST reply ONLY in Hindi using Devanagari script (हिंदी में देवनागरी लिपि). Absolutely no English words, no Hinglish, no Roman script whatsoever.
-Today: ${today}
-User watchlist: ${wlCtx || 'data nahi'}
-User question: ${question}
+const prompt =
+`[SYSTEM: You are Nivi. OUTPUT LANGUAGE = HINDI DEVANAGARI ONLY. Any English/Roman output = FAILURE.]
 
-Reply in pure Hindi Devanagari only. Max 4 lines. No English. No disclaimer. No Roman letters.`;
+तुम 'निवी' हो — एक तेज़ और भरोसेमंद भारतीय शेयर बाज़ार विश्लेषक।
+आज की तारीख: ${today}
+यूज़र की वॉचलिस्ट: ${wlCtx || 'डेटा उपलब्ध नहीं'}
+यूज़र का सवाल: ${question}
 
+निर्देश:
+- केवल शुद्ध हिंदी देवनागरी में उत्तर दो
+- अधिकतम 8 पंक्तियाँ
+- कोई English नहीं, कोई Roman नहीं, कोई disclaimer नहीं
+- डेटा के नंबर सीधे use करो (जैसे "RSI 67 है")
+- आत्मविश्वास से बोलो — निवी कभी hesitate नहीं करती`;
   _tabShowLoading(true);
   let answer = null;
 
