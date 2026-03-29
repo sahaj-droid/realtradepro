@@ -174,10 +174,8 @@ body.light .ticker-price{color:#e2e8f0;}
 <!-- == ALERT POPUP == -->
 <div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
   
-<style>
-#news { padding-top: 0; }
-</style>
-  
+
+
 <!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
@@ -4481,9 +4479,18 @@ async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
 
-  // Measure actual top + bottom offsets dynamically for pixel-perfect fit on any screen
-el.innerHTML = `
-  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:0;bottom:0;padding-top:var(--nivi-top,104px);padding-bottom:var(--nivi-bot,56px);overflow:hidden;padding-left:12px;padding-right:12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
+  // offsetHeight = scroll-safe, works on all screen sizes
+  const _appHdr   = document.querySelector('.app-header');
+  const _statusBar = document.getElementById('marketStatus')?.parentElement;
+  const _ticker   = document.getElementById('priceTicker');
+  const _botNav   = document.querySelector('.fixed.bottom-0');
+  const _top = (_appHdr ? _appHdr.offsetHeight : 44)
+             + (_statusBar ? _statusBar.offsetHeight : 22)
+             + (_ticker && _ticker.style.display !== 'none' ? _ticker.offsetHeight : 0);
+  const _bot = _botNav ? _botNav.offsetHeight : 56;
+
+  el.innerHTML = `
+  <div style="display:flex;flex-direction:column;position:fixed;left:0;right:0;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
     <!-- TOP: Header + Market Brief toggle -->
     <div style="flex-shrink:0;padding-bottom:6px;">
