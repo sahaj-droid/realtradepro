@@ -440,6 +440,7 @@ body.light .ticker-price{color:#e2e8f0;}
         <input type="checkbox" id="sheet-enabled" onchange="toggleSheetIntegration(this.checked)" style="accent-color:#4285F4;width:14px;height:14px;">
         <span style="font-size:11px;color:#94a3b8;">Enable Sheet Integration</span>
       </label>
+      <button onclick="clearFundCache()" style="background:#1e3a5f;color:#f87171;border:1px solid #7f1d1d;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑️ Clear Cache</button>
     </div>
     <div id="sheet-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
   </div>
@@ -6270,6 +6271,13 @@ function toggleSheetIntegration(enabled){
   localStorage.setItem('sheetEnabled', enabled ? 'true' : 'false');
   updateSheetStatus();
   showPopup(enabled ? '✅ Sheet Integration ON — Fundamentals & History use Google Sheets' : 'Sheet Integration OFF');
+}
+function clearFundCache(){
+  let count = 0;
+  Object.keys(localStorage).forEach(k => {
+    if(k.startsWith('fundCache')) { localStorage.removeItem(k); count++; }
+  });
+  showPopup('🗑️ Fund cache cleared! (' + count + ' stocks) — Reload stock to refresh.');
 }
 function updateSheetStatus(){
   const el = document.getElementById('sheet-status');
