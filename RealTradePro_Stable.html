@@ -2385,12 +2385,12 @@ function _renderFundamentalsHTML(fs, fund, isCached){
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS${cacheLabel}</div>
     <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
       <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)${iBtn('PE')}</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe||'--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)${iBtn('EPS')}</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps||'--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
       </div>
@@ -2536,9 +2536,9 @@ async function openDetail(sym,isIndex){
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">INSIDE BAR</div><div style="font-size:12px;font-weight:700;color:${ib?'#f59e0b':'#4b6280'};">${ib?'Yes':'No'}</div></div>
@@ -2568,17 +2568,18 @@ async function openDetail(sym,isIndex){
       const price=d.regularMarketPrice||0;
       const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
+      const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
       const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <span style="font-size:11px;color:#94a3b8;">${label}</span>
+        <span style="font-size:11px;color:#94a3b8;">${label}${iBtn(dmaKey(label))}</span>
         <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
       </div>`:'';
       ts.innerHTML=`
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;">
             <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">MOVING AVERAGES vs CMP ₹${price.toFixed(0)}</div>
@@ -2590,6 +2591,39 @@ async function openDetail(sym,isIndex){
     });
   }
 }
+  // ======================================
+// ℹ INFO TOOLTIP SYSTEM
+// ======================================
+const INFO_TIPS = {
+  'RSI':      'RSI (Relative Strength Index)\n• Below 30 = Oversold 🟢 (Potential Buy)\n• Above 70 = Overbought 🔴 (Caution)\n• 30–70 = Neutral Zone',
+  'MACD':     'MACD (Moving Avg Convergence Divergence)\n• MACD > Signal = Bullish 🟢\n• MACD < Signal = Bearish 🔴\n• Crossover = Trend change signal',
+  'DMA20':    'DMA 20 (20-Day Moving Average)\n• Price > DMA20 = Short-term Bullish 🟢\n• Price < DMA20 = Short-term Bearish 🔴',
+  'DMA50':    'DMA 50 (50-Day Moving Average)\n• Price > DMA50 = Medium-term Bullish 🟢\n• Price < DMA50 = Medium-term Bearish 🔴',
+  'DMA200':   'DMA 200 (200-Day Moving Average)\n• Price > DMA200 = Long-term Bull Market 🟢\n• Price < DMA200 = Long-term Bear Market 🔴',
+  'PE':       'P/E Ratio (Price to Earnings)\n• Below 15 = Undervalued 🟢\n• 15–25 = Fairly Valued\n• Above 25 = Expensive 🔴\n⚠️ Compare within same sector',
+  'EPS':      'EPS (Earnings Per Share)\n• Higher = More Profitable 🟢\n• Negative EPS = Company in Loss 🔴\n• Growing EPS = Healthy business',
+  'BB':       'Bollinger Bands (20,2)\n• Price > Upper Band = Overbought 🔴\n• Price < Lower Band = Oversold 🟢\n• Squeeze = Breakout likely soon',
+  'INSIDE':   'Inside Bar Pattern\n• Current candle within previous candle\n• Signals consolidation\n• Breakout expected soon ⚡',
+  'NARROW':   'Narrow Range (NR7)\n• Tightest range in last 7 days\n• Signals low volatility\n• Sharp move likely soon ⚡'
+};
+function showInfoTip(key){
+  const tip = INFO_TIPS[key];
+  if(!tip) return;
+  // Remove existing tooltip
+  const old = document.getElementById('infoTipBox');
+  if(old) old.remove();
+  const box = document.createElement('div');
+  box.id = 'infoTipBox';
+  box.style.cssText = 'position:fixed;z-index:9999;background:#0f1e33;border:1px solid #38bdf8;border-radius:10px;padding:10px 14px;max-width:260px;font-size:11px;color:#cbd5e1;line-height:1.6;white-space:pre-line;box-shadow:0 4px 20px rgba(0,0,0,0.6);top:50%;left:50%;transform:translate(-50%,-50%);';
+  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+    <span style="font-size:12px;font-weight:700;color:#38bdf8;">${key}</span>
+    <span onclick="document.getElementById('infoTipBox').remove()" style="cursor:pointer;color:#94a3b8;font-size:16px;line-height:1;">✕</span>
+  </div>${tip.replace(/\n/g,'<br>')}`;
+  // Tap outside to close
+  setTimeout(()=>{ document.addEventListener('click', function _cl(e){ if(!box.contains(e.target)){box.remove();document.removeEventListener('click',_cl);} }); }, 100);
+  document.body.appendChild(box);
+}
+function iBtn(key){ return `<span onclick="event.stopPropagation();showInfoTip('${key}')" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#1e3a5f;color:#38bdf8;font-size:8px;font-weight:700;cursor:pointer;margin-left:3px;flex-shrink:0;vertical-align:middle;">i</span>`; }
 // ======================================
 // QUICK LINKS — always shown, no fund dependency
 // ======================================
@@ -2620,7 +2654,6 @@ function renderQuickLinks(sym, isIndex){
       <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
     </div>`;
 }
-
 // ======================================
 // INDEX COMPOSITION (hardcoded top-5 heavyweights)
 // ======================================
@@ -3705,6 +3738,90 @@ function tab(t){
   if(t==="history")renderHist();
   if(t==="indices")renderIndices();
   if(t==="alerts")renderAlerts();
+  function renderAlerts(){
+  const el = document.getElementById('alerts');
+  if(!el) return;
+
+  // === SECTION 1: Price Alerts ===
+  let priceHTML = '';
+  if(alerts && alerts.length > 0){
+    priceHTML = alerts.map(a => {
+      const col = a.triggered ? '#22c55e' : '#f59e0b';
+      const status = a.triggered
+        ? `✅ Triggered @ ₹${a.triggeredPrice?.toFixed(2)||''} — ${a.triggeredAt||''}`
+        : `⏳ Waiting`;
+      return `<div style="background:#0a1628;border-radius:8px;padding:8px 10px;margin-bottom:6px;border:1px solid ${col}33;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;color:#38bdf8;font-size:13px;">${a.sym}</span>
+          <span style="font-size:11px;color:${col};">${a.dir==='above'?'▲':'▼'} ₹${a.price}</span>
+        </div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:3px;">${status}</div>
+      </div>`;
+    }).join('');
+  } else {
+    priceHTML = `<div style="font-size:11px;color:#4b6280;text-align:center;padding:8px;">No price alerts set</div>`;
+  }
+
+  // === SECTION 2: Technical Alert Log (date-wise) ===
+  const techLog = {};
+  const alertTypes = {
+    vol:'🔊 Volume Spike', rsiOS:'📉 RSI Oversold', rsiOB:'📈 RSI Overbought',
+    macdBull:'🟢 MACD Bullish Cross', macdBear:'🔴 MACD Bearish Cross',
+    bbUp:'⬆️ BB Upper Break', bbDn:'⬇️ BB Lower Break',
+    insideBar:'📊 Inside Bar', narrowRange:'📏 Narrow Range'
+  };
+
+  // Collect all techAlert2_ keys from localStorage
+  Object.keys(localStorage).forEach(k => {
+    if(!k.startsWith('techAlert2_')) return;
+    // Key format: techAlert2_SYM_YYYY-MM-DD
+    const parts = k.replace('techAlert2_','').split('_');
+    const date = parts[parts.length-1];
+    const sym = parts.slice(0,-1).join('_');
+    try{
+      const fired = JSON.parse(localStorage.getItem(k)||'{}');
+      const firedKeys = Object.keys(fired).filter(f=>fired[f]===true);
+      if(firedKeys.length === 0) return;
+      if(!techLog[date]) techLog[date] = [];
+      firedKeys.forEach(f=>{
+        techLog[date].push({sym, type: alertTypes[f]||f});
+      });
+    }catch(e){}
+  });
+
+  // Sort dates descending
+  const sortedDates = Object.keys(techLog).sort((a,b)=>b.localeCompare(a));
+
+  let techHTML = '';
+  if(sortedDates.length === 0){
+    techHTML = `<div style="font-size:11px;color:#4b6280;text-align:center;padding:8px;">No technical alerts fired yet</div>`;
+  } else {
+    techHTML = sortedDates.map(date => {
+      const items = techLog[date];
+      const rows = items.map(i=>
+        `<div style="display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid #1e2d3d;">
+          <span style="font-size:12px;font-weight:700;color:#38bdf8;">${i.sym}</span>
+          <span style="font-size:11px;color:#cbd5e1;">${i.type}</span>
+        </div>`
+      ).join('');
+      return `<div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px;letter-spacing:0.5px;">📅 ${date}</div>
+        <div style="background:#0a1628;border-radius:8px;overflow:hidden;border:1px solid #1e2d3d;">${rows}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">🔔 PRICE ALERTS</div>
+      <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.wl-card-wrap')?.click(),100);"
+        style="font-size:10px;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:3px 10px;cursor:pointer;">+ New Alert</button>
+    </div>
+    ${priceHTML}
+    <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-top:12px;margin-bottom:8px;">⚡ TECHNICAL ALERT LOG</div>
+    ${techHTML}
+  `;
+}
   if(t==="settings"){loadSettingsUI();renderFeatureGuide();
     const lsd=document.getElementById('lastSyncDisplay');
     const lts=localStorage.getItem('lastCloudSync');
@@ -4511,6 +4628,11 @@ async function startApp(){
   updatePriceTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
+  // Auto alert engine — every 5 min during market hours
+  setInterval(()=>{
+    const m=getMarketStatus();
+    if(m.open) runAllTechnicalAlerts();
+  }, 5*60*1000);
 // Batch prefetch fundamentals for ALL watchlist stocks — 1 GAS call
   setTimeout(async ()=>{
     if(!isSheetEnabled() || wl.length===0) return;
