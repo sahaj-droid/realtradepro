@@ -3900,7 +3900,7 @@ async function renderBollinger(sym){
 
   const cfg=getBBConfig();
   const hist=await fetchHistory(sym, cfg.range, cfg.interval);
-  const minNeeded=cfg.bbPeriod+1;
+  const minNeeded=_bbPeriod==='1M'?15:cfg.bbPeriod+1;
 
   if(!hist||!hist.close||hist.close.length<minNeeded){
     const got=hist?.close?.length||0;
