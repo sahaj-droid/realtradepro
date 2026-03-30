@@ -173,33 +173,21 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <!-- == ALERT POPUP == -->
 <div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
+
   
-
-
 <!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
 <!-- HEADER -->
 <div class="app-header" style="padding:6px 10px;">
-  <!-- Indices: full width, no logo -->
-  <div style="display:flex;gap:6px;flex:1;justify-content:space-around;align-items:center;">
-    <div id="hidx-NSEI" style="text-align:center;cursor:pointer;" onclick="openDetail('^NSEI',true)">
-      <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">NIFTY</div>
-      <div id="hidx-NSEI-p" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#e2e8f0;">--</div>
-      <div id="hidx-NSEI-c" style="font-size:11px;font-weight:700;color:#94a3b8;line-height:1.3;">--</div>
+<!-- Indices: scrollable strip + add button -->
+  <div style="display:flex;flex:1;align-items:center;min-width:0;overflow:hidden;">
+    <div id="indicesStrip" style="display:flex;gap:0;flex:1;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;" onscroll="this.style.cssText=this.style.cssText">
+    <!-- chips rendered by renderHeaderStrip() -->
     </div>
-    <div style="width:1px;background:#1e3a5f;height:32px;"></div>
-    <div id="hidx-BSESN" style="text-align:center;cursor:pointer;" onclick="openDetail('^BSESN',true)">
-      <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">SENSEX</div>
-      <div id="hidx-BSESN-p" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#e2e8f0;">--</div>
-      <div id="hidx-BSESN-c" style="font-size:11px;font-weight:700;color:#94a3b8;line-height:1.3;">--</div>
-    </div>
-    <div style="width:1px;background:#1e3a5f;height:32px;"></div>
-    <div id="hidx-NSEBANK" style="text-align:center;cursor:pointer;" onclick="openDetail('^NSEBANK',true)">
-      <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;">BANKNIFTY</div>
-      <div id="hidx-NSEBANK-p" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#e2e8f0;">--</div>
-      <div id="hidx-NSEBANK-c" style="font-size:11px;font-weight:700;color:#94a3b8;line-height:1.3;">--</div>
-    </div>
+    <button onclick="openAddIndexModal()" style="flex-shrink:0;margin-left:4px;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;padding:0;" title="Add Index">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
   </div>
   <!-- Right: 2x2 button grid -->
   <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
@@ -687,7 +675,19 @@ body.light .ticker-price{color:#e2e8f0;}
     </div>
   </div>
 </div>
-
+<!-- ADD INDEX MODAL -->
+<div id="addIdxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:350;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;">Add Index</div>
+      <button onclick="closeAddIndexModal()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;">✕</button>
+    </div>
+    <input id="addIdxInput" placeholder="Search: NIFTY IT, MIDCAP, AUTO..." oninput="searchIndexSuggestions()"
+      style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;font-weight:600;margin-bottom:6px;">
+    <div style="font-size:10px;color:#4b6280;margin-bottom:6px;">Popular: ^CNXIT · ^NSMIDCP · ^CNXAUTO · ^CNXFMCG · ^CNXPSUBANK</div>
+    <div id="addIdxResults" style="background:#0a1628;border-radius:8px;max-height:200px;overflow-y:auto;border:1px solid #1e2d3d;"></div>
+  </div>
+</div>
 <!-- ADD GROUP MODAL -->
 <!-- WATCHLIST NAME MODAL (Add / Rename) -->
 <div id="wlNameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
@@ -1213,7 +1213,9 @@ try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 
 if(!isDark){ document.body.classList.add("light"); }
 
-const indicesList=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
+const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
+let indicesList=(()=>{try{const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
+function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
 
 // Stocks from your watchlist CSV (334 stocks)
 const POPULAR_STOCKS=[
@@ -1903,8 +1905,9 @@ function renderGainersFromCache(){
 // UPDATE HEADER INDICES
 // ======================================
 async function updateHeaderIndices(){
+  // Ensure strip is rendered before updating values
+  if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
   for(let i of indicesList){
-    // Always use cache if available, else fetch (market open or closed)
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -1925,6 +1928,69 @@ async function updateHeaderIndices(){
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
+}
+// ======================================
+// HEADER INDICES STRIP RENDERER
+// ======================================
+function renderHeaderStrip(){
+  const strip=document.getElementById('indicesStrip');
+  if(!strip) return;
+  strip.innerHTML=indicesList.map((idx,i)=>{
+    const key=idx.sym.replace('^','');
+    const sep=i<indicesList.length-1?`<div style="width:1px;background:#1e3a5f;height:32px;flex-shrink:0;"></div>`:'';
+    return `
+      <div style="text-align:center;cursor:pointer;padding:2px 10px;scroll-snap-align:start;flex-shrink:0;position:relative;" onclick="openDetail('${idx.sym}',true)">
+        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;white-space:nowrap;">${idx.name}</div>
+        <div id="hidx-${key}-p" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e2e8f0;white-space:nowrap;">--</div>
+        <div id="hidx-${key}-c" style="font-size:10px;font-weight:700;color:#94a3b8;line-height:1.3;white-space:nowrap;">--</div>
+        ${i>=3?`<span onclick="event.stopPropagation();removeIndex(${i})" style="position:absolute;top:0;right:2px;font-size:9px;color:#4b6280;cursor:pointer;line-height:1;">✕</span>`:''}
+      </div>${sep}`;
+  }).join('');
+}
+
+function removeIndex(i){
+  if(i<3){showPopup('Default indices cannot be removed.');return;}
+  indicesList.splice(i,1);
+  saveIndicesList();
+  renderHeaderStrip();
+  updateHeaderIndices();
+}
+
+// Add Index Modal
+function openAddIndexModal(){
+  document.getElementById('addIdxOverlay').style.display='flex';
+  document.getElementById('addIdxInput').value='';
+  document.getElementById('addIdxResults').innerHTML='';
+  setTimeout(()=>document.getElementById('addIdxInput').focus(),100);
+}
+function closeAddIndexModal(){
+  document.getElementById('addIdxOverlay').style.display='none';
+}
+async function searchIndexSuggestions(){
+  const q=document.getElementById('addIdxInput').value.trim();
+  if(q.length<1){document.getElementById('addIdxResults').innerHTML='';return;}
+  const apiUrl=localStorage.getItem('customAPI')||API;
+  try{
+    const r=await fetch(`${apiUrl}?type=search&q=${encodeURIComponent(q)}`);
+    const j=await r.json();
+    const res=(j.results||[]).filter(x=>x.type==='INDEX'||x.symbol?.startsWith('^'));
+    document.getElementById('addIdxResults').innerHTML=res.length
+      ?res.map(x=>`<div onclick="confirmAddIndex('${x.symbol}','${(x.name||x.symbol).replace(/'/g,"\\'")}') " style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #1e2d3d;font-size:13px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;">
+          <span style="font-weight:700;color:#38bdf8;">${x.symbol}</span>
+          <span style="color:#94a3b8;font-size:11px;margin-left:6px;">${x.name||''}</span>
+        </div>`).join('')
+      :'<div style="padding:8px 12px;font-size:12px;color:#4b6280;">No indices found. Try: ^CNXIT, ^NSMIDCP, ^CNXAUTO</div>';
+  }catch(e){document.getElementById('addIdxResults').innerHTML='<div style="padding:8px 12px;font-size:12px;color:#ef4444;">Search failed</div>';}
+}
+function confirmAddIndex(sym,name){
+  if(indicesList.find(x=>x.sym===sym)){showPopup('Already added');closeAddIndexModal();return;}
+  indicesList.push({sym,name});
+  saveIndicesList();
+  renderHeaderStrip();
+  // Fetch and update the new index
+  fetchFull(sym,true).then(()=>updateHeaderIndices());
+  closeAddIndexModal();
+  showPopup(name+' added');
 }
 
 // ======================================
@@ -2384,9 +2450,9 @@ async function openDetail(sym,isIndex){
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
-  if(!isIndex) renderBollinger(sym);
+  renderBollinger(sym);
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
-  renderQuickLinks(sym);
+  renderQuickLinks(sym, isIndex);
   if(!isIndex){
     // Show cached fundamentals immediately if available (no wait)
     const _cachedFund = (()=>{
@@ -2470,18 +2536,65 @@ async function openDetail(sym,isIndex){
         </div>`;
     });
   } else {
+    // INDEX: Show composition instead of fundamentals
     const fs=document.getElementById("fundamentalsSection");
-    if(fs) fs.innerHTML='';
+    if(fs) renderIndexComposition(sym, fs);
+    // INDEX: Load technical indicators (RSI/MACD/MA) from history
     const ts=document.getElementById("techSection");
-    if(ts) ts.innerHTML='';
+    if(ts) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading index technicals...</div>';
+    fetchHistory(sym+'', '30d','1d').then(hist=>{
+      if(!ts) return;
+      if(!hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Technical data unavailable for this index.</div>'; return; }
+      const closes=hist.close.filter(v=>v!=null);
+      const highs=hist.high?hist.high.filter(v=>v!=null):closes;
+      const lows=hist.low?hist.low.filter(v=>v!=null):closes;
+      const rsi=calcRSI(closes);
+      const macd=calcMACD(closes);
+      const ma20=closes.length>=20?closes.slice(-20).reduce((a,b)=>a+b,0)/20:null;
+      const ma50=closes.length>=50?closes.slice(-50).reduce((a,b)=>a+b,0)/50:null;
+      const ma200=closes.length>=200?closes.slice(-200).reduce((a,b)=>a+b,0)/200:null;
+      const price=d.regularMarketPrice||0;
+      const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
+      const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
+      const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span style="font-size:11px;color:#94a3b8;">${label}</span>
+        <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
+      </div>`:'';
+      ts.innerHTML=`
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
+            <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
+          </div>
+          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;">
+            <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">MOVING AVERAGES vs CMP ₹${price.toFixed(0)}</div>
+            ${maRow('DMA 20',ma20)}
+            ${maRow('DMA 50',ma50)}
+            ${maRow('DMA 200',ma200)}
+          </div>
+        </div>`;
+    });
   }
 }
 // ======================================
 // QUICK LINKS — always shown, no fund dependency
 // ======================================
-function renderQuickLinks(sym){
+function renderQuickLinks(sym, isIndex){
   const el=document.getElementById('quickLinksSection');
   if(!el) return;
+  if(isIndex){
+    const tvSym=sym==='^NSEI'?'NSE:NIFTY50':sym==='^BSESN'?'BSE:SENSEX':sym==='^NSEBANK'?'NSE:BANKNIFTY':sym==='^CNXIT'?'NSE:NIFTYIT':'NSE:NIFTY50';
+    el.innerHTML=`
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+        <button onclick="window.open('https://www.nseindia.com/market-data/live-market-indices','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE Indices</button>
+        <button onclick="window.open('https://www.moneycontrol.com/markets/indian-indices/','_blank')" style="background:#0f2a40;color:#f97316;border:1px solid #7c2d12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
+        <button onclick="window.open('https://www.tradingview.com/chart/?symbol=${tvSym}','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">TradingView</button>
+      </div>`;
+    return;
+  }
   el.innerHTML=`
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">
@@ -2493,6 +2606,33 @@ function renderQuickLinks(sym){
       <button onclick="window.open('https://www.tickertape.in/stocks/${sym}','_blank')" style="background:#0f2a40;color:#fb7185;border:1px solid #4c0519;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
       <button onclick="window.open('https://tijorifinance.com/company/${sym}','_blank')" style="background:#0f2a40;color:#6ee7b7;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
       <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
+    </div>`;
+}
+
+// ======================================
+// INDEX COMPOSITION (hardcoded top-5 heavyweights)
+// ======================================
+const INDEX_COMPOSITION={
+  '^NSEI':[{name:'Reliance',wt:'8.1%'},{name:'HDFC Bank',wt:'7.4%'},{name:'ICICI Bank',wt:'6.2%'},{name:'Infosys',wt:'5.1%'},{name:'TCS',wt:'4.3%'}],
+  '^BSESN':[{name:'Reliance',wt:'9.2%'},{name:'HDFC Bank',wt:'8.8%'},{name:'ICICI Bank',wt:'7.0%'},{name:'Infosys',wt:'6.3%'},{name:'TCS',wt:'5.1%'}],
+  '^NSEBANK':[{name:'HDFC Bank',wt:'28.4%'},{name:'ICICI Bank',wt:'22.1%'},{name:'Kotak Bank',wt:'12.3%'},{name:'Axis Bank',wt:'10.2%'},{name:'SBI',wt:'8.9%'}],
+  '^CNXIT':[{name:'Infosys',wt:'29.1%'},{name:'TCS',wt:'26.4%'},{name:'HCL Tech',wt:'13.2%'},{name:'Wipro',wt:'7.8%'},{name:'Tech M',wt:'5.3%'}],
+};
+function renderIndexComposition(sym, el){
+  const comp=INDEX_COMPOSITION[sym];
+  if(!comp){el.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:8px;">Composition data not available for this index.</div>';return;}
+  el.innerHTML=`
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TOP CONSTITUENTS</div>
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      ${comp.map((c,i)=>`
+        <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:10px;color:#4b6280;font-weight:700;width:14px;">${i+1}</span>
+            <span style="font-size:12px;font-weight:700;color:#e2e8f0;">${c.name}</span>
+          </div>
+          <span style="font-size:12px;font-weight:700;color:#34d399;">${c.wt}</span>
+        </div>`).join('')}
+      <div style="font-size:9px;color:#4b6280;text-align:center;padding:4px;">Approximate weightings — indicative only</div>
     </div>`;
 }
 
@@ -3933,62 +4073,96 @@ function checkVolumeBreakout(sym){
 // ======================================
 // TECHNICAL ALERTS CHECK
 // ======================================
+// Central push notification dispatcher
+function firePushAlert(title, body, tag){
+  // In-app toast always
+  showPopup(body, 7000);
+  // Browser push notification
+  if(typeof Notification!=='undefined' && Notification.permission==='granted'){
+    try{
+      new Notification(title,{
+        body: body,
+        icon: '/realtradepro/icons/icon-192.png',
+        tag: tag||title,   // prevents duplicate stacking
+        requireInteraction: false
+      });
+    }catch(e){}
+  }
+}
+
 async function checkTechnicalAlerts(sym){
-  // 1. Volume Breakout (0 API  -  cache only)
+  const today=new Date().toISOString().split('T')[0];
+  const ALERT_KEY='techAlert2_'+sym+'_'+today;
+  const alerted=JSON.parse(localStorage.getItem(ALERT_KEY)||'{}');
+
+  // 1. Volume Breakout (0 API — cache only)
   const vb=checkVolumeBreakout(sym);
-  if(vb){
-    const KEY='vbAlert_'+sym+'_'+new Date().toISOString().split('T')[0];
-    if(!sessionStorage.getItem(KEY)){
-      sessionStorage.setItem(KEY,'1');
-      showPopup('Volume Breakout: '+sym+'  -  '+vb.ratio+'x avg volume', 5000);
-    }
+  if(vb && !alerted.vol){
+    alerted.vol=true;
+    firePushAlert(
+      sym+' — Volume Spike',
+      sym+': Volume '+vb.ratio+'x avg ('+Math.round(vb.vol/1e5)/10+'L vs avg '+Math.round(vb.avgVol/1e5)/10+'L)',
+      'vol_'+sym
+    );
   }
 
-  // 2. RSI + MACD + Inside Bar (requires GAS history)
+  // 2. RSI + MACD + BB (requires history)
   const hist=await fetchHistory(sym);
-  if(!hist||!hist.close) return;
+  if(!hist||!hist.close){ localStorage.setItem(ALERT_KEY,JSON.stringify(alerted)); return; }
 
   const closes=hist.close.filter(v=>v!=null);
-  const highs=hist.high.filter(v=>v!=null);
-  const lows=hist.low.filter(v=>v!=null);
+  const highs=hist.high?hist.high.filter(v=>v!=null):closes;
+  const lows=hist.low?hist.low.filter(v=>v!=null):closes;
 
   const rsi=calcRSI(closes);
   const macd=calcMACD(closes);
   const insideBar=detectInsideBar(highs,lows);
   const narrowRange=detectNarrowRange(highs,lows);
 
-  const ALERT_KEY='techAlert_'+sym+'_'+new Date().toISOString().split('T')[0];
-  const alerted=JSON.parse(sessionStorage.getItem(ALERT_KEY)||'{}');
+  // BB for alert check
+  const bb=calcBollinger(closes,20,2);
+  const price=cache[sym]?.data?.regularMarketPrice||0;
 
   if(rsi!==null){
-    if(rsi<30&&!alerted.rsiOS){
+    if(rsi<30 && !alerted.rsiOS){
       alerted.rsiOS=true;
-      showPopup('RSI Oversold: '+sym+' RSI='+rsi+' (<30)', 6000);
-    } else if(rsi>70&&!alerted.rsiOB){
+      firePushAlert(sym+' — RSI Oversold', sym+': RSI '+rsi.toFixed(1)+' (below 30) — Potential buy zone', 'rsiOS_'+sym);
+    } else if(rsi>70 && !alerted.rsiOB){
       alerted.rsiOB=true;
-      showPopup('RSI Overbought: '+sym+' RSI='+rsi+' (>70)', 6000);
+      firePushAlert(sym+' — RSI Overbought', sym+': RSI '+rsi.toFixed(1)+' (above 70) — Caution zone', 'rsiOB_'+sym);
     }
   }
 
-  if(macd&&macd.bullishCross&&!alerted.macdBull){
-    alerted.macdBull=true;
-    showPopup('MACD Bullish Cross: '+sym, 6000);
-  } else if(macd&&macd.bearishCross&&!alerted.macdBear){
-    alerted.macdBear=true;
-    showPopup('MACD Bearish Cross: '+sym, 6000);
+  if(macd){
+    if(macd.bullishCross && !alerted.macdBull){
+      alerted.macdBull=true;
+      firePushAlert(sym+' — MACD Bullish Cross', sym+': MACD crossed above Signal — Bullish momentum', 'macdB_'+sym);
+    } else if(macd.bearishCross && !alerted.macdBear){
+      alerted.macdBear=true;
+      firePushAlert(sym+' — MACD Bearish Cross', sym+': MACD crossed below Signal — Bearish signal', 'macdS_'+sym);
+    }
   }
 
-  if(insideBar&&!alerted.insideBar){
+  if(bb && price>0){
+    if(price>bb.upper && !alerted.bbUp){
+      alerted.bbUp=true;
+      firePushAlert(sym+' — BB Upper Break', sym+': Price \u20b9'+price.toFixed(2)+' broke above BB Upper \u20b9'+bb.upper+' — Overbought watch', 'bbUp_'+sym);
+    } else if(price<bb.lower && !alerted.bbDn){
+      alerted.bbDn=true;
+      firePushAlert(sym+' — BB Lower Break', sym+': Price \u20b9'+price.toFixed(2)+' broke below BB Lower \u20b9'+bb.lower+' — Oversold watch', 'bbDn_'+sym);
+    }
+  }
+
+  if(insideBar && !alerted.insideBar){
     alerted.insideBar=true;
-    showPopup('Inside Bar: '+sym+'  -  Consolidation detected', 5000);
-  } else if(narrowRange&&!alerted.narrowRange){
+    firePushAlert(sym+' — Inside Bar', sym+': Inside Bar pattern — Breakout watch', 'ib_'+sym);
+  } else if(narrowRange && !alerted.narrowRange){
     alerted.narrowRange=true;
-    showPopup('Narrow Range: '+sym+'  -  Breakout watch', 5000);
+    firePushAlert(sym+' — Narrow Range', sym+': Narrow Range — Volatility expansion likely', 'nr_'+sym);
   }
 
-  sessionStorage.setItem(ALERT_KEY,JSON.stringify(alerted));
+  localStorage.setItem(ALERT_KEY,JSON.stringify(alerted));
 }
-
 // Run technical alerts for all watchlist stocks (after price fetch)
 async function runAllTechnicalAlerts(){
   for(let s of wl){
@@ -4304,6 +4478,7 @@ async function startApp(){
   ]);
   hideLoader();
   renderWL();
+  renderHeaderStrip();
   updateHeaderIndices();
   updatePriceTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
@@ -4361,6 +4536,12 @@ async function manualRefresh(){
   
   hideLoader();
   if(btn) { btn.style.opacity="1"; btn.style.pointerEvents="auto"; }
+  // Request notification permission on first manual refresh
+  if(typeof Notification!=='undefined' && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+  // Run technical alerts on manual refresh
+  setTimeout(()=>runAllTechnicalAlerts(), 800);
   showPopup("Refreshed!");
 }
 
