@@ -2527,18 +2527,34 @@ async function openDetail(sym,isIndex){
       const nr=detectNarrowRange(highs,lows);
       const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
+const price=cache[sym]?.data?.regularMarketPrice||0;
+      const dot=(c)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
+      const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
+      const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span style="font-size:11px;color:#94a3b8;display:flex;align-items:center;">${dot(price>=val?'#22c55e':'#ef4444')}${label}${iBtn(dmaKey(label))}</span>
+        <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">₹${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
+      </div>`:'';
+      const ma20=closes.length>=20?closes.slice(-20).reduce((a,b)=>a+b,0)/20:null;
+      const ma50=closes.length>=50?closes.slice(-50).reduce((a,b)=>a+b,0)/50:null;
+      const ma200=closes.length>=200?closes.slice(-200).reduce((a,b)=>a+b,0)/200:null;
       ts.innerHTML=`
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi||'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;display:flex;align-items:center;">${dot(rsiColor)}RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi?rsi.toFixed(1):'--'} <span style="font-size:9px;">${rsi?rsi<30?'Oversold':rsi>70?'Overbought':'Neutral':''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;display:flex;align-items:center;justify-content:flex-end;">${dot(macdColor)}MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd?macd.macd:'--'} <span style="font-size:9px;">${macd?macd.trend:''}</span></div></div>
+          </div>
+          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;">
+            <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">MOVING AVERAGES vs CMP ₹${price.toFixed(0)}</div>
+            ${maRow('DMA 20',ma20)}
+            ${maRow('DMA 50',ma50)}
+            ${maRow('DMA 200',ma200)}
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">INSIDE BAR</div><div style="font-size:12px;font-weight:700;color:${ib?'#f59e0b':'#4b6280'};">${ib?'Yes':'No'}</div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">INSIDE BAR${iBtn('INSIDE')}</div><div style="font-size:12px;font-weight:700;color:${ib?'#f59e0b':'#4b6280'};">${ib?'Yes':'No'}</div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">NARROW RANGE</div><div style="font-size:12px;font-weight:700;color:${nr?'#f59e0b':'#4b6280'};">${nr?'Yes':'No'}</div></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">NARROW RANGE${iBtn('NARROW')}</div><div style="font-size:12px;font-weight:700;color:${nr?'#f59e0b':'#4b6280'};">${nr?'Yes':'No'}</div></div>
           </div>
         </div>`;
     });
@@ -2564,9 +2580,11 @@ async function openDetail(sym,isIndex){
       const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
       const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
-      const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <span style="font-size:11px;color:#94a3b8;">${label}${iBtn(dmaKey(label))}</span>
-        <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
+      const dot=(c)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
+      const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
+      const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span style="font-size:11px;color:#94a3b8;display:flex;align-items:center;">${dot(price>=val?'#22c55e':'#ef4444')}${label}${iBtn(dmaKey(label))}</span>
+        <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">₹${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
       </div>`:'';
       ts.innerHTML=`
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
