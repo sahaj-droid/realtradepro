@@ -96,8 +96,20 @@ body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; 
 @keyframes flashRed   { 0%{background:rgba(239,68,68,0.35);}100%{background:transparent;} }
 .green{color:#22c55e;font-weight:700;} .red{color:#ef4444;font-weight:700;}
 
-.bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#6b7280;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none; }
-.bot-nav-btn.active { color:#38bdf8; background:rgba(56,189,248,0.1); }
+.bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#4b5563;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none;border-top:2px solid transparent;position:relative; }
+.bot-nav-btn.active { background:transparent;border-top:2px solid currentColor; }
+#nav-watchlist.active { color:#34d399; }
+#nav-indices.active   { color:#38bdf8; }
+#nav-holdings.active  { color:#a78bfa; }
+#nav-history.active   { color:#f59e0b; }
+#nav-news.active      { color:#f472b6; }
+#nav-settings.active  { color:#94a3b8; }
+#nav-watchlist svg { stroke:#34d399; }
+#nav-indices svg   { stroke:#38bdf8; }
+#nav-holdings svg  { stroke:#a78bfa; }
+#nav-history svg   { stroke:#f59e0b; }
+#nav-news svg      { stroke:#f472b6; }
+#nav-settings svg  { stroke:#94a3b8; }
 .bot-nav-btn span.icon { font-size:16px; }
 
 #alertPopup { position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1e3a5f;border:1px solid #38bdf8;border-radius:10px;padding:10px 18px;font-size:13px;color:#fff;z-index:9999;display:none;max-width:300px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(56,189,248,0.3);animation:slideDown 0.3s ease; }
@@ -548,7 +560,7 @@ body.light .ticker-price{color:#e2e8f0;}
 
 <!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
-  <div class="w-full max-w-md flex justify-around px-1 py-2" style="background:rgba(10,15,26,0.95);backdrop-filter:blur(12px);border-top:1px solid #1e2d3d;">
+  <div class="w-full max-w-md flex justify-around px-1 py-2" style="background:rgba(10,15,26,0.97);backdrop-filter:blur(16px);border-top:2px solid #1e3a5f;box-shadow:0 -4px 20px rgba(0,0,0,0.5);gap:0;">
     <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Watch</button>
     <button class="bot-nav-btn" id="nav-indices" onclick="tab('indices')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Gainers</button>
     <button class="bot-nav-btn" id="nav-holdings" onclick="tab('holdings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Holdings</button>
