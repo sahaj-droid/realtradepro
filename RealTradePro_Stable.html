@@ -2585,7 +2585,6 @@ const price=cache[sym]?.data?.regularMarketPrice||0;
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
       const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
       const dot=(c)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
-      const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
       const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
         <span style="font-size:11px;color:#94a3b8;display:flex;align-items:center;">${dot(price>=val?'#22c55e':'#ef4444')}${label}${iBtn(dmaKey(label))}</span>
         <span style="font-size:11px;font-weight:700;color:${price>=val?'#22c55e':'#ef4444'};">₹${val.toFixed(2)} ${price>=val?'▲':'▼'}</span>
