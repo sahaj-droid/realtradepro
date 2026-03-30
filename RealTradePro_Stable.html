@@ -2307,15 +2307,19 @@ if(isSheetEnabled()){
     localStorage.getItem('customAPI2')||API2,
     localStorage.getItem('customAPI3')||API3
   ].filter(Boolean);
-  const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
-  
-  clearTimeout(tid);
+const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
+  for(let _qu of _quoteUrls){
+    if(d) break;
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(()=>controller.abort(), 15000);
+      const r = await fetch(`${_qu}?type=quote&s=${encodeURIComponent(_symNS)}`, {signal: controller.signal});
+      clearTimeout(tid);
       const j = await r.json();
       // GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
       if(j && !j.error && j.price) d = j;
     } catch(e){}
-  }
-  // Last resort: cache for volume (batch data has volume but not pe/eps)
+  }  // Last resort: cache for volume (batch data has volume but not pe/eps)
   const _cacheD = cache[sym]&&cache[sym].data;
 
   let pe='--',eps='--',mktCap='--',volume='--';
