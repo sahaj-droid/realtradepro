@@ -3744,7 +3744,8 @@ async function fetchHistory(sym, range='30d', interval='1d'){
     try{
       const ctrl = new AbortController();
       const tid  = setTimeout(()=>ctrl.abort(), 10000); // 10s timeout
-      const r=await fetch(`${apiUrl}?type=history&s=${sym}.NS&range=${range}&interval=${interval}`, {signal:ctrl.signal});
+      const histSym=sym.startsWith('^')?sym:(sym.includes('.')?sym:sym+'.NS');
+      const r=await fetch(`${apiUrl}?type=history&s=${histSym}&range=${range}&interval=${interval}`, {signal:ctrl.signal});
       clearTimeout(tid);
       const j=await r.json();
       if(j.error||!j.dates||!j.close) continue;
