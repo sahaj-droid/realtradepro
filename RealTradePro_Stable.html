@@ -2285,7 +2285,11 @@ function _refreshFundamentalsBackground(sym, cacheKey){
 }
 
 async function _fetchFundamentalsFromAPI(sym, cacheKey){
-  let _sheetFund = null; // Sheet bypass — kept for future use
+  // Try Sheet first if enabled
+let _sheetFund = null;
+if(isSheetEnabled()){
+  _sheetFund = await fetchFundSheet(sym);
+}
   function fmtVol(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(2)+'Cr';if(v>=1e5)return(v/1e5).toFixed(2)+'L';return v.toLocaleString('en-IN');}
   function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
   function fmtDate(ts){
@@ -2353,9 +2357,15 @@ async function _fetchFundamentalsFromAPI(sym, cacheKey){
     var vol_v2=safe(_cacheD.regularMarketVolume||_cacheD.volume);
     if(vol_v2) volume=fmtVol(vol_v2);
   }
-  // Sheet override removed — Sheet GOOGLEFINANCE formula has async delay (unreliable)
-  const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
-    _source:'yahoo_quote'};
+  // Sheet override for pe/eps/marketCap/bookValue
+if(_sheetFund){
+  if(_sheetFund.pe!=null) pe=parseFloat(_sheetFund.pe).toFixed(2);
+  if(_sheetFund.eps!=null) eps='₹'+parseFloat(_sheetFund.eps).toFixed(2);
+  if(_sheetFund.marketCap!=null) mktCap=fmtCap(_sheetFund.marketCap);
+  if(_sheetFund.bookValue!=null) bookValue='₹'+parseFloat(_sheetFund.bookValue).toFixed(2);
+}
+const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earningsDate,exDivDate,
+    _source: _sheetFund ? 'sheet+yahoo' : 'yahoo_quote'};
   try{ localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),data})); }catch(e){}
   return data;
 }
