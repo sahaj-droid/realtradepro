@@ -2461,7 +2461,8 @@ async function openDetail(sym,isIndex){
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
-  renderBollinger(sym);
+  _bbSym = sym; // Pre-set so BB tab knows which stock to render
+  document.getElementById('bbSection').innerHTML=''; // Clear old content
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
   renderQuickLinks(sym, isIndex);
   if(!isIndex){
@@ -2751,6 +2752,11 @@ function switchDetailTab(tab){
       else{ btn.style.background='transparent'; btn.style.color='#4b6280'; btn.style.borderColor='#1e3a5f'; }
     }
   });
+  // BB tab — render only when tab is actually visible
+  if(tab==='bb' && _bbSym){
+    const bs=document.getElementById('bbSection');
+    if(bs && bs.innerHTML==='') renderBollinger(_bbSym);
+  }
 }
 function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
 
@@ -3907,7 +3913,20 @@ async function renderBollinger(sym){
   _bbSym=sym;
   const bs=document.getElementById('bbSection');
   if(!bs) return;
-  bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
+  // Keep existing buttons if already rendered, just show loader below
+  const _existingButtons = bs.querySelector('[data-bb-controls]');
+  if(!_existingButtons){
+    bs.innerHTML=`<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Loading Bollinger Bands...</div>`;
+  } else {
+    // Remove only chart area, keep controls
+    const _loader = bs.querySelector('[data-bb-loader]');
+    if(_loader) _loader.remove();
+    const _loaderDiv = document.createElement('div');
+    _loaderDiv.setAttribute('data-bb-loader','1');
+    _loaderDiv.style.cssText='font-size:10px;color:#4b6280;text-align:center;padding:6px;';
+    _loaderDiv.textContent='Loading Bollinger Bands...';
+    bs.appendChild(_loaderDiv);
+  }
 
   const cfg=getBBConfig();
   const hist=await fetchHistory(sym, cfg.range, cfg.interval);
@@ -3947,7 +3966,7 @@ async function renderBollinger(sym){
 
   bs.innerHTML=`
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BOLLINGER BANDS (${activeBP},2) <span style="font-size:9px;color:${squeezeColor};font-weight:600;">● ${squeezeDir}</span></div>
-    <div style="display:flex;gap:4px;margin-bottom:4px;">
+    <div data-bb-controls="1" style="display:flex;gap:4px;margin-bottom:4px;">
       ${['1M','3M','6M','1Y','2Y'].map(p=>`
         <button onclick="setBBPeriod('${p}')"
           style="flex:1;padding:3px 0;border-radius:5px;border:1px solid ${p===_bbPeriod?'#38bdf8':'#1e3a5f'};
@@ -4495,6 +4514,16 @@ async function startApp(){
   updatePriceTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
+  // Background prefetch fundamentals for ALL watchlist stocks silently
+  setTimeout(()=>{
+    const _syms = [...wl];
+    let _i = 0;
+    function _nextFund(){
+      if(_i >= _syms.length) return;
+      fetchFundamentals(_syms[_i++]).then(()=> setTimeout(_nextFund, 800));
+    }
+    _nextFund();
+  }, 2000);
   // Background: preload POPULAR_STOCKS for Gainers tab (no loader shown)
   setTimeout(()=>{
     batchFetchStocks(POPULAR_STOCKS.slice(0,80)).then(()=>{
