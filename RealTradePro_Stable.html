@@ -4510,15 +4510,33 @@ async function startApp(){
   updatePriceTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
-  // Background prefetch fundamentals for ALL watchlist stocks silently
-  setTimeout(()=>{
-    const _syms = [...wl];
-    let _i = 0;
-    function _nextFund(){
-      if(_i >= _syms.length) return;
-      fetchFundamentals(_syms[_i++]).then(()=> setTimeout(_nextFund, 800));
-    }
-    _nextFund();
+// Batch prefetch fundamentals for ALL watchlist stocks — 1 GAS call
+  setTimeout(async ()=>{
+    if(!isSheetEnabled() || wl.length===0) return;
+    try{
+      const apiUrl = localStorage.getItem('customAPI') || API;
+      const sheetId = getSheetId();
+      const symsStr = wl.map(s=>s.replace(/\.NS$/i,'')).join(',');
+      const r = await fetch(`${apiUrl}?type=fundBatch&syms=${encodeURIComponent(symsStr)}&sheetId=${encodeURIComponent(sheetId)}`);
+      const j = await r.json();
+      if(!j.ok || !j.results) return;
+      // Store each stock result into fundCache
+      j.results.forEach(item=>{
+        if(!item.sym) return;
+        const FUND_KEY = 'fundCache6_' + item.sym;
+        function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
+        const data = {
+          pe:         item.pe!=null ? parseFloat(item.pe).toFixed(2) : '--',
+          eps:        item.eps!=null ? '₹'+parseFloat(item.eps).toFixed(2) : '--',
+          mktCap:     item.marketCap!=null ? fmtCap(item.marketCap) : '--',
+          bookValue:  item.bookValue!=null ? '₹'+parseFloat(item.bookValue).toFixed(2) : '--',
+          volume:     '--', divYield:'--', forwardPE:'--', forwardEps:'--',
+          earningsDate:'--', exDivDate:'--',
+          _source: 'sheet_batch'
+        };
+        try{ localStorage.setItem(FUND_KEY, JSON.stringify({ts:Date.now(), data})); }catch(e){}
+      });
+    }catch(e){}
   }, 2000);
   // Background: preload POPULAR_STOCKS for Gainers tab (no loader shown)
   setTimeout(()=>{
