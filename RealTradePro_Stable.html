@@ -2461,8 +2461,7 @@ async function openDetail(sym,isIndex){
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
-  _bbSym = sym; // Pre-set so BB tab knows which stock to render
-  document.getElementById('bbSection').innerHTML=''; // Clear old content
+  document.getElementById("bbSection").innerHTML='';
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
   renderQuickLinks(sym, isIndex);
   if(!isIndex){
@@ -2752,11 +2751,8 @@ function switchDetailTab(tab){
       else{ btn.style.background='transparent'; btn.style.color='#4b6280'; btn.style.borderColor='#1e3a5f'; }
     }
   });
-  // BB tab — render only when tab is actually visible
-  if(tab==='bb' && _bbSym){
-    const bs=document.getElementById('bbSection');
-    if(bs && bs.innerHTML==='') renderBollinger(_bbSym);
-  }
+  // BB: always re-render when tab clicked
+  if(tab==='bb' && _bbSym) renderBollinger(_bbSym);
 }
 function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
 
