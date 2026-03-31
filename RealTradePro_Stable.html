@@ -1854,6 +1854,44 @@ async function renderAllSparklines() {
 // ======================================
 // RENDER GAINERS/LOSERS (Indices tab)
 // ======================================
+async function renderIndices(){
+  const el=document.getElementById("indices");
+  if(!document.getElementById('gmovers')){
+    el.innerHTML=`
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button id="gsub-movers" onclick="gainersSubTab('movers')"
+          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #2d5a8e;background:#1e3a5f;color:#38bdf8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+          Movers
+        </button>
+        <button id="gsub-screener" onclick="gainersSubTab('screener')"
+          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+          Screener
+        </button>
+      </div>
+      <div id="gmovers">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button id="gmov-gainers" onclick="moversSubTab('gainers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #166534;background:#14532d;color:#22c55e;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gainers</button>
+          <button id="gmov-losers" onclick="moversSubTab('losers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Losers</button>
+        </div>
+        <div id="gmov-gainers-list"></div>
+        <div id="gmov-losers-list" style="display:none;"></div>
+      </div>
+      <div id="gscreener" style="display:none;"></div>`;
+  }
+  renderGainersFromCache();
+}
+
+async function refreshGainers(){
+  const gm=document.getElementById('gmov-gainers-list');
+  if(gm) gm.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
+  POPULAR_STOCKS.slice(0,80).forEach(s=>{if(cache[s]) cache[s].time=0;});
+  await batchFetchStocks(POPULAR_STOCKS.slice(0,80));
+  renderGainersFromCache();
+}
+
+// ======================================
+// RENDER GAINERS/LOSERS (Indices tab)
+// ======================================
 let _moversTab = 'gainers';
 
 function moversSubTab(t) {
@@ -1884,7 +1922,7 @@ function renderGainersFromCache(){
   if(!gEl || !lEl) return;
 
   if(results.length===0){
-    gEl.innerHTML=`<div style="text-align:center;padding:20px;"><div style="color:#4b6280;font-size:12px;margin-bottom:12px;">No cached data — Press Refresh to load</div>${refreshBtn}</div>`;
+    gEl.innerHTML=`<div style="text-align:center;padding:20px;"><div style="color:#4b6280;font-size:12px;margin-bottom:12px;">No cached data \u2014 Press Refresh to load</div>${refreshBtn}</div>`;
     lEl.innerHTML='';
     return;
   }
@@ -1892,7 +1930,6 @@ function renderGainersFromCache(){
   const gainers=[...results].filter(x=>x.pct>0).sort((a,b)=>b.pct-a.pct);
   const losers=[...results].filter(x=>x.pct<0).sort((a,b)=>a.pct-b.pct);
 
-  // Render Gainers
   let gHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <span style="font-size:11px;font-weight:700;color:#22c55e;">${gainers.length} Gainers</span>${refreshBtn}
   </div><div style="background:#111827;border-radius:8px;overflow:hidden;">`;
@@ -1900,14 +1937,13 @@ function renderGainersFromCache(){
     const diff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
     gHtml+=`<div onclick="openDetail('${s.sym}',false)" style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<gainers.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+₹${diff} (+${s.pct.toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">\u20b9${s.price.toFixed(2)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+\u20b9${diff} (+${s.pct.toFixed(2)}%)</span>
     </div>`;
   });
   gHtml+=`</div>`;
   gEl.innerHTML=gHtml;
 
-  // Render Losers
   let lHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
     <span style="font-size:11px;font-weight:700;color:#ef4444;">${losers.length} Losers</span>${refreshBtn}
   </div><div style="background:#111827;border-radius:8px;overflow:hidden;">`;
@@ -1915,14 +1951,13 @@ function renderGainersFromCache(){
     const diff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
     lHtml+=`<div onclick="openDetail('${s.sym}',false)" style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<losers.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-₹${diff} (${s.pct.toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">\u20b9${s.price.toFixed(2)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-\u20b9${diff} (${s.pct.toFixed(2)}%)</span>
     </div>`;
   });
   lHtml+=`</div>`;
   lEl.innerHTML=lHtml;
 
-  // Apply active tab state
   moversSubTab(_moversTab);
 }
 // ======================================
