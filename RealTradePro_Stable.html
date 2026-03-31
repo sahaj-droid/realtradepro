@@ -5901,7 +5901,7 @@ function renderScreener() {
   // Source stocks
   let sourceStocks = [];
   if (screenerSource === 'watchlist') sourceStocks = [...wl];
-  else if (screenerSource === 'popular') sourceStocks = [...NIFTY50_STOCKS];
+  else if (screenerSource === 'popular') sourceStocks = NIFTY50_STOCKS.map(s=>s.replace('.NS',''));
   else sourceStocks = Object.keys(cache).filter(k => cache[k]&&cache[k].data);
 
   // Filter chips HTML
