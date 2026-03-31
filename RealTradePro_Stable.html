@@ -172,14 +172,6 @@ body.light .ticker-price{color:#e2e8f0;}
 .ticker-price{color:#e2e8f0;}
 .ticker-up{color:#22c55e;}
 .ticker-dn{color:#ef4444;}
-#globalTicker{background:#0a0f1a;border-bottom:1px solid #1e3a5f;overflow:hidden;height:20px;display:flex;align-items:center;}
-#globalTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 60s linear infinite;}
-#globalTicker .ticker-track:hover{animation-play-state:paused;}
-.gticker-label{color:#4b6280;font-size:9px;font-weight:700;margin-right:3px;}
-.gticker-val{color:#e2e8f0;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;}
-.gticker-up{color:#22c55e;font-size:9px;font-family:'JetBrains Mono',monospace;}
-.gticker-dn{color:#ef4444;font-size:9px;font-family:'JetBrains Mono',monospace;}
-.gticker-sep{color:#1e3a5f;padding:0 8px;font-size:10px;}
 
 </style>
 </head>
@@ -229,12 +221,7 @@ body.light .ticker-price{color:#e2e8f0;}
     <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
   </div>
 </div>
-<!-- GLOBAL MARKETS TICKER -->
-<div id="globalTicker">
-  <div class="ticker-track" id="globalTickerTrack">
-    <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
-  </div>
-</div>
+
 <!-- SEARCH + SUGGESTIONS -->
 <div id="searchSection" class="p-3 pb-1">
   <div style="position:relative;">
@@ -2586,13 +2573,13 @@ const price=cache[sym]?.data?.regularMarketPrice||0;
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">NARROW RANGE${iBtn('NARROW')}</div><div style="font-size:12px;font-weight:700;color:${nr?'#f59e0b':'#4b6280'};">${nr?'Yes':'No'}</div></div>
           </div>
           ${(()=>{
-            const _op=(hist.open&&hist.open.length&&hist.open[0]!==hist.close[0])?hist.open.filter(v=>v!=null):null;
-            const _pats=_op?detectCandlePatterns(_op,highs,lows,closes):[];
+            const _op=hist.open?hist.open.filter(v=>v!=null):closes;
+            const _pats=detectCandlePatterns(_op,highs,lows,closes);
             if(!_pats.length) return '';
             return `<div style="background:#0a1628;border-radius:6px;padding:6px 10px;">
               <div style="font-size:9px;color:#4b6280;margin-bottom:5px;letter-spacing:0.5px;">CANDLESTICK PATTERNS</div>
               ${_pats.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-                <span style="font-size:11px;font-weight:700;color:${p.color};">${p.signal==='bullish'?'▲':p.signal==='bearish'?'▼':'◆'} ${p.name}</span>
+                <span style="font-size:11px;font-weight:700;color:${p.color};">${p.signal==='bullish'?'&#9650;':p.signal==='bearish'?'&#9660;':'&#9670;'} ${p.name}</span>
                 <span style="font-size:9px;color:#94a3b8;text-align:right;max-width:55%;line-height:1.3;">${p.desc}</span>
               </div>`).join('')}
             </div>`;
@@ -3936,8 +3923,8 @@ async function fetchHistory(sym, range='30d', interval='1d'){
       // Validate data
       if(j.close.length<14) continue;
       const data={
-        dates:j.dates, open:(j.open&&j.open.length?j.open:null), high:(j.high&&j.high.length?j.high:null),
-        low:(j.low&&j.low.length?j.low:null), close:j.close, volume:j.volume||[]
+        dates:j.dates, open:j.open||j.close, high:j.high||j.close,
+        low:j.low||j.close, close:j.close, volume:j.volume||[]
       };
       try{ localStorage.setItem(DAY_KEY,JSON.stringify({date:today,data})); }catch(e){}
       return data;
@@ -4001,6 +3988,8 @@ function calcMACD(closes){
     bearishCross: prevMacd!==null&&prevMacd>0&&macdLine<0
   };
 }
+
+// Inside Bar / Narrow Range
 // ======================================
 // CANDLESTICK PATTERN DETECTOR
 // ======================================
@@ -4010,23 +3999,22 @@ function detectCandlePatterns(opens, highs, lows, closes) {
   const n = closes.length;
   const o = opens, h = highs, l = lows, c = closes;
 
-  // Helper
   const bodySize  = (i) => Math.abs(c[i] - o[i]);
   const range     = (i) => h[i] - l[i];
   const isGreen   = (i) => c[i] > o[i];
   const isRed     = (i) => c[i] < o[i];
   const midpoint  = (i) => (o[i] + c[i]) / 2;
 
-  const i = n - 1; // latest candle
-  const p = n - 2; // previous
-  const p2= n - 3; // 2 candles ago
+  const i = n - 1;
+  const p = n - 2;
+  const p2= n - 3;
 
-  // 1. DOJI — body very small vs range
+  // 1. DOJI
   if (range(i) > 0 && bodySize(i) / range(i) < 0.1) {
     patterns.push({ name:'Doji', signal:'neutral', desc:'Indecision — possible reversal watch', color:'#f59e0b' });
   }
 
-  // 2. HAMMER — small body top, long lower wick, after downtrend
+  // 2. HAMMER
   if (i >= 1) {
     const lowerWick = Math.min(o[i], c[i]) - l[i];
     const upperWick = h[i] - Math.max(o[i], c[i]);
@@ -4036,7 +4024,7 @@ function detectCandlePatterns(opens, highs, lows, closes) {
     }
   }
 
-  // 3. SHOOTING STAR — small body bottom, long upper wick, after uptrend
+  // 3. SHOOTING STAR
   if (i >= 1) {
     const upperWick = h[i] - Math.max(o[i], c[i]);
     const lowerWick = Math.min(o[i], c[i]) - l[i];
@@ -4046,29 +4034,29 @@ function detectCandlePatterns(opens, highs, lows, closes) {
     }
   }
 
-  // 4. BULLISH ENGULFING — green candle engulfs previous red candle
+  // 4. BULLISH ENGULFING
   if (i >= 1 && isGreen(i) && isRed(p) && o[i] <= c[p] && c[i] >= o[p]) {
     patterns.push({ name:'Bullish Engulfing', signal:'bullish', desc:'Strong bullish reversal — bulls took full control', color:'#22c55e' });
   }
 
-  // 5. BEARISH ENGULFING — red candle engulfs previous green candle
+  // 5. BEARISH ENGULFING
   if (i >= 1 && isRed(i) && isGreen(p) && o[i] >= c[p] && c[i] <= o[p]) {
     patterns.push({ name:'Bearish Engulfing', signal:'bearish', desc:'Strong bearish reversal — bears took full control', color:'#ef4444' });
   }
 
-  // 6. MORNING STAR — 3 candle bullish reversal
+  // 6. MORNING STAR
   if (i >= 2 && isRed(p2) && bodySize(p) < bodySize(p2) * 0.3 && isGreen(i) && c[i] > midpoint(p2)) {
     patterns.push({ name:'Morning Star', signal:'bullish', desc:'3-candle bullish reversal after downtrend', color:'#22c55e' });
   }
 
-  // 7. EVENING STAR — 3 candle bearish reversal
+  // 7. EVENING STAR
   if (i >= 2 && isGreen(p2) && bodySize(p) < bodySize(p2) * 0.3 && isRed(i) && c[i] < midpoint(p2)) {
     patterns.push({ name:'Evening Star', signal:'bearish', desc:'3-candle bearish reversal after uptrend', color:'#ef4444' });
   }
 
   return patterns;
 }
-// Inside Bar / Narrow Range
+
 function detectInsideBar(highs, lows){
   if(!highs||highs.length<2) return false;
   const n=highs.length;
@@ -4441,70 +4429,6 @@ async function runAllTechnicalAlerts(){
 // ======================================
 // FLASH PRICE TICKER (header scroll bar)
 // ======================================
-
-// ======================================
-// GLOBAL MARKETS TICKER
-// ======================================
-const GLOBAL_SYMS = {
-  'DOW':'^DJI', 'NASDAQ':'^IXIC', 'S&P500':'^GSPC',
-  'CRUDE':'CL=F', 'GOLD':'GC=F', 'USD/INR':'INR=X', 'VIX':'^INDIAVIX'
-};
-let _globalCache = {}, _globalCacheTime = 0;
-const GLOBAL_TTL = 15 * 60 * 1000; // 15 min
-
-async function fetchGlobalMarkets() {
-  const now = Date.now();
-  if (_globalCacheTime && (now - _globalCacheTime) < GLOBAL_TTL && Object.keys(_globalCache).length > 0) {
-    return _globalCache;
-  }
-  try {
-    const apiUrl = localStorage.getItem('customAPI') || API;
-    const syms = Object.values(GLOBAL_SYMS).join(',');
-    const r = await fetch(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`);
-    const data = await r.json();
-    _globalCache = data;
-    _globalCacheTime = now;
-    return data;
-  } catch(e) { return {}; }
-}
-
-async function updateGlobalTicker() {
-  const track = document.getElementById('globalTickerTrack');
-  if (!track) return;
-  const data = await fetchGlobalMarkets();
-  const items = [];
-  Object.entries(GLOBAL_SYMS).forEach(([label, sym]) => {
-    const d = data[sym] || _globalCache[sym];
-    if (!d || !d.price) return;
-    const price = d.price;
-    const prev  = d.prevClose || price;
-    const chg   = price - prev;
-    const pct   = prev ? (chg / prev * 100) : 0;
-    items.push({ label, price, chg, pct });
-  });
-  if (items.length === 0) return;
-  const buildItem = (it) => {
-    const up  = it.chg >= 0;
-    const cls = up ? 'gticker-up' : 'gticker-dn';
-    const sign = up ? '+' : '';
-    // Format price — INR=X shows exchange rate, others show number
-    const fmtP = it.label === 'USD/INR'
-      ? it.price.toFixed(2)
-      : it.price >= 1000
-        ? it.price.toLocaleString('en-US', {maximumFractionDigits:0})
-        : it.price.toFixed(2);
-    return `<span style="display:inline-flex;align-items:center;gap:3px;padding:0 10px;border-right:1px solid #1e2d3d;">` +
-      `<span class="gticker-label">${it.label}</span>` +
-      `<span class="gticker-val">${fmtP}</span>` +
-      `<span class="${cls}">${sign}${it.pct.toFixed(2)}%</span>` +
-      `</span>`;
-  };
-  const html = items.map(buildItem).join('');
-  track.innerHTML = html + html;
-  const duration = Math.max(40, items.length * 8);
-  track.style.animation = `tickerScroll ${duration}s linear infinite`;
-}
-  
 function updatePriceTicker() {
   const bar = document.getElementById('priceTicker');
   const track = document.getElementById('tickerTrack');
@@ -4809,8 +4733,6 @@ async function startApp(){
   renderHeaderStrip();
   updateHeaderIndices();
   updatePriceTicker();
-  updateGlobalTicker();
-  // Run technical alerts on startup
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
   // Auto alert engine — every 5 min during market hours
@@ -4896,7 +4818,6 @@ async function manualRefresh(){
   await renderWL();
   updateHeaderIndices();
   updatePriceTicker();
-  updateGlobalTicker();
   
   hideLoader();
   if(btn) { btn.style.opacity="1"; btn.style.pointerEvents="auto"; }
