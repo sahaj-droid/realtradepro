@@ -15,11 +15,15 @@ async function hashPIN(pin) {
 
 // ---- App Start: Profile Screen Check ----
 async function initApp() {
+  // દર વખતે PIN માંગો — savedUser થી સીધો login નહીં
   const savedUser = localStorage.getItem('rtp_current_user');
   if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    hideProfileScreens();
-    loadUserData();
+    const user = JSON.parse(savedUser);
+    // Profile select skip કરો, સીધા PIN screen પર જાઓ
+    localStorage.removeItem('rtp_current_user');
+    await showProfileScreen();
+    // Auto-select last used user
+    setTimeout(() => showPINScreen(user.userId, user.name), 500);
     return;
   }
   await showProfileScreen();
