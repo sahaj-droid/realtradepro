@@ -3936,9 +3936,9 @@ async function fetchHistory(sym, range='30d', interval='1d'){
       // Validate data
       if(j.close.length<14) continue;
       const data={
-        dates:j.dates, open:j.open||j.close, high:j.high||j.close,
-        low:j.low||j.close, close:j.close, volume:j.volume||[]
-      };
+  dates:j.dates, open:j.open&&j.open.length?j.open:null, high:j.high&&j.high.length?j.high:null,
+  low:j.low&&j.low.length?j.low:null, close:j.close, volume:j.volume||[]
+};
       try{ localStorage.setItem(DAY_KEY,JSON.stringify({date:today,data})); }catch(e){}
       return data;
     }catch(e){ continue; }
