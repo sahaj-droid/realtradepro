@@ -4936,16 +4936,17 @@ async function screenerSetSource(s) {
     if(el) el.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:12px;">Fetching Nifty 50 data...</div>`;
     NIFTY50_STOCKS.forEach(sym=>{if(cache[sym]) cache[sym].time=0;});
     await batchFetchStocks(NIFTY50_STOCKS);
-  function screenerToggleFilter(id) {
+    }
+  renderScreener();
+}
+function screenerToggleFilter(id) {
   if (screenerFilters.has(id)) {
     screenerFilters.delete(id);
   } else {
     screenerFilters.add(id);
-  }
-  }
+   }
   renderScreener();
 }
-
 function renderScreener() {
   const el = document.getElementById('gscreener');
   if (!el) return;
