@@ -4942,7 +4942,6 @@ async function screenerSetSource(s) {
   } else {
     screenerFilters.add(id);
   }
-  }
   renderScreener();
 }
 
