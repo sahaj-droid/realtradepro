@@ -1,12 +1,954 @@
 <!DOCTYPE html>
-<html>
+<html id="htmlRoot">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=RealTradePro_Stable.html">
-<title>Real Trade Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap');
+
+body { background:#0a0f1a; color:#e2e8f0; font-family:'Rajdhani',sans-serif; transition:background 0.3s,color 0.3s; }
+html { font-size: 112%; }
+html[data-fsize='small'] { font-size: 95%; }
+html[data-fsize='medium'] { font-size: 112%; }
+html[data-fsize='large'] { font-size: 128%; }
+body.light { background:#f0f4f8; color:#1a202c; }
+body.light .card { background:linear-gradient(145deg,#ffffff,#f1f5f9); border:1px solid #cbd5e0; box-shadow:0 2px 8px rgba(0,0,0,0.08); color:#1a202c; }
+body.light .app-header { background:linear-gradient(90deg,#ffffff,#e8f0fe); border-bottom:1px solid #cbd5e0; color:#1a202c; }
+body.light .portfolio-card { background:linear-gradient(135deg,#e8f0fe,#dbeafe); border:1px solid #93c5fd; color:#1a202c; }
+body.light .pcard-inner { background:#dbeafe !important; color:#1a202c; }
+body.light .pcard-inner div { color:#1e3a8a; }
+body.light .bot-nav-btn { color:#475569; }
+body.light .bot-nav-btn.active { color:#2563eb; background:rgba(37,99,235,0.1); }
+body.light #searchBox { background:#ffffff; border:1px solid #cbd5e0; color:#1a202c; }
+body.light #searchBox:focus { border-color:#2563eb; }
+body.light #searchBox::placeholder { color:#94a3b8; }
+body.light .sort-btn { background:#e2e8f0; border:1px solid #cbd5e0; color:#475569; }
+body.light #suggestionBox { background:#ffffff; border:1px solid #cbd5e0; }
+body.light .suggestion-item { color:#1a202c; border-bottom:1px solid #e2e8f0; }
+body.light .suggestion-item:hover { background:#eff6ff; color:#2563eb; }
+body.light #alertPopup { background:#dbeafe; border:1px solid #2563eb; color:#1e3a8a; }
+body.light .group-btn { background:#e2e8f0; border:1px solid #cbd5e0; color:#475569; }
+body.light .group-btn.active { background:#dbeafe; border-color:#2563eb; color:#2563eb; }
+body.light .sort-btn:hover { background:#cbd5e0; color:#1a202c; }
+/* ===== LIGHT MODE: COMPREHENSIVE INLINE STYLE OVERRIDES ===== */
+/* Background overrides - all dark bg colors */
+body.light [style*="background:#0a1628"] { background:#e8eef5 !important; }
+body.light [style*="background:#111827"] { background:#f1f5f9 !important; }
+body.light [style*="background:#1e2d3d"] { background:#dde6f0 !important; }
+body.light [style*="background:#0f1e33"] { background:#ffffff !important; }
+body.light [style*="background:#0a0f1a"] { background:#f8fafc !important; }
+body.light [style*="background:#0f2a40"] { background:#dbeafe !important; }
+body.light [style*="background:#1e3a5f"] { background:#bfdbfe !important; }
+body.light [style*="background:linear-gradient(145deg,#111827"] { background:#f1f5f9 !important; }
+body.light [style*="background:linear-gradient(145deg,#0f1e33"] { background:#e8f0fe !important; }
+/* Text color overrides */
+body.light [style*="color:#e2e8f0"] { color:#1a202c !important; }
+body.light [style*="color:#f1f5f9"] { color:#1a202c !important; }
+body.light [style*="color:#cbd5e1"] { color:#334155 !important; }
+body.light [style*="color:#94a3b8"] { color:#475569 !important; }
+body.light [style*="color:#4b6280"] { color:#64748b !important; }
+body.light [style*="color:#2d3f52"] { color:#94a3b8 !important; }
+/* Border overrides */
+body.light [style*="border:1px solid #1e3a5f"] { border-color:#93c5fd !important; }
+body.light [style*="border:1px solid #2d3f52"] { border-color:#cbd5e0 !important; }
+body.light [style*="border-bottom:1px solid #1e2d3d"] { border-bottom-color:#e2e8f0 !important; }
+body.light [style*="border:1px solid rgba(255,255,255,0.06)"] { border-color:#cbd5e0 !important; }
+/* Divider line overrides */
+body.light [style*="background:#1e2d3d"][style*="width:1px"] { background:#cbd5e0 !important; }
+body.light [style*="background:#1e3a5f"][style*="height:8px"] { background:#bfdbfe !important; }
+/* Modal and panel overrides */
+body.light [style*="background:#0f1e33"][style*="border-radius:16px"] { background:#ffffff !important; border-color:#93c5fd !important; }
+/* Button overrides */
+body.light [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
+body.light [style*="background:#1e3a5f"][style*="color:#93c5fd"] { background:#dbeafe !important; color:#1d4ed8 !important; }
+body.light [style*="background:#0a1628"][style*="color:#6ee7b7"] { background:#d1fae5 !important; color:#065f46 !important; }
+body.light [style*="background:#0a1628"][style*="color:#fde68a"] { background:#fef3c7 !important; color:#92400e !important; }
+body.light [style*="background:#0a1628"][style*="color:#f9a8d4"] { background:#fce7f3 !important; color:#9d174d !important; }
+/* Specific component overrides */
+body.light .wl-actions-panel { background:#e8f0fe !important; border-top-color:#cbd5e0 !important; }
+body.light #loaderOverlay { background:rgba(240,244,248,0.9); }
+body.light .spinner { border-color:#cbd5e0; border-top-color:#2563eb; }
+/* News cards in light mode */
+body.light [style*="background:linear-gradient(145deg,#111827,#1a2332)"] { background:linear-gradient(145deg,#ffffff,#f8fafc) !important; border-color:#e2e8f0 !important; }
+/* Ticker light mode already handled separately */
+/* News tab light mode specific fixes */
+body.light #news [style*="color:#38bdf8"] { color:#1d4ed8 !important; }
+body.light #news [style*="background:#0a1628"] { background:#f0f7ff !important; }
+body.light #news [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e2e8f0 !important; }
+body.light #news [style*="color:#e2e8f0"] { color:#1a202c !important; }
+body.light #news [style*="color:#94a3b8"] { color:#475569 !important; }
+body.light #news [style*="color:#4b6280"] { color:#64748b !important; }
+body.light #news .group-btn { background:#e2e8f0 !important; color:#475569 !important; border-color:#cbd5e0 !important; }
+body.light #news .group-btn.active { background:#dbeafe !important; color:#1d4ed8 !important; border-color:#93c5fd !important; }
+body.light #news [style*="background:linear-gradient(135deg,#0a1e14"] { background:#f0fdf4 !important; }
+body.light #news [style*="color:#34d399"] { color:#059669 !important; }
+body.light #news [style*="background:#0a0f1a"] { background:#f0f4f8 !important; }
+body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; }
+
+.tab { display:none }
+.tab.active { display:block }
+
+.card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.3s; }
+.flash-green { animation:flashGreen 1.2s; }
+.flash-red   { animation:flashRed 1.2s; }
+@keyframes flashGreen { 0%{background:rgba(34,197,94,0.35);}100%{background:transparent;} }
+@keyframes flashRed   { 0%{background:rgba(239,68,68,0.35);}100%{background:transparent;} }
+.green{color:#22c55e;font-weight:700;} .red{color:#ef4444;font-weight:700;}
+
+.bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#4b5563;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none;border-top:2px solid transparent;position:relative; }
+.bot-nav-btn.active { background:transparent;border-top:2px solid currentColor; }
+#nav-watchlist.active { color:#34d399; }
+#nav-indices.active   { color:#38bdf8; }
+#nav-holdings.active  { color:#a78bfa; }
+#nav-history.active   { color:#f59e0b; }
+#nav-news.active      { color:#f472b6; }
+#nav-settings.active  { color:#94a3b8; }
+#nav-watchlist svg { stroke:#34d399; }
+#nav-indices svg   { stroke:#38bdf8; }
+#nav-holdings svg  { stroke:#a78bfa; }
+#nav-history svg   { stroke:#f59e0b; }
+#nav-news svg      { stroke:#f472b6; }
+#nav-settings svg  { stroke:#94a3b8; }
+.bot-nav-btn span.icon { font-size:16px; }
+
+#alertPopup { position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1e3a5f;border:1px solid #38bdf8;border-radius:10px;padding:10px 18px;font-size:13px;color:#fff;z-index:9999;display:none;max-width:300px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(56,189,248,0.3);animation:slideDown 0.3s ease; }
+@keyframes slideDown { from{top:40px;opacity:0;}to{top:60px;opacity:1;} }
+
+.sort-btn { background:#1e2d3d;border:1px solid #2d3f52;color:#94a3b8;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.15s; }
+.sort-btn:hover { background:#253447;color:#e2e8f0; }
+
+#searchBox { background:#111827;border:1px solid #2d3f52;color:white;border-radius:10px;padding:10px 14px;width:100%;font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;transition:border 0.2s; }
+#searchBox:focus { border-color:#38bdf8; }
+
+#suggestionBox { position:absolute;left:0;right:0;background:#111827;border:1px solid #2d3f52;border-radius:10px;margin-top:4px;z-index:500;overflow:hidden;display:none; }
+.suggestion-item { padding:9px 14px;font-size:13px;cursor:pointer;color:#e2e8f0;border-bottom:1px solid #1e2d3d;font-family:'Rajdhani',sans-serif;font-weight:600;transition:background 0.15s; }
+.suggestion-item:hover { background:#1e3a5f;color:#38bdf8; }
+.suggestion-item:last-child { border-bottom:none; }
+
+.app-header { background:linear-gradient(90deg,#0a0f1a,#0f1e33);border-bottom:1px solid #1e3a5f;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;transition:background 0.3s; }
+.portfolio-card { background:linear-gradient(135deg,#0f1e33,#162744);border:1px solid #1e3a5f;border-radius:14px;padding:14px;transition:background 0.3s; }
+.pcard-inner { background:#0a1628;border-radius:8px;padding:8px 10px;transition:background 0.3s; }
+
+/* Group buttons */
+.group-btn { background:#1e2d3d;border:1px solid #2d3f52;color:#94a3b8;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;transition:all 0.15s; }
+.group-btn.active { background:#1e3a5f;border-color:#38bdf8;color:#38bdf8; }
+
+/* Loader */
+#loaderOverlay { position:fixed;inset:0;background:rgba(10,15,26,0.85);z-index:8500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px; }
+.spinner { width:36px;height:36px;border:3px solid #1e3a5f;border-top:3px solid #38bdf8;border-radius:50%;animation:spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+@keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.3;} }
+/* Pie chart canvas */
+#pieChart { display:block;margin:0 auto; }
+
+
+/* SVG Icon System */
+
+/* Tap Action System */
+.wl-card-wrap { position:relative; border-radius:12px; margin-bottom:4px; }
+.wl-actions-panel { display:none; padding:4px 6px; background:#0a1628; border-radius:0 0 10px 10px; border-top:1px solid #1e2d3d; }
+.wl-actions-panel.open { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+.act-btn { font-size:10px; font-weight:700; padding:5px 4px; border-radius:6px; border:none; cursor:pointer; font-family:'Rajdhani',sans-serif; text-align:center; width:100%; }
+.tap-hint { font-size:8px; color:#2d3f52; text-align:center; padding:1px 0 2px; }
+
+.icon-svg { display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px; }
+.icon-svg svg { width:100%;height:100%; }
+
+::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0f1a;} ::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px;}
+
+/* -- FLASH PRICE TICKER -- */
+body.light #priceTicker{background:#1e293b;border-bottom:1px solid #334155;}
+body.light .ticker-item{border-right-color:#334155;}
+body.light .ticker-sym{color:#94a3b8;}
+body.light .ticker-price{color:#e2e8f0;}
+#priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
+#priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
+#priceTicker .ticker-track:hover{animation-play-state:paused;}
+@keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker-item{display:inline-flex;align-items:center;gap:4px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;border-right:1px solid #1e2d3d;}
+.ticker-sym{color:#94a3b8;font-weight:700;}
+.ticker-price{color:#e2e8f0;}
+.ticker-up{color:#22c55e;}
+.ticker-dn{color:#ef4444;}
+#globalTicker{background:#0a0f1a;border-bottom:1px solid #1e3a5f;overflow:hidden;height:20px;display:flex;align-items:center;}
+#globalTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 60s linear infinite;}
+#globalTicker .ticker-track:hover{animation-play-state:paused;}
+.gticker-label{color:#4b6280;font-size:9px;font-weight:700;margin-right:3px;}
+.gticker-val{color:#e2e8f0;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.gticker-up{color:#22c55e;font-size:9px;font-family:'JetBrains Mono',monospace;}
+.gticker-dn{color:#ef4444;font-size:9px;font-family:'JetBrains Mono',monospace;}
+.gticker-sep{color:#1e3a5f;padding:0 8px;font-size:10px;}
+
+</style>
 </head>
 <body>
-<script>window.location.replace("RealTradePro_Stable.html");</script>
-<p>Redirecting... <a href="RealTradePro_Stable.html">Click here</a></p>
+
+<!-- == LOADER == -->
+<div id="loaderOverlay">
+  <div class="spinner"></div>
+  <div id="loaderMsg" style="font-size:13px;color:#38bdf8;font-family:'Rajdhani',sans-serif;">Loading...</div>
+</div>
+
+<!-- == ALERT POPUP == -->
+<div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
+
+  
+<!-- == MAIN APP == -->
+<div id="mainApp" class="max-w-md mx-auto pb-24">
+
+<!-- HEADER -->
+<div class="app-header" style="padding:6px 10px;">
+<!-- Indices: scrollable strip + add button -->
+  <div style="display:flex;flex:1;align-items:center;min-width:0;overflow:hidden;">
+    <div id="indicesStrip" style="display:flex;gap:0;flex:1;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;" onscroll="this.style.cssText=this.style.cssText">
+    <!-- chips rendered by renderHeaderStrip() -->
+    </div>
+    <button onclick="openAddIndexModal()" style="flex-shrink:0;margin-left:4px;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;padding:0;" title="Add Index">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+  <!-- Right: 2x2 button grid -->
+  <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
+    <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
+    <button onclick="tab('earningscal')" style="background:#1e2d3d;border:1px solid #2d3f52;color:#f59e0b;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+  </div>
+</div>
+
+<!-- MARKET STATUS + LIVE CLOCK BAR -->
+<div style="background:#0f1e33;border-bottom:1px solid #1e2d3d;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;">
+  <div id="marketStatus" style="font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;">Checking...</div>
+  <div id="liveClock" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">--:--:--</div>
+</div>
+
+
+<!-- FLASH PRICE TICKER -->
+<div id="priceTicker" style="display:none;">
+  <div class="ticker-track" id="tickerTrack">
+    <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
+  </div>
+</div>
+<!-- GLOBAL MARKETS TICKER -->
+<div id="globalTicker">
+  <div class="ticker-track" id="globalTickerTrack">
+    <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
+  </div>
+</div>
+
+<!-- SEARCH + SUGGESTIONS -->
+<div id="searchSection" class="p-3 pb-1">
+  <div style="position:relative;">
+    <input id="searchBox" placeholder="Search stock name or symbol..."
+      oninput="showSuggestions(this.value)"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();addStock(this.value);hideSuggestions();}if(event.key==='Escape'){hideSuggestions();}">
+    <div id="suggestionBox"></div>
+  </div>
+</div>
+
+<!-- SORT + WATCHLIST TABS BAR -->
+<div id="filterBar" class="px-3 pb-2">
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+    <span style="font-size:10px;color:#4b6280;">Sort:</span>
+    <button onclick="sortAZ()" class="sort-btn">A-Z</button>
+    <button onclick="sortPrice()" class="sort-btn">Price</button>
+    <button onclick="sortPercent()" class="sort-btn">%</button>
+    <button onclick="triggerWatchlistCSVImport()" style="margin-left:auto;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128229; CSV</button>
+  </div>
+  <!-- Watchlist Tabs: fixed 3 + add, left-right scrollable, rename on long press -->
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;align-items:center;" id="wlTabsBar">
+    <!-- rendered by renderWLTabs() -->
+  </div>
+</div>
+
+<!-- TABS -->
+<div id="watchlist" class="tab active p-3 space-y-[5px]"></div>
+<div id="indices"   class="tab p-3 space-y-[5px]"></div>
+
+<div id="holdings" class="tab p-3 space-y-3">
+  <div class="portfolio-card">
+    <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;text-align:center;">PORTFOLIO SUMMARY</div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">INVESTMENT</div><div id="totalInvestment" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">CURRENT VALUE</div><div id="currentValue" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">UNREALIZED P&amp;L</div><div id="totalPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">RETURN %</div><div id="returnPercent" style="font-size:15px;font-weight:700;">0%</div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3" style="margin-top:10px;">
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">REALIZED P&amp;L</div><div id="realizedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">TOTAL P&amp;L</div><div id="combinedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+    </div>
+  </div>
+  <!-- Portfolio Diversity Pie Chart -->
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;">PORTFOLIO DIVERSITY</div>
+    <canvas id="pieChart" width="260" height="260"></canvas>
+    <div id="pieLegend" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
+  </div>
+  <div id="holdingsList"></div>
+</div>
+
+<div id="history" class="tab p-3 space-y-[5px]">
+  <!-- All 5 buttons in one scrollable line -->
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
+    <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
+    <button onclick="backupData()" style="background:#166534;color:#86efac;border:1px solid #166534;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Backup</button>
+    <button onclick="triggerRestore()" style="background:#713f12;color:#fde68a;border:1px solid #713f12;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Restore</button>
+    <button id="histViewList" onclick="setHistView('list')" style="background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">List</button>
+    <button id="histViewCal" onclick="setHistView('calendar')" style="background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Calendar</button>
+  </div>
+  <!-- hidden file inputs -->
+  <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
+  <div id="historyList"></div>
+  <div id="historyCalendar" style="display:none;"></div>
+</div>
+<div id="alerts"  class="tab p-3 space-y-[5px]"></div>
+
+<!-- SETTINGS TAB -->
+<div id="settings" class="tab p-3 space-y-3">
+  <div style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">SETTINGS</div>
+
+  <!-- QUICK ACCESS: Theme + Alerts + Holidays + Font Size -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="cycleFontSize()" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" width="18" height="18"><text x="2" y="16" font-size="12" fill="#a78bfa" stroke="none" font-family="sans-serif" font-weight="bold">A</text><text x="11" y="19" font-size="16" fill="#a78bfa" stroke="none" font-family="sans-serif" font-weight="bold">A</text></svg>
+      <span id="fontSizeLabel" style="font-size:10px;font-weight:700;color:#a78bfa;">FONT: M</span>
+    </button>
+    <button onclick="toggleTheme()" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <svg id="qs-theme-icon" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      <span style="font-size:10px;font-weight:700;color:#f59e0b;">THEME</span>
+    </button>
+    <button onclick="tab('alerts')" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="18" height="18" style="color:#fde68a;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span style="font-size:10px;font-weight:700;color:#fde68a;">ALERTS</span>
+    </button>
+    <button onclick="tab('holidays')" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span style="font-size:10px;font-weight:700;color:#34d399;">HOLIDAYS</span>
+    </button>
+  </div>
+
+  <!-- PRIMARY API URL (non-editable, Change URL button) -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:6px;font-weight:700;">PRIMARY API URL</div>
+    <div id="set-api-display" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#4b6280;border-radius:8px;padding:7px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;word-break:break-all;"></div>
+    <div id="set-api-edit" style="display:none;margin-top:6px;">
+      <input id="set-api-input" placeholder="Paste new API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="saveSetting('api')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="cancelAPIEdit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      </div>
+    </div>
+    <button onclick="startAPIEdit()" id="changeURLBtn" style="margin-top:6px;background:#713f12;color:#fde68a;border:1px solid #713f12;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change URL</button>
+  </div>
+
+  <!-- SECONDARY API URL (Fallback) -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:4px;font-weight:700;">SECONDARY API URL <span style="color:#f59e0b;font-size:9px;">(Fallback 1)</span></div>
+    <div id="set-api2-display" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#4b6280;border-radius:8px;padding:7px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:30px;"></div>
+    <div id="set-api2-edit" style="display:none;margin-top:6px;">
+      <input id="set-api2-input" placeholder="Paste secondary API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="saveSetting('api2')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="cancelAPI2Edit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      </div>
+    </div>
+    <button onclick="startAPI2Edit()" id="changeURL2Btn" style="margin-top:6px;background:#713f12;color:#fde68a;border:1px solid #713f12;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change URL</button>
+  </div>
+
+  <!-- TERTIARY API URL (Fallback 2) -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:4px;font-weight:700;">TERTIARY API URL <span style="color:#a78bfa;font-size:9px;">(Fallback 2  -  Family member )</span></div>
+    <div id="set-api3-display" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#4b6280;border-radius:8px;padding:7px 10px;font-size:10px;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:30px;"></div>
+    <div id="set-api3-edit" style="display:none;margin-top:6px;">
+      <input id="set-api3-input" placeholder="Paste tertiary API URL..." style="width:100%;background:#0a1628;border:1px solid #a78bfa;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="saveSetting('api3')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="cancelAPI3Edit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      </div>
+    </div>
+    <button onclick="startAPI3Edit()" id="changeURL3Btn" style="margin-top:6px;background:#4a1d96;color:#c4b5fd;border:1px solid #4a1d96;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change URL</button>
+  </div>
+
+  <!-- GEMINI API KEY (Direct fallback for NIVI + AI News) -->
+  <div class="card" style="border:1px solid rgba(52,211,153,0.3);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><defs><linearGradient id="gsk1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient></defs><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="url(#gsk1)"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">GEMINI API KEY <span style="color:#4b6280;font-weight:400;">(NIVI Direct Fallback)</span></div>
+    </div>
+    <div style="font-size:9px;color:#4b6280;margin-bottom:8px;line-height:1.5;">Google AI Studio → Free key → 1500 calls/day. GAS fail thay to direct use thase.<br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com/apikey</a></div>
+    <input id="set-gemini-key" type="password" placeholder="AIza..." style="width:100%;background:#0a1628;border:1px solid #065f46;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button onclick="saveGeminiKey()" style="flex:1;background:#065f46;color:#34d399;border:none;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save Key</button>
+      <button onclick="clearGeminiKey()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
+    </div>
+    <div id="gemini-key-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
+  </div>
+
+  <!-- NIVI VOICE SETTINGS -->
+  <div class="card" style="border:1px solid rgba(52,211,153,0.2);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">NIVI VOICE SETTINGS</div>
+    </div>
+
+    <!-- Auto Speak Toggle -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div>
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Auto Speak</div>
+        <div style="font-size:9px;color:#4b6280;">Nivi ka jawab auto bolegi</div>
+      </div>
+      <button id="nivi-autospeak-btn" onclick="toggleNiviAutoSpeak()"
+        style="background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
+    </div>
+
+    <!-- Voice Speed Slider -->
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Voice Speed</div>
+        <div id="nivi-speed-label" style="font-size:11px;color:#34d399;font-weight:700;">Normal</div>
+      </div>
+      <input type="range" id="nivi-speed-slider" min="0.5" max="1.5" step="0.1" value="0.88"
+        oninput="updateNiviSpeed(this.value)"
+        style="width:100%;accent-color:#34d399;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b6280;margin-top:2px;">
+        <span>Dheere</span><span>Normal</span><span>Tez</span>
+      </div>
+    </div>
+
+    <!-- Voice Pitch -->
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <div style="font-size:11px;color:#e2e8f0;font-weight:700;">Voice Pitch</div>
+        <div id="nivi-pitch-label" style="font-size:11px;color:#34d399;font-weight:700;">Normal</div>
+      </div>
+      <input type="range" id="nivi-pitch-slider" min="0.8" max="1.4" step="0.05" value="1.15"
+        oninput="updateNiviPitch(this.value)"
+        style="width:100%;accent-color:#34d399;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b6280;margin-top:2px;">
+        <span>Mota (Deep)</span><span>Normal</span><span>Patli (High)</span>
+      </div>
+    </div>
+
+    <!-- Test Voice Button -->
+    <button onclick="niviVoiceTest()"
+      style="width:100%;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+      🔊 Voice Test Karo
+    </button>
+    <div style="font-size:9px;color:#4b6280;margin-top:6px;line-height:1.5;">
+      💡 Best voice ke liye: Play Store → <b style="color:#e2e8f0;">Microsoft TTS</b> install karo → Android Settings → Accessibility → TTS → Microsoft select karo → "Neerja" (Hindi Female) milegi.
+    </div>
+  </div>
+
+
+  <!-- GOOGLE SHEETS INTEGRATION -->
+  <div class="card" style="border:1px solid rgba(66,133,244,0.35);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="1" width="12" height="14" rx="1.5" fill="#0f9d58"/><rect x="4" y="4" width="8" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/><rect x="4" y="6.5" width="8" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/><rect x="4" y="9" width="5" height="1.2" rx="0.6" fill="#fff" opacity="0.85"/></svg>
+      <div style="font-size:11px;color:#34d399;font-weight:700;">GOOGLE SHEETS <span style="color:#4b6280;font-weight:400;">(Fundamentals + History)</span></div>
+    </div>
+    <div style="font-size:9px;color:#4b6280;margin-bottom:8px;line-height:1.5;">
+      <b style="color:#f59e0b;">Live Price + Volume = Yahoo Finance</b> (real-time ✅)<br>
+      PE, EPS, MarketCap, BookValue, 52W H/L + History = Google Sheets (15-20min delay — okay for fundamentals). Yahoo quota ~40% bachse.
+    </div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">Sheet ID:</div>
+    <div id="sheet-id-display" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#4b6280;border-radius:8px;padding:7px 10px;font-size:9px;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:28px;"></div>
+    <div id="sheet-id-edit" style="display:none;margin-top:6px;">
+      <input id="sheet-id-input" placeholder="Paste Google Sheet ID..." style="width:100%;background:#0a1628;border:1px solid #4285F4;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button onclick="saveSheetId()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="cancelSheetEdit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+      <button onclick="startSheetEdit()" id="changeSheetBtn" style="background:#1a3a6b;color:#93c5fd;border:1px solid #1e3a5f;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Change ID</button>
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+        <input type="checkbox" id="sheet-enabled" onchange="toggleSheetIntegration(this.checked)" style="accent-color:#4285F4;width:14px;height:14px;">
+        <span style="font-size:11px;color:#94a3b8;">Enable Sheet Integration</span>
+      </label>
+      <button onclick="clearFundCache()" style="background:#1e3a5f;color:#f87171;border:1px solid #7f1d1d;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑️ Clear Cache</button>
+    </div>
+    <div id="sheet-status" style="font-size:10px;margin-top:6px;color:#4b6280;"></div>
+  </div>
+
+  <!-- Refresh Interval -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:6px;font-weight:700;">AUTO REFRESH INTERVAL</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="set-refresh" type="number" min="10" max="300" style="width:80px;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;">
+      <span style="font-size:12px;color:#94a3b8;">seconds (min 10)</span>
+    </div>
+    <button onclick="saveSetting('refresh')" style="margin-top:6px;background:#166534;color:#86efac;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+  </div>
+
+  <!-- Cache Time -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:6px;font-weight:700;">CACHE TIME</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input id="set-cache" type="number" min="1000" max="60000" step="1000" style="width:90px;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;">
+      <span style="font-size:12px;color:#94a3b8;">ms (e.g. 8000 = 8s)</span>
+    </div>
+    <button onclick="saveSetting('cache')" style="margin-top:6px;background:#166534;color:#86efac;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+  </div>
+
+  <!-- Duplicate warning toggle -->
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-size:12px;font-weight:700;">Duplicate Stock Warning</div>
+      <div style="font-size:10px;color:#4b6280;">Warn when same stock is added again</div>
+    </div>
+    <button id="dupToggleBtn" onclick="toggleDupWarn()" style="background:#166534;color:#86efac;border:none;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
+  </div>
+
+
+  <!-- CLOUD SYNC -->
+  <div class="card">
+    <div style="font-size:11px;color:#4b6280;margin-bottom:8px;font-weight:700;">CLOUD SYNC <span style="color:#22c55e;font-size:9px;">2-Device Sync via Google Sheet</span></div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:8px;line-height:1.5;">Watchlist, Holdings, History auto-syncs across all devices using same GitHub Pages URL.</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button onclick="pushToCloud(true)" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Upload to Cloud</button>
+      <button onclick="pullFromCloud(true)" style="flex:1;background:#1a3320;color:#86efac;border:1px solid #166534;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Download from Cloud</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <button id="syncStatusBtn" onclick="pushToCloud(true)" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Sync Now</button>
+      <span style="font-size:10px;color:#4b6280;">Last: <span id="lastSyncDisplay">--</span></span>
+    </div>
+  </div>
+
+  <!-- DANGER ZONE  -  Separate buttons -->
+  <div class="card">
+    <div style="font-size:11px;color:#ef4444;margin-bottom:8px;font-weight:700;">! DANGER ZONE</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <button onclick="clearData('holdings')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Holdings</button>
+      <button onclick="clearData('history')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear History</button>
+      <button onclick="clearData('alerts')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Alerts</button>
+    </div>
+  </div>
+
+  <!-- FEATURE GUIDE ACCORDION -->
+  <div class="card" id="featureGuideCard">
+    <div style="font-size:12px;color:#38bdf8;font-weight:700;margin-bottom:8px;letter-spacing:0.5px;">FEATURE GUIDE</div>
+    <div id="featureGuideList"></div>
+  </div>
+
+  <div style="text-align:center;font-size:10px;color:#4b6280;padding:8px;">REAL TRADER PRO  -  v2.1</div>
+</div>
+
+<!-- ERROR BANNER -->
+<div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
+  <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:#fca5a5;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+    ! <span id="errorMsg"></span>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
+  </div>
+</div>
+
+<div id="journal" class="tab p-3 space-y-[5px]"></div>
+<div id="holidays" class="tab p-3 space-y-[5px]"></div>
+<div id="earningscal" class="tab p-3 space-y-[5px]">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+    <span style="font-size:13px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;">EARNINGS CALENDAR</span>
+    <button onclick="refreshEarningsCal()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>
+  </div>
+  <div id="earningsCalContent"><div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">Loading...</div></div>
+</div>
+<div id="news" class="tab" style="padding:0;"></div>
+
+<!-- JOURNAL ADD MODAL -->
+<div id="journalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-width:92vw;">
+    <div style="font-size:14px;font-weight:700;color:#38bdf8;margin-bottom:12px;">Add Journal Entry</div>
+    <select id="jn-type" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;margin-bottom:8px;">
+      <option value="NOTE">General Note</option>
+      <option value="BUY">Buy Reason</option>
+      <option value="SELL">Sell Reason</option>
+      <option value="WATCH">Watch Note</option>
+    </select>
+    <input id="jn-sym" placeholder="Stock symbol (optional)" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;margin-bottom:8px;box-sizing:border-box;">
+    <textarea id="jn-note" placeholder="Your note..." rows="3" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;resize:none;box-sizing:border-box;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button onclick="saveJournal()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+      <button onclick="document.getElementById('journalModal').style.display='none'" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
+  <div class="w-full max-w-md flex justify-around px-1 py-2" style="background:rgba(10,15,26,0.97);backdrop-filter:blur(16px);border-top:2px solid #1e3a5f;box-shadow:0 -4px 20px rgba(0,0,0,0.5);gap:0;">
+    <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Watch</button>
+    <button class="bot-nav-btn" id="nav-indices" onclick="tab('indices')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Gainers</button>
+    <button class="bot-nav-btn" id="nav-holdings" onclick="tab('holdings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Holdings</button>
+    <button class="bot-nav-btn" id="nav-history" onclick="tab('history')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>History</button>
+    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2C12 2 13.2 9.5 18.5 12C13.2 14.5 12 22 12 22C12 22 10.8 14.5 5.5 12C10.8 9.5 12 2 12 2Z" fill="currentColor" stroke="none"/></svg></span>Ask Nivi</button>
+    <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
+  </div>
+</div>
+
+<!-- TRADE MODAL -->
+<div id="modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:200;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-height:90vh;overflow-y:auto;">
+    <h2 id="m-title" style="font-size:16px;font-weight:700;margin-bottom:10px;color:#e2e8f0;"></h2>
+
+    <!-- Trade Type (only for BUY/SELL) -->
+    <div id="m-type-row" style="display:flex;gap:6px;margin-bottom:8px;">
+      <button id="type-cnc" onclick="setTradeType('CNC')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;">CNC</button>
+      <button id="type-mis" onclick="setTradeType('MIS')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">MIS</button>
+    </div>
+
+    <input id="m-price" placeholder="Price (₹)" class="w-full p-2 mb-2 rounded-lg text-sm"
+      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      oninput="updateTaxCalc()">
+    <input id="m-qty" placeholder="Quantity" class="w-full p-2 mb-2 rounded-lg text-sm"
+      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      oninput="updateTaxCalc()">
+    <input id="m-date" type="date" class="w-full p-2 mb-2 rounded-lg text-sm"
+      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;">
+
+    <!-- Tax Calculator -->
+    <div id="taxCalcBox" style="background:#0a1628;border:1px solid #1e2d3d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;display:none;">
+      <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:4px;">CHARGES ESTIMATE</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#94a3b8;">Trade Value:</span>
+        <span id="tc-value" style="color:#e2e8f0;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#94a3b8;">Brokerage (0.15%):</span>
+        <span id="tc-brokerage" style="color:#fde68a;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#94a3b8;">STT:</span>
+        <span id="tc-stt" style="color:#fde68a;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#94a3b8;">Exchange + SEBI:</span>
+        <span id="tc-exchange" style="color:#fde68a;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#94a3b8;">GST (18% on brok):</span>
+        <span id="tc-gst" style="color:#fde68a;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="border-top:1px solid #1e3a5f;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;">
+        <span style="color:#f59e0b;font-weight:700;">Total Charges:</span>
+        <span id="tc-total" style="color:#f59e0b;font-weight:700;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;">
+        <span style="color:#94a3b8;">Break-even Price:</span>
+        <span id="tc-breakeven" style="color:#22c55e;font-weight:700;font-family:'JetBrains Mono',monospace;">₹0</span>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button id="confirmBtn" onclick="confirmTrade()" class="flex-1 py-2 rounded-lg font-bold text-sm text-white">OK</button>
+      <button onclick="closeModal()" class="flex-1 py-2 rounded-lg font-bold text-sm" style="background:#1e2d3d;color:#94a3b8;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXIT CONFIRMATION MODAL -->
+<div id="exitModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:9999;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:24px;width:270px;text-align:center;">
+    <div style="font-size:28px;margin-bottom:8px;">👋</div>
+    <h2 style="font-size:16px;font-weight:700;margin-bottom:6px;color:#e2e8f0;">Exit App?</h2>
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:20px;">Do you want to exit RealTradePro?</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="if(window.Android&&Android.exitApp)Android.exitApp();else window.close();" style="flex:1;padding:11px;border-radius:8px;font-weight:700;font-size:14px;background:#7f1d1d;color:#fca5a5;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Yes, Exit</button>
+      <button onclick="document.getElementById('exitModal').classList.add('hidden')" style="flex:1;padding:11px;border-radius:8px;font-weight:700;font-size:14px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAILS MODAL -->
+<div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="z-index:200;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:12px;width:min(360px,96vw);max-height:92vh;display:flex;flex-direction:column;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
+      <h2 id="d-title" style="font-size:18px;font-weight:700;color:#38bdf8;margin:0;"></h2>
+      <button onclick="closeDetail()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab buttons -->
+    <div style="display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;">
+      <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">📈 Price</button>
+      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">📊 Fund</button>
+      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">⚡ Tech</button>
+      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">〰 BB</button>
+      <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">🔗 Links</button>
+    </div>
+    <!-- Tab content (scrollable) -->
+    <div style="flex:1;overflow-y:auto;min-height:0;">
+      <!-- Tab: Price + Chart -->
+      <div id="dtab-price" style="display:block;">
+        <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
+        <div id="d-chart" style="margin-top:8px;border-radius:10px;overflow:hidden;"></div>
+        <button id="d-tv-btn2" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:8px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:Rajdhani,sans-serif;">📊 View Full Chart on TradingView</button>
+      </div>
+      <!-- Tab: Fundamentals -->
+      <div id="dtab-fund" style="display:none;">
+        <div id="fundamentalsSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div></div>
+      </div>
+      <!-- Tab: Technical -->
+      <div id="dtab-tech" style="display:none;">
+        <div id="techSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div></div>
+        <div id="smartAlertSection" style="margin-top:8px;"></div>
+      </div>
+      <!-- Tab: Bollinger -->
+      <div id="dtab-bb" style="display:none;">
+        <div id="bbSection"></div>
+      </div>
+      <!-- Tab: Links -->
+      <div id="dtab-links" style="display:none;">
+        <div id="quickLinksSection"></div>
+        <button id="d-tv-btn" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">📊 View Full Chart on TradingView</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ADD INDEX MODAL -->
+<div id="addIdxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:350;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div style="font-size:15px;font-weight:700;color:#38bdf8;">Add Index</div>
+      <button onclick="closeAddIndexModal()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;">✕</button>
+    </div>
+    <input id="addIdxInput" placeholder="Search: NIFTY IT, MIDCAP, AUTO..." oninput="searchIndexSuggestions()"
+      style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;font-weight:600;margin-bottom:6px;">
+    <div style="font-size:10px;color:#4b6280;margin-bottom:6px;">Popular: ^CNXIT · ^NSMIDCP · ^CNXAUTO · ^CNXFMCG · ^CNXPSUBANK</div>
+    <div id="addIdxResults" style="background:#0a1628;border-radius:8px;max-height:200px;overflow-y:auto;border:1px solid #1e2d3d;"></div>
+  </div>
+</div>
+<!-- ADD GROUP MODAL -->
+<!-- WATCHLIST NAME MODAL (Add / Rename) -->
+<div id="wlNameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:288px;">
+    <h2 id="wlNameModalTitle" style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:14px;letter-spacing:0.3px;">+ New Watchlist</h2>
+    <input id="wlNameInput" placeholder="Watchlist name..."
+      style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;font-weight:600;"
+      onkeydown="if(event.key==='Enter') confirmWLName();">
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="confirmWLName()" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+      <button onclick="closeWLNameModal()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>
+  </div>
+</div>
+<!-- legacy id kept for backward compat -->
+<div id="addGroupModal" style="display:none;"></div>
+
+
+<!-- ALERT MODAL — Upgraded -->
+<div id="alertModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #713f12;border-radius:16px;padding:18px;width:300px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div id="alert-title" style="font-size:14px;font-weight:700;color:#fde68a;">🔔 Alert Set Karo</div>
+      <button onclick="closeAlertModal()" style="background:transparent;border:none;color:#4b6280;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Current price display -->
+    <div id="alert-current-price" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e2e8f0;"></div>
+    <!-- Above / Below toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="alert-above-btn" onclick="setAlertDir('above')"
+        style="flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#166534;color:#86efac;border:1px solid #166534;">▲ Upar (Above)</button>
+      <button id="alert-below-btn" onclick="setAlertDir('below')"
+        style="flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">▼ Neeche (Below)</button>
+    </div>
+    <input id="alert-price" placeholder="Alert Price (₹)" type="number"
+      style="width:100%;background:#0a1628;border:1px solid #713f12;color:white;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px;">
+    <div style="font-size:9px;color:#4b6280;margin-bottom:12px;">Price is reached when trigger fires. Repeat alerts: app open ho to bar bar aavse.</div>
+    <!-- Existing alerts list -->
+    <div id="alert-existing-list" style="margin-bottom:10px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmAlert()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#713f12;color:#fde68a;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔔 Set Alert</button>
+      <button onclick="closeAlertModal()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TARGET MODAL -->
+<div id="target-modal-box" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #4a1d96;border-radius:16px;padding:20px;width:280px;">
+    <h2 id="target-title" style="font-size:16px;font-weight:700;margin-bottom:12px;color:#c4b5fd;">Set Target</h2>
+    <input id="target-price" placeholder="Target Price (₹)" type="number" class="w-full p-2 mb-2 rounded-lg text-sm"
+      style="background:#0a1628;border:1px solid #4a1d96;color:white;outline:none;">
+    <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Popup aavse jyare price target reach kare.</div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmTarget()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#4a1d96;color:#c4b5fd;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Set Target</button>
+      <button onclick="closeTargetModal()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- REMOVE STOCK MODAL -->
+<div id="remove-modal-box" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #7f1d1d;border-radius:16px;padding:20px;width:280px;">
+    <h2 id="remove-title" style="font-size:15px;font-weight:700;margin-bottom:8px;color:#fca5a5;">Remove Stock</h2>
+    <div style="font-size:11px;color:#94a3b8;margin-bottom:14px;">Watchlist mathi remove karo?</div>
+    <input id="remove-confirm-sym" type="hidden">
+    <div style="display:flex;gap:8px;">
+      <button onclick="confirmRemove()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#7f1d1d;color:#fca5a5;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Remove</button>
+      <button onclick="closeRemoveModal()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#1e2d3d;color:#94a3b8;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- AVERAGING CALCULATOR MODAL -->
+<div id="avgCalcModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:18px;width:300px;max-width:94vw;max-height:90vh;overflow-y:auto;">
+    <div style="font-size:14px;font-weight:700;color:#38bdf8;margin-bottom:12px;">Averaging Calculator</div>
+
+    <!-- Current Holdings -->
+    <div style="background:#0a1628;border-radius:8px;padding:10px;margin-bottom:10px;">
+      <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">CURRENT HOLDINGS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:#4b6280;">SYMBOL</div>
+          <div id="ac-sym-display" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#e2e8f0;">--</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:#4b6280;">AVG PRICE</div>
+          <div id="ac-avg-display" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#f59e0b;">--</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:9px;color:#4b6280;">QTY</div>
+          <div id="ac-qty-display" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#e2e8f0;">--</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;text-align:center;">
+        <div style="font-size:9px;color:#4b6280;">CMP</div>
+        <div id="ac-cmp-display" style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#94a3b8;">--</div>
+      </div>
+    </div>
+
+    <!-- Mode Toggle -->
+    <div style="display:flex;gap:5px;margin-bottom:10px;">
+      <button id="ac-mode-buy" onclick="setAvgMode('buy')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;">Add More Qty</button>
+      <button id="ac-mode-target" onclick="setAvgMode('target')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">Target Avg</button>
+    </div>
+
+    <!-- Mode: Add More Qty -->
+    <div id="ac-panel-buy">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:10px;color:#4b6280;margin-bottom:3px;">Buy Price (₹)</div>
+          <input id="ac-buy-price" type="number" placeholder="e.g. 500" oninput="calcAvg()"
+            style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+        </div>
+        <div>
+          <div style="font-size:10px;color:#4b6280;margin-bottom:3px;">Buy Qty</div>
+          <input id="ac-buy-qty" type="number" placeholder="e.g. 100" oninput="calcAvg()"
+            style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode: Target Avg -->
+    <div id="ac-panel-target" style="display:none;">
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;color:#4b6280;margin-bottom:3px;">Target Avg Price (₹)</div>
+        <input id="ac-target-avg" type="number" placeholder="e.g. 550" oninput="calcTargetQty()"
+          style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:10px;color:#4b6280;margin-bottom:3px;">Buy At Price (₹)</div>
+        <input id="ac-target-buyprice" type="number" placeholder="e.g. 480" oninput="calcTargetQty()"
+          style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <!-- Result Box -->
+    <div id="ac-result" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px;margin-bottom:10px;">
+      <!-- filled by JS -->
+    </div>
+
+    <button onclick="closeAvgCalc()" style="width:100%;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Close</button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 🤖 Ask Nivi MODAL — Chat UI v3 -->
+<div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;align-items:flex-end;justify-content:center;">
+  <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;width:100%;max-width:440px;height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- FIXED TOP: Header + Price + Tech chips -->
+    <div style="padding:12px 14px 8px;flex-shrink:0;border-bottom:1px solid rgba(6,95,70,0.4);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="nivi-avatar-ring" style="width:32px;height:32px;border-radius:50%;border:2px solid #34d399;display:flex;align-items:center;justify-content:center;background:#0a1628;transition:box-shadow 0.3s;flex-shrink:0;">
+            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#4285F4"/><stop offset="100%" stop-color="#9B72CB"/></linearGradient>
+                <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#EA4335"/><stop offset="100%" stop-color="#FBBC05"/></linearGradient>
+              </defs>
+              <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g1)" opacity="0.95"/>
+              <path d="M14 2 C14 2 15.2 10 22 14 C15.2 18 14 26 14 26 C14 26 12.8 18 6 14 C12.8 10 14 2 14 2Z" fill="url(#g2)" opacity="0.5" style="mix-blend-mode:screen"/>
+              <circle cx="14" cy="14" r="2.5" fill="white" opacity="0.9"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;line-height:1.1;">Ask Nivi</div>
+            <div style="display:flex;gap:5px;align-items:center;">
+              <div id="nivi-sym-label" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;"></div>
+              <div id="nivi-cache-timer" style="font-size:9px;color:#4b6280;display:none;"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button onclick="niviClearChat()" style="background:transparent;color:#4b6280;border:1px solid #1e3a5f;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🗑 Clear</button>
+          <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕</button>
+        </div>
+      </div>
+      <!-- Price + Rec compact row -->
+      <div id="nivi-price-row" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:7px 10px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div id="nivi-price" style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.2;">--</div>
+            <div id="nivi-change" style="font-size:10px;font-weight:700;color:#94a3b8;">--</div>
+          </div>
+          <div id="nivi-rec-badge" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;text-align:center;">--</div>
+        </div>
+      </div>
+      <!-- Tech chips -->
+      <div id="nivi-tech-row" style="display:none;gap:3px;overflow-x:auto;padding-bottom:2px;"></div>
+    </div>
+
+    <!-- SCROLLABLE MIDDLE: Chat bubbles -->
+    <div id="nivi-chat-area" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;">
+      <!-- Loading state -->
+      <div id="nivi-loading" style="text-align:center;padding:30px 0;display:none;">
+        <div class="spinner" style="margin:0 auto 8px;"></div>
+        <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi सोच रही है...</div>
+      </div>
+      <!-- Chat messages render here via JS -->
+    </div>
+
+    <!-- FIXED BOTTOM: Quick chips + Input + Mic + Send -->
+    <div style="padding:8px 14px 20px;flex-shrink:0;border-top:1px solid rgba(6,95,70,0.35);">
+
+      <!-- Quick question chips -->
+      <div id="nivi-chips" style="display:flex;gap:5px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px;scrollbar-width:none;">
+        <button onclick="niviChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
+        <button onclick="niviChip('मेरी पोर्टफोलियो का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
+        <button onclick="niviChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market Mood</button>
+        <button onclick="niviChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
+        <button onclick="niviChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
+      </div>
+
+      <!-- Input row: text + mic + send -->
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="nivi-input" type="text" placeholder="Ask anything to Nivi..." onkeydown="if(event.key==='Enter')niviSend()"
+          style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;"/>
+        <button id="nivi-mic-btn" onclick="niviMicToggle()" title="Voice Input"
+          style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;">🎙️</button>
+        <button onclick="niviSend()"
+          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+      </div>
+      <!-- Mic status -->
+      <div id="nivi-mic-status" style="font-size:9px;color:#f59e0b;margin-top:4px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... (फिर से दबाएं रोकने के लिए)</div>
+      <!-- Disclaimer -->
+      <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ केवल जानकारी हेतु। SEBI registered advisor नहीं।</div>
+    </div>
+
+  </div>
+</div><!-- end mainApp -->
+
+<script src="app.js"></script>
 </body>
 </html>
