@@ -198,10 +198,424 @@ body.light .ticker-price{color:#e2e8f0;}
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 </script>
+/* ========== PROFILE SCREENS CSS ========== */
+.profile-screen-bg {
+  min-height: 100vh;
+  background: #0f0f0f;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Rajdhani', sans-serif;
+}
 
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.profile-logo {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f0f0f0;
+  margin: 0;
+}
+
+.profile-subtitle {
+  color: #888;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+}
+
+/* Profile Cards */
+.profile-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+}
+
+.profile-card {
+  background: #1a1a1a;
+  border: 2px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 1.2rem 1.5rem;
+  cursor: pointer;
+  text-align: center;
+  min-width: 110px;
+  transition: all 0.2s ease;
+}
+
+.profile-card:hover {
+  border-color: #00d4aa;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,212,170,0.15);
+}
+
+.profile-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4aa, #0080ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 auto 0.6rem;
+}
+
+.profile-card-name {
+  color: #e0e0e0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.profile-avatar-large {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4aa, #0080ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 auto 0.5rem;
+}
+
+/* Create Button */
+.profile-create-btn {
+  background: linear-gradient(135deg, #00d4aa, #0080ff);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 0.5rem;
+  transition: opacity 0.2s;
+}
+
+.profile-create-btn:hover { opacity: 0.88; }
+
+/* PIN Dots */
+.pin-dots {
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.pin-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #555;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.pin-dot.filled {
+  background: #00d4aa;
+  border-color: #00d4aa;
+  box-shadow: 0 0 8px rgba(0,212,170,0.5);
+}
+
+/* PIN Numpad */
+.pin-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  max-width: 280px;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.pin-numpad button {
+  background: #1a1a1a;
+  border: 1.5px solid #2a2a2a;
+  color: #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  transition: all 0.15s ease;
+}
+
+.pin-numpad button:hover {
+  background: #252525;
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+.pin-numpad button:active {
+  transform: scale(0.94);
+  background: #00d4aa22;
+}
+
+.pin-clear { font-size: 1.1rem !important; color: #ff6b6b !important; }
+
+/* Errors */
+.pin-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+/* Forgot + Back */
+.pin-forgot {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.pin-forgot:hover { color: #00d4aa; }
+
+.pin-back {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.pin-back:hover { color: #aaa; }
+
+/* Create Profile Form */
+.create-profile-form {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-group label {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.form-group input,
+.form-group select {
+  background: #1a1a1a;
+  border: 1.5px solid #2a2a2a;
+  color: #e0e0e0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: 'Rajdhani', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #00d4aa;
+}
+
+/* Light mode overrides */
+body.light-mode .profile-screen-bg { background: #f5f5f5; }
+body.light-mode .profile-title { color: #111; }
+body.light-mode .profile-card { background: #fff; border-color: #e0e0e0; }
+body.light-mode .profile-card-name { color: #222; }
+body.light-mode .pin-numpad button { background: #fff; border-color: #ddd; color: #222; }
+body.light-mode .form-group input,
+body.light-mode .form-group select { background: #fff; border-color: #ddd; color: #222; }
+  
 </head>
+  
 <body>
+<!-- ========== PROFILE SCREEN ========== -->
+<div id="profileScreen" style="display:none;">
+  <div class="profile-screen-bg">
+    
+    <!-- Logo + Title -->
+    <div class="profile-header">
+      <div class="profile-logo">📈</div>
+      <h1 class="profile-title">RealTradePro</h1>
+      <p class="profile-subtitle">Select your profile to continue</p>
+    </div>
 
+    <!-- Profile Cards (dynamically loaded) -->
+    <div id="profileList" class="profile-list">
+      <!-- JS thhi render thase -->
+    </div>
+
+    <!-- Create New Profile Button -->
+    <button class="profile-create-btn" onclick="showCreateProfile()">
+      + Create New Profile
+    </button>
+
+  </div>
+</div>
+
+<!-- ========== PIN SCREEN ========== -->
+<div id="pinScreen" style="display:none;">
+  <div class="profile-screen-bg">
+
+    <div class="profile-header">
+      <div id="pinUserAvatar" class="profile-avatar-large">A</div>
+      <h2 id="pinUserName" class="profile-title">User</h2>
+      <p class="profile-subtitle">Enter your 4-digit PIN</p>
+    </div>
+
+    <!-- PIN Dots -->
+    <div class="pin-dots">
+      <span class="pin-dot" id="dot0"></span>
+      <span class="pin-dot" id="dot1"></span>
+      <span class="pin-dot" id="dot2"></span>
+      <span class="pin-dot" id="dot3"></span>
+    </div>
+
+    <!-- PIN Error -->
+    <p id="pinError" class="pin-error" style="display:none;">❌ Wrong PIN. Try again.</p>
+
+    <!-- Number Pad -->
+    <div class="pin-numpad">
+      <button onclick="pinInput('1')">1</button>
+      <button onclick="pinInput('2')">2</button>
+      <button onclick="pinInput('3')">3</button>
+      <button onclick="pinInput('4')">4</button>
+      <button onclick="pinInput('5')">5</button>
+      <button onclick="pinInput('6')">6</button>
+      <button onclick="pinInput('7')">7</button>
+      <button onclick="pinInput('8')">8</button>
+      <button onclick="pinInput('9')">9</button>
+      <button onclick="pinClear()" class="pin-clear">⌫</button>
+      <button onclick="pinInput('0')">0</button>
+      <button onclick="pinBackspace()" class="pin-clear">←</button>
+    </div>
+
+    <!-- Forgot PIN -->
+    <button class="pin-forgot" onclick="showForgotPIN()">Forgot PIN?</button>
+
+    <!-- Back -->
+    <button class="pin-back" onclick="showProfileScreen()">← Back</button>
+
+  </div>
+</div>
+
+<!-- ========== CREATE PROFILE SCREEN ========== -->
+<div id="createProfileScreen" style="display:none;">
+  <div class="profile-screen-bg">
+
+    <div class="profile-header">
+      <div class="profile-logo">👤</div>
+      <h2 class="profile-title">Create Profile</h2>
+      <p class="profile-subtitle">Set your name and PIN</p>
+    </div>
+
+    <div class="create-profile-form">
+
+      <!-- Name -->
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="newProfileName" placeholder="e.g. Dad, Mom, Raj..." maxlength="20" />
+      </div>
+
+      <!-- PIN -->
+      <div class="form-group">
+        <label>Set 4-digit PIN</label>
+        <input type="password" id="newProfilePIN" placeholder="••••" maxlength="4" inputmode="numeric" />
+      </div>
+
+      <!-- Confirm PIN -->
+      <div class="form-group">
+        <label>Confirm PIN</label>
+        <input type="password" id="newProfilePINConfirm" placeholder="••••" maxlength="4" inputmode="numeric" />
+      </div>
+
+      <!-- Security Question -->
+      <div class="form-group">
+        <label>Security Question (PIN reset માટે)</label>
+        <select id="newProfileSecQ">
+          <option value="dob">Date of Birth (DD/MM/YYYY)</option>
+          <option value="city">Hometown city name</option>
+          <option value="school">Primary school name</option>
+        </select>
+      </div>
+
+      <!-- Security Answer -->
+      <div class="form-group">
+        <label>Answer</label>
+        <input type="text" id="newProfileSecA" placeholder="Your answer..." />
+      </div>
+
+      <p id="createProfileError" class="pin-error" style="display:none;"></p>
+
+      <button class="profile-create-btn" onclick="saveNewProfile()">✅ Create Profile</button>
+      <button class="pin-back" onclick="showProfileScreen()">← Back</button>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========== FORGOT PIN SCREEN ========== -->
+<div id="forgotPINScreen" style="display:none;">
+  <div class="profile-screen-bg">
+
+    <div class="profile-header">
+      <div class="profile-logo">🔐</div>
+      <h2 class="profile-title">Reset PIN</h2>
+      <p id="forgotSecQuestion" class="profile-subtitle">Security Question અહીં આવશે</p>
+    </div>
+
+    <div class="create-profile-form">
+
+      <div class="form-group">
+        <label>Your Answer</label>
+        <input type="text" id="forgotSecAnswer" placeholder="Answer..." />
+      </div>
+
+      <div class="form-group" id="newPINGroup" style="display:none;">
+        <label>New PIN</label>
+        <input type="password" id="forgotNewPIN" placeholder="••••" maxlength="4" inputmode="numeric" />
+      </div>
+
+      <div class="form-group" id="newPINConfirmGroup" style="display:none;">
+        <label>Confirm New PIN</label>
+        <input type="password" id="forgotNewPINConfirm" placeholder="••••" maxlength="4" inputmode="numeric" />
+      </div>
+
+      <p id="forgotPINError" class="pin-error" style="display:none;"></p>
+
+      <button class="profile-create-btn" id="forgotPINBtn" onclick="verifySecurityAnswer()">Verify Answer</button>
+      <button class="pin-back" onclick="showPINScreen()">← Back</button>
+
+    </div>
+  </div>
+</div>
+  
 <!-- == LOADER == -->
 <div id="loaderOverlay">
   <div class="spinner"></div>
