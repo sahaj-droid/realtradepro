@@ -5881,9 +5881,14 @@ function gainersSubTab(tab) {
   if(tab === 'screener') renderScreener();
 }
 
-function screenerToggleFilter(f) {
-  if(screenerFilters.has(f)) screenerFilters.delete(f);
-  else screenerFilters.add(f);
+async function screenerSetSource(s) {
+  screenerSource = s;
+  if(s === 'popular') {
+    const el = document.getElementById('gscreener');
+    if(el) el.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:12px;">Fetching Nifty 50 data...</div>`;
+    NIFTY50_STOCKS.forEach(sym=>{if(cache[sym]) cache[sym].time=0;});
+    await batchFetchStocks(NIFTY50_STOCKS);
+  }
   renderScreener();
 }
 
