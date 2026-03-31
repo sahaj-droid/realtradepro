@@ -4940,10 +4940,6 @@ async function screenerSetSource(s) {
   renderScreener();
 }
 
-function screenerSetSource(s) {
-  screenerSource = s;
-  renderScreener();
-}
 
 function renderScreener() {
   const el = document.getElementById('gscreener');
