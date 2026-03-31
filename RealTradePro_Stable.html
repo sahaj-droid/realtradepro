@@ -172,6 +172,14 @@ body.light .ticker-price{color:#e2e8f0;}
 .ticker-price{color:#e2e8f0;}
 .ticker-up{color:#22c55e;}
 .ticker-dn{color:#ef4444;}
+#globalTicker{background:#0a0f1a;border-bottom:1px solid #1e3a5f;overflow:hidden;height:20px;display:flex;align-items:center;}
+#globalTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 60s linear infinite;}
+#globalTicker .ticker-track:hover{animation-play-state:paused;}
+.gticker-label{color:#4b6280;font-size:9px;font-weight:700;margin-right:3px;}
+.gticker-val{color:#e2e8f0;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.gticker-up{color:#22c55e;font-size:9px;font-family:'JetBrains Mono',monospace;}
+.gticker-dn{color:#ef4444;font-size:9px;font-family:'JetBrains Mono',monospace;}
+.gticker-sep{color:#1e3a5f;padding:0 8px;font-size:10px;}
 
 </style>
 </head>
@@ -219,6 +227,12 @@ body.light .ticker-price{color:#e2e8f0;}
 <div id="priceTicker" style="display:none;">
   <div class="ticker-track" id="tickerTrack">
     <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
+  </div>
+</div>
+<!-- GLOBAL MARKETS TICKER -->
+<div id="globalTicker">
+  <div class="ticker-track" id="globalTickerTrack">
+    <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
   </div>
 </div>
 
@@ -4429,6 +4443,68 @@ async function runAllTechnicalAlerts(){
 // ======================================
 // FLASH PRICE TICKER (header scroll bar)
 // ======================================
+// ======================================
+// GLOBAL MARKETS TICKER
+// ======================================
+const GLOBAL_SYMS = {
+  'DOW':'^DJI', 'NASDAQ':'^IXIC', 'S&P500':'^GSPC',
+  'CRUDE':'CL=F', 'GOLD':'GC=F', 'USD/INR':'INR=X', 'VIX':'^INDIAVIX'
+};
+let _globalCache = {}, _globalCacheTime = 0;
+const GLOBAL_TTL = 15 * 60 * 1000;
+
+async function fetchGlobalMarkets() {
+  const now = Date.now();
+  if (_globalCacheTime && (now - _globalCacheTime) < GLOBAL_TTL && Object.keys(_globalCache).length > 0) {
+    return _globalCache;
+  }
+  try {
+    const apiUrl = localStorage.getItem('customAPI') || API;
+    const syms = Object.values(GLOBAL_SYMS).join(',');
+    const r = await fetch(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`);
+    const data = await r.json();
+    _globalCache = data;
+    _globalCacheTime = now;
+    return data;
+  } catch(e) { return {}; }
+}
+
+async function updateGlobalTicker() {
+  const track = document.getElementById('globalTickerTrack');
+  if (!track) return;
+  const data = await fetchGlobalMarkets();
+  const items = [];
+  Object.entries(GLOBAL_SYMS).forEach(([label, sym]) => {
+    const d = data[sym] || _globalCache[sym];
+    if (!d || !d.price) return;
+    const price = d.price;
+    const prev  = d.prevClose || price;
+    const chg   = price - prev;
+    const pct   = prev ? (chg / prev * 100) : 0;
+    items.push({ label, price, chg, pct });
+  });
+  if (items.length === 0) return;
+  const buildItem = (it) => {
+    const up  = it.chg >= 0;
+    const cls = up ? 'gticker-up' : 'gticker-dn';
+    const sign = up ? '+' : '';
+    const fmtP = it.label === 'USD/INR'
+      ? it.price.toFixed(2)
+      : it.price >= 1000
+        ? it.price.toLocaleString('en-US', {maximumFractionDigits:0})
+        : it.price.toFixed(2);
+    return `<span style="display:inline-flex;align-items:center;gap:3px;padding:0 10px;border-right:1px solid #1e2d3d;">` +
+      `<span class="gticker-label">${it.label}</span>` +
+      `<span class="gticker-val">${fmtP}</span>` +
+      `<span class="${cls}">${sign}${it.pct.toFixed(2)}%</span>` +
+      `</span>`;
+  };
+  const html = items.map(buildItem).join('');
+  track.innerHTML = html + html;
+  const duration = Math.max(40, items.length * 8);
+  track.style.animation = `tickerScroll ${duration}s linear infinite`;
+}
+
 function updatePriceTicker() {
   const bar = document.getElementById('priceTicker');
   const track = document.getElementById('tickerTrack');
@@ -4733,6 +4809,7 @@ async function startApp(){
   renderHeaderStrip();
   updateHeaderIndices();
   updatePriceTicker();
+  updateGlobalTicker();
   // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
   setTimeout(()=>runAllTechnicalAlerts(),3000);
   // Auto alert engine — every 5 min during market hours
@@ -4818,6 +4895,7 @@ async function manualRefresh(){
   await renderWL();
   updateHeaderIndices();
   updatePriceTicker();
+  updateGlobalTicker();
   
   hideLoader();
   if(btn) { btn.style.opacity="1"; btn.style.pointerEvents="auto"; }
