@@ -4940,6 +4940,12 @@ async function screenerSetSource(s) {
   renderScreener();
 }
 
+function screenerToggleFilter(id) {
+  if (screenerFilters.has(id)) {
+    screenerFilters.delete(id);
+  } else {
+    screenerFilters.add(id);
+  }
 
 function renderScreener() {
   const el = document.getElementById('gscreener');
