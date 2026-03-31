@@ -263,17 +263,20 @@ async function loadUserData() {
     const data = doc.data();
 
     if (data.watchlists?.length) localStorage.setItem('watchlists', JSON.stringify(data.watchlists));
-    if (data.holdings?.length) localStorage.setItem('holdings', JSON.stringify(data.holdings));
-    if (data.history?.length) localStorage.setItem('tradeHistory', JSON.stringify(data.history));
+    if (data.holdings?.length) localStorage.setItem('h', JSON.stringify(data.holdings));
+    if (data.history?.length) localStorage.setItem('hist', JSON.stringify(data.history));
     if (data.alerts?.length) localStorage.setItem('alerts', JSON.stringify(data.alerts));
 
     if (data.settings) {
       if (data.settings.apiUrl) localStorage.setItem('customAPI', data.settings.apiUrl);
       if (data.settings.sheetId) localStorage.setItem('sheetId', data.settings.sheetId);
-      if (data.settings.geminiKey) localStorage.setItem('geminiKey', data.settings.geminiKey);
+      if (data.settings.geminiKey) localStorage.setItem('geminiApiKey', data.settings.geminiKey);
     }
 
     console.log('✅ User data loaded:', currentUser.name);
+    // Update logout label in Settings
+    const label = document.getElementById('currentUserLabel');
+    if (label) label.textContent = currentUser.name;
   } catch (e) {
     console.error('loadUserData error:', e);
   }
@@ -286,13 +289,13 @@ async function saveUserData() {
   if (!currentUser) return;
   try {
     const watchlists = JSON.parse(localStorage.getItem('watchlists') || '[]');
-    const holdings = JSON.parse(localStorage.getItem('holdings') || '[]');
-    const history = JSON.parse(localStorage.getItem('tradeHistory') || '[]');
+    const holdings = JSON.parse(localStorage.getItem('h') || '[]');
+    const history = JSON.parse(localStorage.getItem('hist') || '[]');
     const alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
     const settings = {
       apiUrl: localStorage.getItem('customAPI') || '',
       sheetId: localStorage.getItem('sheetId') || '',
-      geminiKey: localStorage.getItem('geminiKey') || ''
+      geminiKey: localStorage.getItem('geminiApiKey') || ''
     };
 
     await db.collection('users').doc(currentUser.userId).update({
@@ -693,6 +696,7 @@ function saveWatchlists(){
   localStorage.setItem("currentWL",currentWL);
   wl = watchlists[currentWL].stocks;
   localStorage.setItem("wl",JSON.stringify(wl));
+  if (currentUser) saveUserData();
 }
 
 function renderWLTabs(){
@@ -2285,6 +2289,7 @@ function confirmTrade(){
     let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
     localStorage.setItem("h",JSON.stringify(h));
+    if (currentUser) saveUserData();
     triggerAutoSync();
     closeModal(); renderHold(); return;
   }
@@ -2295,6 +2300,7 @@ function confirmTrade(){
     hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:currentTradeType});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
+    if (currentUser) saveUserData();
     triggerAutoSync();
     closeModal(); renderHold(); return;
   }
@@ -2307,6 +2313,7 @@ function confirmTrade(){
     hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:currentTradeType,buyDate});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
+    if (currentUser) saveUserData();
     closeModal(); renderHold(); renderHist(); tab("history");
   }
 }
@@ -2476,6 +2483,7 @@ function handleCSVImport(event){
       imported++;
     }
     localStorage.setItem("h",JSON.stringify(h));
+    if (currentUser) saveUserData();
     event.target.value="";
     showPopup(`Import: ${imported} stocks, ${skipped} skipped`);
     tab("holdings");
@@ -2954,6 +2962,7 @@ function saveSetting(type){
     const val=document.getElementById("set-api-input").value.trim();
     if(!val){ showPopup("URL cannot be empty"); return; }
     localStorage.setItem("customAPI",val);
+    if (currentUser) saveUserData();
     cancelAPIEdit();
     loadSettingsUI();
     showPopup("Primary API saved! Refresh to apply.");
@@ -5428,6 +5437,7 @@ function renderSmartAlertSuggestions(sym, d) {
 function setSmartAlert(sym, price, btn) {
   alerts.push({sym: sym, price: price, triggered: false});
   localStorage.setItem('alerts', JSON.stringify(alerts));
+  if (currentUser) saveUserData();
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
@@ -6019,6 +6029,7 @@ function saveSheetId(){
   const val = document.getElementById('sheet-id-input').value.trim();
   if(!val){ showPopup('Sheet ID cannot be empty'); return; }
   localStorage.setItem('sheetId', val);
+  if (currentUser) saveUserData();
   document.getElementById('sheet-id-display').innerText = val;
   cancelSheetEdit();
   showPopup('Sheet ID saved!');
@@ -6083,6 +6094,7 @@ function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
   if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
   localStorage.setItem('geminiApiKey',val);
+  if (currentUser) saveUserData();
   document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Key saved — Direct Gemini active</span>';
   document.getElementById('set-gemini-key').value='';
   showPopup('Gemini key saved ✓');
