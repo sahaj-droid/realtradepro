@@ -1244,19 +1244,19 @@ const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"
 let indicesList=(()=>{try{const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
 function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
 
-// Stocks from your watchlist CSV (334 stocks)
   const NIFTY50_STOCKS=[
-  'RELIANCE.NS','TCS.NS','HDFCBANK.NS','BHARTIARTL.NS','ICICIBANK.NS',
-  'INFOSYS.NS','SBIN.NS','HINDUNILVR.NS','ITC.NS','LT.NS',
-  'KOTAKBANK.NS','AXISBANK.NS','MARUTI.NS','BAJFINANCE.NS','ASIANPAINT.NS',
-  'HCLTECH.NS','ADANIPORTS.NS','TITAN.NS','SUNPHARMA.NS','ULTRACEMCO.NS',
-  'WIPRO.NS','NTPC.NS','POWERGRID.NS','NESTLEIND.NS','TECHM.NS',
-  'BAJAJFINSV.NS','M&M.NS','ONGC.NS','TATAMOTORS.NS','TATASTEEL.NS',
-  'JSWSTEEL.NS','INDUSINDBK.NS','CIPLA.NS','DRREDDY.NS','DIVISLAB.NS',
-  'ADANIENT.NS','COALINDIA.NS','BPCL.NS','EICHERMOT.NS','APOLLOHOSP.NS',
-  'HEROMOTOCO.NS','GRASIM.NS','BRITANNIA.NS','HINDALCO.NS','TATACONSUM.NS',
-  'SBILIFE.NS','HDFCLIFE.NS','BAJAJ-AUTO.NS','SHRIRAMFIN.NS','BEL.NS'
+  'RELIANCE','TCS','HDFCBANK','BHARTIARTL','ICICIBANK',
+  'INFOSYS','SBIN','HINDUNILVR','ITC','LT',
+  'KOTAKBANK','AXISBANK','MARUTI','BAJFINANCE','ASIANPAINT',
+  'HCLTECH','ADANIPORTS','TITAN','SUNPHARMA','ULTRACEMCO',
+  'WIPRO','NTPC','POWERGRID','NESTLEIND','TECHM',
+  'BAJAJFINSV','M&M','ONGC','TATAMOTORS','TATASTEEL',
+  'JSWSTEEL','INDUSINDBK','CIPLA','DRREDDY','DIVISLAB',
+  'ADANIENT','COALINDIA','BPCL','EICHERMOT','APOLLOHOSP',
+  'HEROMOTOCO','GRASIM','BRITANNIA','HINDALCO','TATACONSUM',
+  'SBILIFE','HDFCLIFE','BAJAJ-AUTO','SHRIRAMFIN','BEL',
 ];
+  // Stocks from your watchlist CSV (334 stocks)
 const POPULAR_STOCKS=[
   'RELTD','ICICIAMC','OLECTRA','KAYNES','BALUFORGE','SUBROS','PWL','GARUDA',
   'JWL','TENNIND','LEMONTREE','SHARDACROP','BSE','GROWW','TRANSRAILL','HBLENGINE',
@@ -1301,7 +1301,6 @@ const POPULAR_STOCKS=[
   'CDSL','COCHINSHIP','ANUP','GRSE','MAZDOCK','SIEMENS','MAFATIND','LT',
   'DMART','ZUARI','HAL','ABB','APARINDS','VOLTAMP'
 ];
-
 
 // ======================================
 // LOADER
@@ -5901,7 +5900,7 @@ function renderScreener() {
   // Source stocks
   let sourceStocks = [];
   if (screenerSource === 'watchlist') sourceStocks = [...wl];
-  else if (screenerSource === 'popular') sourceStocks = NIFTY50_STOCKS.map(s=>s.replace('.NS',''));
+  else if (screenerSource === 'popular') sourceStocks = [...NIFTY50_STOCKS];
   else sourceStocks = Object.keys(cache).filter(k => cache[k]&&cache[k].data);
 
   // Filter chips HTML
