@@ -1245,6 +1245,18 @@ let indicesList=(()=>{try{const s=JSON.parse(localStorage.getItem('indicesList')
 function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
 
 // Stocks from your watchlist CSV (334 stocks)
+  const NIFTY50_STOCKS=[
+  'RELIANCE.NS','TCS.NS','HDFCBANK.NS','BHARTIARTL.NS','ICICIBANK.NS',
+  'INFOSYS.NS','SBIN.NS','HINDUNILVR.NS','ITC.NS','LT.NS',
+  'KOTAKBANK.NS','AXISBANK.NS','MARUTI.NS','BAJFINANCE.NS','ASIANPAINT.NS',
+  'HCLTECH.NS','ADANIPORTS.NS','TITAN.NS','SUNPHARMA.NS','ULTRACEMCO.NS',
+  'WIPRO.NS','NTPC.NS','POWERGRID.NS','NESTLEIND.NS','TECHM.NS',
+  'BAJAJFINSV.NS','M&M.NS','ONGC.NS','TATAMOTORS.NS','TATASTEEL.NS',
+  'JSWSTEEL.NS','INDUSINDBK.NS','CIPLA.NS','DRREDDY.NS','DIVISLAB.NS',
+  'ADANIENT.NS','COALINDIA.NS','BPCL.NS','EICHERMOT.NS','APOLLOHOSP.NS',
+  'HEROMOTOCO.NS','GRASIM.NS','BRITANNIA.NS','HINDALCO.NS','TATACONSUM.NS',
+  'SBILIFE.NS','HDFCLIFE.NS','BAJAJ-AUTO.NS','SHRIRAMFIN.NS','BEL.NS'
+];
 const POPULAR_STOCKS=[
   'RELTD','ICICIAMC','OLECTRA','KAYNES','BALUFORGE','SUBROS','PWL','GARUDA',
   'JWL','TENNIND','LEMONTREE','SHARDACROP','BSE','GROWW','TRANSRAILL','HBLENGINE',
@@ -1842,44 +1854,22 @@ async function renderAllSparklines() {
 // ======================================
 // RENDER GAINERS/LOSERS (Indices tab)
 // ======================================
-async function renderIndices(){
-  const el=document.getElementById("indices");
-  // Build sub-tab structure if not already present
-  if(!document.getElementById('gmovers')){
-    el.innerHTML=`
-      <div style="display:flex;gap:6px;margin-bottom:10px;">
-        <button id="gsub-movers" onclick="gainersSubTab('movers')"
-          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #2d5a8e;background:#1e3a5f;color:#38bdf8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
-          Movers
-        </button>
-        <button id="gsub-screener" onclick="gainersSubTab('screener')"
-          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
-          Screener
-        </button>
-      </div>
-      <div id="gmovers"></div>
-      <div id="gscreener" style="display:none;"></div>`;
-  }
-  // Show from cache immediately - no API call
-  renderGainersFromCache();
-}
+let _moversTab = 'gainers';
 
-async function refreshGainers(){
-  const gm=document.getElementById('gmovers');
-  if(gm) gm.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
-  else{
-    const el=document.getElementById("indices");
-    el.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
-  }
-  // Reset cache time for popular stocks to force re-fetch
-  POPULAR_STOCKS.slice(0,80).forEach(s=>{if(cache[s]) cache[s].time=0;});
-  await batchFetchStocks(POPULAR_STOCKS.slice(0,80));
-  renderGainersFromCache();
+function moversSubTab(t) {
+  _moversTab = t;
+  const gl = document.getElementById('gmov-gainers-list');
+  const ll = document.getElementById('gmov-losers-list');
+  const gb = document.getElementById('gmov-gainers');
+  const lb = document.getElementById('gmov-losers');
+  if(gl) gl.style.display = t==='gainers' ? 'block' : 'none';
+  if(ll) ll.style.display = t==='losers' ? 'block' : 'none';
+  if(gb){ gb.style.background=t==='gainers'?'#14532d':'#0f172a'; gb.style.color=t==='gainers'?'#22c55e':'#94a3b8'; gb.style.borderColor=t==='gainers'?'#166534':'#1e2d3d'; }
+  if(lb){ lb.style.background=t==='losers'?'#7f1d1d':'#0f172a'; lb.style.color=t==='losers'?'#ef4444':'#94a3b8'; lb.style.borderColor=t==='losers'?'#991b1b':'#1e2d3d'; }
 }
 
 function renderGainersFromCache(){
-  const el=document.getElementById("gmovers")||document.getElementById("indices");
-  const allStocks=[...new Set([...POPULAR_STOCKS])]; // preloaded stocks only for gainers
+  const allStocks=[...new Set([...POPULAR_STOCKS])];
   const results=allStocks.map(s=>{
     const d=cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -1889,44 +1879,51 @@ function renderGainersFromCache(){
 
   const refreshBtn=`<button onclick="refreshGainers()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>`;
 
+  const gEl = document.getElementById('gmov-gainers-list');
+  const lEl = document.getElementById('gmov-losers-list');
+  if(!gEl || !lEl) return;
+
   if(results.length===0){
-    el.innerHTML=`<div style="text-align:center;padding:20px;">
-      <div style="color:#4b6280;font-size:12px;margin-bottom:12px;">No cached data  -  Press Refresh to load</div>
-      ${refreshBtn}
-    </div>`;
+    gEl.innerHTML=`<div style="text-align:center;padding:20px;"><div style="color:#4b6280;font-size:12px;margin-bottom:12px;">No cached data — Press Refresh to load</div>${refreshBtn}</div>`;
+    lEl.innerHTML='';
     return;
   }
 
-  const gainers=[...results].filter(x=>x.pct>=0).sort((a,b)=>b.pct-a.pct).slice(0,10);
-  const losers=[...results].filter(x=>x.pct<=0).sort((a,b)=>a.pct-b.pct).slice(0,10);
+  const gainers=[...results].filter(x=>x.pct>0).sort((a,b)=>b.pct-a.pct);
+  const losers=[...results].filter(x=>x.pct<0).sort((a,b)=>a.pct-b.pct);
 
-  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-    <span style="font-size:12px;font-weight:700;color:#22c55e;letter-spacing:0.5px;">TOP GAINERS</span>${refreshBtn}
-  </div>`;
-
-  html+=`<div style="background:#111827;border-radius:8px;overflow:hidden;margin-bottom:10px;">`;
+  // Render Gainers
+  let gHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="font-size:11px;font-weight:700;color:#22c55e;">${gainers.length} Gainers</span>${refreshBtn}
+  </div><div style="background:#111827;border-radius:8px;overflow:hidden;">`;
   gainers.forEach((s,i)=>{
-    const gdiff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
-    html+=`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<gainers.length-1?"1px solid rgba(255,255,255,0.04)":"none"}">
+    const diff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
+    gHtml+=`<div onclick="openDetail('${s.sym}',false)" style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<gainers.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+₹${gdiff} (+${Math.abs(s.pct).toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#22c55e;text-align:right;">+₹${diff} (+${s.pct.toFixed(2)}%)</span>
     </div>`;
   });
-  html+=`</div>`;
+  gHtml+=`</div>`;
+  gEl.innerHTML=gHtml;
 
-  html+=`<div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:6px;letter-spacing:0.5px;">TOP LOSERS</div>`;
-  html+=`<div style="background:#111827;border-radius:8px;overflow:hidden;">`;
+  // Render Losers
+  let lHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="font-size:11px;font-weight:700;color:#ef4444;">${losers.length} Losers</span>${refreshBtn}
+  </div><div style="background:#111827;border-radius:8px;overflow:hidden;">`;
   losers.forEach((s,i)=>{
-    const ldiff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
-    html+=`<div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<losers.length-1?"1px solid rgba(255,255,255,0.04)":"none"}">
+    const diff=Math.abs(s.price-(s.price/(1+s.pct/100))).toFixed(2);
+    lHtml+=`<div onclick="openDetail('${s.sym}',false)" style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:6px 10px;gap:6px;border-bottom:${i<losers.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${s.sym}</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">₹${s.price.toFixed(2)}</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-₹${ldiff} (-${Math.abs(s.pct).toFixed(2)}%)</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#ef4444;text-align:right;">-₹${diff} (${s.pct.toFixed(2)}%)</span>
     </div>`;
   });
-  html+=`</div>`;
-  el.innerHTML=html;
+  lHtml+=`</div>`;
+  lEl.innerHTML=lHtml;
+
+  // Apply active tab state
+  moversSubTab(_moversTab);
 }
 // ======================================
 // UPDATE HEADER INDICES
@@ -5869,7 +5866,7 @@ function renderScreener() {
   // Source stocks
   let sourceStocks = [];
   if (screenerSource === 'watchlist') sourceStocks = [...wl];
-  else if (screenerSource === 'popular') sourceStocks = [...POPULAR_STOCKS];
+  else if (screenerSource === 'popular') sourceStocks = [...NIFTY50_STOCKS];
   else sourceStocks = Object.keys(cache).filter(k => cache[k]&&cache[k].data);
 
   // Filter chips HTML
@@ -5886,7 +5883,7 @@ function renderScreener() {
   // Source selector
   const srcBtns = ['watchlist','popular','cached'].map(s => {
     const active = screenerSource === s;
-    const labels = {watchlist:'Watchlist', popular:'Popular', cached:'All Cached'};
+    const labels = {watchlist:'Watchlist', popular:'Nifty 50', cached:'All Cached'};
     return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':'#1e2d3d'};background:${active?'#1e3a5f':'#0f172a'};color:${active?'#38bdf8':'#4b6280'};">${labels[s]}</button>`;
   }).join('');
   html += `<div style="display:flex;gap:4px;margin-bottom:8px;">${srcBtns}</div>`;
