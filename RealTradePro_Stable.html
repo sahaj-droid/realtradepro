@@ -2477,13 +2477,8 @@ async function openDetail(sym,isIndex){
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
       </div>
     </div>`;
-  // TradingView mini widget
   const chartDiv = document.getElementById("d-chart");
-  if(chartDiv && !isIndex){
-    chartDiv.innerHTML=`<iframe src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=en#%7B%22symbol%22%3A%22NSE%3A${sym}%22%2C%22dateRange%22%3A%223M%22%2C%22colorTheme%22%3A%22dark%22%2C%22trendLineColor%22%3A%22%2338bdf8%22%2C%22underLineColor%22%3A%22rgba(56%2C189%2C248%2C0.1)%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Atrue%7D"style="width:100%;height:220px;border:none;border-radius:8px;" allowtransparency="true" scrolling="no"></iframe>`;
-  } else if(chartDiv) {
-    chartDiv.innerHTML='';
-  }
+  if(chartDiv) chartDiv.innerHTML='';
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
   if(!isIndex) renderCircuit(sym, d);
