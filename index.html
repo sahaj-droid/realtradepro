@@ -745,7 +745,18 @@ body.light .ticker-price{color:#e2e8f0;}
 <!-- SETTINGS TAB -->
 <div id="settings" class="tab p-3 space-y-3">
   <div style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">SETTINGS</div>
-
+  
+<!-- ===== LOGOUT / SWITCH PROFILE ===== -->
+<div style="padding:1rem;margin-bottom:1rem;">
+  <button onclick="logoutUser()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#7f1d1d,#ef4444);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:600;font-family:'Rajdhani',sans-serif;cursor:pointer;">
+    🚪 Switch / Logout Profile
+  </button>
+  <p style="text-align:center;color:#666;font-size:0.8rem;margin-top:0.5rem;">
+    Logged in as: <span id="currentUserLabel" style="color:#00d4aa;font-weight:600;">—</span>
+  </p>
+</div>
+<!-- ===== END LOGOUT ===== -->
+  
   <!-- QUICK ACCESS: Theme + Alerts + Holidays + Font Size -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
     <button onclick="cycleFontSize()" style="flex:1;background:#1e2d3d;border:1px solid #2d3f52;border-radius:10px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;">
