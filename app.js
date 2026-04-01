@@ -263,49 +263,81 @@ async function loadUserData() {
   if (!currentUser) return;
   try {
     const doc = await db.collection('users').doc(currentUser.userId).get();
+    if (!doc.exists) { await startApp(); return; }
     const data = doc.data();
 
-    if (data.watchlists?.length) localStorage.setItem('watchlists', JSON.stringify(data.watchlists));
-    if (data.holdings?.length) localStorage.setItem('h', JSON.stringify(data.holdings));
-    if (data.history?.length) localStorage.setItem('hist', JSON.stringify(data.history));
-    if (data.alerts?.length) localStorage.setItem('alerts', JSON.stringify(data.alerts));
-
-    if (data.settings) {
-      if (data.settings.apiUrl) localStorage.setItem('customAPI', data.settings.apiUrl);
-      if (data.settings.sheetId) localStorage.setItem('sheetId', data.settings.sheetId);
-      if (data.settings.geminiKey) localStorage.setItem('geminiApiKey', data.settings.geminiKey);
+    // ── Smart merge: Firebase wins if it has more/newer data ──
+    // Watchlists: Firebase array length > local → use Firebase
+    const localWL  = JSON.parse(localStorage.getItem('watchlists') || '[]');
+    const fbWL     = data.watchlists || [];
+    if (fbWL.length >= localWL.length) {
+      localStorage.setItem('watchlists', JSON.stringify(fbWL));
     }
 
-    console.log('✅ User data loaded:', currentUser.name);
-    // Update logout label in Settings
+    // Holdings: Firebase wins (authoritative source)
+    if ((data.holdings || []).length > 0) {
+      localStorage.setItem('h', JSON.stringify(data.holdings));
+    }
+    // History: merge — Firebase has more entries → use it
+    const localHist = JSON.parse(localStorage.getItem('hist') || '[]');
+    if ((data.history || []).length >= localHist.length) {
+      localStorage.setItem('hist', JSON.stringify(data.history || []));
+    }
+    // Alerts: Firebase is authoritative
+    if ((data.alerts || []).length > 0) {
+      localStorage.setItem('alerts', JSON.stringify(data.alerts));
+    }
+    // Settings: only set if not already configured locally
+    if (data.settings) {
+      if (data.settings.apiUrl    && !localStorage.getItem('customAPI'))
+        localStorage.setItem('customAPI', data.settings.apiUrl);
+      if (data.settings.sheetId   && !localStorage.getItem('sheetId'))
+        localStorage.setItem('sheetId', data.settings.sheetId);
+      if (data.settings.geminiKey && !localStorage.getItem('geminiApiKey'))
+        localStorage.setItem('geminiApiKey', data.settings.geminiKey);
+    }
+
+    // Update UI label
     const label = document.getElementById('currentUserLabel');
     if (label) label.textContent = currentUser.name;
   } catch (e) {
     console.error('loadUserData error:', e);
   }
-  // ✅ App start after data load
   await startApp();
 }
 
 // ---- Save User Data to Firebase ----
-async function saveUserData() {
+// ── FIREBASE OPTIMIZED SAVE ──
+// field: optional string like 'watchlists'|'holdings'|'history'|'alerts'|'settings'
+// Pass field to do targeted update (faster, cheaper). Omit for full save.
+async function saveUserData(field) {
   if (!currentUser) return;
+  // Rate-limit: skip if last save was < 500ms ago (unless explicit field)
+  const now = Date.now();
+  if (!field && saveUserData._lastSave && (now - saveUserData._lastSave) < 500) return;
+  saveUserData._lastSave = now;
   try {
-    const watchlists = JSON.parse(localStorage.getItem('watchlists') || '[]');
-    const holdings = JSON.parse(localStorage.getItem('h') || '[]');
-    const history = JSON.parse(localStorage.getItem('hist') || '[]');
-    const alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
-    const settings = {
-      apiUrl: localStorage.getItem('customAPI') || '',
-      sheetId: localStorage.getItem('sheetId') || '',
-      geminiKey: localStorage.getItem('geminiApiKey') || ''
-    };
-
-    await db.collection('users').doc(currentUser.userId).update({
-      watchlists, holdings, history, alerts, settings
-    });
-
-    console.log('✅ Data saved to Firebase');
+    let payload = {};
+    if (!field || field === 'watchlists') {
+      payload.watchlists = JSON.parse(localStorage.getItem('watchlists') || '[]');
+    }
+    if (!field || field === 'holdings') {
+      payload.holdings = JSON.parse(localStorage.getItem('h') || '[]');
+    }
+    if (!field || field === 'history') {
+      payload.history = JSON.parse(localStorage.getItem('hist') || '[]');
+    }
+    if (!field || field === 'alerts') {
+      payload.alerts = JSON.parse(localStorage.getItem('alerts') || '[]');
+    }
+    if (!field || field === 'settings') {
+      payload.settings = {
+        apiUrl:    localStorage.getItem('customAPI')    || '',
+        sheetId:   localStorage.getItem('sheetId')     || '',
+        geminiKey: localStorage.getItem('geminiApiKey') || ''
+      };
+    }
+    await db.collection('users').doc(currentUser.userId).update(payload);
   } catch (e) {
     console.error('saveUserData error:', e);
   }
@@ -699,7 +731,7 @@ function saveWatchlists(){
   localStorage.setItem("currentWL",currentWL);
   wl = watchlists[currentWL].stocks;
   localStorage.setItem("wl",JSON.stringify(wl));
-  if (currentUser) saveUserData();
+  if (currentUser) saveUserData('watchlists');
 }
 
 function renderWLTabs(){
@@ -1707,8 +1739,27 @@ function renderHist(){
 window._firebaseFundCache = window._firebaseFundCache || {};
 window._firebaseHistCache = window._firebaseHistCache || {}; // histcache collection
 
+// ── Firebase helper: silent set (never throws, ideal for best-effort writes) ──
+function _fbSet(path, data) {
+  if (!currentUser) return;
+  try {
+    // path: 'collection/docId' or 'collection/docId/sub/subId'
+    const parts = path.split('/');
+    let ref = db;
+    for (let i = 0; i < parts.length; i++) {
+      ref = (i % 2 === 0) ? ref.collection(parts[i]) : ref.doc(parts[i]);
+    }
+    ref.set(data, { merge: true }).catch(() => {});
+  } catch(e) {}
+}
+
 // Load ALL fundamentals from Firebase once at startup — zero GAS calls
+// Abort controller for preload — cancel if user navigates away
+let _fbPreloadController = null;
 async function preloadAllFundamentalsFromFirebase() {
+  if (_fbPreloadController) _fbPreloadController.abort();
+  _fbPreloadController = { aborted: false, abort() { this.aborted = true; } };
+  const ctrl = _fbPreloadController;
   try {
     const snap = await db.collection('fundamentals').get();
     snap.forEach(doc => {
@@ -2356,8 +2407,8 @@ function confirmTrade(){
     let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
     localStorage.setItem("h",JSON.stringify(h));
-    if (currentUser) saveUserData();
-    triggerAutoSync();
+    if (currentUser) saveUserData('holdings');
+    triggerAutoSync('holdings');
     closeModal(); renderHold(); return;
   }
 
@@ -2367,8 +2418,8 @@ function confirmTrade(){
     hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:currentTradeType});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
-    if (currentUser) saveUserData();
-    triggerAutoSync();
+    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
+    triggerAutoSync('history');
     closeModal(); renderHold(); return;
   }
 
@@ -2380,7 +2431,7 @@ function confirmTrade(){
     hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:currentTradeType,buyDate});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
-    if (currentUser) saveUserData();
+    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
     closeModal(); renderHold(); renderHist(); tab("history");
   }
 }
@@ -2550,7 +2601,7 @@ function handleCSVImport(event){
       imported++;
     }
     localStorage.setItem("h",JSON.stringify(h));
-    if (currentUser) saveUserData();
+    if (currentUser) saveUserData('holdings');
     event.target.value="";
     showPopup(`Import: ${imported} stocks, ${skipped} skipped`);
     tab("holdings");
@@ -3029,7 +3080,7 @@ function saveSetting(type){
     const val=document.getElementById("set-api-input").value.trim();
     if(!val){ showPopup("URL cannot be empty"); return; }
     localStorage.setItem("customAPI",val);
-    if (currentUser) saveUserData();
+    if (currentUser) saveUserData('settings');
     cancelAPIEdit();
     loadSettingsUI();
     showPopup("Primary API saved! Refresh to apply.");
@@ -4321,8 +4372,11 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     if(refreshInterval) clearInterval(refreshInterval);
   } else {
-    updatePrices();
-    startRefresh();
+    // Android WebView: short delay to let network reconnect after resume
+    setTimeout(() => {
+      updatePrices();
+      startRefresh();
+    }, 800);
   }
 });
 
@@ -4481,7 +4535,7 @@ async function fetchLiveNews(sym) {
   return [];
 }
 
-function timeAgo(dateStr) {
+function timeAgoDate(dateStr) {
   try {
     const d = new Date(dateStr);
     const diff = Date.now() - d.getTime();
@@ -5483,7 +5537,7 @@ function renderSmartAlertSuggestions(sym, d) {
 function setSmartAlert(sym, price, btn) {
   alerts.push({sym: sym, price: price, triggered: false});
   localStorage.setItem('alerts', JSON.stringify(alerts));
-  if (currentUser) saveUserData();
+  if (currentUser) saveUserData('alerts');
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
@@ -5586,10 +5640,10 @@ var _syncInProgress = false;
 var _syncDebounceTimer = null;
 var _lastSyncTime = 0;
 
-// Debounced auto-save — waits 2s after last change
-function triggerAutoSync() {
+// Debounced auto-save — waits 2s after last change, field-aware
+function triggerAutoSync(field) {
   if (_syncDebounceTimer) clearTimeout(_syncDebounceTimer);
-  _syncDebounceTimer = setTimeout(() => saveUserData(), 2000);
+  _syncDebounceTimer = setTimeout(() => saveUserData(field), 2000);
 }
 
 // Manual "Upload to Cloud" button → Firebase save
@@ -5732,27 +5786,48 @@ async function openNivi(sym) {
     return;
   }
 
-  // New stock — clear previous chat and set new sym
+  // New stock — clear previous chat, try restoring from Firebase first
   _niviCurrentSym = sym;
   _niviChatHistory = [];
   _niviRenderChat();
 
-  // Check cache
+  // Try restoring persisted chat from Firebase (non-blocking)
+  const restored = await _niviLoadPersistedChat(sym);
+  if (restored) {
+    // Add a subtle "restored" indicator then proceed to fresh analysis below
+    // (Firebase chat loaded — still fetch fresh price analysis)
+  }
+
+  // ── Check Nivi analysis cache (Firebase-first, localStorage fallback) ──
   const cacheKey = 'niviCache_' + sym;
+  const _serveCached = (cached) => {
+    _niviShowLoading(false);
+    if (cached.direct) {
+      _niviAddBubble('nivi', _niviFormatBullets(cached.answer));
+    } else {
+      _niviApplyPriceAndTech(cached.data);
+      const ans = cached.data?.niviAdvice?.answer || '';
+      if (ans.trim()) _niviAddBubble('nivi', _niviFormatBullets(ans));
+      else _niviAddBubble('nivi', '⚠️ Nivi ko is stock ka vishleshan nahi mila. Thodi der baad dobara koshish karein.');
+    }
+  };
+  // 1. Firebase cache (cross-device, survives WebView clear)
+  if (currentUser) {
+    try {
+      const fbDoc = await db.collection('niviCache').doc(sym).get();
+      if (fbDoc.exists) {
+        const fbCached = fbDoc.data();
+        if (fbCached && (Date.now() - fbCached.ts) < NIVI_CACHE_MS) {
+          _serveCached(fbCached); return;
+        }
+      }
+    } catch(e) { /* fallthrough to localStorage */ }
+  }
+  // 2. localStorage fallback
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey));
     if (cached && (Date.now() - cached.ts) < NIVI_CACHE_MS) {
-      _niviShowLoading(false);
-      if (cached.direct) {
-        // Direct Gemini cached — show bubble directly
-        _niviAddBubble('nivi', _niviFormatBullets(cached.answer));
-      } else {
-        _niviApplyPriceAndTech(cached.data);
-        const ans = cached.data?.niviAdvice?.answer || '';
-        if (ans.trim()) _niviAddBubble('nivi', _niviFormatBullets(ans));
-        else _niviAddBubble('nivi', '\u26a0\ufe0f \u0928\u093f\u0935\u0940 \u0915\u094b \u0907\u0938 \u0938\u094d\u091f\u0949\u0915 \u0915\u093e \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0923 \u0928\u0939\u0940\u0902 \u092e\u093f\u0932\u093e\u0964 \u0925\u094b\u095c\u0940 \u0926\u0947\u0930 \u092c\u093e\u0926 \u0926\u094b\u092c\u093e\u0930\u093e \u0915\u094b\u0936\u093f\u0936 \u0915\u0930\u0947\u0902\u0964');
-      }
-      return;
+      _serveCached(cached); return;
     }
   } catch(e) {}
 
@@ -5776,8 +5851,10 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
       const resp = await directGeminiCall(prompt);
       _niviShowLoading(false);
       if (resp && resp.ok) {
-        // Cache direct result
-        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), direct: true, answer: resp.answer }));
+        // Cache to localStorage + Firebase
+        const _cacheObj = { ts: Date.now(), direct: true, answer: resp.answer };
+        localStorage.setItem(cacheKey, JSON.stringify(_cacheObj));
+        if (currentUser) db.collection('niviCache').doc(sym).set(_cacheObj).catch(()=>{});
         _niviAddBubble('nivi', _niviFormatBullets(resp.answer));
         return;
       }
@@ -5808,7 +5885,9 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   _niviShowLoading(false);
 
   if (_niviData) {
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), direct: false, data: _niviData }));
+    const _gasCacheObj = { ts: Date.now(), direct: false, data: _niviData };
+    localStorage.setItem(cacheKey, JSON.stringify(_gasCacheObj));
+    if (currentUser) db.collection('niviCache').doc(sym).set(_gasCacheObj).catch(()=>{});
     _niviApplyPriceAndTech(_niviData);
     _niviAddBubble('nivi', _niviFormatBullets(_niviData.niviAdvice?.answer || ''));
   } else {
@@ -5830,42 +5909,60 @@ async function niviChip(question) {
 }
 
 async function _niviAskQuestion(question) {
-  // Add user bubble
+  // Add user bubble immediately for instant feedback
   _niviAddBubble('user', question);
 
-  // Build rich context
-  const wlCtx   = _niviWatchlistCtx();
-  const today   = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  // ── Build multi-turn context (last 6 messages = 3 exchanges) ──
+  const historyWindow = _niviChatHistory.slice(-6);  // last 6 entries incl. current user msg
+  const conversationCtx = historyWindow.slice(0, -1)  // exclude the message we just added
+    .map(m => `${m.role === 'user' ? 'User' : 'Nivi'}: ${m.text}`)
+    .join('\n');
+
+  // Build stock context from live cache
+  const wlCtx    = _niviWatchlistCtx();
+  const today    = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
   const stockCtx = _niviCurrentSym ? (() => {
     const d = cache[_niviCurrentSym] && cache[_niviCurrentSym].data;
     if (!d) return '';
     const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
-    return `\nCurrent Stock (${_niviCurrentSym}): ₹${d.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+    const pct  = ((diff / d.chartPreviousClose) * 100).toFixed(2);
+    const f    = window._firebaseFundCache && window._firebaseFundCache[_niviCurrentSym];
+    const pe   = f ? (f.pe || f.trailingPE || 'N/A') : 'N/A';
+    const eps  = f ? (f.eps || f.epsTrailingTwelveMonths || 'N/A') : 'N/A';
+    return `\nStock Context (${_niviCurrentSym}):` +
+      `\n  CMP: ₹${d.regularMarketPrice?.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)` +
+      `\n  Day H/L: ₹${d.regularMarketDayHigh?.toFixed(2)} / ₹${d.regularMarketDayLow?.toFixed(2)}` +
+      `\n  52W H/L: ₹${d.fiftyTwoWeekHigh?.toFixed(2)} / ₹${d.fiftyTwoWeekLow?.toFixed(2)}` +
+      `\n  P/E: ${pe} | EPS: ${eps}` +
+      `\n  Volume: ${d.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}`;
   })() : '';
 
+  // ── Compose multi-turn prompt ──
+  const hasPriorTurns = conversationCtx.trim().length > 0;
   const prompt =
-`Aap 'Nivi' hain — ek expert Indian stock market analyst jo sirf shuddh Hindi mein jawab deti hain.
-Aaj ki tarikh: ${today}
-User ki watchlist: ${wlCtx || 'data nahi'}${stockCtx}
+`Aap 'Nivi' hain — ek expert Indian stock market analyst.
+Sirf shuddh Hindi Devanagari mein jawab dijiye. Koi English, Roman script, disclaimer ya emoji nahi.
+Aaj: ${today}
+User ki watchlist: ${wlCtx || 'N/A'}${stockCtx}
+${hasPriorTurns ? `\nPichli baatcheet:\n${conversationCtx}` : ''}
+User: ${question}
 
-User ka sawaal: ${question}
-
-Bilkul shuddh Hindi mein (Devanagari script), concise aur data-backed jawab dijiye.
-Koi English word nahi. Koi disclaimer nahi. Max 4 lines.`;
+Max 4 lines. Data-backed. Seedha jawab.`;
 
   _niviShowLoading(true);
 
   let answer = null;
-  // 1. Direct Gemini (faster)
+
+  // 1. Direct Gemini — multi-turn contents array
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
-    const resp = await directGeminiCall(prompt);
+    const resp = await directGeminiCallMultiTurn(historyWindow.slice(0, -1), prompt);
     if (resp && resp.ok) answer = resp.answer;
   }
-  // 2. GAS fallback
+
+  // 2. GAS fallback (single-turn)
   if (!answer) {
-    const _nu = localStorage.getItem('customAPI') || API;
+    const _nu = localStorage.getItem('customAPI') || API_NIVI;
     try {
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
@@ -5874,7 +5971,105 @@ Koi English word nahi. Koi disclaimer nahi. Max 4 lines.`;
   }
 
   _niviShowLoading(false);
-  _niviAddBubble('nivi', answer || '⚠️ Nivi jawab nahi de payi. Settings ma Gemini API key check karo.');
+
+  const finalAnswer = answer || '⚠️ Nivi jawab nahi de payi. Settings → Gemini API key check karo.';
+  _niviAddBubble('nivi', finalAnswer);
+
+  // ── Persist chat to Firebase (debounced, non-blocking) ──
+  _niviPersistChat();
+}
+
+// ── Multi-turn Gemini call — sends conversation history as contents array ──
+async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
+  const key1 = localStorage.getItem('geminiApiKey');
+  const key2 = localStorage.getItem('geminiApiKey2');
+  const keys  = [key1, key2].filter(Boolean);
+  if (keys.length === 0) return { ok: false, error: 'No API key' };
+
+  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+
+  // Build Gemini contents array from prior history + current prompt
+  const contents = [];
+  // System message as first user turn (Gemini doesn't support system role in v1beta)
+  contents.push({
+    role: 'user',
+    parts: [{ text: 'Aap Nivi hain — Indian stock market expert. Sirf shuddh Hindi Devanagari mein jawab dijiye.' }]
+  });
+  contents.push({ role: 'model', parts: [{ text: 'समझ गई। मैं निवी हूँ। शुद्ध हिंदी में जवाब दूँगी।' }] });
+
+  // Inject prior conversation turns
+  for (const msg of priorHistory) {
+    if (!msg.text || !msg.text.trim()) continue;
+    contents.push({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    });
+  }
+
+  // Current question as final user turn
+  contents.push({ role: 'user', parts: [{ text: currentPrompt }] });
+
+  for (const k of keys) {
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents })
+        });
+        const j = await r.json();
+        if (j.candidates && j.candidates[0]) {
+          return { ok: true, answer: j.candidates[0].content.parts[0].text, model };
+        }
+        if (j.error) {
+          console.warn(`Gemini multi-turn error (${model}):`, j.error.message);
+          if (j.error.code === 400 || j.error.code === 429) break;
+        }
+      } catch(e) { console.warn('Gemini multi-turn network error:', e.message); }
+    }
+  }
+  return { ok: false, error: 'All Gemini models failed' };
+}
+
+// ── Persist Nivi chat history to Firebase (debounced 3s) ──
+let _niviPersistTimer = null;
+function _niviPersistChat() {
+  if (!currentUser || !_niviCurrentSym) return;
+  if (_niviPersistTimer) clearTimeout(_niviPersistTimer);
+  _niviPersistTimer = setTimeout(async () => {
+    try {
+      // Keep last 20 messages to avoid large writes
+      const toSave = _niviChatHistory.slice(-20).map(m => ({
+        role: m.role, text: m.text, ts: m.ts
+      }));
+      await db.collection('users').doc(currentUser.userId)
+        .collection('niviChats').doc(_niviCurrentSym)
+        .set({ messages: toSave, updatedAt: Date.now() });
+    } catch(e) { /* silent — chat persist is best-effort */ }
+  }, 3000);
+}
+
+// ── Load persisted Nivi chat from Firebase ──
+async function _niviLoadPersistedChat(sym) {
+  if (!currentUser) return false;
+  try {
+    const doc = await db.collection('users').doc(currentUser.userId)
+      .collection('niviChats').doc(sym).get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.messages && data.messages.length > 0) {
+        // Only restore if last message < 4 hours old
+        const age = Date.now() - (data.updatedAt || 0);
+        if (age < 4 * 60 * 60 * 1000) {
+          _niviChatHistory = data.messages;
+          _niviRenderChat();
+          return true;
+        }
+      }
+    }
+  } catch(e) { /* silent */ }
+  return false;
 }
 
 // --- MIC TOGGLE ---
@@ -6010,18 +6205,18 @@ function niviClearChat() {
   _niviChatHistory = [];
   const area = document.getElementById('nivi-chat-area');
   if (area) area.innerHTML = '<div id="nivi-loading" style="text-align:center;padding:16px 0;display:none;"></div>';
+  // Clear Firebase persisted chat too
+  if (currentUser && _niviCurrentSym) {
+    db.collection('users').doc(currentUser.userId)
+      .collection('niviChats').doc(_niviCurrentSym)
+      .delete().catch(() => {});
+  }
 }
 
 // --- CLOSE ---
 function closeNivi() {
   niviStop();
   if (_niviMicActive && _niviRecognition) _niviRecognition.stop();
-  document.getElementById('niviModal').style.display = 'none';
-}
-
-// --- CLOSE ---
-function closeNivi() {
-  niviStop();
   document.getElementById('niviModal').style.display = 'none';
 }
 
@@ -6051,7 +6246,7 @@ function saveSheetId(){
   const val = document.getElementById('sheet-id-input').value.trim();
   if(!val){ showPopup('Sheet ID cannot be empty'); return; }
   localStorage.setItem('sheetId', val);
-  if (currentUser) saveUserData();
+  if (currentUser) saveUserData('settings');
   document.getElementById('sheet-id-display').innerText = val;
   cancelSheetEdit();
   showPopup('Sheet ID saved!');
@@ -6160,7 +6355,7 @@ function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
   if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
   localStorage.setItem('geminiApiKey',val);
-  if (currentUser) saveUserData();
+  if (currentUser) saveUserData('settings');
   document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Key saved — Direct Gemini active</span>';
   document.getElementById('set-gemini-key').value='';
   showPopup('Gemini key saved ✓');
@@ -6227,7 +6422,11 @@ async function directGeminiCall(prompt) {
   return { ok: false, error: 'બધા પ્રયત્નો નિષ્ફળ! કદાચ Quota પૂરો થયો છે અથવા API Key ખોટી છે.' };
 }
 function expandTickersForSpeech(text) {
-  // NSE ticker → spoken name mapping
+  if (!text) return text;
+  // Hindi pronunciation overrides (for TTS naturalness)
+  const hindiPron = { 'RELIANCE':'रिलायंस', 'TCS':'टी सी एस', 'INFY':'इन्फोसिस',
+    'SBIN':'एस बी आई', 'HDFCBANK':'एच डी एफ सी बैंक', 'ITC':'आई टी सी', 'BLISSGVS':'ब्लिस जी वी एस' };
+  // NSE ticker → full English spoken name mapping
   const tickerNames = {
     'SBIN':'State Bank of India','RELIANCE':'Reliance Industries','TCS':'Tata Consultancy Services',
     'INFY':'Infosys','WIPRO':'Wipro','HDFCBANK':'HDFC Bank','ICICIBANK':'ICICI Bank',
@@ -6260,10 +6459,15 @@ function expandTickersForSpeech(text) {
     'ETERNAL':'Eternal','CPPLUS':'CP Plus','JKTYRE':'JK Tyre','MOIL':'MOIL',
     'FORCEMOT':'Force Motors','YATHARTH':'Yatharth Hospital'
   };
-  // Replace each ticker (whole word, case-insensitive) with its spoken name
-  return text.replace(/\b([A-Z]{2,12})(\.NS|\.BO)?\b/g, function(match, ticker) {
-    return tickerNames[ticker] || ticker;
+  // Replace each ticker (whole word, case-insensitive) with spoken name
+  // Priority: Hindi pron → English full name → Title-case fallback
+  let result = text.replace(/\b([A-Z]{2,12})(\.NS|\.BO)?\b/g, function(match, ticker) {
+    if (hindiPron[ticker]) return hindiPron[ticker];
+    if (tickerNames[ticker]) return tickerNames[ticker];
+    // ALL CAPS fallback: speak as title-case so TTS doesn't spell each letter
+    return ticker.charAt(0) + ticker.slice(1).toLowerCase();
   });
+  return result;
 }
 function niviSpeak() {
   if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
@@ -6423,22 +6627,7 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // NIVI NEWS SEARCH & VOICE (UPDATED)
 // ============================================================
 
-// 1. શોર્ટ-ફોર્મ સિમ્બોલ ને સરખી રીતે બોલવા માટેનું ટૂલ
-function expandTickersForSpeech(text) {
-  if (!text) return text;
-  const dict = { "BLISSGVS": "ब्लिस जी वी एस", "RELIANCE": "रिलायंस", "TCS": "टी सी एस", "INFY": "इन्फोसिस", "SBIN": "एस बी आई", "HDFCBANK": "एच डी एफ सी बैंक", "ITC": "आई टी सी" };
-  let newText = text;
-  for (const [sym, pron] of Object.entries(dict)) {
-    newText = newText.replace(new RegExp(`\\b${sym}\\b`, 'gi'), pron);
-  }
-  // બાકીના ALL CAPS શબ્દોને Title Case માં ફેરવો (જેથી એક-એક અક્ષર ના બોલે)
-  newText = newText.replace(/\b[A-Z]{4,}\b/g, function(match) {
-    return match.charAt(0) + match.slice(1).toLowerCase();
-  });
-  return newText;
-}
-
-// 2. તારું જૂનું ફંક્શન, નવા જાદુ સાથે
+// 2. niviNewsSpeak — uses expandTickersForSpeech defined above
 function niviNewsSpeak() {
   if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
   speechSynthesis.cancel();
