@@ -457,6 +457,27 @@ body.light .ticker-price{color:#e2e8f0;}
   };
   firebase.initializeApp(firebaseConfig);
   window.db = firebase.firestore();
+  // Preload fundamentals as soon as db is ready
+  window.db.collection('fundamentals').get().then(snap => {
+    window._firebaseFundCache = window._firebaseFundCache || {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      function fsVal(f){
+        if(!f) return null;
+        if(f.doubleValue !== undefined) return f.doubleValue;
+        if(f.integerValue !== undefined) return Number(f.integerValue);
+        if(f.nullValue !== undefined) return null;
+        return f.stringValue ?? null;
+      }
+      window._firebaseFundCache[doc.id] = {
+        pe: fsVal(d.pe), eps: fsVal(d.eps),
+        marketCap: fsVal(d.marketCap), bookValue: fsVal(d.bookValue),
+        high52: fsVal(d.high52), low52: fsVal(d.low52),
+        _source: 'firebase', _ts: Date.now()
+      };
+    });
+    console.log('✅ Fundamentals ready:', Object.keys(window._firebaseFundCache).length, 'stocks');
+  }).catch(e => console.warn('Fundamentals preload failed:', e.message));
   const db = window.db;
 </script>
   
