@@ -456,7 +456,8 @@ body.light .ticker-price{color:#e2e8f0;}
     appId: "1:869277689884:web:561e33a1731acd384a17d9"
   };
   firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  window.db = firebase.firestore();
+  const db = window.db;
 </script>
   
 </head>
