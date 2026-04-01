@@ -6173,32 +6173,52 @@ function initGeminiKeyDisplay(){
     :'<span style="color:#4b6280;">No key saved — using GAS API only</span>';
 }
 
-// Direct Gemini API call (browser → Gemini, bypasses GAS)
-async function directGeminiCall(prompt){
-  const key=localStorage.getItem('geminiApiKey');
-  const key2=localStorage.getItem('geminiApiKey2');
-  if(!key && !key2) return null;
-const models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.0-flash-001'];
-  const keys=[key,key2].filter(Boolean);
-  for(const model of models){
-    for(const k of keys){
-    try{
-      await new Promise(r=>setTimeout(r,500));
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
-      });
-      const j=await r.json();
-      if(j.candidates&&j.candidates[0]){
-        return {ok:true,answer:j.candidates[0].content.parts[0].text,model};
+// Smart Direct Gemini API call (Browser → Gemini)
+async function directGeminiCall(prompt) {
+  const key1 = localStorage.getItem('geminiApiKey');
+  const key2 = localStorage.getItem('geminiApiKey2');
+  const keys = [key1, key2].filter(Boolean);
+
+  if (keys.length === 0) return { ok: false, error: 'API Key જ નથી! Settings માં જઈને નાખો.' };
+
+  // બિનજરૂરી મોડેલ્સ કાઢી નાખ્યા. આ બે સૌથી ફાસ્ટ અને સ્ટેબલ છે.
+  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+
+  for (const k of keys) {
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;
+        
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        const j = await r.json();
+
+        // 1. જો જવાબ મળી જાય તો સીધો Return (લૂપ ખતમ) 🎉
+        if (j.candidates && j.candidates[0]) {
+          return { ok: true, answer: j.candidates[0].content.parts[0].text, model: model };
+        }
+
+        // 2. Smart Error Handling (લાલ કન્સોલ અટકાવવા) 🛡️
+        if (j.error) {
+          console.warn(`Gemini API Error (${model} | Key ...${k.slice(-4)}):`, j.error.message);
+          
+          // જો કી જ ખોટી હોય (400) અથવા કોટા પૂરો થયો હોય (429), 
+          // તો આ કી માટે બીજા મોડેલને હેરાન કરવાનો કોઈ મતલબ નથી! લૂપ તોડો (Break).
+          if (j.error.code === 400 || j.error.code === 429) {
+            break; // આ કી છોડીને સીધા બીજી Key (key2) પર જંપ કરો
+          }
+        }
+      } catch (e) { 
+        console.warn('Gemini Network Error:', e.message); 
       }
-      // Log exact error for debugging
-    if(j.error) console.warn('Gemini',model,k.slice(-6),'error:',j.error.message||j.error.status);
-    }catch(e){ console.warn('Gemini',model,'fetch failed:',e.message); }
-    } // end keys loop
-  }
-  return {ok:false,error:'All Gemini models failed'};
+    } // end model loop
+  } // end keys loop
+
+  return { ok: false, error: 'બધા પ્રયત્નો નિષ્ફળ! કદાચ Quota પૂરો થયો છે અથવા API Key ખોટી છે.' };
 }
 function expandTickersForSpeech(text) {
   // NSE ticker → spoken name mapping
