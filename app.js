@@ -119,6 +119,9 @@ async function verifyPIN() {
       localStorage.setItem('rtp_current_user', JSON.stringify(currentUser));
       hideProfileScreens();
       await loadUserData();
+      // P5: backup label set (loadUserData also sets it, but ensure it's always updated)
+      const lbl = document.getElementById('currentUserLabel');
+      if (lbl) lbl.textContent = profile.name;
     } else {
       document.getElementById('pinError').style.display = 'block';
       currentPINEntry = '';
@@ -1085,37 +1088,16 @@ async function addStock(sym){
   hideSuggestions();
   renderWL();
 
-  // Background: fetch fundamentals for new stock immediately
-  // (Firebase cache only has stocks pushed by GAS 12AM trigger)
+  // Background: fetch fundamentals for new stock from Firestore (GAS fundSheet REMOVED)
+  // fetchFundSheet() now reads Firestore directly — no GAS call needed
   if(!window._firebaseFundCache || !window._firebaseFundCache[sym]) {
     setTimeout(async ()=>{
       try {
-        const apiUrl = localStorage.getItem('customAPI') || API;
-        const sheetId = localStorage.getItem('sheetId') || '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
-        const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
-        const j = await r.json();
-        if(j && j.ok) {
-          // Store in Firebase in-memory cache so openDetail shows it instantly
-          window._firebaseFundCache = window._firebaseFundCache || {};
-          window._firebaseFundCache[sym] = {
-            pe: j.pe, eps: j.eps, marketCap: j.marketCap,
-            bookValue: j.bookValue, high52: j.high52, low52: j.low52,
-            _source: 'fundSheet_new', _ts: Date.now()
-          };
-          // Also store in localStorage as backup
-          const FUND_KEY = 'fundCache6_' + sym;
-          function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
-          const data = {
-            pe: j.pe!=null ? parseFloat(j.pe).toFixed(2) : '--',
-            eps: j.eps!=null ? '₹'+parseFloat(j.eps).toFixed(2) : '--',
-            mktCap: j.marketCap!=null ? fmtCap(j.marketCap) : '--',
-            bookValue: j.bookValue!=null ? '₹'+parseFloat(j.bookValue).toFixed(2) : '--',
-            volume:'--', divYield:'--', forwardPE:'--', forwardEps:'--',
-            earningsDate:'--', exDivDate:'--', _source:'fundSheet_new'
-          };
-          try{ localStorage.setItem(FUND_KEY, JSON.stringify({ts:Date.now(), data})); }catch(e){}
+        const fundData = await fetchFundSheet(sym); // reads Firestore
+        if(fundData) {
+          console.log('✅ Firestore fund loaded for new stock:', sym);
         }
-      } catch(e) { console.warn('New stock fund fetch failed:', e.message); }
+      } catch(e) { console.warn('New stock Firestore fund fetch failed:', e.message); }
     }, 500);
   }
 }
@@ -1721,8 +1703,9 @@ function renderHist(){
 // ======================================
 // FUNDAMENTALS (day-cached, from Yahoo meta)
 // ======================================
-// ── Global in-memory fundamentals store (populated from Firebase at startup) ──
+// ── Global in-memory caches (populated from Firebase at startup) ──
 window._firebaseFundCache = window._firebaseFundCache || {};
+window._firebaseHistCache = window._firebaseHistCache || {}; // histcache collection
 
 // Load ALL fundamentals from Firebase once at startup — zero GAS calls
 async function preloadAllFundamentalsFromFirebase() {
@@ -6086,38 +6069,77 @@ function updateSheetStatus(){
     : '<span style="color:#4b6280;">Disabled — using Yahoo Finance API</span>';
 }
 
-// Sheet-based fundamentals fetch (calls GAS fundSheet endpoint)
+// Fundamentals fetch — Firestore "fundamentals" collection (GAS fundSheet REMOVED)
+// Priority: 1) in-memory cache (preloaded at startup) → 2) Firestore direct read
 async function fetchFundSheet(sym){
-  const apiUrl = localStorage.getItem('customAPI') || API;
-  const sheetId = getSheetId();
+  const cleanSym = sym.replace(/\.NS$/i,'').replace(/\.BO$/i,'').toUpperCase();
+  // 1. In-memory cache (populated by preloadAllFundamentalsFromFirebase at startup)
+  if(window._firebaseFundCache && window._firebaseFundCache[cleanSym]){
+    const raw = window._firebaseFundCache[cleanSym];
+    return { pe: raw.pe, eps: raw.eps, marketCap: raw.marketCap,
+             bookValue: raw.bookValue, high52: raw.high52, low52: raw.low52 };
+  }
+  // 2. Firestore direct read (stock not in preload cache yet)
   try{
-    const ctrl2 = new AbortController();
-    const tid2  = setTimeout(()=>ctrl2.abort(), 12000);
-    const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`, {signal:ctrl2.signal});
-    clearTimeout(tid2);
-    const j = await r.json();
-    if(!j.ok) return null; // Sheet row just created or error — fall through to Yahoo
-    // Only fundamentals — NO price/volume (those must stay from Yahoo Finance)
-    return {
-      pe: j.pe, eps: j.eps,
-      marketCap: j.marketCap, bookValue: j.bookValue,
-      high52: j.high52, low52: j.low52
+    const doc = await db.collection('fundamentals').doc(cleanSym).get();
+    if(!doc.exists) return null;
+    const d = doc.data();
+    function fsVal(f){
+      if(!f) return null;
+      if(f.doubleValue !== undefined) return f.doubleValue;
+      if(f.integerValue !== undefined) return Number(f.integerValue);
+      if(f.nullValue !== undefined) return null;
+      return f.stringValue ?? null;
+    }
+    // Store in memory for next call
+    window._firebaseFundCache = window._firebaseFundCache || {};
+    window._firebaseFundCache[cleanSym] = {
+      pe: fsVal(d.pe), eps: fsVal(d.eps), marketCap: fsVal(d.marketCap),
+      bookValue: fsVal(d.bookValue), high52: fsVal(d.high52), low52: fsVal(d.low52),
+      _source: 'firestore_direct', _ts: Date.now()
     };
+    const raw = window._firebaseFundCache[cleanSym];
+    return { pe: raw.pe, eps: raw.eps, marketCap: raw.marketCap,
+             bookValue: raw.bookValue, high52: raw.high52, low52: raw.low52 };
   }catch(e){ return null; }
 }
 
-// Sheet-based history fetch (calls GAS histSheet endpoint)
+// History fetch — Firestore "histcache" collection (GAS histSheet REMOVED)
+// Reads cached 200d history pushed daily by GAS 9AM trigger
 async function fetchHistSheet(sym){
-  const apiUrl = localStorage.getItem('customAPI') || API;
-  const sheetId = getSheetId();
+  const cleanSym = sym.replace(/\.NS$/i,'').replace(/\.BO$/i,'').toUpperCase();
+  // 1. In-memory cache (avoid repeat Firestore reads in same session)
+  if(window._firebaseHistCache && window._firebaseHistCache[cleanSym]){
+    return window._firebaseHistCache[cleanSym];
+  }
+  // 2. Firestore direct read from histcache collection
   try{
-    const ctrl3 = new AbortController();
-    const tid3  = setTimeout(()=>ctrl3.abort(), 15000);
-    const r = await fetch(`${apiUrl}?type=histSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`, {signal:ctrl3.signal});
-    clearTimeout(tid3);
-    const j = await r.json();
-    if(!j.ok || !j.close || j.close.length < 14) return null;
-    return { dates: j.dates, close: j.close, open: j.close, high: j.close, low: j.close, volume: [] };
+    const doc = await db.collection('histcache').doc(cleanSym).get();
+    if(!doc.exists) return null;
+    const d = doc.data();
+    function fsVal(f){
+      if(!f) return null;
+      if(f.doubleValue !== undefined) return f.doubleValue;
+      if(f.integerValue !== undefined) return Number(f.integerValue);
+      if(f.nullValue !== undefined) return null;
+      return f.stringValue ?? null;
+    }
+    const dataStr = fsVal(d.data);
+    if(!dataStr) return null;
+    const parsed = JSON.parse(dataStr);
+    if(!parsed.close || parsed.close.length < 14) return null;
+    // Validate freshness — within 7 days
+    const lastDate = parsed.dates && parsed.dates[parsed.dates.length - 1];
+    const lastMs   = lastDate ? new Date(lastDate).getTime() : 0;
+    if(lastMs && (Date.now() - lastMs) > 7 * 86400000) return null; // stale
+    const result = {
+      dates: parsed.dates, close: parsed.close,
+      open: parsed.close, high: parsed.close, low: parsed.close, volume: []
+    };
+    // Store in memory for rest of session
+    window._firebaseHistCache = window._firebaseHistCache || {};
+    window._firebaseHistCache[cleanSym] = result;
+    return result;
   }catch(e){ return null; }
 }
 
