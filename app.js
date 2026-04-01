@@ -6178,7 +6178,7 @@ async function directGeminiCall(prompt){
   const key=localStorage.getItem('geminiApiKey');
   if(!key) return null;
   // Use only confirmed-working stable models
-  const models=['gemini-1.5-flash','gemini-2.0-flash','gemini-1.0-pro'];
+  const models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-1.5-flash-latest'];
   for(const model of models){
     try{
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
