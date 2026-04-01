@@ -6360,11 +6360,19 @@ function saveGeminiKey(){
   document.getElementById('set-gemini-key').value='';
   showPopup('Gemini key saved ✓');
 }
-function clearGeminiKey(){
-  localStorage.removeItem('geminiApiKey');
-  document.getElementById('set-gemini-key').value='';
-  document.getElementById('gemini-key-status').innerHTML='<span style="color:#4b6280;">Key cleared</span>';
-  showPopup('Gemini key cleared');
+function saveGeminiKey2(){
+  const val=document.getElementById('set-gemini-key2').value.trim();
+  if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
+  localStorage.setItem('geminiApiKey2',val);
+  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#34d399;">✓ Key 2 saved — Fallback active</span>';
+  document.getElementById('set-gemini-key2').value='';
+  showPopup('Gemini Key 2 saved ✓');
+}
+function clearGeminiKey2(){
+  localStorage.removeItem('geminiApiKey2');
+  document.getElementById('set-gemini-key2').value='';
+  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#4b6280;">Key 2 cleared</span>';
+  showPopup('Gemini Key 2 cleared');
 }
 function initGeminiKeyDisplay(){
   const k=localStorage.getItem('geminiApiKey');
