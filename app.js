@@ -6176,12 +6176,15 @@ function initGeminiKeyDisplay(){
 // Direct Gemini API call (browser → Gemini, bypasses GAS)
 async function directGeminiCall(prompt){
   const key=localStorage.getItem('geminiApiKey');
-  if(!key) return null;
-  const models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.0-flash-001'];
+  const key2=localStorage.getItem('geminiApiKey2');
+  if(!key && !key2) return null;
+const models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.0-flash-001'];
+  const keys=[key,key2].filter(Boolean);
   for(const model of models){
+    for(const k of keys){
     try{
       await new Promise(r=>setTimeout(r,500));
-      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
@@ -6191,8 +6194,9 @@ async function directGeminiCall(prompt){
         return {ok:true,answer:j.candidates[0].content.parts[0].text,model};
       }
       // Log exact error for debugging
-      if(j.error) console.warn('Gemini',model,'error:',j.error.message||j.error.status);
+    if(j.error) console.warn('Gemini',model,k.slice(-6),'error:',j.error.message||j.error.status);
     }catch(e){ console.warn('Gemini',model,'fetch failed:',e.message); }
+    } // end keys loop
   }
   return {ok:false,error:'All Gemini models failed'};
 }
