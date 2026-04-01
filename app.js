@@ -1084,6 +1084,40 @@ async function addStock(sym){
   document.getElementById("searchBox").value="";
   hideSuggestions();
   renderWL();
+
+  // Background: fetch fundamentals for new stock immediately
+  // (Firebase cache only has stocks pushed by GAS 12AM trigger)
+  if(!window._firebaseFundCache || !window._firebaseFundCache[sym]) {
+    setTimeout(async ()=>{
+      try {
+        const apiUrl = localStorage.getItem('customAPI') || API;
+        const sheetId = localStorage.getItem('sheetId') || '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
+        const r = await fetch(`${apiUrl}?type=fundSheet&s=${encodeURIComponent(sym)}&sheetId=${encodeURIComponent(sheetId)}`);
+        const j = await r.json();
+        if(j && j.ok) {
+          // Store in Firebase in-memory cache so openDetail shows it instantly
+          window._firebaseFundCache = window._firebaseFundCache || {};
+          window._firebaseFundCache[sym] = {
+            pe: j.pe, eps: j.eps, marketCap: j.marketCap,
+            bookValue: j.bookValue, high52: j.high52, low52: j.low52,
+            _source: 'fundSheet_new', _ts: Date.now()
+          };
+          // Also store in localStorage as backup
+          const FUND_KEY = 'fundCache6_' + sym;
+          function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
+          const data = {
+            pe: j.pe!=null ? parseFloat(j.pe).toFixed(2) : '--',
+            eps: j.eps!=null ? '₹'+parseFloat(j.eps).toFixed(2) : '--',
+            mktCap: j.marketCap!=null ? fmtCap(j.marketCap) : '--',
+            bookValue: j.bookValue!=null ? '₹'+parseFloat(j.bookValue).toFixed(2) : '--',
+            volume:'--', divYield:'--', forwardPE:'--', forwardEps:'--',
+            earningsDate:'--', exDivDate:'--', _source:'fundSheet_new'
+          };
+          try{ localStorage.setItem(FUND_KEY, JSON.stringify({ts:Date.now(), data})); }catch(e){}
+        }
+      } catch(e) { console.warn('New stock fund fetch failed:', e.message); }
+    }, 500);
+  }
 }
 
 function removeStock(sym){
@@ -1431,8 +1465,8 @@ function confirmAddIndex(sym,name){
 // UPDATE PRICES
 // ======================================
 async function updatePrices(){
-  // Force fresh fetch for indices (clear their cache)
-  for(let i of indicesList){ if(cache[i.sym]) cache[i.sym].time=0; }
+  // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
+  // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
   for(let s of wl){
     let d=await fetchFull(s);if(!d) continue;
     let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
@@ -1690,23 +1724,25 @@ function renderHist(){
 // ── Global in-memory fundamentals store (populated from Firebase at startup) ──
 window._firebaseFundCache = window._firebaseFundCache || {};
 
-// Load ALL fundamentals from Firebase once at startup — no GAS calls needed
+// Load ALL fundamentals from Firebase once at startup — zero GAS calls
 async function preloadAllFundamentalsFromFirebase() {
   try {
     const snap = await db.collection('fundamentals').get();
     snap.forEach(doc => {
       const d = doc.data();
-      const sym = doc.id; // e.g. "RELIANCE"
-      function fsVal(f) { if (!f) return null; return f.doubleValue ?? f.integerValue ?? (f.nullValue !== undefined ? null : f.stringValue ?? null); }
+      const sym = doc.id;
+      function fsVal(f) {
+        if (!f) return null;
+        if (f.doubleValue !== undefined) return f.doubleValue;
+        if (f.integerValue !== undefined) return Number(f.integerValue);
+        if (f.nullValue !== undefined) return null;
+        return f.stringValue ?? null;
+      }
       window._firebaseFundCache[sym] = {
-        pe:        fsVal(d.pe),
-        eps:       fsVal(d.eps),
-        marketCap: fsVal(d.marketCap),
-        bookValue: fsVal(d.bookValue),
-        high52:    fsVal(d.high52),
-        low52:     fsVal(d.low52),
-        _source:   'firebase',
-        _ts:       Date.now()
+        pe: fsVal(d.pe), eps: fsVal(d.eps),
+        marketCap: fsVal(d.marketCap), bookValue: fsVal(d.bookValue),
+        high52: fsVal(d.high52), low52: fsVal(d.low52),
+        _source: 'firebase', _ts: Date.now()
       };
     });
     console.log('✅ Firebase fundamentals preloaded:', Object.keys(window._firebaseFundCache).length, 'stocks');
@@ -1715,63 +1751,54 @@ async function preloadAllFundamentalsFromFirebase() {
   }
 }
 
-async function fetchFundamentals(sym){
-  // v7: Firebase-first strategy
-  // 1. In-memory Firebase cache (populated at startup) — instant, zero API calls
-  // 2. localStorage cache (7-day) — fallback if Firebase not loaded yet
-  // 3. GAS API call — last resort only
-  const FUND_KEY='fundCache6_'+sym;
-  const CACHE_DAYS=7;
-
-  // Clean sym (without .NS)
-  const cleanSym = sym.replace(/\.NS$/i,'').replace(/\.BO$/i,'').toUpperCase();
-
-  // 1. Firebase in-memory cache — instant, zero API calls
-  if(window._firebaseFundCache[cleanSym]) {
-    return _buildFundDataFromSheet(window._firebaseFundCache[cleanSym], sym);
-  }
-
-  // 2. localStorage cache
-  let cachedData = null;
-  try{
-    const stored=JSON.parse(localStorage.getItem(FUND_KEY)||'null');
-    if(stored&&stored.ts){
-      cachedData = stored.data;
-      if((Date.now()-stored.ts)<(CACHE_DAYS*86400000)) return cachedData;
-    }
-  }catch(e){}
-  if(cachedData){
-    _refreshFundamentalsBackground(sym, FUND_KEY);
-    return cachedData;
-  }
-
-  // 3. No cache at all — fetch fresh from API (blocking)
-  return await _fetchFundamentalsFromAPI(sym, FUND_KEY);
-}
-
-// Build formatted fund data from Firebase/Sheet raw values
-function _buildFundDataFromSheet(raw, sym) {
+// Build formatted fund data from Firebase raw values
+function _buildFundDataFromFirebase(raw, sym) {
   function fmtCap(v){if(!v||isNaN(v))return '--';if(v>=1e12)return'₹'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'₹'+(v/1e9).toFixed(2)+'B';if(v>=1e7)return'₹'+(v/1e7).toFixed(2)+'Cr';return'₹'+v.toLocaleString('en-IN');}
-  const _cacheD = cache[sym]&&cache[sym].data;
   function fmtVol(v){if(!v||isNaN(v))return '--';if(v>=1e7)return(v/1e7).toFixed(2)+'Cr';if(v>=1e5)return(v/1e5).toFixed(2)+'L';return v.toLocaleString('en-IN');}
+  const _cacheD = cache[sym]&&cache[sym].data;
   const vol_v = _cacheD&&(_cacheD.regularMarketVolume||_cacheD.volume);
   return {
-    pe:          raw.pe!=null&&!isNaN(raw.pe) ? parseFloat(raw.pe).toFixed(2) : '--',
-    eps:         raw.eps!=null&&!isNaN(raw.eps) ? '₹'+parseFloat(raw.eps).toFixed(2) : '--',
-    mktCap:      raw.marketCap!=null ? fmtCap(raw.marketCap) : '--',
-    bookValue:   raw.bookValue!=null&&!isNaN(raw.bookValue) ? '₹'+parseFloat(raw.bookValue).toFixed(2) : '--',
-    volume:      vol_v ? fmtVol(vol_v) : '--',
-    divYield:    '--', forwardPE:'--', forwardEps:'--',
+    pe: raw.pe!=null&&!isNaN(raw.pe) ? parseFloat(raw.pe).toFixed(2) : '--',
+    eps: raw.eps!=null&&!isNaN(raw.eps) ? '₹'+parseFloat(raw.eps).toFixed(2) : '--',
+    mktCap: raw.marketCap!=null ? fmtCap(raw.marketCap) : '--',
+    bookValue: raw.bookValue!=null&&!isNaN(raw.bookValue) ? '₹'+parseFloat(raw.bookValue).toFixed(2) : '--',
+    volume: vol_v ? fmtVol(vol_v) : '--',
+    divYield:'--', forwardPE:'--', forwardEps:'--',
     earningsDate:'--', exDivDate:'--',
-    _source:     raw._source || 'firebase'
+    _source: 'firebase'
   };
+}
+
+async function fetchFundamentals(sym){
+  // v7: Firebase-first strategy — zero GAS calls for fundamentals
+  // Priority: 1) Firebase in-memory (instant) → 2) localStorage 7-day cache → 3) API (last resort)
+  const FUND_KEY = 'fundCache6_' + sym;
+  const cleanSym = sym.replace(/\.NS$/i,'').replace(/\.BO$/i,'').toUpperCase();
+
+  // 1. Firebase in-memory — instant, populated at startup
+  if (window._firebaseFundCache && window._firebaseFundCache[cleanSym]) {
+    return _buildFundDataFromFirebase(window._firebaseFundCache[cleanSym], sym);
+  }
+
+  // 2. localStorage 7-day cache
+  try {
+    const stored = JSON.parse(localStorage.getItem(FUND_KEY)||'null');
+    if (stored && stored.ts && stored.data) {
+      const age = Date.now() - stored.ts;
+      if (age < 7 * 86400000) return stored.data;   // fresh — return immediately
+      // stale — return now, refresh async
+      setTimeout(()=>_fetchFundamentalsFromAPI(sym, FUND_KEY), 200);
+      return stored.data;
+    }
+  } catch(e) {}
+
+  // 3. No cache — fetch from API (blocking, shows loading)
+  return await _fetchFundamentalsFromAPI(sym, FUND_KEY);
 }
 
 // Background refresh — does NOT block UI
 function _refreshFundamentalsBackground(sym, cacheKey){
-  setTimeout(async ()=>{
-    await _fetchFundamentalsFromAPI(sym, cacheKey);
-  }, 100);
+  setTimeout(async ()=>{ await _fetchFundamentalsFromAPI(sym, cacheKey); }, 100);
 }
 
 async function _fetchFundamentalsFromAPI(sym, cacheKey){
@@ -4260,8 +4287,7 @@ async function startApp(){
   renderWLTabs();
   initGeminiKeyDisplay();
   showLoader("Loading...");
-  // Preload ALL fundamentals from Firebase in background (non-blocking)
-  // After this, ANY stock fundamentals are instantly available — zero GAS calls
+  // Preload ALL fundamentals from Firebase (non-blocking) — any stock opens instantly
   preloadAllFundamentalsFromFirebase();
   // Data already loaded from Firebase via loadUserData() before startApp()
   // Watchlist: batch fetch | Indices: individual (^ symbols)
@@ -4284,11 +4310,14 @@ async function startApp(){
   }, 5*60*1000);
 // Firebase fundamentals already preloaded at startup via preloadAllFundamentalsFromFirebase()
   // No GAS fundBatch call needed — all stocks instantly available via window._firebaseFundCache
-  // Background: preload POPULAR_STOCKS for Gainers tab (no loader shown)
+  // Background: preload POPULAR_STOCKS for Gainers tab — only missing stocks (no duplicate calls)
   setTimeout(()=>{
-    batchFetchStocks(POPULAR_STOCKS.slice(0,80)).then(()=>{
-      if(document.getElementById('indices')?.classList.contains('active')) renderGainersFromCache();
-    });
+    const needFetch = POPULAR_STOCKS.slice(0,80).filter(s=>!cache[s]||!cache[s].data);
+    if(needFetch.length > 0) {
+      batchFetchStocks(needFetch).then(()=>{
+        if(document.getElementById('indices')?.classList.contains('active')) renderGainersFromCache();
+      });
+    }
   },1500);
 }
 
@@ -4321,7 +4350,8 @@ async function manualRefresh(){
   
   showLoader("Refreshing...");
   
-  // Cache clear karva ne badle khali time expire karo jethi juno data render thaine rahe
+  // Only price cache clear karvo — fundamentals/history same rehva joiye
+  // cache = price data only (wl + indices). Fundamentals localStorage/Firebase ma alag che.
   for(let k in cache) { cache[k].time = 0; }
   
   // Banne ne ek sathe fetch karo
@@ -4886,7 +4916,7 @@ const prompt =
   }
 
   _tabShowLoading(false);
-  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ Nivi jawab nahi de payi. Gemini API key Settings ma daalo ya GAS URL check karo.', ts:Date.now()});
+  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ Nivi jawab nahi de payi. Settings ma Gemini API key daalo ya GAS URL check karo.', ts:Date.now()});
   try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e){}
   _tabRenderChat(_getNiviAutoSpeak());
 }
