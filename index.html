@@ -746,155 +746,159 @@ body.light .ticker-price{color:#e2e8f0;}
 <div id="settings" class="tab" style="padding:0;overflow-y:auto;">
 
   <!-- HEADER -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;border-bottom:1px solid #1e2d3d;">
-    <div style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1px;">SETTINGS</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid #1e2d3d;">
+    <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:1px;">SETTINGS</div>
     <div style="font-size:10px;color:#4b6280;">v2.2</div>
   </div>
 
-  <!-- ROW 1: ACCOUNT + APPEARANCE (2 col) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #1e2d3d;">
-    <!-- Account -->
-    <div style="padding:10px 12px;border-right:1px solid #1e2d3d;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;margin-bottom:6px;">ACCOUNT</div>
-      <div id="currentUserLabel" style="font-size:11px;color:#34d399;font-weight:700;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
-      <button onclick="logoutUser()" style="width:100%;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Logout</button>
+  <!-- ACCOUNT -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+    <div>
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">ACCOUNT</div>
+      <div id="currentUserLabel" style="font-size:12px;color:#34d399;font-weight:700;margin-top:2px;">—</div>
     </div>
-    <!-- Appearance -->
-    <div style="padding:10px 12px;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;margin-bottom:6px;">APPEARANCE</div>
-      <button onclick="toggleTheme()" style="width:100%;background:#1e2d3d;color:#f59e0b;border:1px solid #2d3f52;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;margin-bottom:6px;">Theme Toggle</button>
-      <button onclick="cycleFontSize()" style="width:100%;background:#1e2d3d;color:#a78bfa;border:1px solid #2d3f52;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;"><span id="fontSizeLabel">FONT: M</span></button>
+    <button onclick="logoutUser()" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Logout</button>
+  </div>
+
+  <!-- APPEARANCE — inline row -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+    <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">APPEARANCE</div>
+    <div style="display:flex;gap:6px;">
+      <button onclick="toggleTheme()" style="background:#1e2d3d;color:#f59e0b;border:1px solid #2d3f52;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Theme</button>
+      <button onclick="cycleFontSize()" style="background:#1e2d3d;color:#a78bfa;border:1px solid #2d3f52;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;"><span id="fontSizeLabel">Font: M</span></button>
     </div>
   </div>
 
-  <!-- ROW 2: CLOUD SYNC + DATA (2 col) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #1e2d3d;">
-    <!-- Cloud Sync -->
-    <div style="padding:10px 12px;border-right:1px solid #1e2d3d;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;margin-bottom:6px;">CLOUD SYNC <span style="color:#22c55e;">Firebase</span></div>
-      <div style="display:flex;gap:5px;margin-bottom:6px;">
-        <button onclick="pushToCloud(true)" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Upload</button>
-        <button onclick="pullFromCloud(true)" style="flex:1;background:#1a3320;color:#86efac;border:1px solid #166534;border-radius:6px;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Download</button>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <button id="syncStatusBtn" onclick="pushToCloud(true)" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Sync Now</button>
-        <span style="font-size:9px;color:#4b6280;">Last: <span id="lastSyncDisplay">--</span></span>
-      </div>
+  <!-- CLOUD SYNC -->
+  <div style="padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">CLOUD SYNC <span style="color:#22c55e;font-size:9px;">Firebase</span></div>
+      <span style="font-size:9px;color:#4b6280;">Last: <span id="lastSyncDisplay">--</span></span>
     </div>
-    <!-- Data & Refresh -->
-    <div style="padding:10px 12px;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;margin-bottom:6px;">DATA</div>
-      <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
-        <input id="set-refresh" type="number" min="10" max="300" style="width:44px;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:6px;padding:4px 4px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;text-align:center;">
-        <span style="font-size:9px;color:#4b6280;">sec</span>
-        <button onclick="saveSetting('refresh')" style="background:#166534;color:#86efac;border:none;border-radius:6px;padding:4px 7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Set</button>
+    <div style="display:flex;gap:6px;">
+      <button onclick="pushToCloud(true)" style="flex:1;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Upload</button>
+      <button onclick="pullFromCloud(true)" style="flex:1;background:#1a3320;color:#86efac;border:1px solid #166534;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Download</button>
+      <button id="syncStatusBtn" onclick="pushToCloud(true)" style="flex:1;background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Sync Now</button>
+    </div>
+  </div>
+
+  <!-- DATA & REFRESH — compact inline -->
+  <div style="padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+    <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;margin-bottom:6px;">DATA & REFRESH</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <!-- Refresh -->
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="font-size:11px;color:#94a3b8;">Refresh</span>
+        <input id="set-refresh" type="number" min="10" max="300" style="width:46px;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:6px;padding:4px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;text-align:center;">
+        <span style="font-size:10px;color:#4b6280;">sec</span>
+        <button onclick="saveSetting('refresh')" style="background:#166534;color:#86efac;border:none;border-radius:6px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Set</button>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:10px;color:#94a3b8;">Dup Warn</span>
+      <!-- Dup warn -->
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="font-size:11px;color:#94a3b8;">Dup Warn</span>
         <button id="dupToggleBtn" onclick="toggleDupWarn()" style="background:#166534;color:#86efac;border:none;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
       </div>
-      <button onclick="clearFundCache()" style="width:100%;background:#1e3a5f;color:#f87171;border:1px solid #7f1d1d;border-radius:6px;padding:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Fund Cache</button>
+      <!-- Clear cache -->
+      <button onclick="clearFundCache()" style="background:#1e3a5f;color:#f87171;border:1px solid #7f1d1d;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Fund Cache</button>
     </div>
   </div>
 
-  <!-- NIVI AI — full width collapsible -->
+  <!-- NIVI AI — collapsible, default open -->
   <div style="border-bottom:1px solid #1e2d3d;">
-    <div onclick="var b=document.getElementById('nivi-settings-body');var a=document.getElementById('nivi-settings-arrow');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;">NIVI AI</div>
-      <span id="nivi-settings-arrow" style="font-size:10px;color:#34d399;">▼</span>
+    <div onclick="var b=document.getElementById('nivi-s-body');var a=document.getElementById('nivi-s-arr');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">NIVI AI</div>
+      <span id="nivi-s-arr" style="font-size:10px;color:#34d399;font-weight:700;">▼</span>
     </div>
-    <div id="nivi-settings-body" style="padding:0 12px 10px;">
-      <!-- Gemini Key -->
-      <div style="padding:6px 0;border-bottom:1px solid #0f1e33;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-size:11px;color:#e2e8f0;">Gemini API Key</div>
-            <div id="gemini-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
-          </div>
-          <button onclick="document.getElementById('gemini-key-row').style.display=document.getElementById('gemini-key-row').style.display==='none'?'flex':'none'" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
-        </div>
-        <div id="gemini-key-row" style="display:none;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
-          <input id="set-gemini-key" type="password" placeholder="AIza..." style="flex:1;min-width:0;background:#0a1628;border:1px solid #065f46;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
-          <button onclick="saveGeminiKey()" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
-          <button onclick="clearGeminiKey()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
-        </div>
-        <div style="font-size:9px;color:#4b6280;margin-top:3px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com/apikey</a></div>
-      </div>
-      <!-- Voice controls in 2 col -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #0f1e33;">
+    <div id="nivi-s-body" style="padding:0 14px 10px;">
+      <!-- Gemini Key row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
         <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-            <span style="font-size:11px;color:#e2e8f0;">Speed</span>
+          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">Gemini API Key</div>
+          <div id="gemini-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
+        </div>
+        <button onclick="document.getElementById('gemini-key-row').style.display=document.getElementById('gemini-key-row').style.display==='none'?'flex':'none'" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
+      </div>
+      <div id="gemini-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+        <input id="set-gemini-key" type="password" placeholder="AIza..." style="flex:1;min-width:0;background:#0a1628;border:1px solid #065f46;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:11px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+        <button onclick="saveGeminiKey()" style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
+        <button onclick="clearGeminiKey()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
+      </div>
+      <div style="font-size:9px;color:#4b6280;margin-bottom:8px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com/apikey</a></div>
+      <!-- Speed + Pitch inline -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+            <span style="font-size:10px;color:#94a3b8;">Speed</span>
             <span id="nivi-speed-label" style="font-size:10px;color:#34d399;font-weight:700;">Normal</span>
           </div>
           <input type="range" id="nivi-speed-slider" min="0.5" max="1.5" step="0.1" value="0.88" oninput="updateNiviSpeed(this.value)" style="width:100%;accent-color:#34d399;cursor:pointer;">
         </div>
         <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-            <span style="font-size:11px;color:#e2e8f0;">Pitch</span>
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+            <span style="font-size:10px;color:#94a3b8;">Pitch</span>
             <span id="nivi-pitch-label" style="font-size:10px;color:#34d399;font-weight:700;">Normal</span>
           </div>
           <input type="range" id="nivi-pitch-slider" min="0.8" max="1.4" step="0.05" value="1.15" oninput="updateNiviPitch(this.value)" style="width:100%;accent-color:#34d399;cursor:pointer;">
         </div>
       </div>
-      <!-- Auto speak + voice test -->
-      <div style="display:flex;align-items:center;gap:8px;padding-top:6px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex:1;">
-          <span style="font-size:11px;color:#e2e8f0;">Auto Speak</span>
+      <!-- Auto speak + test inline -->
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11px;color:#94a3b8;">Auto Speak</span>
           <button id="nivi-autospeak-btn" onclick="toggleNiviAutoSpeak()" style="background:#065f46;color:#34d399;border:1px solid #065f46;border-radius:20px;padding:3px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
         </div>
-        <button onclick="niviVoiceTest()" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:6px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Test</button>
+        <button onclick="niviVoiceTest()" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:6px;padding:5px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Voice Test</button>
       </div>
     </div>
   </div>
 
-  <!-- API CONFIGURATION — collapsible -->
+  <!-- API CONFIGURATION — collapsible, default closed -->
   <div style="border-bottom:1px solid #1e2d3d;">
-    <div onclick="var b=document.getElementById('api-settings-body');var a=document.getElementById('api-settings-arrow');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;">API CONFIGURATION</div>
-      <span id="api-settings-arrow" style="font-size:10px;color:#f59e0b;">▶</span>
+    <div onclick="var b=document.getElementById('api-s-body');var a=document.getElementById('api-s-arr');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">API CONFIGURATION</div>
+      <span id="api-s-arr" style="font-size:10px;color:#f59e0b;font-weight:700;">▶</span>
     </div>
-    <div id="api-settings-body" style="display:none;padding:0 12px 10px;">
+    <div id="api-s-body" style="display:none;padding:0 14px 10px;">
       <!-- Primary -->
-      <div style="padding:6px 0;border-bottom:1px solid #0f1e33;">
+      <div style="padding:5px 0;border-bottom:1px solid #0f1e33;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:11px;color:#e2e8f0;">Primary API</div>
-          <button onclick="startAPIEdit()" id="changeURLBtn" style="background:#713f12;color:#fde68a;border:none;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
+          <span style="font-size:11px;color:#e2e8f0;">Primary API</span>
+          <button onclick="startAPIEdit()" id="changeURLBtn" style="background:#713f12;color:#fde68a;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
         </div>
         <div id="set-api-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;line-height:1.4;"></div>
         <div id="set-api-edit" style="display:none;margin-top:5px;">
-          <input id="set-api-input" placeholder="Paste new API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
-          <div style="display:flex;gap:6px;margin-top:5px;">
+          <input id="set-api-input" placeholder="Paste new API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+          <div style="display:flex;gap:5px;margin-top:5px;">
             <button onclick="saveSetting('api')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
             <button onclick="cancelAPIEdit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
           </div>
         </div>
       </div>
       <!-- Secondary -->
-      <div style="padding:6px 0;border-bottom:1px solid #0f1e33;">
+      <div style="padding:5px 0;border-bottom:1px solid #0f1e33;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:11px;color:#e2e8f0;">Secondary API <span style="font-size:9px;color:#4b6280;">(FB1)</span></div>
-          <button onclick="startAPI2Edit()" id="changeURL2Btn" style="background:#713f12;color:#fde68a;border:none;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
+          <span style="font-size:11px;color:#e2e8f0;">Secondary <span style="font-size:9px;color:#4b6280;">(FB1)</span></span>
+          <button onclick="startAPI2Edit()" id="changeURL2Btn" style="background:#713f12;color:#fde68a;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
         </div>
-        <div id="set-api2-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:12px;line-height:1.4;"></div>
+        <div id="set-api2-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:12px;"></div>
         <div id="set-api2-edit" style="display:none;margin-top:5px;">
-          <input id="set-api2-input" placeholder="Paste secondary API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
-          <div style="display:flex;gap:6px;margin-top:5px;">
+          <input id="set-api2-input" placeholder="Paste secondary API URL..." style="width:100%;background:#0a1628;border:1px solid #f59e0b;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+          <div style="display:flex;gap:5px;margin-top:5px;">
             <button onclick="saveSetting('api2')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
             <button onclick="cancelAPI2Edit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
           </div>
         </div>
       </div>
       <!-- Tertiary -->
-      <div style="padding:6px 0;">
+      <div style="padding:5px 0;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:11px;color:#e2e8f0;">Tertiary API <span style="font-size:9px;color:#a78bfa;">(FB2)</span></div>
-          <button onclick="startAPI3Edit()" id="changeURL3Btn" style="background:#4a1d96;color:#c4b5fd;border:none;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
+          <span style="font-size:11px;color:#e2e8f0;">Tertiary <span style="font-size:9px;color:#a78bfa;">(FB2)</span></span>
+          <button onclick="startAPI3Edit()" id="changeURL3Btn" style="background:#4a1d96;color:#c4b5fd;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
         </div>
-        <div id="set-api3-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:12px;line-height:1.4;"></div>
+        <div id="set-api3-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;min-height:12px;"></div>
         <div id="set-api3-edit" style="display:none;margin-top:5px;">
-          <input id="set-api3-input" placeholder="Paste tertiary API URL..." style="width:100%;background:#0a1628;border:1px solid #a78bfa;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
-          <div style="display:flex;gap:6px;margin-top:5px;">
+          <input id="set-api3-input" placeholder="Paste tertiary API URL..." style="width:100%;background:#0a1628;border:1px solid #a78bfa;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+          <div style="display:flex;gap:5px;margin-top:5px;">
             <button onclick="saveSetting('api3')" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
             <button onclick="cancelAPI3Edit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
           </div>
@@ -903,71 +907,65 @@ body.light .ticker-price{color:#e2e8f0;}
     </div>
   </div>
 
-  <!-- GOOGLE SHEETS — collapsible -->
+  <!-- GOOGLE SHEETS — collapsible, default closed -->
   <div style="border-bottom:1px solid #1e2d3d;">
-    <div onclick="var b=document.getElementById('sheets-settings-body');var a=document.getElementById('sheets-settings-arrow');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;">GOOGLE SHEETS <span style="color:#0f9d58;">(Fundamentals)</span></div>
-      <span id="sheets-settings-arrow" style="font-size:10px;color:#4285F4;">▶</span>
+    <div onclick="var b=document.getElementById('sheet-s-body');var a=document.getElementById('sheet-s-arr');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">GOOGLE SHEETS <span style="color:#0f9d58;">(Fundamentals)</span></div>
+      <span id="sheet-s-arr" style="font-size:10px;color:#4285F4;font-weight:700;">▶</span>
     </div>
-    <div id="sheets-settings-body" style="display:none;padding:0 12px 10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #0f1e33;">
-        <div style="font-size:11px;color:#e2e8f0;">Sheet Integration</div>
+    <div id="sheet-s-body" style="display:none;padding:0 14px 10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0f1e33;">
+        <span style="font-size:11px;color:#e2e8f0;">Sheet Integration</span>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
           <input type="checkbox" id="sheet-enabled" onchange="toggleSheetIntegration(this.checked)" style="accent-color:#4285F4;width:15px;height:15px;">
           <span style="font-size:11px;color:#94a3b8;">Enabled</span>
         </label>
       </div>
-      <div style="padding:6px 0;">
+      <div style="padding:5px 0;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
-          <div style="font-size:11px;color:#e2e8f0;">Sheet ID</div>
-          <button onclick="startSheetEdit()" id="changeSheetBtn" style="background:#1a3a6b;color:#93c5fd;border:1px solid #1e3a5f;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
+          <span style="font-size:11px;color:#e2e8f0;">Sheet ID</span>
+          <button onclick="startSheetEdit()" id="changeSheetBtn" style="background:#1a3a6b;color:#93c5fd;border:1px solid #1e3a5f;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Edit</button>
         </div>
         <div id="sheet-id-display" style="font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;"></div>
         <div id="sheet-id-edit" style="display:none;margin-top:5px;">
-          <input id="sheet-id-input" placeholder="Paste Google Sheet ID..." style="width:100%;background:#0a1628;border:1px solid #4285F4;color:#e2e8f0;border-radius:8px;padding:6px 10px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
-          <div style="display:flex;gap:6px;margin-top:5px;">
+          <input id="sheet-id-input" placeholder="Paste Google Sheet ID..." style="width:100%;background:#0a1628;border:1px solid #4285F4;color:#e2e8f0;border-radius:7px;padding:6px 9px;font-size:10px;outline:none;font-family:'JetBrains Mono',monospace;box-sizing:border-box;">
+          <div style="display:flex;gap:5px;margin-top:5px;">
             <button onclick="saveSheetId()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
             <button onclick="cancelSheetEdit()" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:6px;padding:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
           </div>
         </div>
-        <div id="sheet-status" style="font-size:10px;margin-top:3px;color:#4b6280;"></div>
+        <div id="sheet-status" style="font-size:9px;margin-top:3px;color:#4b6280;"></div>
       </div>
     </div>
   </div>
 
-  <!-- ROW 3: QUICK NAV + DANGER (2 col) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #1e2d3d;">
-    <!-- Quick Nav -->
-    <div style="padding:10px 12px;border-right:1px solid #1e2d3d;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;margin-bottom:6px;">QUICK NAV</div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <button onclick="tab('alerts')" style="background:#1e2d3d;color:#fde68a;border:1px solid #2d3f52;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Alerts</button>
-        <button onclick="tab('holidays')" style="background:#1e2d3d;color:#34d399;border:1px solid #2d3f52;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Holidays</button>
-      </div>
+  <!-- QUICK NAV + DANGER — inline row -->
+  <div style="padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+    <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;margin-bottom:6px;">QUICK NAV</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button onclick="tab('alerts')" style="flex:1;background:#1e2d3d;color:#fde68a;border:1px solid #2d3f52;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Alerts</button>
+      <button onclick="tab('holidays')" style="flex:1;background:#1e2d3d;color:#34d399;border:1px solid #2d3f52;border-radius:6px;padding:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Holidays</button>
     </div>
-    <!-- Danger Zone -->
-    <div style="padding:10px 12px;">
-      <div style="font-size:9px;color:#ef4444;font-weight:700;letter-spacing:1px;margin-bottom:6px;">DANGER ZONE</div>
-      <div style="display:flex;flex-direction:column;gap:5px;">
-        <button onclick="clearData('holdings')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Holdings</button>
-        <button onclick="clearData('history')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear History</button>
-        <button onclick="clearData('alerts')" style="background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Alerts</button>
-      </div>
+    <div style="font-size:9px;color:#ef4444;letter-spacing:1px;font-weight:700;margin-bottom:6px;">DANGER ZONE</div>
+    <div style="display:flex;gap:6px;">
+      <button onclick="clearData('holdings')" style="flex:1;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Holdings</button>
+      <button onclick="clearData('history')" style="flex:1;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">History</button>
+      <button onclick="clearData('alerts')" style="flex:1;background:#7f1d1d;color:#fca5a5;border:none;border-radius:6px;padding:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Alerts</button>
     </div>
   </div>
 
-  <!-- FEATURE GUIDE — collapsible dropdown -->
+  <!-- FEATURE GUIDE — collapsible, default closed -->
   <div style="border-bottom:1px solid #1e2d3d;">
-    <div onclick="var b=document.getElementById('feature-guide-body');var a=document.getElementById('feature-guide-arrow');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;">
-      <div style="font-size:9px;color:#4b6280;font-weight:700;letter-spacing:1px;">FEATURE GUIDE</div>
-      <span id="feature-guide-arrow" style="font-size:10px;color:#4b6280;">▶</span>
+    <div onclick="var b=document.getElementById('feat-s-body');var a=document.getElementById('feat-s-arr');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">
+      <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;">FEATURE GUIDE</div>
+      <span id="feat-s-arr" style="font-size:10px;color:#4b6280;font-weight:700;">▶</span>
     </div>
-    <div id="feature-guide-body" style="display:none;padding:0 12px 10px;">
+    <div id="feat-s-body" style="display:none;padding:0 14px 10px;">
       <div id="featureGuideList"></div>
     </div>
   </div>
 
-  <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 16px 80px;">REAL TRADER PRO · v2.2</div>
+  <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;">REAL TRADER PRO · v2.2</div>
 </div>
 
 <!-- ERROR BANNER -->
@@ -1350,7 +1348,7 @@ body.light .ticker-price{color:#e2e8f0;}
       <!-- Loading state -->
       <div id="nivi-loading" style="text-align:center;padding:30px 0;display:none;">
         <div class="spinner" style="margin:0 auto 8px;"></div>
-        <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi सोच रही है...</div>
+        <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi is thinking...</div>
       </div>
       <!-- Chat messages render here via JS -->
     </div>
@@ -1374,12 +1372,12 @@ body.light .ticker-price{color:#e2e8f0;}
         <button id="nivi-mic-btn" onclick="niviMicToggle()" title="Voice Input"
           style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;">🎙️</button>
         <button onclick="niviSend()"
-          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Send</button>
       </div>
       <!-- Mic status -->
-      <div id="nivi-mic-status" style="font-size:9px;color:#f59e0b;margin-top:4px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... (फिर से दबाएं रोकने के लिए)</div>
+      <div id="nivi-mic-status" style="font-size:9px;color:#f59e0b;margin-top:4px;display:none;font-family:'Rajdhani',sans-serif;">🔴 Listening... (Press again to stop)</div>
       <!-- Disclaimer -->
-      <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ केवल जानकारी हेतु। SEBI registered advisor नहीं।</div>
+      <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ Only for information। Not SEBI registered advisor।</div>
     </div>
 
   </div>
