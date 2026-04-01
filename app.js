@@ -1721,12 +1721,13 @@ async function preloadAllFundamentalsFromFirebase() {
         if (f.nullValue !== undefined) return null;
         return f.stringValue ?? null;
       }
-      window._firebaseFundCache[sym] = {
-        pe: fsVal(d.pe), eps: fsVal(d.eps),
-        marketCap: fsVal(d.marketCap), bookValue: fsVal(d.bookValue),
-        high52: fsVal(d.high52), low52: fsVal(d.low52),
-        _source: 'firebase', _ts: Date.now()
-      };
+      function safeNum(v){ return (v===null||v===undefined||isNaN(Number(v)))?null:Number(v); }
+window._firebaseFundCache[sym] = {
+  pe: safeNum(d.pe), eps: safeNum(d.eps),
+  marketCap: safeNum(d.marketCap), bookValue: safeNum(d.bookValue),
+  high52: safeNum(d.high52), low52: safeNum(d.low52),
+  _source: 'firebase', _ts: Date.now()
+};
     });
     console.log('✅ Firebase fundamentals preloaded:', Object.keys(window._firebaseFundCache).length, 'stocks');
   } catch(e) {
@@ -6104,11 +6105,12 @@ function fsVal(f){
       }
     // Store in memory for next call
     window._firebaseFundCache = window._firebaseFundCache || {};
-    window._firebaseFundCache[cleanSym] = {
-      pe: fsVal(d.pe), eps: fsVal(d.eps), marketCap: fsVal(d.marketCap),
-      bookValue: fsVal(d.bookValue), high52: fsVal(d.high52), low52: fsVal(d.low52),
-      _source: 'firestore_direct', _ts: Date.now()
-    };
+function safeNum(v){ return (v===null||v===undefined||isNaN(Number(v)))?null:Number(v); }
+window._firebaseFundCache[cleanSym] = {
+  pe: safeNum(d.pe), eps: safeNum(d.eps), marketCap: safeNum(d.marketCap),
+  bookValue: safeNum(d.bookValue), high52: safeNum(d.high52), low52: safeNum(d.low52),
+  _source: 'firestore_direct', _ts: Date.now()
+};
     const raw = window._firebaseFundCache[cleanSym];
     return { pe: raw.pe, eps: raw.eps, marketCap: raw.marketCap,
              bookValue: raw.bookValue, high52: raw.high52, low52: raw.low52 };
