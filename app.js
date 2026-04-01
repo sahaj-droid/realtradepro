@@ -4204,8 +4204,7 @@ async function startApp(){
   renderWLTabs();
   initGeminiKeyDisplay();
   showLoader("Loading...");
-  // Pull cloud data first (sync)
-  await pullFromCloud();
+  // Data already loaded from Firebase via loadUserData() before startApp()
   // Watchlist: batch fetch | Indices: individual (^ symbols)
   await Promise.all([
     batchFetchStocks(wl),
@@ -5533,108 +5532,74 @@ function refreshEarningsCal() {
 }
 
 // ======================================
-// CLOUD SYNC via GAS + Google Sheet
-// Keys: wl, h, hist, groups
+// FIREBASE SYNC (replaces GAS cloud sync)
+// All data saved to Firestore via saveUserData()
 // ======================================
 var _syncInProgress = false;
 var _syncDebounceTimer = null;
 var _lastSyncTime = 0;
 
-function getSyncAPI() {
-  return localStorage.getItem('customAPI') || API;
-}
-
-// Save one key to cloud
-async function cloudSave(key, data) {
-  try {
-    const api = getSyncAPI();
-    const encoded = encodeURIComponent(JSON.stringify(data));
-    const url = `${api}?type=syncSave&key=${key}&data=${encoded}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    return j.ok === true;
-  } catch(e) { return false; }
-}
-
-// Load one key from cloud
-async function cloudLoad(key) {
-  try {
-    const api = getSyncAPI();
-    const r = await fetch(`${api}?type=syncLoad&key=${key}`);
-    const j = await r.json();
-    if (j.ok && j.data) return JSON.parse(j.data);
-    return null;
-  } catch(e) { return null; }
-}
-
-// Debounced auto-save (waits 2s after last change)
+// Debounced auto-save — waits 2s after last change
 function triggerAutoSync() {
   if (_syncDebounceTimer) clearTimeout(_syncDebounceTimer);
-  _syncDebounceTimer = setTimeout(() => pushToCloud(false), 2000);
+  _syncDebounceTimer = setTimeout(() => saveUserData(), 2000);
 }
 
-// Push all data to cloud
+// Manual "Upload to Cloud" button → Firebase save
 async function pushToCloud(showMsg = true) {
   if (_syncInProgress) return;
   _syncInProgress = true;
   const syncBtn = document.getElementById('syncStatusBtn');
-  if (syncBtn) { syncBtn.innerText = 'Syncing...'; syncBtn.style.color = '#f59e0b'; }
+  if (syncBtn) { syncBtn.innerText = 'Saving...'; syncBtn.style.color = '#f59e0b'; }
   try {
-    await Promise.all([
-      cloudSave('wl', wl),
-      cloudSave('h', h),
-      cloudSave('hist', hist),
-      cloudSave('watchlists', watchlists)
-    ]);
+    await saveUserData();
     _lastSyncTime = Date.now();
     localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
-    const lsd2 = document.getElementById('lastSyncDisplay');
-    if (lsd2) { const dt=new Date(_lastSyncTime); lsd2.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
-    if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
-    if (showMsg) showPopup('Cloud sync complete ✓');
+    const lsd = document.getElementById('lastSyncDisplay');
+    if (lsd) { const dt=new Date(_lastSyncTime); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
+    if (syncBtn) { syncBtn.innerText = 'Saved ✓'; syncBtn.style.color = '#22c55e'; }
+    if (showMsg) showPopup('Firebase sync complete ✓');
     setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
   } catch(e) {
     if (syncBtn) { syncBtn.innerText = 'Sync Failed'; syncBtn.style.color = '#ef4444'; }
-    if (showMsg) showPopup('Sync failed - check API');
+    if (showMsg) showPopup('Firebase sync failed');
+    console.error('pushToCloud error:', e);
   }
   _syncInProgress = false;
 }
 
-// Pull all data from cloud (on app open or manual)
+// Manual "Download from Cloud" button → Firebase load
 async function pullFromCloud(showMsg = false) {
+  if (!currentUser) { if (showMsg) showPopup('Login required'); return; }
   const syncBtn = document.getElementById('syncStatusBtn');
   if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
   try {
-    const [cwl, ch, chist, cwatchlists] = await Promise.all([
-      cloudLoad('wl'),
-      cloudLoad('h'),
-      cloudLoad('hist'),
-      cloudLoad('watchlists')
-    ]);
+    const doc = await db.collection('users').doc(currentUser.userId).get();
+    const data = doc.data();
+    if (!data) { if (showMsg) showPopup('No data in Firebase'); return; }
 
     let changed = false;
 
-    if (cwatchlists && Array.isArray(cwatchlists) && cwatchlists.length > 0) {
-      watchlists = cwatchlists;
+    if (data.watchlists?.length) {
+      watchlists = data.watchlists;
       localStorage.setItem('watchlists', JSON.stringify(watchlists));
       wl = watchlists[currentWL]?.stocks || [];
       localStorage.setItem('wl', JSON.stringify(wl));
       changed = true;
-    } else if (cwl && Array.isArray(cwl) && cwl.length > 0) {
-      // fallback: old cloud data without watchlists
-      wl = cwl;
-      watchlists[0].stocks = cwl;
-      localStorage.setItem('wl', JSON.stringify(wl));
-      changed = true;
     }
-    if (ch && Array.isArray(ch) && ch.length > 0) {
-      h = ch;
+    if (data.holdings?.length) {
+      h = data.holdings;
       localStorage.setItem('h', JSON.stringify(h));
       changed = true;
     }
-    if (chist && Array.isArray(chist) && chist.length > 0) {
-      hist = chist;
+    if (data.history?.length) {
+      hist = data.history;
       localStorage.setItem('hist', JSON.stringify(hist));
+      changed = true;
+    }
+    if (data.alerts?.length) {
+      alerts = data.alerts;
+      localStorage.setItem('alerts', JSON.stringify(alerts));
       changed = true;
     }
 
@@ -5642,19 +5607,22 @@ async function pullFromCloud(showMsg = false) {
     localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
     const lsd = document.getElementById('lastSyncDisplay');
     if (lsd) { const dt=new Date(_lastSyncTime); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
-    if (syncBtn) { syncBtn.innerText = 'Synced ✓'; syncBtn.style.color = '#22c55e'; }
+    if (syncBtn) { syncBtn.innerText = 'Loaded ✓'; syncBtn.style.color = '#22c55e'; }
     setTimeout(() => { if (syncBtn) { syncBtn.innerText = 'Sync Now'; syncBtn.style.color = '#38bdf8'; } }, 3000);
 
     if (changed) {
       renderWLTabs();
       renderWL();
-      if (showMsg) showPopup('Data loaded from cloud ✓');
+      renderHold();
+      renderHist();
+      if (showMsg) showPopup('Data loaded from Firebase ✓');
     } else {
-      if (showMsg) showPopup('Cloud: no new data');
+      if (showMsg) showPopup('Firebase: no new data');
     }
   } catch(e) {
-    if (syncBtn) { syncBtn.innerText = 'Sync Error'; syncBtn.style.color = '#ef4444'; }
-    if (showMsg) showPopup('Cloud load error');
+    if (syncBtn) { syncBtn.innerText = 'Load Error'; syncBtn.style.color = '#ef4444'; }
+    if (showMsg) showPopup('Firebase load error');
+    console.error('pullFromCloud error:', e);
   }
 }
 
