@@ -5742,19 +5742,48 @@ async function openNivi(sym) {
     const cached = JSON.parse(localStorage.getItem(cacheKey));
     if (cached && (Date.now() - cached.ts) < NIVI_CACHE_MS) {
       _niviShowLoading(false);
-      _niviApplyPriceAndTech(cached.data);
-      const _niviAnswer = _niviData.niviAdvice?.answer || '';
-    if (_niviAnswer.trim()) {
-      _niviAddBubble('nivi', _niviFormatBullets(_niviAnswer));
-    } else {
-      _niviAddBubble('nivi', '⚠️ निवी को इस स्टॉक का विश्लेषण नहीं मिला। थोड़ी देर बाद दोबारा कोशिश करें।');
-    }
+      if (cached.direct) {
+        // Direct Gemini cached — show bubble directly
+        _niviAddBubble('nivi', _niviFormatBullets(cached.answer));
+      } else {
+        _niviApplyPriceAndTech(cached.data);
+        const ans = cached.data?.niviAdvice?.answer || '';
+        if (ans.trim()) _niviAddBubble('nivi', _niviFormatBullets(ans));
+        else _niviAddBubble('nivi', '\u26a0\ufe0f \u0928\u093f\u0935\u0940 \u0915\u094b \u0907\u0938 \u0938\u094d\u091f\u0949\u0915 \u0915\u093e \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0923 \u0928\u0939\u0940\u0902 \u092e\u093f\u0932\u093e\u0964 \u0925\u094b\u095c\u0940 \u0926\u0947\u0930 \u092c\u093e\u0926 \u0926\u094b\u092c\u093e\u0930\u093e \u0915\u094b\u0936\u093f\u0936 \u0915\u0930\u0947\u0902\u0964');
+      }
       return;
     }
   } catch(e) {}
 
-  // Fetch fresh
   _niviShowLoading(true);
+
+  // ── PRIMARY: Direct Gemini (browser → Gemini, no GAS cold start) ──
+  const gemKey = localStorage.getItem('geminiApiKey');
+  if (gemKey) {
+    const cd = cache[sym] && cache[sym].data;
+    if (cd) {
+      const diff = cd.regularMarketPrice - cd.chartPreviousClose;
+      const pct  = ((diff / cd.chartPreviousClose) * 100).toFixed(2);
+      const prompt =
+`\u0906\u092a '\u0928\u093f\u0935\u0940' \u0939\u0948\u0902 \u2014 \u090f\u0915 \u0935\u093f\u0936\u0947\u0937\u091c\u094d\u091e \u092d\u093e\u0930\u0924\u0940\u092f \u0936\u0947\u092f\u0930 \u092c\u093e\u091c\u093c\u093e\u0930 \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0915\u0964
+\u0938\u094d\u091f\u0949\u0915: ${sym}
+CMP: \u20b9${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)
+\u0926\u093f\u0928 \u0915\u093e \u0909\u091a\u094d\u091a: \u20b9${cd.regularMarketDayHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.regularMarketDayLow?.toFixed(2)}
+52 \u0938\u092a\u094d\u0924\u093e\u0939 \u0909\u091a\u094d\u091a: \u20b9${cd.fiftyTwoWeekHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.fiftyTwoWeekLow?.toFixed(2)}
+Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
+\u0915\u0947\u0935\u0932 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f\u0964 Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
+      const resp = await directGeminiCall(prompt);
+      _niviShowLoading(false);
+      if (resp && resp.ok) {
+        // Cache direct result
+        localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), direct: true, answer: resp.answer }));
+        _niviAddBubble('nivi', _niviFormatBullets(resp.answer));
+        return;
+      }
+    }
+  }
+
+  // ── FALLBACK: GAS route (backward compatible) ──
   let _niviData = null, _gasErr = null;
   const _niviUrls = [
     API_NIVI,
@@ -5778,33 +5807,11 @@ async function openNivi(sym) {
   _niviShowLoading(false);
 
   if (_niviData) {
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: _niviData }));
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), direct: false, data: _niviData }));
     _niviApplyPriceAndTech(_niviData);
     _niviAddBubble('nivi', _niviFormatBullets(_niviData.niviAdvice?.answer || ''));
   } else {
-    // Direct Gemini fallback
-    const gemKey = localStorage.getItem('geminiApiKey');
-    if (gemKey) {
-      _niviShowLoading(true);
-      const cd = cache[sym] && cache[sym].data;
-      if (cd) {
-        const diff = cd.regularMarketPrice - cd.chartPreviousClose;
-        const pct  = ((diff / cd.chartPreviousClose) * 100).toFixed(2);
-        const prompt = `आप 'निवी' हैं — एक विशेषज्ञ भारतीय शेयर बाज़ार विश्लेषक।\nस्टॉक: ${sym}\nCMP: ₹${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)\nदिन का उच्च: ₹${cd.regularMarketDayHigh?.toFixed(2)} | निम्न: ₹${cd.regularMarketDayLow?.toFixed(2)}\n52 सप्ताह उच्च: ₹${cd.fiftyTwoWeekHigh?.toFixed(2)} | निम्न: ₹${cd.fiftyTwoWeekLow?.toFixed(2)}\nकेवल शुद्ध हिंदी देवनागरी में 3 bullet points दीजिए। Roman script बिल्कुल नहीं। Bullet format: • [वाक्य]`;
-        const resp = await directGeminiCall(prompt);
-        _niviShowLoading(false);
-        if (resp && resp.ok) {
-          _niviAddBubble('nivi', _niviFormatBullets(resp.answer));
-        } else {
-          _niviAddBubble('nivi', '⚠️ GAS aur Direct Gemini dono fail ho gaye. Settings mein API check karo.');
-        }
-      } else {
-        _niviShowLoading(false);
-        _niviAddBubble('nivi', '⚠️ ' + (_gasErr?.message || 'API failed'));
-      }
-    } else {
-      _niviAddBubble('nivi', '⚠️ ' + (_gasErr?.message || 'API failed') + '\nSettings → Gemini API Key add karo.');
-    }
+    _niviAddBubble('nivi', '\u26a0\ufe0f ' + (_gasErr?.message || 'API failed') + (gemKey ? '' : '\nSettings \u2192 Gemini API Key add karo.'));
   }
 }
 
@@ -6402,7 +6409,7 @@ function niviNewsSpeak() {
   speechSynthesis.speak(u);
 }
 
-function niviNewsSearch() {
+async function niviNewsSearch() {
   var sym = (document.getElementById('niviNewsInput').value || '').trim().toUpperCase();
   if (!sym) { showPopup('Symbol daalo pehle! e.g. RELIANCE'); return; }
 
@@ -6410,55 +6417,87 @@ function niviNewsSearch() {
   document.getElementById('niviNewsSummaryCard').style.display = 'none';
   document.getElementById('niviNewsError').style.display      = 'none';
 
-  // Use existing API_NIVI constant from your app
-  var url = API_NIVI + '?type=newsSearch&s=' + encodeURIComponent(sym);
+  // ── STEP 1: GAS → fetch headlines only (CORS-safe) ──
+  var headlines = [];
+  try {
+    var gasUrl = API_NIVI + '?type=news&s=' + encodeURIComponent(sym);
+    var gasResp = await fetch(gasUrl);
+    var gasData = await gasResp.json();
+    if (!gasData.ok) throw new Error(gasData.error || 'GAS news fetch failed');
+    headlines = gasData.headlines || gasData.items || [];
+    _niviNewsHeadlines = headlines;
+  } catch(err) {
+    document.getElementById('niviNewsLoading').style.display = 'none';
+    document.getElementById('niviNewsError').textContent = '\u274c News fetch failed: ' + err.toString();
+    document.getElementById('niviNewsError').style.display = 'block';
+    return;
+  }
 
-  fetch(url)
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-      document.getElementById('niviNewsLoading').style.display = 'none';
+  if (!headlines.length) {
+    document.getElementById('niviNewsLoading').style.display = 'none';
+    document.getElementById('niviNewsError').textContent = '\u274c ' + sym + ' ke liye koi news nahi mili.';
+    document.getElementById('niviNewsError').style.display = 'block';
+    return;
+  }
 
-      if (!data.ok) {
-        document.getElementById('niviNewsError').textContent = '❌ ' + (data.error || 'Error aaya, dobara try karo');
-        document.getElementById('niviNewsError').style.display = 'block';
-        return;
-      }
+  // Show raw headlines immediately
+  var hHtml = headlines.map(function(h, i) {
+    return '<div style="padding:5px 0;border-bottom:1px solid #1e3a5f;">'
+      + '<div style="font-weight:600;color:#94a3b8;font-size:11px;">'
+      + (i+1) + '. ' + (h.title || h) + '</div>'
+      + (h.date ? '<div style="color:#4b6280;font-size:10px;margin-top:2px;">' + h.date + '</div>' : '')
+      + '</div>';
+  }).join('') || '<div style="color:#4b6280;font-size:11px;">No headlines.</div>';
+  document.getElementById('niviRawHeadlines').innerHTML = hHtml;
+  document.getElementById('niviRawHeadlines').style.display = 'none';
 
-      // Header
-      document.getElementById('niviNewsSymLabel').textContent =
-        '📈 ' + data.sym + ' — News Summary';
-      document.getElementById('niviNewsMetaLabel').textContent =
-        (data.newsCount || 0) + ' headlines analysed • ' +
-        new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+  // Header
+  document.getElementById('niviNewsSymLabel').textContent = '\ud83d\udcc8 ' + sym + ' \u2014 News Summary';
+  document.getElementById('niviNewsMetaLabel').textContent =
+    headlines.length + ' headlines analysed \u2022 ' +
+    new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
 
-      // Bullet points
-      var lines = (data.summary || '').split('\n').filter(function(l){ return l.trim(); });
-      var html  = lines.map(function(line) {
-        var clean = line.replace(/^[•\-\*]\s*/, '').trim();
+  // ── STEP 2: Browser → Gemini for Hindi AI sentiment ──
+  var summaryHtml = '';
+  const gemKey = localStorage.getItem('geminiApiKey');
+  if (gemKey) {
+    var headlineText = headlines.slice(0, 8).map(function(h,i){
+      return (i+1) + '. ' + (h.title || h);
+    }).join('\n');
+    var sentimentPrompt =
+`\u0906\u092a '\u0928\u093f\u0935\u0940' \u0939\u0948\u0902 \u2014 \u092d\u093e\u0930\u0924\u0940\u092f \u0936\u0947\u092f\u0930 \u092c\u093e\u091c\u093c\u093e\u0930 \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0915\u0964
+\u0938\u094d\u091f\u0949\u0915: ${sym}
+\u0928\u0940\u091a\u0947 \u0928\u094d\u092f\u0942\u091c \u0939\u0947\u0921\u0932\u093e\u0907\u0928 \u0939\u0948\u0902:
+${headlineText}
+
+\u0907\u0928 \u0916\u092c\u0930\u094b\u0902 \u0915\u0947 \u0906\u0927\u093e\u0930 \u092a\u0930 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f:
+1. \u0938\u092e\u0917\u094d\u0930 \u092d\u093e\u0935\u0928\u093e (\u0924\u0947\u091c\u0940/\u092e\u0902\u0926\u0940/\u0928\u093f\u0930\u092a\u0947\u0915\u094d\u0937)
+2. \u092e\u0941\u0916\u094d\u092f \u0915\u093e\u0930\u0923
+3. \u0928\u093f\u0935\u0947\u0936\u0915 \u0915\u094b \u0938\u0932\u093e\u0939
+4. \u091c\u094b\u0916\u093f\u092e \u092f\u093e \u0905\u0935\u0938\u0930
+Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
+
+    var resp = await directGeminiCall(sentimentPrompt);
+    if (resp && resp.ok) {
+      var lines = resp.answer.split('\n').filter(function(l){ return l.trim(); });
+      summaryHtml = lines.map(function(line) {
+        var clean = line.replace(/^[\u2022\-\*]\s*/, '').trim();
         if (!clean) return '';
-return '<div style="display:flex;gap:8px;margin-bottom:8px;">'
-          + '<span style="color:#34d399;font-size:14px;flex-shrink:0;margin-top:1px;">•</span>'
+        return '<div style="display:flex;gap:8px;margin-bottom:8px;">'
+          + '<span style="color:#34d399;font-size:14px;flex-shrink:0;margin-top:1px;">\u2022</span>'
           + '<span style="font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">' + clean + '</span></div>';
       }).join('');
-      document.getElementById('niviNewsBullets').innerHTML = html || '<div style="color:#4b6280;">Summary available nahi.</div>';
+    }
+  }
 
-      // Raw headlines
-      _niviNewsHeadlines = data.headlines || [];
-      var hHtml = _niviNewsHeadlines.map(function(h, i) {
-        return '<div style="padding:5px 0;border-bottom:1px solid #1e3a5f;">'
-          + '<div style="font-weight:600;color:#94a3b8;font-size:11px;">'
-          + (i+1) + '. ' + h.title + '</div>'
-          + (h.date ? '<div style="color:#4b6280;font-size:10px;margin-top:2px;">' + h.date + '</div>' : '')
-          + '</div>';
-      }).join('') || '<div style="color:#4b6280;font-size:11px;">No headlines.</div>';
-      document.getElementById('niviRawHeadlines').innerHTML = hHtml;
-      document.getElementById('niviRawHeadlines').style.display = 'none';
+  // Fallback: no Gemini key or call failed
+  if (!summaryHtml) {
+    summaryHtml = '<div style="color:#4b6280;font-size:12px;">'
+      + (gemKey ? '\u26a0\ufe0f Gemini summary failed.' : '\u26a0\ufe0f Gemini key nahi — Settings mein add karo AI summary ke liye.')
+      + '</div>';
+  }
 
-      document.getElementById('niviNewsSummaryCard').style.display = 'block';
-    })
-    .catch(function(err) {
-      document.getElementById('niviNewsLoading').style.display = 'none';
-      document.getElementById('niviNewsError').textContent = '❌ Network error: ' + err.toString();
-      document.getElementById('niviNewsError').style.display = 'block';
-    });
+  document.getElementById('niviNewsBullets').innerHTML = summaryHtml;
+  document.getElementById('niviNewsLoading').style.display = 'none';
+  document.getElementById('niviNewsSummaryCard').style.display = 'block';
 }
