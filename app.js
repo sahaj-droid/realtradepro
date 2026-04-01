@@ -6091,13 +6091,17 @@ async function fetchFundSheet(sym){
     const doc = await db.collection('fundamentals').doc(cleanSym).get();
     if(!doc.exists) return null;
     const d = doc.data();
-    function fsVal(f){
-      if(!f) return null;
-      if(f.doubleValue !== undefined) return f.doubleValue;
-      if(f.integerValue !== undefined) return Number(f.integerValue);
-      if(f.nullValue !== undefined) return null;
-      return f.stringValue ?? null;
-    }
+function fsVal(f){
+        if(f === null || f === undefined) return null;
+        // Compat SDK returns plain values directly
+        if(typeof f === 'number') return f;
+        if(typeof f === 'string') return parseFloat(f) || null;
+        // REST API format
+        if(f.doubleValue !== undefined) return f.doubleValue;
+        if(f.integerValue !== undefined) return Number(f.integerValue);
+        if(f.nullValue !== undefined) return null;
+        return f.stringValue ? parseFloat(f.stringValue) || null : null;
+      }
     // Store in memory for next call
     window._firebaseFundCache = window._firebaseFundCache || {};
     window._firebaseFundCache[cleanSym] = {
