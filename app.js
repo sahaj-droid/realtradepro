@@ -4470,7 +4470,7 @@ async function fetchLiveNews(sym) {
   const apiUrl = localStorage.getItem("customAPI") || API;
   const cleanSym = sym.replace(".NS","").replace(".BO","");
   try {
-    const r = await fetch(`${apiUrl}?type=news&s=${encodeURIComponent(cleanSym)}`);
+    const r = await fetch(`${apiUrl}?niviNewsSearch&s=${encodeURIComponent(cleanSym)}`);
     if(!r.ok) return [];
     const j = await r.json();
     if(j.news && j.news.length > 0) return j.news;
@@ -6420,7 +6420,7 @@ async function niviNewsSearch() {
   // ── STEP 1: GAS → fetch headlines only (CORS-safe) ──
   var headlines = [];
   try {
-    var gasUrl = API_NIVI + '?type=news&s=' + encodeURIComponent(sym);
+    var gasUrl = API_NIVI + '?type=newsSearch&s=' + encodeURIComponent(sym);
     var gasResp = await fetch(gasUrl);
     var gasData = await gasResp.json();
     if (!gasData.ok) throw new Error(gasData.error || 'GAS news fetch failed');
