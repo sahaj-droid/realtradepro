@@ -6148,7 +6148,8 @@ function initGeminiKeyDisplay(){
 async function directGeminiCall(prompt){
   const key=localStorage.getItem('geminiApiKey');
   if(!key) return null;
-  const models=['gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.5-flash'];
+  // Use only confirmed-working stable models
+  const models=['gemini-1.5-flash','gemini-2.0-flash','gemini-1.0-pro'];
   for(const model of models){
     try{
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
@@ -6160,7 +6161,9 @@ async function directGeminiCall(prompt){
       if(j.candidates&&j.candidates[0]){
         return {ok:true,answer:j.candidates[0].content.parts[0].text,model};
       }
-    }catch(e){}
+      // Log exact error for debugging
+      if(j.error) console.warn('Gemini',model,'error:',j.error.message||j.error.status);
+    }catch(e){ console.warn('Gemini',model,'fetch failed:',e.message); }
   }
   return {ok:false,error:'All Gemini models failed'};
 }
