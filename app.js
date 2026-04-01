@@ -6413,23 +6413,56 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // ============================================================
 // NIVI NEWS SEARCH
 // ============================================================
+// ============================================================
+// NIVI NEWS SEARCH & VOICE (UPDATED)
+// ============================================================
+
+// 1. શોર્ટ-ફોર્મ સિમ્બોલ ને સરખી રીતે બોલવા માટેનું ટૂલ
+function expandTickersForSpeech(text) {
+  if (!text) return text;
+  const dict = { "BLISSGVS": "ब्लिस जी वी एस", "RELIANCE": "रिलायंस", "TCS": "टी सी एस", "INFY": "इन्फोसिस", "SBIN": "एस बी आई", "HDFCBANK": "एच डी एफ सी बैंक", "ITC": "आई टी सी" };
+  let newText = text;
+  for (const [sym, pron] of Object.entries(dict)) {
+    newText = newText.replace(new RegExp(`\\b${sym}\\b`, 'gi'), pron);
+  }
+  // બાકીના ALL CAPS શબ્દોને Title Case માં ફેરવો (જેથી એક-એક અક્ષર ના બોલે)
+  newText = newText.replace(/\b[A-Z]{4,}\b/g, function(match) {
+    return match.charAt(0) + match.slice(1).toLowerCase();
+  });
+  return newText;
+}
+
+// 2. તારું જૂનું ફંક્શન, નવા જાદુ સાથે
 function niviNewsSpeak() {
   if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
   speechSynthesis.cancel();
+  
   var bullets = document.getElementById('niviNewsBullets');
   if (!bullets) return;
   var text = bullets.innerText.replace(/•/g, '').trim();
   if (!text) { showPopup('Pehle news search karo'); return; }
+
+  // અહીંયા આપણે પેલું જાદુઈ ટૂલ વાપર્યું (શબ્દો સુધારવા માટે)
+  text = expandTickersForSpeech(text);
+
   var u = new SpeechSynthesisUtterance(text);
   u.lang = 'hi-IN';
-  u.rate = 0.85;
+  u.rate = 0.9;  // 0.85 કરતા થોડું ફાસ્ટ, જે નેચરલ લાગે
+  u.pitch = 1.1; // અવાજમાં થોડી મીઠાશ અને નેચરલ ફીલ લાવવા માટે
+
+  // સૌથી પહેલા Google નો પ્રીમિયમ અવાજ ગોતશે
   var voices = speechSynthesis.getVoices();
-  var hv = voices.find(function(v){ return v.lang==='hi-IN' && !/male/i.test(v.name); })
-         || voices.find(function(v){ return v.lang==='hi-IN'; });
+  var hv = voices.find(function(v){ return v.lang==='hi-IN' && v.name.includes('Google') && !/male/i.test(v.name); })
+        || voices.find(function(v){ return v.lang==='hi-IN' && /female|woman|swara|lekha/i.test(v.name); })
+        || voices.find(function(v){ return v.lang==='hi-IN' && !/male/i.test(v.name); })
+        || voices.find(function(v){ return v.lang==='hi-IN'; });
+        
   if (hv) u.voice = hv;
+
   var btn = document.getElementById('niviNewsSpeak');
   u.onstart = function(){ if(btn){ btn.textContent='⏹ Stop'; btn.onclick=function(){ speechSynthesis.cancel(); }; } };
   u.onend = u.onerror = function(){ if(btn){ btn.textContent='🔊 Sunao'; btn.onclick=niviNewsSpeak; } };
+  
   speechSynthesis.speak(u);
 }
 
