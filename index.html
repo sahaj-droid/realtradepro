@@ -462,12 +462,16 @@ body.light .ticker-price{color:#e2e8f0;}
     window._firebaseFundCache = window._firebaseFundCache || {};
     snap.forEach(doc => {
       const d = doc.data();
-      function fsVal(f){
-        if(!f) return null;
+function fsVal(f){
+        if(f === null || f === undefined) return null;
+        // Compat SDK returns plain values directly
+        if(typeof f === 'number') return f;
+        if(typeof f === 'string') return parseFloat(f) || null;
+        // REST API format
         if(f.doubleValue !== undefined) return f.doubleValue;
         if(f.integerValue !== undefined) return Number(f.integerValue);
         if(f.nullValue !== undefined) return null;
-        return f.stringValue ?? null;
+        return f.stringValue ? parseFloat(f.stringValue) || null : null;
       }
       window._firebaseFundCache[doc.id] = {
         pe: fsVal(d.pe), eps: fsVal(d.eps),
