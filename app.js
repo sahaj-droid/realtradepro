@@ -5986,7 +5986,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
   const keys  = [key1, key2].filter(Boolean);
   if (keys.length === 0) return { ok: false, error: 'No API key' };
 
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-2.0-flash'];
 
   // Build Gemini contents array from prior history + current prompt
   const contents = [];
@@ -6383,7 +6383,7 @@ async function directGeminiCall(prompt) {
   if (keys.length === 0) return { ok: false, error: 'API Key જ નથી! Settings માં જઈને નાખો.' };
 
   // બિનજરૂરી મોડેલ્સ કાઢી નાખ્યા. આ બે સૌથી ફાસ્ટ અને સ્ટેબલ છે.
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-2.0-flash'];
 
   for (const k of keys) {
     for (const model of models) {
