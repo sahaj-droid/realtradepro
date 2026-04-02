@@ -669,14 +669,12 @@ function fsVal(f){
     <div id="indicesStrip" style="display:flex;gap:0;flex:1;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;" onscroll="this.style.cssText=this.style.cssText">
     <!-- chips rendered by renderHeaderStrip() -->
     </div>
-    <button onclick="openAddIndexModal()" style="flex-shrink:0;margin-left:4px;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:24px;height:24px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;padding:0;" title="Add Index">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
+
   </div>
-  <!-- Right: 2x2 button grid -->
+  <!-- Right: refresh + add stacked -->
   <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
     <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
-    <button onclick="tab('earningscal')" style="background:#1e2d3d;border:1px solid #2d3f52;color:#f59e0b;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
+    <button onclick="openAddIndexModal()" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Add Index"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
   </div>
 </div>
 
@@ -1151,7 +1149,10 @@ function fsVal(f){
         </div>
         <div class="s-row-info"><div class="s-row-title">All Features</div><div class="s-row-sub">Complete feature reference</div></div>
       </div>
-      <span id="feat-s-arr" class="s-collapse-arr" style="color:#4b6280;">▶</span>
+      <div style="display:flex;align-items:center;gap:8px;pointer-events:auto;" onclick="event.stopPropagation()">
+        <span id="feat-pdf-btn-wrap"></span>
+        <span id="feat-s-arr" class="s-collapse-arr" style="color:#4b6280;pointer-events:none;">▶</span>
+      </div>
     </div>
     <div id="feat-s-body" style="display:none;padding:0 14px 12px;">
       <div id="featureGuideList"></div>
@@ -1168,16 +1169,29 @@ function fsVal(f){
   </div>
 </div>
 
-<div id="journal" class="tab p-3 space-y-[5px]"></div>
 <div id="holidays" class="tab p-3 space-y-[5px]"></div>
-<div id="earningscal" class="tab p-3 space-y-[5px]">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <span style="font-size:13px;font-weight:700;color:#f59e0b;letter-spacing:0.5px;">EARNINGS CALENDAR</span>
-    <button onclick="refreshEarningsCal()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>
-  </div>
-  <div id="earningsCalContent"><div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">Loading...</div></div>
-</div>
 <div id="news" class="tab" style="padding:0;"></div>
+
+<!-- DANGER CONFIRM MODAL (bottom sheet) -->
+<div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid rgba(239,68,68,0.3);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;box-sizing:border-box;">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div id="dangerModalTitle" style="font-size:15px;font-weight:700;color:#e2e8f0;">Clear Data?</div>
+        <div style="font-size:11px;color:#64748b;margin-top:1px;">This cannot be undone</div>
+      </div>
+    </div>
+    <div id="dangerModalDesc" style="font-size:12px;color:#94a3b8;margin:12px 0 20px;padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeDangerModal()" style="flex:1;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+      <button id="dangerConfirmBtn" style="flex:1;background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
+    </div>
+  </div>
+</div>
 
 <!-- JOURNAL ADD MODAL -->
 <div id="journalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
