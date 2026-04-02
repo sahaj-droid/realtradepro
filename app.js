@@ -6020,7 +6020,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
   for (const k of keys) {
     for (const model of models) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=`
         const r = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
