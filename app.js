@@ -403,7 +403,7 @@ const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPh
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = localStorage.getItem('customAPI') || "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=8000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 // MULTI-WATCHLIST SYSTEM
@@ -1969,7 +1969,8 @@ function _renderFundamentalsHTML(fs, fund, isCached){
 }
 
 async function openDetail(sym,isIndex){
-  let d=await fetchFull(sym,isIndex);if(!d)return;
+  // Show modal immediately with cached data
+  let d=cache[sym]?.data||await fetchFull(sym,isIndex);if(!d)return;
   document.getElementById("d-title").innerText=sym;
   // Reset all tabs to default state
   switchDetailTab('price');
@@ -4326,12 +4327,19 @@ async function startApp(){
   preloadAllFundamentalsFromFirebase();
   // Data already loaded from Firebase via loadUserData() before startApp()
   // Watchlist: batch fetch | Indices: individual (^ symbols)
-  await Promise.all([
-    batchFetchStocks(wl),
-    Promise.all(indicesList.map(i=>fetchFull(i.sym,true)))
-  ]);
+// Show UI immediately — don't wait for all data
   hideLoader();
   renderWL();
+  // Fetch in background — UI updates as data arrives
+  batchFetchStocks(wl).then(()=>{
+    renderWL();
+    renderHeaderStrip();
+    updateHeaderIndices();
+    updatePriceTicker();
+  });
+  Promise.all(indicesList.map(i=>fetchFull(i.sym,true))).then(()=>{
+    updateHeaderIndices();
+  });
   renderHeaderStrip();
   updateHeaderIndices();
   updatePriceTicker();
@@ -4365,7 +4373,7 @@ function startRefresh(){
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
     if(m.open) updatePrices();
-  }, 10000);
+  }, 5000);
 }
 
 document.addEventListener('visibilitychange', ()=>{
