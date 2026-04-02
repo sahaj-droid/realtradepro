@@ -828,7 +828,30 @@ function fsVal(f){
       <button onclick="clearFundCache()" style="background:#1e3a5f;color:#f87171;border:1px solid #7f1d1d;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear Fund Cache</button>
     </div>
   </div>
-
+<!-- ALERTS & NOTIFICATIONS -->
+<div style="padding:8px 14px;border-bottom:1px solid #1e2d3d;">
+  <div style="font-size:9px;color:#4b6280;letter-spacing:1px;font-weight:700;margin-bottom:6px;">ALERTS & NOTIFICATIONS</div>
+  <div style="display:flex;flex-direction:column;gap:7px;">
+    <!-- Technical Alerts toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <span style="font-size:11px;color:#94a3b8;">Technical Alerts</span>
+        <div style="font-size:9px;color:#4b6280;margin-top:1px;">RSI · MACD · BB · Volume</div>
+      </div>
+      <button id="alertEngineBtn" onclick="toggleAlertEngine()"
+        style="background:#166534;color:#86efac;border:none;border-radius:20px;padding:3px 14px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
+    </div>
+    <!-- Browser Notifications toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <span style="font-size:11px;color:#94a3b8;">Browser Notifications</span>
+        <div id="notifPermStatus" style="font-size:9px;color:#4b6280;margin-top:1px;">Checking...</div>
+      </div>
+      <button id="notifToggleBtn" onclick="toggleNotifications()"
+        style="background:#166534;color:#86efac;border:none;border-radius:20px;padding:3px 14px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">ON</button>
+    </div>
+  </div>
+</div>
   <!-- NIVI AI — collapsible, default open -->
   <div style="border-bottom:1px solid #1e2d3d;">
     <div onclick="var b=document.getElementById('nivi-s-body');var a=document.getElementById('nivi-s-arr');b.style.display=b.style.display==='none'?'block':'none';a.textContent=b.style.display==='none'?'▶':'▼';" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;user-select:none;">
