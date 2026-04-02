@@ -490,7 +490,12 @@ function renderHolidays(){
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const fmt=ds=>{const[y,m,d]=ds.split("-");return d+" "+months[parseInt(m)-1]+" "+y;};
   const dayName=ds=>days[new Date(ds).getDay()];
-  let html=`<div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:8px;letter-spacing:0.5px;">UPCOMING NSE HOLIDAYS</div>`;
+  let html=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <button onclick="tab('settings')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Back
+    </button>
+    <span style="font-size:12px;font-weight:700;color:#22c55e;letter-spacing:0.5px;">NSE MARKET HOLIDAYS</span>
+  </div>`;
   if(upcoming.length===0){html+=`<div style="color:#4b6280;font-size:12px;padding:10px;text-align:center;">No upcoming holidays</div>`;}
   upcoming.forEach(h=>{
     const isToday=h.date===today;
@@ -987,67 +992,6 @@ function updateMarketStatus(){
   const s=getMarketStatus();
   el.innerHTML=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s.color};margin-right:4px;${s.open?'animation:blink 1s infinite':''}"></span>${s.label}`;
   el.style.color=s.color;
-}
-
-// ======================================
-// TRADE JOURNAL
-// ======================================
-let journal = [];
-try{ journal=JSON.parse(localStorage.getItem("journal"))||[]; }catch(e){}
-
-function renderJournal(){
-  const tab=document.getElementById("journal");
-  if(!tab) return;
-  let html=`
-  <div style="display:flex;gap:6px;margin-bottom:10px;">
-    <button onclick="showAddJournalModal()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Add Note</button>
-  </div>`;
-  if(journal.length===0){
-    html+=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No journal entries yet</div>`;
-  } else {
-    [...journal].reverse().forEach((j,i)=>{
-      const idx=journal.length-1-i;
-      html+=`<div class="card" style="margin-bottom:5px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;">${j.sym||'GENERAL'}</span>
-            <span style="font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;background:${j.type==='BUY'?'#166534':j.type==='SELL'?'#7f1d1d':'#1e3a5f'};color:${j.type==='BUY'?'#86efac':j.type==='SELL'?'#fca5a5':'#93c5fd'};">${j.type||'NOTE'}</span>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <span style="font-size:10px;color:#4b6280;">${j.date}</span>
-            <button onclick="deleteJournal(${idx})" style="color:#ef4444;font-size:11px;background:none;border:none;cursor:pointer;">x</button>
-          </div>
-        </div>
-        <div style="font-size:12px;color:#cbd5e1;line-height:1.5;">${j.note}</div>
-      </div>`;
-    });
-  }
-  tab.innerHTML=html;
-}
-
-function showAddJournalModal(){
-  document.getElementById("journalModal").style.display="flex";
-  document.getElementById("jn-sym").value="";
-  document.getElementById("jn-note").value="";
-  document.getElementById("jn-type").value="NOTE";
-}
-
-function saveJournal(){
-  const sym=document.getElementById("jn-sym").value.trim().toUpperCase();
-  const note=document.getElementById("jn-note").value.trim();
-  const type=document.getElementById("jn-type").value;
-  if(!note){ showPopup("Note cannot be empty"); return; }
-  journal.push({sym,note,type,date:new Date().toLocaleDateString('en-IN')});
-  localStorage.setItem("journal",JSON.stringify(journal));
-  document.getElementById("journalModal").style.display="none";
-  renderJournal();
-  showPopup("Journal entry saved!");
-}
-
-function deleteJournal(idx){
-  journal.splice(idx,1);
-  localStorage.setItem("journal",JSON.stringify(journal));
-  renderJournal();
 }
 
 // ======================================
@@ -3179,26 +3123,43 @@ function toggleNotifications(){
 }
 
 // Fix 4: Separate clear with confirmation
+let _dangerPendingType = null;
 function clearData(type){
-  const labels={holdings:"Holdings",history:"History & Trade entries",alerts:"All Alerts"};
-  if(!confirm(`Clear ${labels[type]}? This cannot be undone.`)) return;
-  if(type==="holdings"){ h=[]; localStorage.setItem("h",JSON.stringify(h)); }
-  if(type==="history"){ hist=[]; localStorage.setItem("hist",JSON.stringify(hist)); }
-  if(type==="alerts"){ alerts=[]; localStorage.setItem("alerts",JSON.stringify(alerts)); }
-  showPopup(`${labels[type]} cleared!`);
-  if(type==="holdings") renderHold();
-  if(type==="history") renderHist();
-  if(type==="alerts") renderAlerts();
+  const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
+  const descs={
+    holdings:'All your holding entries will be permanently deleted. P&L data will be lost.',
+    history:'All trade history entries will be permanently deleted.',
+    alerts:'All price alerts and technical alert logs will be cleared.'
+  };
+  _dangerPendingType = type;
+  const modal = document.getElementById('dangerModal');
+  const titleEl = document.getElementById('dangerModalTitle');
+  const descEl = document.getElementById('dangerModalDesc');
+  const btnEl = document.getElementById('dangerConfirmBtn');
+  if(!modal) { _executeClearData(type); return; }
+  if(titleEl) titleEl.textContent = 'Clear ' + (labels[type]||type) + '?';
+  if(descEl) descEl.textContent = descs[type]||'This data will be permanently deleted.';
+  if(btnEl){ btnEl.textContent = 'Clear ' + (labels[type]||type); btnEl.onclick = confirmDangerClear; }
+  modal.style.display = 'flex';
 }
-
-// Keep old clearAllData for backup compatibility
+function closeDangerModal(){
+  const modal = document.getElementById('dangerModal');
+  if(modal) modal.style.display = 'none';
+  _dangerPendingType = null;
+}
+function confirmDangerClear(){
+  closeDangerModal();
+  if(_dangerPendingType) _executeClearData(_dangerPendingType);
+}
+function _executeClearData(type){
+  if(type==='holdings'){ h=[]; localStorage.setItem('h',JSON.stringify(h)); if(currentUser) saveUserData('holdings'); renderHold(); }
+  if(type==='history'){ hist=[]; localStorage.setItem('hist',JSON.stringify(hist)); if(currentUser) saveUserData('history'); renderHist(); }
+  if(type==='alerts'){ alerts=[]; localStorage.setItem('alerts',JSON.stringify(alerts)); if(currentUser) saveUserData('alerts'); }
+  const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
+  showPopup((labels[type]||type)+' cleared!');
+}
 function clearAllData(){
-  if(!confirm("Clear Holdings, History and Alerts? Watchlist will remain.")) return;
-  h=[];hist=[];alerts=[];
-  localStorage.setItem("h",JSON.stringify(h));
-  localStorage.setItem("hist",JSON.stringify(hist));
-  localStorage.setItem("alerts",JSON.stringify(alerts));
-  showPopup("All data cleared!");
+  clearData('holdings'); clearData('history'); clearData('alerts');
 }
 
 
@@ -3443,6 +3404,10 @@ function tab(t){
   }
 
   el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button onclick="tab('settings')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Back</button>
+      <span style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">ALERTS</span>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">🔔 PRICE ALERTS</div>
       <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.wl-card-wrap')?.click(),100);"
@@ -3458,9 +3423,7 @@ function tab(t){
     const lts=localStorage.getItem('lastCloudSync');
     if(lsd&&lts){ const dt=new Date(parseInt(lts)); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
   }
-  if(t==="journal")renderJournal();
   if(t==="holidays")renderHolidays();
-  if(t==="earningscal"){ renderEarningsCalendar(); }
   if(t==="news")renderNews();
 }
 
@@ -4060,7 +4023,11 @@ async function updateGlobalTicker() {
     const pct   = prev ? (chg / prev * 100) : 0;
     items.push({ label, price, chg, pct });
   });
-  if (items.length === 0) return;
+  if (items.length === 0) {
+    track.innerHTML = '<span style="display:inline-flex;align-items:center;gap:3px;padding:0 12px;"><span class="gticker-label" style="color:#4b6280;font-size:9px;">Global markets unavailable · Market closed or API limit</span></span>';
+    track.style.animation = 'none';
+    return;
+  }
   const buildItem = (it) => {
     const up  = it.chg >= 0;
     const cls = up ? 'gticker-up' : 'gticker-dn';
@@ -4279,18 +4246,11 @@ const FEATURE_DATA = [
 function renderFeatureGuide(){
   const el = document.getElementById("featureGuideList");
   if(!el) return;
-
-  // Count total features
   const totalFeatures = FEATURE_DATA.reduce((s,f)=>s+f.items.length,0);
-
-  // Header: count + Download PDF button
-  const headerHtml =
-    "<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;\">" +
-    "<span style=\"font-size:10px;color:#4b6280;\">" + FEATURE_DATA.length + " categories  |  " + totalFeatures + " features</span>" +
-    "<button onclick=\"downloadFeaturePDF()\" style=\"background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Rajdhani\',sans-serif;\">" +
-    "Download PDF</button></div>";
-
-  let accordionHtml = "";
+  // PDF button outside collapsible body
+  const pdfWrap = document.getElementById("feat-pdf-btn-wrap");
+  if(pdfWrap) pdfWrap.innerHTML = '<button onclick="downloadFeaturePDF()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">PDF</button>';
+  let accordionHtml = "<div style=\"font-size:10px;color:#4b6280;margin-bottom:8px;\">" + FEATURE_DATA.length + " categories · " + totalFeatures + " features</div>";
   FEATURE_DATA.forEach((f,i) => {
     const id = "fg"+i;
     accordionHtml +=
@@ -4309,8 +4269,7 @@ function renderFeatureGuide(){
       ).join("") +
       "</div></div>";
   });
-
-  el.innerHTML = headerHtml + accordionHtml;
+  el.innerHTML = accordionHtml;
 }
 
 function downloadFeaturePDF(){
@@ -5215,58 +5174,6 @@ async function renderNSENews() {
 }
 
 // ======================================
-// FII / DII ACTIVITY
-// ======================================
-let fiidiCache = null;
-let fiidiCacheTime = 0;
-const FIIDII_CACHE_MS = 10 * 60 * 1000;
-
-async function fetchFIIDIIData() {
-  try {
-    if (fiidiCache && (Date.now() - fiidiCacheTime) < FIIDII_CACHE_MS) return fiidiCache;
-    const apiUrl = localStorage.getItem("customAPI") || API;
-    const r = await fetch(apiUrl + "?type=fiidii");
-    if (!r.ok) return null;
-    const data = await r.json();
-    if (data.ok && data.items) {
-      fiidiCache = data;
-      fiidiCacheTime = Date.now();
-      return data;
-    }
-    return null;
-  } catch(e) { return null; }
-}
-
-async function renderFIIDII() {
-  const el = document.getElementById("fiiDiiBox");
-  if (!el) return;
-  const data = await fetchFIIDIIData();
-  if (!data || !data.items || data.items.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">FII/DII data not available.<br>NSE may be blocking the request.</div>';
-    return;
-  }
-  el.innerHTML = data.items.map(function(item) {
-    const isFII = (item.title||'').toUpperCase().includes('FII');
-    const isDII = (item.title||'').toUpperCase().includes('DII');
-    const isBuy = (item.desc||'').toLowerCase().includes('buy') || (item.desc||'').toLowerCase().includes('net purchase');
-    const color = isBuy ? '#22c55e' : '#ef4444';
-    const label = isFII ? 'FII' : isDII ? 'DII' : 'Activity';
-    const labelColor = isFII ? '#a78bfa' : '#38bdf8';
-    return '<div style="display:flex;align-items:stretch;gap:0;border-bottom:1px solid rgba(255,255,255,0.05);padding:7px 4px;">' +
-      '<div style="width:3px;min-width:3px;border-radius:2px;background:' + labelColor + ';margin-right:10px;"></div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">' +
-          '<span style="font-size:9px;font-weight:700;background:rgba(167,139,250,0.15);color:' + labelColor + ';padding:1px 5px;border-radius:3px;">' + label + '</span>' +
-          '<span style="font-size:10px;font-weight:600;color:' + color + ';">' + item.title + '</span>' +
-        '</div>' +
-        '<div style="font-size:10px;color:#94a3b8;">' + (item.desc||'') + '</div>' +
-        '<div style="font-size:9px;color:#4b6280;margin-top:2px;">' + (item.date||'') + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-// ======================================
 // AVERAGING CALCULATOR
 // ======================================
 let _acSym='', _acAvg=0, _acQty=0, _acCmp=0, _acMode='buy';
@@ -5601,95 +5508,6 @@ function setSmartAlert(sym, price, btn) {
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
 
-
-// ======================================
-// EARNINGS CALENDAR
-// ======================================
-function renderEarningsCalendar() {
-  const el = document.getElementById('earningsCalContent');
-  if (!el) return;
-
-  // Collect all earnings dates from fundCache
-  const today = new Date();
-  const todayTs = today.getTime();
-  const earnings = [];
-
-  [...wl, ...POPULAR_STOCKS].forEach(sym => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('fundCache6_' + sym) || 'null');
-      if (!stored || !stored.data) return;
-      const ed = stored.data.earningsDate;
-      if (!ed || ed === '--') return;
-      // Parse "15 Apr 2025" format
-      const months = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
-      const parts = ed.split(' ');
-      if (parts.length !== 3) return;
-      const dt = new Date(parseInt(parts[2]), months[parts[1]], parseInt(parts[0]));
-      if (isNaN(dt)) return;
-      earnings.push({sym, date: dt, dateStr: ed});
-    } catch(e) {}
-  });
-
-  // Remove duplicates by sym
-  const seen = new Set();
-  const uniq = earnings.filter(e => { if(seen.has(e.sym)) return false; seen.add(e.sym); return true; });
-
-  // Sort by date
-  uniq.sort((a,b) => a.date - b.date);
-
-  // Split: upcoming vs past
-  const upcoming = uniq.filter(e => e.date >= new Date(todayTs - 86400000));
-  const past = uniq.filter(e => e.date < new Date(todayTs - 86400000)).slice(-5);
-
-  if (upcoming.length === 0 && past.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">No earnings data cached yet.<br>Open Stock Detail for watchlist stocks to load data.</div>';
-    return;
-  }
-
-  let html = '';
-
-  if (upcoming.length > 0) {
-    html += '<div style="font-size:10px;font-weight:700;color:#f59e0b;margin-bottom:8px;letter-spacing:0.5px;">UPCOMING EARNINGS</div>';
-    html += '<div style="background:#111827;border-radius:8px;overflow:hidden;margin-bottom:12px;">';
-    upcoming.forEach((e, i) => {
-      const diffDays = Math.round((e.date - today) / 86400000);
-      const isClose = diffDays <= 7;
-      const isSoon = diffDays <= 3;
-      const badge = isSoon ? 
-        `<span style="font-size:8px;background:rgba(239,68,68,0.2);color:#ef4444;padding:1px 5px;border-radius:3px;margin-left:4px;">${diffDays===0?'Today':diffDays+'d'}</span>` :
-        isClose ? `<span style="font-size:8px;background:rgba(245,158,11,0.2);color:#f59e0b;padding:1px 5px;border-radius:3px;margin-left:4px;">${diffDays}d</span>` : '';
-      html += `<div onclick="openDetail('${e.sym}',false)" style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:7px 10px;gap:6px;border-bottom:${i<upcoming.length-1?'1px solid rgba(255,255,255,0.04)':'none'};cursor:pointer;">
-        <div><span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${e.sym}</span>${badge}</div>
-        <span style="font-size:11px;color:#f59e0b;font-weight:700;">${e.dateStr}</span>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  if (past.length > 0) {
-    html += '<div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">RECENT (PAST)</div>';
-    html += '<div style="background:#111827;border-radius:8px;overflow:hidden;">';
-    past.reverse().forEach((e, i) => {
-      html += `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;padding:7px 10px;gap:6px;border-bottom:${i<past.length-1?'1px solid rgba(255,255,255,0.04)':'none'};">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#4b6280;">${e.sym}</span>
-        <span style="font-size:11px;color:#4b6280;">${e.dateStr}</span>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  el.innerHTML = html;
-}
-
-function refreshEarningsCal() {
-  // Clear all fundCache4 for watchlist stocks to force re-fetch
-  wl.forEach(sym => localStorage.removeItem('fundCache6_' + sym));
-  showPopup('Refreshing earnings data...');
-  Promise.all(wl.slice(0,20).map(sym => fetchFundamentals(sym))).then(() => {
-    renderEarningsCalendar();
-    showPopup('Earnings data updated');
-  });
-}
 
 // ======================================
 // FIREBASE SYNC (replaces GAS cloud sync)
