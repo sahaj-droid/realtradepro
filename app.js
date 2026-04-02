@@ -3127,6 +3127,37 @@ function toggleDupWarn(){
   showPopup(`Duplicate warning ${dupWarnEnabled?"ON":"OFF"}`);
 }
 
+// Alert Engine toggle
+function toggleAlertEngine(){
+  const cur = localStorage.getItem('alertEngineOn') !== 'false';
+  const next = !cur;
+  localStorage.setItem('alertEngineOn', next ? 'true' : 'false');
+  const btn = document.getElementById('alertEngineBtn');
+  if(btn){ btn.textContent=next?'ON':'OFF'; btn.style.background=next?'#166534':'#7f1d1d'; btn.style.color=next?'#86efac':'#fca5a5'; }
+  showPopup('Technical Alerts ' + (next ? 'ON ⚡' : 'OFF 🔕'));
+}
+
+// Notifications toggle
+function toggleNotifications(){
+  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+  if(perm === 'denied'){
+    showPopup('Notifications blocked in browser. Enable from site settings.', 5000);
+    return;
+  }
+  const cur = localStorage.getItem('notifOn') !== 'false';
+  const next = !cur;
+  localStorage.setItem('notifOn', next ? 'true' : 'false');
+  const btn = document.getElementById('notifToggleBtn');
+  if(btn){ btn.textContent=next?'ON':'OFF'; btn.style.background=next?'#166534':'#7f1d1d'; btn.style.color=next?'#86efac':'#fca5a5'; }
+  if(next && perm === 'default'){
+    Notification.requestPermission().then(p => {
+      const stat = document.getElementById('notifPermStatus');
+      if(stat) stat.textContent = p==='granted' ? 'Permission: Granted ✓' : 'Permission: Denied ✗';
+    });
+  }
+  showPopup('Browser Notifications ' + (next ? 'ON 🔔' : 'OFF 🔕'));
+}
+
 // Fix 4: Separate clear with confirmation
 function clearData(type){
   const labels={holdings:"Holdings",history:"History & Trade entries",alerts:"All Alerts"};
@@ -3867,10 +3898,13 @@ function checkVolumeBreakout(sym){
 // ======================================
 // Central push notification dispatcher
 function firePushAlert(title, body, tag){
+  // Alert engine globally disabled?
+  if(localStorage.getItem('alertEngineOn') === 'false') return;
   // In-app toast always
   showPopup(body, 7000);
-  // Browser push notification
-  if(typeof Notification!=='undefined' && Notification.permission==='granted'){
+  // Browser push notification — check both permission and user toggle
+  const notifUserOn = localStorage.getItem('notifOn') !== 'false';
+  if(notifUserOn && typeof Notification!=='undefined' && Notification.permission==='granted'){
     try{
       new Notification(title,{
         body: body,
@@ -5565,7 +5599,7 @@ function renderEarningsCalendar() {
 
   [...wl, ...POPULAR_STOCKS].forEach(sym => {
     try {
-      const stored = JSON.parse(localStorage.getItem('fundCache4_' + sym) || 'null');
+      const stored = JSON.parse(localStorage.getItem('fundCache6_' + sym) || 'null');
       if (!stored || !stored.data) return;
       const ed = stored.data.earningsDate;
       if (!ed || ed === '--') return;
@@ -5632,7 +5666,7 @@ function renderEarningsCalendar() {
 
 function refreshEarningsCal() {
   // Clear all fundCache4 for watchlist stocks to force re-fetch
-  wl.forEach(sym => localStorage.removeItem('fundCache4_' + sym));
+  wl.forEach(sym => localStorage.removeItem('fundCache6_' + sym));
   showPopup('Refreshing earnings data...');
   Promise.all(wl.slice(0,20).map(sym => fetchFundamentals(sym))).then(() => {
     renderEarningsCalendar();
@@ -6263,6 +6297,21 @@ function toggleSheetIntegration(enabled){
   localStorage.setItem('sheetEnabled', enabled ? 'true' : 'false');
   updateSheetStatus();
   showPopup(enabled ? '✅ Sheet Integration ON — Fundamentals & History use Google Sheets' : 'Sheet Integration OFF');
+  // Alerts & Notifications toggles
+  const aeBtn = document.getElementById('alertEngineBtn');
+  const ntBtn = document.getElementById('notifToggleBtn');
+  const ntStat = document.getElementById('notifPermStatus');
+  const aeOn = localStorage.getItem('alertEngineOn') !== 'false';
+  if(aeBtn){ aeBtn.textContent=aeOn?'ON':'OFF'; aeBtn.style.background=aeOn?'#166534':'#7f1d1d'; aeBtn.style.color=aeOn?'#86efac':'#fca5a5'; }
+  const notifUserOn = localStorage.getItem('notifOn') !== 'false';
+  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+  if(ntBtn){ ntBtn.textContent=notifUserOn?'ON':'OFF'; ntBtn.style.background=notifUserOn?'#166534':'#7f1d1d'; ntBtn.style.color=notifUserOn?'#86efac':'#fca5a5'; }
+  if(ntStat){ 
+    if(perm==='granted') ntStat.textContent='Permission: Granted ✓';
+    else if(perm==='denied') ntStat.textContent='Permission: Blocked ✗ (Enable in browser)';
+    else ntStat.textContent='Permission: Not asked yet';
+    ntStat.style.color = perm==='granted' ? '#4ade80' : perm==='denied' ? '#f87171' : '#4b6280';
+  }
 }
 function clearFundCache(){
   let count = 0;
