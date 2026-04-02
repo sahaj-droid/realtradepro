@@ -3016,14 +3016,8 @@ function niviVoiceTest() {
 }
 
 function _updateNiviSettingsUI() {
-  const btn = document.getElementById('nivi-autospeak-btn');
-  if (btn) {
-    const on = _getNiviAutoSpeak();
-    btn.innerText         = on ? 'ON' : 'OFF';
-    btn.style.background  = on ? '#065f46' : '#1e2d3d';
-    btn.style.color       = on ? '#34d399' : '#94a3b8';
-    btn.style.borderColor = on ? '#065f46' : '#2d3f52';
-  }
+  const chk = document.getElementById('nivi-autospeak-chk');
+  if (chk) { chk.checked = _getNiviAutoSpeak(); }
   const speedSlider = document.getElementById('nivi-speed-slider');
   if (speedSlider) { speedSlider.value = _getNiviRate(); updateNiviSpeed(_getNiviRate()); }
   const pitchSlider = document.getElementById('nivi-pitch-slider');
@@ -3041,9 +3035,10 @@ function loadSettingsUI(){
   if(d3) d3.innerText=localStorage.getItem("customAPI3")||API3;
   if(refEl) refEl.value=parseInt(localStorage.getItem("refreshSec")||"10");
   if(cacheEl) cacheEl.value=parseInt(localStorage.getItem("cacheSec")||"8000");
-  const btn=document.getElementById("dupToggleBtn");
-  if(btn){ btn.innerText=dupWarnEnabled?"ON":"OFF"; btn.style.background=dupWarnEnabled?"#166534":"#7f1d1d"; btn.style.color=dupWarnEnabled?"#86efac":"#fca5a5"; }
-  // Font size button active state
+  // Dup warn — iOS checkbox
+  const dupChk = document.getElementById('dupToggleChk');
+  if(dupChk) dupChk.checked = dupWarnEnabled;
+  // Font size
   const curFs=localStorage.getItem('fontSize')||'medium';
   setFontSize(curFs);
   // Google Sheets UI
@@ -3053,6 +3048,31 @@ function loadSettingsUI(){
   if(sheetDisplay) sheetDisplay.innerText = localStorage.getItem('sheetId') || DEFAULT_SHEET_ID;
   if(sheetCheck) sheetCheck.checked = localStorage.getItem('sheetEnabled') === 'true';
   updateSheetStatus();
+  // Alert engine toggle
+  const aeChk = document.getElementById('alertEngineChk');
+  if(aeChk) aeChk.checked = localStorage.getItem('alertEngineOn') !== 'false';
+  // Notification toggle
+  const ntChk = document.getElementById('notifToggleChk');
+  const ntStat = document.getElementById('notifPermStatus');
+  if(ntChk) ntChk.checked = localStorage.getItem('notifOn') !== 'false';
+  if(ntStat){
+    const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+    if(perm==='granted') { ntStat.textContent='Permission: Granted ✓'; ntStat.style.color='#4ade80'; }
+    else if(perm==='denied') { ntStat.textContent='Permission: Blocked ✗ (Enable in browser)'; ntStat.style.color='#f87171'; }
+    else { ntStat.textContent='Not yet requested'; ntStat.style.color='#64748b'; }
+  }
+  // Avatar initial letter from currentUser
+  const avEl = document.getElementById('settingsAvatarLetter');
+  if(avEl && currentUser) avEl.textContent = currentUser.charAt(0).toUpperCase();
+}
+
+function sToggle(bodyId, arrId){
+  const b=document.getElementById(bodyId);
+  const a=document.getElementById(arrId);
+  if(!b||!a) return;
+  const hidden=b.style.display==='none'||b.style.display==='';
+  b.style.display=hidden?'block':'none';
+  a.textContent=hidden?'▼':'▶';
 }
 
 function startAPIEdit(){
@@ -3120,42 +3140,42 @@ function saveSetting(type){
 function toggleDupWarn(){
   dupWarnEnabled=!dupWarnEnabled;
   localStorage.setItem("dupWarn",dupWarnEnabled?"true":"false");
-  const btn=document.getElementById("dupToggleBtn");
-  btn.innerText=dupWarnEnabled?"ON":"OFF";
-  btn.style.background=dupWarnEnabled?"#166534":"#7f1d1d";
-  btn.style.color=dupWarnEnabled?"#86efac":"#fca5a5";
+  const chk=document.getElementById("dupToggleChk");
+  if(chk) chk.checked=dupWarnEnabled;
   showPopup(`Duplicate warning ${dupWarnEnabled?"ON":"OFF"}`);
 }
-
-// Alert Engine toggle
-function toggleAlertEngine(){
-  const cur = localStorage.getItem('alertEngineOn') !== 'false';
-  const next = !cur;
-  localStorage.setItem('alertEngineOn', next ? 'true' : 'false');
-  const btn = document.getElementById('alertEngineBtn');
-  if(btn){ btn.textContent=next?'ON':'OFF'; btn.style.background=next?'#166534':'#7f1d1d'; btn.style.color=next?'#86efac':'#fca5a5'; }
-  showPopup('Technical Alerts ' + (next ? 'ON ⚡' : 'OFF 🔕'));
+function toggleDupWarnChk(val){
+  dupWarnEnabled=val;
+  localStorage.setItem("dupWarn",val?"true":"false");
+  showPopup(`Duplicate warning ${val?"ON":"OFF"}`);
 }
-
-// Notifications toggle
+function toggleNiviAutoSpeakChk(val){
+  localStorage.setItem('niviAutoSpeak', val ? 'on' : 'off');
+  showPopup('Auto Speak ' + (val ? 'ON' : 'OFF'));
+}
+function toggleAlertEngine(){
+  const chk=document.getElementById('alertEngineChk');
+  const next=chk?chk.checked:true;
+  localStorage.setItem('alertEngineOn', next?'true':'false');
+  showPopup('Technical Alerts ' + (next?'ON ⚡':'OFF 🔕'));
+}
 function toggleNotifications(){
-  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
-  if(perm === 'denied'){
-    showPopup('Notifications blocked in browser. Enable from site settings.', 5000);
+  const chk=document.getElementById('notifToggleChk');
+  const next=chk?chk.checked:true;
+  const perm=typeof Notification!=='undefined'?Notification.permission:'unsupported';
+  if(perm==='denied' && next){
+    showPopup('Notifications blocked in browser. Enable from site settings.',5000);
+    if(chk) chk.checked=false;
     return;
   }
-  const cur = localStorage.getItem('notifOn') !== 'false';
-  const next = !cur;
-  localStorage.setItem('notifOn', next ? 'true' : 'false');
-  const btn = document.getElementById('notifToggleBtn');
-  if(btn){ btn.textContent=next?'ON':'OFF'; btn.style.background=next?'#166534':'#7f1d1d'; btn.style.color=next?'#86efac':'#fca5a5'; }
-  if(next && perm === 'default'){
-    Notification.requestPermission().then(p => {
-      const stat = document.getElementById('notifPermStatus');
-      if(stat) stat.textContent = p==='granted' ? 'Permission: Granted ✓' : 'Permission: Denied ✗';
+  localStorage.setItem('notifOn', next?'true':'false');
+  if(next && perm==='default'){
+    Notification.requestPermission().then(p=>{
+      const s=document.getElementById('notifPermStatus');
+      if(s){ s.textContent=p==='granted'?'Permission: Granted ✓':'Permission: Denied ✗'; s.style.color=p==='granted'?'#4ade80':'#f87171'; }
     });
   }
-  showPopup('Browser Notifications ' + (next ? 'ON 🔔' : 'OFF 🔕'));
+  showPopup('Browser Notifications ' + (next?'ON 🔔':'OFF 🔕'));
 }
 
 // Fix 4: Separate clear with confirmation
@@ -3898,11 +3918,8 @@ function checkVolumeBreakout(sym){
 // ======================================
 // Central push notification dispatcher
 function firePushAlert(title, body, tag){
-  // Alert engine globally disabled?
-  if(localStorage.getItem('alertEngineOn') === 'false') return;
-  // In-app toast always
+  if(localStorage.getItem('alertEngineOn')==='false') return;
   showPopup(body, 7000);
-  // Browser push notification — check both permission and user toggle
   const notifUserOn = localStorage.getItem('notifOn') !== 'false';
   if(notifUserOn && typeof Notification!=='undefined' && Notification.permission==='granted'){
     try{
@@ -6297,21 +6314,6 @@ function toggleSheetIntegration(enabled){
   localStorage.setItem('sheetEnabled', enabled ? 'true' : 'false');
   updateSheetStatus();
   showPopup(enabled ? '✅ Sheet Integration ON — Fundamentals & History use Google Sheets' : 'Sheet Integration OFF');
-  // Alerts & Notifications toggles
-  const aeBtn = document.getElementById('alertEngineBtn');
-  const ntBtn = document.getElementById('notifToggleBtn');
-  const ntStat = document.getElementById('notifPermStatus');
-  const aeOn = localStorage.getItem('alertEngineOn') !== 'false';
-  if(aeBtn){ aeBtn.textContent=aeOn?'ON':'OFF'; aeBtn.style.background=aeOn?'#166534':'#7f1d1d'; aeBtn.style.color=aeOn?'#86efac':'#fca5a5'; }
-  const notifUserOn = localStorage.getItem('notifOn') !== 'false';
-  const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
-  if(ntBtn){ ntBtn.textContent=notifUserOn?'ON':'OFF'; ntBtn.style.background=notifUserOn?'#166534':'#7f1d1d'; ntBtn.style.color=notifUserOn?'#86efac':'#fca5a5'; }
-  if(ntStat){ 
-    if(perm==='granted') ntStat.textContent='Permission: Granted ✓';
-    else if(perm==='denied') ntStat.textContent='Permission: Blocked ✗ (Enable in browser)';
-    else ntStat.textContent='Permission: Not asked yet';
-    ntStat.style.color = perm==='granted' ? '#4ade80' : perm==='denied' ? '#f87171' : '#4b6280';
-  }
 }
 function clearFundCache(){
   let count = 0;
