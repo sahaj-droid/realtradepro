@@ -3008,9 +3008,38 @@ function loadSettingsUI(){
   // Avatar initial letter from currentUser
   const avEl = document.getElementById('settingsAvatarLetter');
   if(avEl && currentUser) avEl.textContent = currentUser.charAt(0).toUpperCase();
+  // FF2 URL display
+  const ff2Display = document.getElementById('ff2-url-display');
+  const ff2Sub = document.getElementById('ff2-url-sub');
+  const ff2Saved = localStorage.getItem('ff2ApiUrl') || '';
+  if(ff2Display) ff2Display.innerText = ff2Saved || 'Not configured';
+  if(ff2Sub) {
+    if(ff2Saved) { ff2Sub.textContent = '✓ FF2 URL set · Screener data active'; ff2Sub.style.color='#fb923c'; }
+    else { ff2Sub.textContent = 'Not set — tap to configure'; ff2Sub.style.color='#64748b'; }
+  }
 }
 
-function sToggle(bodyId, arrId){
+function startFF2Edit(){
+  const inp = document.getElementById('ff2-url-input');
+  if(inp) inp.value = localStorage.getItem('ff2ApiUrl') || '';
+  document.getElementById('ff2-url-edit').style.display = 'block';
+  document.getElementById('changeFF2Btn').style.display = 'none';
+}
+function cancelFF2Edit(){
+  document.getElementById('ff2-url-edit').style.display = 'none';
+  document.getElementById('changeFF2Btn').style.display = 'inline-block';
+}
+function saveFF2Url(){
+  const val = (document.getElementById('ff2-url-input').value || '').trim();
+  if(val && !val.startsWith('https://script.google.com')){
+    showPopup('Invalid URL — GAS URL https://script.google.com/... hovu joiye');
+    return;
+  }
+  localStorage.setItem('ff2ApiUrl', val);
+  cancelFF2Edit();
+  loadSettingsUI();
+  showPopup(val ? '✅ FF2 URL saved! Learn tab ready.' : 'FF2 URL cleared');
+}
   const b=document.getElementById(bodyId);
   const a=document.getElementById(arrId);
   if(!b||!a) return;
@@ -6709,7 +6738,7 @@ async function fetchLearnStock() {
   if (msg) { msg.textContent = '⏳ Loading...'; msg.style.color = '#64748b'; }
   if (res) res.innerHTML = '';
 
-  // 1. Firebase fundlearn
+  // 1. Firebase fundlearn (daily pushed by pushLearnDataToFirebase)
   try {
     const doc = await db.collection('fundlearn').doc(sym).get();
     if (doc.exists) {
@@ -6728,7 +6757,6 @@ async function fetchLearnStock() {
         dividend: fv(d.dividend), currAsset: fv(d.currAsset),
         currLiab: fv(d.currLiab), promoter: fv(d.promoter)
       };
-      // Get share price from live cache
       raw.sharePrice = _getLivePrice(sym);
       _learnCache[sym] = raw;
       if (msg) { msg.textContent = '✅ Firebase · ' + (d.updatedAt ? d.updatedAt.stringValue?.substring(0,10) : ''); msg.style.color = '#34d399'; }
@@ -6737,7 +6765,43 @@ async function fetchLearnStock() {
     }
   } catch(e) { console.warn('Firebase fundlearn fetch failed:', e.message); }
 
-  // 2. GAS fallback
+  // 2. FF2 GAS URL (separate project — Screener data)
+  const ff2Url = localStorage.getItem('ff2ApiUrl') || '';
+  if (ff2Url) {
+    try {
+      const url = `${ff2Url}?type=ff2_search&s=${sym}`;
+      const r = await fetch(url);
+      const data = await r.json();
+      if (data.success && data.data) {
+        const d = data.data;
+        const raw = {
+          sym, source: 'ff2',
+          netProfit:   Number(d.profit)  || 0,
+          totalEquity: Number(d.equity)  || 0,
+          totalShares: Number(d.shares)  || 0,
+          ebit:        Number(d.ebit)    || 0,
+          capEmployed: Number(d.ce)      || 0,
+          totalDebt:   Number(d.debt)    || 0,
+          dividend:    Number(d.div)     || 0,
+          currAsset:   Number(d.assets)  || 0,
+          currLiab:    Number(d.liab)    || 0,
+          promoter:    Number(d.prom)    || 0
+        };
+        raw.sharePrice = _getLivePrice(sym);
+        _learnCache[sym] = raw;
+        if (msg) { msg.textContent = '✅ FF2 Screener data'; msg.style.color = '#fb923c'; }
+        renderLearnReport(raw, sym);
+        return;
+      }
+      if (msg) { msg.textContent = '❌ ' + (data.message || 'Not found in FF2 sheet'); msg.style.color = '#f87171'; }
+      return;
+    } catch(e) {
+      if (msg) { msg.textContent = '❌ FF2 fetch failed: ' + e.message; msg.style.color = '#f87171'; }
+      return;
+    }
+  }
+
+  // 3. RealTradePro GAS fallback (only if FF2 URL not set)
   try {
     const apiUrl = localStorage.getItem('customAPI') || API;
     const url = `${apiUrl}?type=fundlearn&s=${sym}`;
@@ -6751,9 +6815,9 @@ async function fetchLearnStock() {
       renderLearnReport(data, sym);
       return;
     }
-    if (msg) { msg.textContent = '❌ ' + (data.error || 'Not found in FF2 sheet'); msg.style.color = '#f87171'; }
+    if (msg) { msg.textContent = '❌ ' + (data.error || 'Not found') + ' — FF2 URL Settings ma set karo'; msg.style.color = '#f87171'; }
   } catch(e) {
-    if (msg) { msg.textContent = '❌ Fetch failed: ' + e.message; msg.style.color = '#f87171'; }
+    if (msg) { msg.textContent = '❌ Fetch failed. Settings → Search & Learn → FF2 URL set karo'; msg.style.color = '#f87171'; }
   }
 }
 
@@ -7032,3 +7096,13 @@ function downloadLearnPDF(sym) {
 // ============================================================
 // END SEARCH & LEARN
 // ============================================================
+
+// Settings collapsible toggle (used by settings tab sections)
+function sToggle(bodyId, arrId){
+  const b=document.getElementById(bodyId);
+  const a=document.getElementById(arrId);
+  if(!b||!a) return;
+  const hidden=b.style.display==='none'||b.style.display==='';
+  b.style.display=hidden?'block':'none';
+  a.textContent=hidden?'▼':'▶';
+}
