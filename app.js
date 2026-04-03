@@ -6717,7 +6717,7 @@ function learnSearchSuggest(val) {
   if (!box) return;
   const v = val.trim().toUpperCase();
   if (v.length < 1) { box.style.display = 'none'; return; }
-  const allSyms = [...new Set([...(wl||[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
+  const allSyms = [...new Set([...(typeof wl!=='undefined'?wl:[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
   const matches = allSyms.filter(s => s.toUpperCase().startsWith(v)).slice(0, 8);
   if (matches.length === 0) { box.style.display = 'none'; return; }
   box.innerHTML = matches.map(s =>
@@ -6726,6 +6726,29 @@ function learnSearchSuggest(val) {
       onmouseover="this.style.background='rgba(251,146,60,0.1)'" onmouseout="this.style.background=''">${s}</div>`
   ).join('');
   box.style.display = 'block';
+}
+
+// [PHASE 2 INJECTION] Helper to fetch Technical Data (RSI) quietly
+async function _enrichWithTechnicals(raw, sym) {
+  try {
+    const snap = await firebase.database().ref(`ohlcv/${sym}`).once('value');
+    const d = snap.val();
+    if(d && d.c) {
+      raw.rsi = calculateLearnRSI(d.c);
+    } else { raw.rsi = null; }
+  } catch(e) { raw.rsi = null; }
+  return raw;
+}
+
+function calculateLearnRSI(c) {
+  if (!c || c.length < 15) return null;
+  let g = 0, l = 0;
+  for (let i = 1; i < 15; i++) {
+    let diff = c[i] - c[i-1];
+    if (diff >= 0) g += diff; else l -= diff;
+  }
+  let rs = (g / 14) / (l / 14);
+  return 100 - (100 / (1 + rs));
 }
 
 // ── Fetch data: Firebase first, GAS fallback ──────────────
@@ -6737,18 +6760,19 @@ async function fetchLearnStock() {
   const sym = input.value.trim().toUpperCase();
   if (!sym) { if(msg) msg.textContent = 'Stock symbol daalo'; return; }
   document.getElementById('learnSuggBox').style.display = 'none';
-  if (msg) { msg.textContent = '⏳ Loading...'; msg.style.color = '#64748b'; }
+  if (msg) { msg.textContent = '⏳ Loading Phase 1 & 2 Data...'; msg.style.color = '#64748b'; }
   if (res) res.innerHTML = '';
 
-  // 1. Firebase fundlearn (daily pushed by pushLearnDataToFirebase)
+  // 1. Firebase fundlearn
   try {
-    const doc = await db.collection('fundlearn').doc(sym).get();
+    const doc = await firebase.firestore().collection('fundlearn').doc(sym).get();
     if (doc.exists) {
       const d = doc.data();
       function fv(f) {
         if (!f) return 0;
         if (f.doubleValue !== undefined) return Number(f.doubleValue);
         if (f.integerValue !== undefined) return Number(f.integerValue);
+        if (typeof f === 'number') return f;
         return 0;
       }
       const raw = {
@@ -6760,14 +6784,15 @@ async function fetchLearnStock() {
         currLiab: fv(d.currLiab), promoter: fv(d.promoter)
       };
       raw.sharePrice = _getLivePrice(sym);
+      await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
       _learnCache[sym] = raw;
-      if (msg) { msg.textContent = '✅ Firebase · ' + (d.updatedAt ? d.updatedAt.stringValue?.substring(0,10) : ''); msg.style.color = '#34d399'; }
+      if (msg) { msg.textContent = '✅ Firebase · ' + (d.updatedAt ? (d.updatedAt.stringValue||d.updatedAt).toString().substring(0,10) : ''); msg.style.color = '#34d399'; }
       renderLearnReport(raw, sym);
       return;
     }
   } catch(e) { console.warn('Firebase fundlearn fetch failed:', e.message); }
 
-  // 2. FF2 GAS URL (separate project — Screener data)
+  // 2. FF2 GAS URL
   const ff2Url = localStorage.getItem('ff2ApiUrl') || '';
   if (ff2Url) {
     try {
@@ -6790,6 +6815,7 @@ async function fetchLearnStock() {
           promoter:    Number(d.prom)    || 0
         };
         raw.sharePrice = _getLivePrice(sym);
+        await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
         _learnCache[sym] = raw;
         if (msg) { msg.textContent = '✅ FF2 Screener data'; msg.style.color = '#fb923c'; }
         renderLearnReport(raw, sym);
@@ -6803,15 +6829,16 @@ async function fetchLearnStock() {
     }
   }
 
-  // 3. RealTradePro GAS fallback (only if FF2 URL not set)
+  // 3. RealTradePro GAS fallback
   try {
-    const apiUrl = localStorage.getItem('customAPI') || API;
+    const apiUrl = localStorage.getItem('customAPI') || (typeof API !== 'undefined'?API:'');
     const url = `${apiUrl}?type=fundlearn&s=${sym}`;
     const r = await fetch(url);
     const data = await r.json();
     if (data.ok) {
       data.sharePrice = _getLivePrice(sym);
       data.source = 'gas';
+      await _enrichWithTechnicals(data, sym); // Phase 2 Logic Added
       _learnCache[sym] = data;
       if (msg) { msg.textContent = '✅ GAS Sheet fetch'; msg.style.color = '#38bdf8'; }
       renderLearnReport(data, sym);
@@ -6824,10 +6851,8 @@ async function fetchLearnStock() {
 }
 
 function _getLivePrice(sym) {
-  // Try live cache first
-  if (cache[sym]?.data?.regularMarketPrice) return cache[sym].data.regularMarketPrice;
-  if (cache[sym+'NS']?.data?.regularMarketPrice) return cache[sym+'NS'].data.regularMarketPrice;
-  // Try Firebase fund cache
+  if (typeof cache !== 'undefined' && cache[sym]?.data?.regularMarketPrice) return cache[sym].data.regularMarketPrice;
+  if (typeof cache !== 'undefined' && cache[sym+'NS']?.data?.regularMarketPrice) return cache[sym+'NS'].data.regularMarketPrice;
   if (window._firebaseFundCache?.[sym]?.sharePrice) return window._firebaseFundCache[sym].sharePrice;
   return 0;
 }
@@ -6853,7 +6878,8 @@ function calcLearnRatios(d) {
     de:       safe(de),
     cr:       safe(cr),
     divYield: safe(divY),
-    promoter: d.promoter
+    promoter: d.promoter,
+    rsi:      d.rsi !== undefined ? d.rsi : null // Added RSI
   };
 }
 
@@ -6869,7 +6895,8 @@ function _learnDot(metric, val) {
     de:       v => v <= 0.5 ? 'green' : v <= 1 ? 'yellow' : 'red',
     cr:       v => v >= 1.5 ? 'green' : v >= 1 ? 'yellow' : 'red',
     divYield: v => v >= 1 ? 'green' : v > 0 ? 'yellow' : 'red',
-    promoter: v => v >= 50 ? 'green' : v >= 35 ? 'yellow' : 'red'
+    promoter: v => v >= 50 ? 'green' : v >= 35 ? 'yellow' : 'red',
+    rsi:      v => v < 40 ? 'green' : v < 70 ? 'yellow' : 'red' // Added RSI Rule
   };
   const r = rules[metric] ? rules[metric](val) : 'gray';
   return r === 'green' ? '#22c55e' : r === 'yellow' ? '#f59e0b' : r === 'red' ? '#ef4444' : '#64748b';
@@ -6921,6 +6948,12 @@ const LEARN_INFO = {
     hi: { title: 'Promoter Holding %', body: 'कंपनी के मालिकों (प्रमोटर्स) के पास कितने % शेयर हैं। ज्यादा = भरोसेमंद।', formula: 'Screener/BSE से सीधा डेटा', good: '≥ 50% = मजबूत  |  35–50% = ठीक  |  < 35% = कम' },
     gu: { title: 'Promoter Holding %', body: 'કંપનીના માલિકો (Promoters) પાસે કેટલા % શેર છે. વધારે = ભરોસાપાત્ર.', formula: 'Screener/BSE direct data', good: '≥ 50% = મજબૂત  |  35–50% = ઠીક  |  < 35% = ઓછું' },
     en: { title: 'Promoter Holding %', body: 'How much % of shares the founders/promoters hold. Higher = more confidence.', formula: 'Direct from Screener/BSE', good: '≥ 50% = Strong  |  35–50% = Fair  |  < 35% = Low' }
+  },
+  // Added RSI Dictionary
+  rsi: {
+    hi: { title: 'RSI (Momentum)', body: 'बताता है कि शेयर ओवरसोल्ड (सस्ता) है या ओवरबॉट (महँगा)।', formula: 'Relative Strength Index', good: '< 40 = Oversold (Good) | > 70 = Overbought' },
+    gu: { title: 'RSI (મોમેન્ટમ)', body: 'શેર ઓવરસોલ્ડ (ખરીદવાની તક) છે કે ઓવરબૉટ (વેચવાની તક) તે દર્શાવે છે.', formula: 'Relative Strength Index', good: '< 40 = Oversold (સસ્તો) | > 70 = Overbought (મોંઘો)' },
+    en: { title: 'RSI (Momentum)', body: 'Indicates if a stock is oversold (buy) or overbought (sell).', formula: 'Relative Strength Index', good: '< 40 = Oversold (Good) | > 70 = Overbought' }
   }
 };
 
@@ -6947,23 +6980,37 @@ function renderLearnReport(d, sym) {
   const lang = _learnLang;
 
   const labels = {
-    hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' },
-    gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' },
-    en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' }
+    hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' },
+    gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' },
+    en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' }
   }[lang];
 
   const fmtV = (metric, val) => {
     if (val === null) return '--';
-    if (metric === 'pe' || metric === 'de' || metric === 'cr') return val.toFixed(2);
+    if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
     if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
     if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter') return val.toFixed(2) + '%';
     return val.toFixed(2);
   };
 
-  const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter'];
+  // Added RSI to metrics array
+  const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter', 'rsi'];
 
-  // Stock header
+  // [PHASE 2 INJECTION] Nivi's Intelligent Logic
+  let niviText = "આ સ્ટોકના ફંડામેન્ટલ અને ટેકનિકલ પેરામીટર્સ અત્યારે ન્યુટ્રલ (Stable) છે.";
+  if (R['rsi'] !== null && R['rsi'] < 40 && R['roe'] > 15) {
+      niviText = `🔥 <b>Strong Buy Zone:</b> આ સ્ટોકનો ROE (${R['roe'].toFixed(1)}%) ઘણો સારો છે અને અત્યારે RSI મુજબ Oversold છે. આ એક ઉત્તમ તક હોઈ શકે છે.`;
+  } else if (R['rsi'] !== null && R['rsi'] > 75) {
+      niviText = `⚠️ <b>Caution Zone:</b> સ્ટોક ફંડામેન્ટલી ભલે સારો હોય, પણ અત્યારે ટેકનિકલી Overbought છે. નવી ખરીદી માટે થોડું કરેક્શન આવવા દો.`;
+  }
+
+  // Stock header + Nivi Card
   let html = `
+    <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);border-radius:12px;padding:12px 14px;margin-bottom:12px;border-left:4px solid #fb923c;">
+       <div style="font-size:10px;color:#fb923c;font-weight:700;margin-bottom:4px;letter-spacing:1px;">NIVI'S INSIGHT</div>
+       <div style="font-size:13px;color:#e2e8f0;line-height:1.4;">${niviText}</div>
+    </div>
+
     <div style="background:#0d1f35;border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(251,146,60,0.15);">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
@@ -6979,11 +7026,11 @@ function renderLearnReport(d, sym) {
 
     <div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin-bottom:12px;">
       <div style="padding:10px 14px 6px;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <span style="font-size:10px;font-weight:700;color:#fb923c;letter-spacing:1px;">📊 FUNDAMENTAL REPORT</span>
+        <span style="font-size:10px;font-weight:700;color:#fb923c;letter-spacing:1px;">📊 INTEGRATED REPORT</span>
       </div>
   `;
 
-metrics.forEach((m, idx) => {
+  metrics.forEach((m, idx) => {
     const val = R[m];
     const dot = _learnDot(m, val);
     const last = idx === metrics.length - 1;
@@ -6999,7 +7046,7 @@ metrics.forEach((m, idx) => {
             style="width:20px; height:20px; border-radius:50%; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1;">ℹ</button>
         </div>
       </div>`;
-});
+  });
 
   html += `</div>`;
 
@@ -7030,15 +7077,16 @@ function downloadLearnPDF(sym) {
   const dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
 
   const metrics = [
-    {key:'pe',     label:'P/E Ratio',          unit:''},
-    {key:'eps',    label:'EPS',                 unit:'₹'},
-    {key:'roe',    label:'ROE %',               unit:'%'},
-    {key:'roce',   label:'ROCE %',              unit:'%'},
-    {key:'bookVal',label:'Book Value',          unit:'₹'},
-    {key:'de',     label:'Debt-to-Equity',      unit:''},
-    {key:'cr',     label:'Current Ratio',       unit:''},
-    {key:'divYield',label:'Dividend Yield %',   unit:'%'},
-    {key:'promoter',label:'Promoter Holding %', unit:'%'}
+    {key:'pe',      label:'P/E Ratio',         unit:''},
+    {key:'eps',     label:'EPS',               unit:'₹'},
+    {key:'roe',     label:'ROE %',             unit:'%'},
+    {key:'roce',    label:'ROCE %',            unit:'%'},
+    {key:'bookVal', label:'Book Value',        unit:'₹'},
+    {key:'de',      label:'Debt-to-Equity',    unit:''},
+    {key:'cr',      label:'Current Ratio',     unit:''},
+    {key:'divYield',label:'Dividend Yield %',  unit:'%'},
+    {key:'promoter',label:'Promoter Holding %',unit:'%'},
+    {key:'rsi',     label:'RSI (14D)',         unit:''} // Added RSI to PDF
   ];
 
   const dotColor = (m, v) => {
@@ -7110,93 +7158,3 @@ function sToggle(bodyId, arrId){
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
 }
-// ============================================================
-// MARKET PULSE: DEEP ANALYSIS LOGIC
-// ============================================================
-
-async function startDeepAnalysis() {
-    const symbol = document.getElementById('learnSearchInput').value.toUpperCase().trim();
-    if (!symbol) return;
-
-    const msg = document.getElementById('learnMsg');
-    const resultsArea = document.getElementById('learnResultsArea');
-    const grid = document.getElementById('learn-data-grid');
-    const adviceText = document.getElementById('nivi-advice-text');
-
-    msg.innerText = "🔍 Fetching Data from Sheet & Firebase...";
-    resultsArea.style.display = 'none';
-
-    try {
-        // 1. Fundamentals from Sheet
-        const fundData = await findStockInSheet(symbol);
-        
-        // 2. Technicals from Firebase
-        const techSnap = await firebase.database().ref(`ohlcv/${symbol}`).once('value');
-        const techData = techSnap.val();
-
-        if (!fundData) {
-            msg.innerText = "❌ Stock not found in Fundamental database.";
-            return;
-        }
-
-        msg.innerText = "";
-        resultsArea.style.display = 'block';
-
-        // Calculate RSI from Firebase Close Prices
-        let rsi = "N/A";
-        if (techData && techData.c) {
-            rsi = calculateRSIFromArr(techData.c);
-        }
-
-        // Render UI
-        grid.innerHTML = `
-            ${createLearnItem("Net Profit", fundData.netProfit + " Cr", "કંપનીનો વાર્ષિક નફો.")}
-            ${createLearnItem("ROA", fundData.roa + "%", "કંપનીની કાર્યક્ષમતા (Assets પર કમાણી).")}
-            ${createLearnItem("Debt/Equity", fundData.debtToEquity, "કંપની પરનું દેવું. 1 થી ઓછું સારું.")}
-            ${createLearnItem("Promoter", fundData.promoter + "%", "માલિકોનો હિસ્સો.")}
-            ${createLearnItem("RSI (14D)", rsi, "Momentum Indicator. 30 (Buy), 70 (Sell).")}
-            ${createLearnItem("EPS", fundData.eps, "શેર દીઠ કમાણી.")}
-        `;
-
-        // Nivi's Advice Logic
-        if (rsi !== "N/A" && rsi < 35) {
-            adviceText.innerHTML = `🔥 <b>Strong Bullish:</b> ${symbol} is in Oversold zone with stable fundamentals. Potential bounce back candidate.`;
-        } else if (rsi > 75) {
-            adviceText.innerHTML = `⚠️ <b>Caution:</b> Stock is currently Overbought. New entry might be risky at this level.`;
-        } else {
-            adviceText.innerHTML = `✅ <b>Neutral:</b> Fundamentals are solid. Maintain current positions or wait for RSI to hit extreme zones.`;
-        }
-
-    } catch (e) {
-        console.error(e);
-        msg.innerText = "⚠️ Error loading data.";
-    }
-}
-
-function createLearnItem(lbl, val, info) {
-    return `
-        <div onclick="showLearnPopup('${lbl}', '${info}')" style="background:#0d1f35; padding:12px; border-radius:10px; border:1px solid rgba(251,146,60,0.15); cursor:pointer;">
-            <div style="color:#64748b; font-size:10px; display:flex; align-items:center; gap:4px;">
-                ${lbl} <span style="color:#fb923c;">ⓘ</span>
-            </div>
-            <div style="font-size:15px; font-weight:700; color:#e2e8f0; margin-top:4px;">${val}</div>
-        </div>
-    `;
-}
-
-function showLearnPopup(title, body) {
-    document.getElementById('learnInfoTitle').innerText = title;
-    document.getElementById('learnInfoBody').innerText = body;
-    document.getElementById('learnInfoModal').style.display = 'flex';
-}
-
-function calculateRSIFromArr(c) {
-    if (!c || c.length < 15) return "N/A";
-    let g = 0, l = 0;
-    for (let i = 1; i < 15; i++) {
-        let d = c[i] - c[i-1];
-        if (d >= 0) g += d; else l -= d;
-    }
-    let rs = (g / 14) / (l / 14);
-    return (100 - (100 / (1 + rs))).toFixed(2);
-}  
