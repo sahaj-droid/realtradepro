@@ -6995,7 +6995,7 @@ metrics.forEach((m, idx) => {
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span style="font-size:13px; font-weight:700; color:#e2e8f0; font-family:'JetBrains Mono',monospace;">${fmtV(m, val)}</span>
-          <button onclick="showLearnInfo('${m}', ${val}, ${JSON.stringify(sym)})"
+          <button onclick="showLearnInfo('${m}', ${val !== null ? val : 'null'}, '${sym}')"
             style="width:20px; height:20px; border-radius:50%; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1;">ℹ</button>
         </div>
       </div>`;
