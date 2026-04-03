@@ -6921,7 +6921,6 @@ metrics.forEach((m, idx) => {
     const val = R[m];
     const dot = _learnDot(m, val);
     const last = idx === metrics.length - 1;
-    
     html += `
       <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; ${last ? '' : 'border-bottom:1px solid rgba(255,255,255,0.04);'}">
         <div style="display:flex; align-items:center; gap:8px;">
