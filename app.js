@@ -3050,13 +3050,6 @@ function toggleSection(bodyId, arrId) {
   b.style.display=hidden?'block':'none';
   a.textContent=hidden?'▼':'▶';
 }
-  const a=document.getElementById(arrId);
-  if(!b||!a) return;
-  const hidden=b.style.display==='none'||b.style.display==='';
-  b.style.display=hidden?'block':'none';
-  a.textContent=hidden?'▼':'▶';
-}
-
 function startAPIEdit(){
   const inp=document.getElementById("set-api-input");
   if(inp) inp.value=localStorage.getItem("customAPI")||API;
