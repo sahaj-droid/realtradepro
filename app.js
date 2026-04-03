@@ -3418,6 +3418,7 @@ function tab(t){
     ${techHTML}
   `;
 }
+  if(t==="learn"){ initLearnTab(); }
   if(t==="settings"){loadSettingsUI();renderFeatureGuide();
     const lsd=document.getElementById('lastSyncDisplay');
     const lts=localStorage.getItem('lastCloudSync');
@@ -6641,3 +6642,393 @@ Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964
   document.getElementById('niviNewsLoading').style.display = 'none';
   document.getElementById('niviNewsSummaryCard').style.display = 'block';
 }
+
+// ============================================================
+// SEARCH & LEARN TAB
+// Firebase: fundlearn collection (pushed daily by GAS)
+// Fallback: GAS type=fundlearn direct fetch
+// ============================================================
+
+let _learnLang = localStorage.getItem('learnLang') || 'hi';
+let _learnCache = {}; // sym -> raw data
+
+// ── Language selector ─────────────────────────────────────
+function setLearnLang(lang) {
+  _learnLang = lang;
+  localStorage.setItem('learnLang', lang);
+  ['hi','gu','en'].forEach(l => {
+    const btn = document.getElementById('ll-'+l);
+    if (!btn) return;
+    if (l === lang) {
+      btn.style.background = 'rgba(251,146,60,0.2)';
+      btn.style.color = '#fb923c';
+      btn.style.borderColor = 'rgba(251,146,60,0.3)';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = '#64748b';
+      btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    }
+  });
+  // Re-render if data loaded
+  const sym = (document.getElementById('learnSearchInput')||{}).value;
+  if (sym && _learnCache[sym.toUpperCase().trim()]) {
+    renderLearnReport(_learnCache[sym.toUpperCase().trim()], sym.toUpperCase().trim());
+  }
+}
+
+function initLearnTab() {
+  setLearnLang(_learnLang);
+}
+
+// ── Search suggestions (from existing wl + POPULAR_STOCKS) ─
+function learnSearchSuggest(val) {
+  const box = document.getElementById('learnSuggBox');
+  if (!box) return;
+  const v = val.trim().toUpperCase();
+  if (v.length < 1) { box.style.display = 'none'; return; }
+  const allSyms = [...new Set([...(wl||[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
+  const matches = allSyms.filter(s => s.toUpperCase().startsWith(v)).slice(0, 8);
+  if (matches.length === 0) { box.style.display = 'none'; return; }
+  box.innerHTML = matches.map(s =>
+    `<div onclick="document.getElementById('learnSearchInput').value='${s}';document.getElementById('learnSuggBox').style.display='none';fetchLearnStock();"
+      style="padding:8px 14px;font-size:12px;font-weight:700;color:#e2e8f0;cursor:pointer;font-family:'Rajdhani',sans-serif;border-bottom:1px solid rgba(255,255,255,0.05);"
+      onmouseover="this.style.background='rgba(251,146,60,0.1)'" onmouseout="this.style.background=''">${s}</div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+// ── Fetch data: Firebase first, GAS fallback ──────────────
+async function fetchLearnStock() {
+  const input = document.getElementById('learnSearchInput');
+  const msg   = document.getElementById('learnMsg');
+  const res   = document.getElementById('learnResults');
+  if (!input) return;
+  const sym = input.value.trim().toUpperCase();
+  if (!sym) { if(msg) msg.textContent = 'Stock symbol daalo'; return; }
+  document.getElementById('learnSuggBox').style.display = 'none';
+  if (msg) { msg.textContent = '⏳ Loading...'; msg.style.color = '#64748b'; }
+  if (res) res.innerHTML = '';
+
+  // 1. Firebase fundlearn
+  try {
+    const doc = await db.collection('fundlearn').doc(sym).get();
+    if (doc.exists) {
+      const d = doc.data();
+      function fv(f) {
+        if (!f) return 0;
+        if (f.doubleValue !== undefined) return Number(f.doubleValue);
+        if (f.integerValue !== undefined) return Number(f.integerValue);
+        return 0;
+      }
+      const raw = {
+        sym, source: 'firebase',
+        netProfit: fv(d.netProfit), totalEquity: fv(d.totalEquity),
+        totalShares: fv(d.totalShares), ebit: fv(d.ebit),
+        capEmployed: fv(d.capEmployed), totalDebt: fv(d.totalDebt),
+        dividend: fv(d.dividend), currAsset: fv(d.currAsset),
+        currLiab: fv(d.currLiab), promoter: fv(d.promoter)
+      };
+      // Get share price from live cache
+      raw.sharePrice = _getLivePrice(sym);
+      _learnCache[sym] = raw;
+      if (msg) { msg.textContent = '✅ Firebase · ' + (d.updatedAt ? d.updatedAt.stringValue?.substring(0,10) : ''); msg.style.color = '#34d399'; }
+      renderLearnReport(raw, sym);
+      return;
+    }
+  } catch(e) { console.warn('Firebase fundlearn fetch failed:', e.message); }
+
+  // 2. GAS fallback
+  try {
+    const apiUrl = localStorage.getItem('customAPI') || API;
+    const url = `${apiUrl}?type=fundlearn&s=${sym}`;
+    const r = await fetch(url);
+    const data = await r.json();
+    if (data.ok) {
+      data.sharePrice = _getLivePrice(sym);
+      data.source = 'gas';
+      _learnCache[sym] = data;
+      if (msg) { msg.textContent = '✅ GAS Sheet fetch'; msg.style.color = '#38bdf8'; }
+      renderLearnReport(data, sym);
+      return;
+    }
+    if (msg) { msg.textContent = '❌ ' + (data.error || 'Not found in FF2 sheet'); msg.style.color = '#f87171'; }
+  } catch(e) {
+    if (msg) { msg.textContent = '❌ Fetch failed: ' + e.message; msg.style.color = '#f87171'; }
+  }
+}
+
+function _getLivePrice(sym) {
+  // Try live cache first
+  if (cache[sym]?.data?.regularMarketPrice) return cache[sym].data.regularMarketPrice;
+  if (cache[sym+'NS']?.data?.regularMarketPrice) return cache[sym+'NS'].data.regularMarketPrice;
+  // Try Firebase fund cache
+  if (window._firebaseFundCache?.[sym]?.sharePrice) return window._firebaseFundCache[sym].sharePrice;
+  return 0;
+}
+
+// ── Calculate all ratios ──────────────────────────────────
+function calcLearnRatios(d) {
+  const safe = (v) => (isNaN(v) || !isFinite(v)) ? null : v;
+  const sp = d.sharePrice || 0;
+  const eps = d.totalShares > 0 ? d.netProfit / d.totalShares : null;
+  const pe  = (eps && eps > 0 && sp > 0) ? sp / eps : null;
+  const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
+  const roce = d.capEmployed > 0 ? (d.ebit / d.capEmployed) * 100 : null;
+  const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
+  const de  = d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null;
+  const cr  = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
+  const divY = sp > 0 ? (d.dividend / sp) * 100 : null;
+  return {
+    pe:       safe(pe),
+    eps:      safe(eps),
+    roe:      safe(roe),
+    roce:     safe(roce),
+    bookVal:  safe(bv),
+    de:       safe(de),
+    cr:       safe(cr),
+    divYield: safe(divY),
+    promoter: d.promoter
+  };
+}
+
+// ── Color dot logic ───────────────────────────────────────
+function _learnDot(metric, val) {
+  if (val === null) return '#64748b';
+  const rules = {
+    pe:       v => v < 15 ? 'green' : v < 30 ? 'yellow' : 'red',
+    eps:      v => v > 0 ? 'green' : 'red',
+    roe:      v => v >= 15 ? 'green' : v >= 8 ? 'yellow' : 'red',
+    roce:     v => v >= 15 ? 'green' : v >= 8 ? 'yellow' : 'red',
+    bookVal:  v => v > 0 ? 'green' : 'red',
+    de:       v => v <= 0.5 ? 'green' : v <= 1 ? 'yellow' : 'red',
+    cr:       v => v >= 1.5 ? 'green' : v >= 1 ? 'yellow' : 'red',
+    divYield: v => v >= 1 ? 'green' : v > 0 ? 'yellow' : 'red',
+    promoter: v => v >= 50 ? 'green' : v >= 35 ? 'yellow' : 'red'
+  };
+  const r = rules[metric] ? rules[metric](val) : 'gray';
+  return r === 'green' ? '#22c55e' : r === 'yellow' ? '#f59e0b' : r === 'red' ? '#ef4444' : '#64748b';
+}
+
+// ── Explanation texts (3 languages) ──────────────────────
+const LEARN_INFO = {
+  pe: {
+    hi: { title: 'P/E Ratio', body: 'यह बताता है कि ₹1 कमाने के लिए आप कितने रुपये दे रहे हैं। कम P/E मतलब सस्ता शेयर।', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = सस्ता  |  15–30 = ठीक  |  > 30 = महँगा' },
+    gu: { title: 'P/E રેશિઓ', body: '₹1 કમાવા માટે તમે કેટલા રૂપિયા ચૂકવો છો. ઓછો P/E = સસ્તો શેર.', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = સસ્તો  |  15–30 = ઠીક  |  > 30 = મોંઘો' },
+    en: { title: 'P/E Ratio', body: 'How much you pay for ₹1 of earnings. Lower P/E = cheaper stock.', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = Cheap  |  15–30 = Fair  |  > 30 = Expensive' }
+  },
+  eps: {
+    hi: { title: 'EPS (प्रति शेयर आय)', body: 'कंपनी ने प्रत्येक शेयर पर कितना मुनाफा कमाया। जितना ज्यादा, उतना अच्छा।', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = अच्छा  |  बढ़ता EPS = स्वस्थ कंपनी' },
+    gu: { title: 'EPS (પ્રતિ શેર કમાણી)', body: 'દરેક શેર પર કંપનીએ કેટલો નફો કર્યો. વધારે EPS = વધારે સારું.', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = સારું  |  વધતો EPS = તંદુરસ્ત કંપની' },
+    en: { title: 'EPS (Earnings Per Share)', body: 'Profit earned per share. Higher & growing EPS = healthier company.', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = Good  |  Growing EPS = Healthy' }
+  },
+  roe: {
+    hi: { title: 'ROE % (इक्विटी पर रिटर्न)', body: 'कंपनी अपने शेयरहोल्डर्स के पैसे पर कितना मुनाफा कमा रही है।', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = अच्छा  |  8–15% = ठीक  |  < 8% = कमजोर' },
+    gu: { title: 'ROE % (ઇક્વિટી પર રિટર્ન)', body: 'કંપની શેરહોલ્ડર્સના પૈસા પર કેટલો નફો કરે છે.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = સારું  |  8–15% = ઠીક  |  < 8% = નબળું' },
+    en: { title: 'ROE % (Return on Equity)', body: 'How efficiently the company generates profit from shareholders\' money.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = Good  |  8–15% = Fair  |  < 8% = Weak' }
+  },
+  roce: {
+    hi: { title: 'ROCE % (पूंजी पर रिटर्न)', body: 'कंपनी अपनी कुल लगाई गई पूंजी पर कितना मुनाफा बना रही है।', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = अच्छा  |  8–15% = ठीक  |  < 8% = कमजोर' },
+    gu: { title: 'ROCE % (મૂડી પર રિટર્ન)', body: 'કંપની લગાવેલી કુલ મૂડી પર કેટલો નફો કરે છે.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = સારું  |  8–15% = ઠીક  |  < 8% = નબળું' },
+    en: { title: 'ROCE % (Return on Capital Employed)', body: 'How much profit the company generates from all capital deployed.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = Good  |  8–15% = Fair  |  < 8% = Weak' }
+  },
+  bookVal: {
+    hi: { title: 'Book Value (बुक वैल्यू)', body: 'अगर कंपनी आज बंद हो जाए तो प्रति शेयर कितना मिलेगा। Price < Book Value = सस्ता!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = अंडरवैल्यूड' },
+    gu: { title: 'Book Value (બુક વેલ્યૂ)', body: 'કંપની બંધ થઈ જાય તો દરેક શેર પર કેટલું મળે. Price < BV = સસ્તો!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = Undervalued' },
+    en: { title: 'Book Value', body: 'What each share would be worth if the company liquidated. Price < BV = Undervalued!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = Undervalued' }
+  },
+  de: {
+    hi: { title: 'Debt-to-Equity (कर्ज अनुपात)', body: 'कंपनी ने अपनी इक्विटी के मुकाबले कितना कर्ज लिया है। कम = बेहतर।', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = कम कर्ज  |  0.5–1 = ठीक  |  > 1 = ज्यादा कर्ज' },
+    gu: { title: 'Debt-to-Equity (દેવું ગુણોત્તર)', body: 'ઇક્વિટી સામે કેટલું દેવું છે. ઓછું = વધારે સારું.', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = ઓછું દેવું  |  0.5–1 = ઠીક  |  > 1 = વધારે દેવું' },
+    en: { title: 'Debt-to-Equity Ratio', body: 'How much debt the company carries relative to equity. Lower is better.', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = Low debt  |  0.5–1 = Fair  |  > 1 = High debt' }
+  },
+  cr: {
+    hi: { title: 'Current Ratio (चालू अनुपात)', body: 'क्या कंपनी अपने अल्पकालिक कर्ज चुका सकती है? 1 से ज्यादा होना जरूरी।', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = सुरक्षित  |  1–1.5 = ठीक  |  < 1 = खतरा' },
+    gu: { title: 'Current Ratio (ચાલુ ગુણોત્તર)', body: 'કંપની ટૂંકા ગાળાની જવાબદારી ચૂકવી શકે? 1 થી વધારે હોવું જોઈએ.', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = સુરક્ષિત  |  1–1.5 = ઠીક  |  < 1 = જોખમ' },
+    en: { title: 'Current Ratio', body: 'Can the company pay its short-term obligations? Must be above 1.', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = Safe  |  1–1.5 = Fair  |  < 1 = Risk' }
+  },
+  divYield: {
+    hi: { title: 'Dividend Yield %', body: 'शेयर की कीमत के मुकाबले कंपनी कितना लाभांश देती है।', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = अच्छा  |  > 0% = ठीक  |  0% = कोई लाभांश नहीं' },
+    gu: { title: 'Dividend Yield %', body: 'શેર ભાવ સામે કંપની કેટલું ડિવિડન્ડ આપે છે.', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = સારું  |  > 0% = ઠીક  |  0% = ડિવિડન્ડ નથી' },
+    en: { title: 'Dividend Yield %', body: 'How much dividend the company pays relative to share price.', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = Good  |  > 0% = Fair  |  0% = No dividend' }
+  },
+  promoter: {
+    hi: { title: 'Promoter Holding %', body: 'कंपनी के मालिकों (प्रमोटर्स) के पास कितने % शेयर हैं। ज्यादा = भरोसेमंद।', formula: 'Screener/BSE से सीधा डेटा', good: '≥ 50% = मजबूत  |  35–50% = ठीक  |  < 35% = कम' },
+    gu: { title: 'Promoter Holding %', body: 'કંપનીના માલિકો (Promoters) પાસે કેટલા % શેર છે. વધારે = ભરોસાપાત્ર.', formula: 'Screener/BSE direct data', good: '≥ 50% = મજબૂત  |  35–50% = ઠીક  |  < 35% = ઓછું' },
+    en: { title: 'Promoter Holding %', body: 'How much % of shares the founders/promoters hold. Higher = more confidence.', formula: 'Direct from Screener/BSE', good: '≥ 50% = Strong  |  35–50% = Fair  |  < 35% = Low' }
+  }
+};
+
+function showLearnInfo(metric, val, symRaw) {
+  const info = LEARN_INFO[metric];
+  if (!info) return;
+  const L = info[_learnLang] || info['en'];
+  document.getElementById('learnInfoTitle').textContent = L.title;
+  document.getElementById('learnInfoBody').textContent  = L.body;
+  const fEl = document.getElementById('learnInfoFormula');
+  fEl.innerHTML = '<b>Formula:</b> ' + L.formula + (L.good ? '<br><span style="color:#f59e0b;">'+L.good+'</span>' : '');
+  if (val !== null) {
+    fEl.innerHTML += '<br><span style="color:#38bdf8;">Your value: <b>' + (typeof val === 'number' ? val.toFixed(2) : val) + '</b></span>';
+  }
+  document.getElementById('learnInfoModal').style.display = 'flex';
+}
+
+// ── Render report ─────────────────────────────────────────
+function renderLearnReport(d, sym) {
+  const res = document.getElementById('learnResults');
+  if (!res) return;
+  const R = calcLearnRatios(d);
+  const sp = d.sharePrice;
+  const lang = _learnLang;
+
+  const labels = {
+    hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' },
+    gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' },
+    en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %' }
+  }[lang];
+
+  const fmtV = (metric, val) => {
+    if (val === null) return '--';
+    if (metric === 'pe' || metric === 'de' || metric === 'cr') return val.toFixed(2);
+    if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
+    if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter') return val.toFixed(2) + '%';
+    return val.toFixed(2);
+  };
+
+  const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter'];
+
+  // Stock header
+  let html = `
+    <div style="background:#0d1f35;border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid rgba(251,146,60,0.15);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#fb923c;font-family:'JetBrains Mono',monospace;">${sym}</div>
+          ${sp > 0 ? `<div style="font-size:12px;color:#94a3b8;margin-top:2px;">Share Price: <span style="color:#e2e8f0;font-weight:700;">₹${sp.toFixed(2)}</span></div>` : '<div style="font-size:11px;color:#64748b;">Price: Open stock detail to load</div>'}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:9px;color:#64748b;margin-bottom:2px;">SOURCE</div>
+          <div style="font-size:10px;font-weight:700;color:${d.source==='firebase'?'#34d399':'#38bdf8'};">${d.source==='firebase'?'Firebase':'GAS Sheet'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin-bottom:12px;">
+      <div style="padding:10px 14px 6px;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span style="font-size:10px;font-weight:700;color:#fb923c;letter-spacing:1px;">📊 FUNDAMENTAL REPORT</span>
+      </div>
+  `;
+
+  metrics.forEach((m, idx) => {
+    const val = R[m];
+    const dot = _learnDot(m, val);
+    const last = idx === metrics.length - 1;
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;${last?'':'border-bottom:1px solid rgba(255,255,255,0.04);}">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
+          <span style="font-size:12px;color:#cbd5e1;">${labels[m]}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;font-weight:700;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fmtV(m, val)}</span>
+          <button onclick="showLearnInfo('${m}',${val},${JSON.stringify(sym)})"
+            style="width:20px;height:20px;border-radius:50%;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">ℹ</button>
+        </div>
+      </div>`;
+  });
+
+  html += `</div>`;
+
+  // Color legend
+  html += `<div style="display:flex;gap:12px;padding:0 2px;margin-bottom:14px;">
+    <span style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Good</span>
+    <span style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;display:inline-block;"></span>Average</span>
+    <span style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;"></span>Weak</span>
+    <span style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#64748b;display:inline-block;"></span>N/A</span>
+  </div>`;
+
+  // PDF button
+  html += `<button onclick="downloadLearnPDF('${sym}')"
+    style="width:100%;background:linear-gradient(135deg,#1e3a5f,#0f2a3f);color:#38bdf8;border:1px solid #2d5a8e;border-radius:12px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download PDF Report
+  </button>`;
+
+  res.innerHTML = html;
+}
+
+// ── PDF Download ───────────────────────────────────────────
+function downloadLearnPDF(sym) {
+  const d = _learnCache[sym];
+  if (!d) { showPopup('Data not loaded yet'); return; }
+  const R = calcLearnRatios(d);
+  const today = new Date();
+  const dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
+
+  const metrics = [
+    {key:'pe',     label:'P/E Ratio',          unit:''},
+    {key:'eps',    label:'EPS',                 unit:'₹'},
+    {key:'roe',    label:'ROE %',               unit:'%'},
+    {key:'roce',   label:'ROCE %',              unit:'%'},
+    {key:'bookVal',label:'Book Value',          unit:'₹'},
+    {key:'de',     label:'Debt-to-Equity',      unit:''},
+    {key:'cr',     label:'Current Ratio',       unit:''},
+    {key:'divYield',label:'Dividend Yield %',   unit:'%'},
+    {key:'promoter',label:'Promoter Holding %', unit:'%'}
+  ];
+
+  const dotColor = (m, v) => {
+    const c = _learnDot(m, v);
+    return c === '#22c55e' ? '#16a34a' : c === '#f59e0b' ? '#b45309' : c === '#ef4444' ? '#b91c1c' : '#94a3b8';
+  };
+
+  const rows = metrics.map(m => {
+    const val = R[m.key];
+    const fv = val === null ? '--' : (m.unit === '₹' ? '₹'+val.toFixed(2) : val.toFixed(2)+m.unit);
+    const col = dotColor(m.key, val);
+    const info = LEARN_INFO[m.key]?.en;
+    return `<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:8px;vertical-align:middle;"></span>
+        <strong style="color:#e2e8f0;font-size:12px;">${m.label}</strong>
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;font-family:monospace;font-size:13px;font-weight:bold;color:${col};">${fv}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;font-size:10px;color:#64748b;">${info?.good||''}</td>
+    </tr>`;
+  }).join('');
+
+  const sp = d.sharePrice > 0 ? '₹'+d.sharePrice.toFixed(2) : 'N/A';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${sym} — Fundamental Report</title>
+  <style>body{background:#060e1a;color:#e2e8f0;font-family:Arial,sans-serif;margin:0;padding:20px;}
+  table{width:100%;border-collapse:collapse;}
+  .hdr{background:linear-gradient(90deg,#0d1f35,#1e3a5f);padding:18px 22px;border-radius:12px;margin-bottom:18px;border:1px solid rgba(251,146,60,0.2);}
+  .hdr h1{margin:0;font-size:22px;color:#fb923c;} .hdr p{margin:4px 0 0;font-size:11px;color:#64748b;}
+  .badge{display:inline-block;background:#0a1628;padding:5px 12px;border-radius:6px;font-size:11px;color:#38bdf8;font-weight:bold;margin-right:8px;margin-top:8px;}
+  @media print{body{background:#fff;color:#000;} .hdr{background:#f0f4f8;border:1px solid #ddd;} .hdr h1{color:#c2410c;} .hdr p{color:#475569;} td{color:#000!important;border-bottom:1px solid #ddd!important;} strong{color:#1a202c!important;}}</style>
+  </head><body>
+  <div class="hdr">
+    <h1>${sym} — Fundamental Analysis</h1>
+    <p>RealTradePro · ${dateStr} · Search & Learn</p>
+    <div style="margin-top:8px;">
+      <span class="badge">Price: ${sp}</span>
+      <span class="badge">Source: ${d.source==='firebase'?'Firebase':'GAS Sheet'}</span>
+    </div>
+  </div>
+  <table><thead><tr style="background:#0d1f35;">
+    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Metric</th>
+    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Value</th>
+    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Benchmark</th>
+  </tr></thead><tbody>${rows}</tbody></table>
+  <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;font-size:10px;color:#4b6280;border:1px solid #1e2d3d;">
+    Raw data: Net Profit ${d.netProfit}Cr · Total Equity ${d.totalEquity}Cr · Shares ${d.totalShares}Cr · EBIT ${d.ebit}Cr · Cap.Employed ${d.capEmployed}Cr · Total Debt ${d.totalDebt}Cr · Promoter ${d.promoter}%
+  </div>
+  <div style="text-align:center;font-size:10px;color:#4b6280;margin-top:14px;">RealTradePro · Search & Learn · For personal reference only</div>
+  </body></html>`;
+
+  const w = window.open('','_blank','width=820,height=680');
+  if (!w) { showPopup('Popup blocked! Allow popups for PDF.'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 500);
+}
+// ============================================================
+// END SEARCH & LEARN
+// ============================================================
