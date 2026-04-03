@@ -5,6 +5,14 @@
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
+// ── Default FF2 URL pre-save (first time only) ──
+(function setDefaultFF2Url() {
+  const DEFAULT_FF2_URL = "https://script.google.com/macros/s/AKfycbxcIGFZp7IWBSMJVsMIgpPR5oVmiEJbapQyknKrJ8iVpn9ahM6z9hc_QfiDKhhSMGNgiw/exec";
+  if (!localStorage.getItem('ff2ApiUrl')) {
+    localStorage.setItem('ff2ApiUrl', DEFAULT_FF2_URL);
+  }
+})();
+
 // ---- PIN Hash (simple SHA-256) ----
 async function hashPIN(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
