@@ -7101,7 +7101,6 @@ function downloadLearnPDF(sym) {
 
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
-  );
   const a=document.getElementById(arrId);
   if(!b||!a) return;
   const hidden=b.style.display==='none'||b.style.display==='';
