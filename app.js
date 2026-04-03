@@ -6791,12 +6791,26 @@ async function fetchLearnStock() {
         return 0;
       }
       const raw = {
-        sym, source: 'firebase',
-        netProfit: fv(d.netProfit), totalEquity: fv(d.totalEquity),
-        totalShares: fv(d.totalShares), ebit: fv(d.ebit),
-        capEmployed: fv(d.capEmployed), totalDebt: fv(d.totalDebt),
-        dividend: fv(d.dividend), currAsset: fv(d.currAsset),
-        currLiab: fv(d.currLiab), promoter: fv(d.promoter)
+      sym, source: 'firebase',
+      netProfit:   fv(d.netProfit),
+      totalEquity: fv(d.totalEquity),
+      totalShares: fv(d.totalShares),
+      ebit:        fv(d.ebit),
+      capEmployed: fv(d.capEmployed),
+      totalDebt:   fv(d.totalDebt),
+      dividend:    fv(d.dividend),
+      currAsset:   fv(d.currAsset),
+      currLiab:    fv(d.currLiab),
+      promoter:    fv(d.promoter),
+      fii:         fv(d.fii),
+      dii:         fv(d.dii),
+      pubHolding:  fv(d.pubHolding),
+      eps:         fv(d.eps),
+      opProfit:    fv(d.opProfit),
+      fcf:         fv(d.fcf),
+      deRatio:     fv(d.deRatio),
+      roa:         fv(d.roa),
+      ebitda:      fv(d.ebitda),
       };
       raw.sharePrice = _getLivePrice(sym);
       await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
@@ -6882,18 +6896,37 @@ function _getLivePrice(sym) {
   return 0;
 }
 
-// ── Calculate all ratios ──────────────────────────────────
+// REPLACE entire calcLearnRatios function:
 function calcLearnRatios(d) {
   const safe = (v) => (isNaN(v) || !isFinite(v)) ? null : v;
-  const sp = d.sharePrice || 0;
-  const eps = d.totalShares > 0 ? d.netProfit / d.totalShares : null;
+  const sp  = d.sharePrice || 0;
+
+  // EPS: sheet thi direct aave che, calculate nahi karvu
+  const eps = d.eps && d.eps > 0 ? d.eps
+              : (d.totalShares > 0 ? d.netProfit / d.totalShares : null);
+
+  // PE: share price / eps
   const pe  = (eps && eps > 0 && sp > 0) ? sp / eps : null;
+
+  // ROE: net profit / equity * 100
   const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
-  const roce = d.capEmployed > 0 ? (d.ebit / d.capEmployed) * 100 : null;
+
+  // ROCE: Col F = capEmployed = ROCE % directly (screener thi aave che)
+  const roce = d.capEmployed && d.capEmployed > 0 ? d.capEmployed : null;
+
+  // Book Value: equity / shares
   const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
-  const de  = d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null;
+
+  // D/E: direct from sheet (deRatio), fallback calculate
+  const de  = d.deRatio && d.deRatio > 0 ? d.deRatio
+              : (d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null);
+
+  // Current Ratio
   const cr  = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
-  const divY = sp > 0 ? (d.dividend / sp) * 100 : null;
+
+  // Dividend Yield
+  const divY = sp > 0 && d.dividend > 0 ? (d.dividend / sp) * 100 : null;
+
   return {
     pe:       safe(pe),
     eps:      safe(eps),
@@ -6903,8 +6936,8 @@ function calcLearnRatios(d) {
     de:       safe(de),
     cr:       safe(cr),
     divYield: safe(divY),
-    promoter: d.promoter,
-    rsi:      d.rsi !== undefined ? d.rsi : null // Added RSI
+    promoter: d.promoter || null,
+    rsi:      d.rsi !== undefined ? d.rsi : null
   };
 }
 
