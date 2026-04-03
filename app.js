@@ -6917,23 +6917,24 @@ function renderLearnReport(d, sym) {
       </div>
   `;
 
-  metrics.forEach((m, idx) => {
+metrics.forEach((m, idx) => {
     const val = R[m];
     const dot = _learnDot(m, val);
     const last = idx === metrics.length - 1;
+    
     html += `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;${last?'':'border-bottom:1px solid rgba(255,255,255,0.04);}">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="width:8px;height:8px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
-          <span style="font-size:12px;color:#cbd5e1;">${labels[m]}</span>
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; ${last ? '' : 'border-bottom:1px solid rgba(255,255,255,0.04);'}">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:${dot}; flex-shrink:0;"></div>
+          <span style="font-size:12px; color:#cbd5e1;">${labels[m]}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:13px;font-weight:700;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fmtV(m, val)}</span>
-          <button onclick="showLearnInfo('${m}',${val},${JSON.stringify(sym)})"
-            style="width:20px;height:20px;border-radius:50%;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">ℹ</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:13px; font-weight:700; color:#e2e8f0; font-family:'JetBrains Mono',monospace;">${fmtV(m, val)}</span>
+          <button onclick="showLearnInfo('${m}', ${val}, ${JSON.stringify(sym)})"
+            style="width:20px; height:20px; border-radius:50%; background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; line-height:1;">ℹ</button>
         </div>
       </div>`;
-  });
+});
 
   html += `</div>`;
 
