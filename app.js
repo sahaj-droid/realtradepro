@@ -7110,3 +7110,93 @@ function sToggle(bodyId, arrId){
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
 }
+// ============================================================
+// MARKET PULSE: DEEP ANALYSIS LOGIC
+// ============================================================
+
+async function startDeepAnalysis() {
+    const symbol = document.getElementById('learnSearchInput').value.toUpperCase().trim();
+    if (!symbol) return;
+
+    const msg = document.getElementById('learnMsg');
+    const resultsArea = document.getElementById('learnResultsArea');
+    const grid = document.getElementById('learn-data-grid');
+    const adviceText = document.getElementById('nivi-advice-text');
+
+    msg.innerText = "🔍 Fetching Data from Sheet & Firebase...";
+    resultsArea.style.display = 'none';
+
+    try {
+        // 1. Fundamentals from Sheet
+        const fundData = await findStockInSheet(symbol);
+        
+        // 2. Technicals from Firebase
+        const techSnap = await firebase.database().ref(`ohlcv/${symbol}`).once('value');
+        const techData = techSnap.val();
+
+        if (!fundData) {
+            msg.innerText = "❌ Stock not found in Fundamental database.";
+            return;
+        }
+
+        msg.innerText = "";
+        resultsArea.style.display = 'block';
+
+        // Calculate RSI from Firebase Close Prices
+        let rsi = "N/A";
+        if (techData && techData.c) {
+            rsi = calculateRSIFromArr(techData.c);
+        }
+
+        // Render UI
+        grid.innerHTML = `
+            ${createLearnItem("Net Profit", fundData.netProfit + " Cr", "કંપનીનો વાર્ષિક નફો.")}
+            ${createLearnItem("ROA", fundData.roa + "%", "કંપનીની કાર્યક્ષમતા (Assets પર કમાણી).")}
+            ${createLearnItem("Debt/Equity", fundData.debtToEquity, "કંપની પરનું દેવું. 1 થી ઓછું સારું.")}
+            ${createLearnItem("Promoter", fundData.promoter + "%", "માલિકોનો હિસ્સો.")}
+            ${createLearnItem("RSI (14D)", rsi, "Momentum Indicator. 30 (Buy), 70 (Sell).")}
+            ${createLearnItem("EPS", fundData.eps, "શેર દીઠ કમાણી.")}
+        `;
+
+        // Nivi's Advice Logic
+        if (rsi !== "N/A" && rsi < 35) {
+            adviceText.innerHTML = `🔥 <b>Strong Bullish:</b> ${symbol} is in Oversold zone with stable fundamentals. Potential bounce back candidate.`;
+        } else if (rsi > 75) {
+            adviceText.innerHTML = `⚠️ <b>Caution:</b> Stock is currently Overbought. New entry might be risky at this level.`;
+        } else {
+            adviceText.innerHTML = `✅ <b>Neutral:</b> Fundamentals are solid. Maintain current positions or wait for RSI to hit extreme zones.`;
+        }
+
+    } catch (e) {
+        console.error(e);
+        msg.innerText = "⚠️ Error loading data.";
+    }
+}
+
+function createLearnItem(lbl, val, info) {
+    return `
+        <div onclick="showLearnPopup('${lbl}', '${info}')" style="background:#0d1f35; padding:12px; border-radius:10px; border:1px solid rgba(251,146,60,0.15); cursor:pointer;">
+            <div style="color:#64748b; font-size:10px; display:flex; align-items:center; gap:4px;">
+                ${lbl} <span style="color:#fb923c;">ⓘ</span>
+            </div>
+            <div style="font-size:15px; font-weight:700; color:#e2e8f0; margin-top:4px;">${val}</div>
+        </div>
+    `;
+}
+
+function showLearnPopup(title, body) {
+    document.getElementById('learnInfoTitle').innerText = title;
+    document.getElementById('learnInfoBody').innerText = body;
+    document.getElementById('learnInfoModal').style.display = 'flex';
+}
+
+function calculateRSIFromArr(c) {
+    if (!c || c.length < 15) return "N/A";
+    let g = 0, l = 0;
+    for (let i = 1; i < 15; i++) {
+        let d = c[i] - c[i-1];
+        if (d >= 0) g += d; else l -= d;
+    }
+    let rs = (g / 14) / (l / 14);
+    return (100 - (100 / (1 + rs))).toFixed(2);
+}  
