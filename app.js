@@ -6955,6 +6955,9 @@ function _learnDot(metric, val) {
     divYield: v => v >= 1 ? 'green' : v > 0 ? 'yellow' : 'red',
     promoter: v => v >= 50 ? 'green' : v >= 35 ? 'yellow' : 'red',
     rsi:      v => v < 40 ? 'green' : v < 70 ? 'yellow' : 'red' // Added RSI Rule
+    fii: v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red',
+    dii: v => v >= 5  ? 'green' : v >= 2 ? 'yellow' : 'red',
+    roa: v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red',
   };
   const r = rules[metric] ? rules[metric](val) : 'gray';
   return r === 'green' ? '#22c55e' : r === 'yellow' ? '#f59e0b' : r === 'red' ? '#ef4444' : '#64748b';
@@ -7013,6 +7016,21 @@ const LEARN_INFO = {
     gu: { title: 'RSI (મોમેન્ટમ)', body: 'શેર ઓવરસોલ્ડ (ખરીદવાની તક) છે કે ઓવરબૉટ (વેચવાની તક) તે દર્શાવે છે.', formula: 'Relative Strength Index', good: '< 40 = Oversold (સસ્તો) | > 70 = Overbought (મોંઘો)' },
     en: { title: 'RSI (Momentum)', body: 'Indicates if a stock is oversold (buy) or overbought (sell).', formula: 'Relative Strength Index', good: '< 40 = Oversold (Good) | > 70 = Overbought' }
   }
+  fii: {
+  hi: { title: 'FII Holding %', body: 'विदेशी संस्थागत निवेशकों की हिस्सेदारी। ज़्यादा = विदेशी भरोसा।', formula: 'Direct from BSE/NSE', good: '≥ 10% = अच्छा  |  5–10% = ठीक  |  < 5% = कम' },
+  gu: { title: 'FII Holding %', body: 'વિદેશી સંસ્થાકીય રોકાણકારોની હિસ્સેદારી. વધારે = વિદેશી વિશ્વાસ.', formula: 'Direct from BSE/NSE', good: '≥ 10% = સારું  |  5–10% = ઠીક  |  < 5% = ઓછું' },
+  en: { title: 'FII Holding %', body: 'Foreign Institutional Investors stake. Higher = more foreign confidence.', formula: 'Direct from BSE/NSE', good: '≥ 10% = Good  |  5–10% = Fair  |  < 5% = Low' }
+},
+dii: {
+  hi: { title: 'DII Holding %', body: 'घरेलू संस्थागत निवेशकों की हिस्सेदारी। MF, LIC जैसे संस्थान।', formula: 'Direct from BSE/NSE', good: '≥ 5% = अच्छा  |  2–5% = ठीक  |  < 2% = कम' },
+  gu: { title: 'DII Holding %', body: 'સ્થાનિક સંસ્થાકીય રોકાણકારોની હિસ્સેદારી. MF, LIC જેવી સંસ્થાઓ.', formula: 'Direct from BSE/NSE', good: '≥ 5% = સારું  |  2–5% = ઠીક  |  < 2% = ઓછું' },
+  en: { title: 'DII Holding %', body: 'Domestic Institutional Investors stake. MF, LIC type institutions.', formula: 'Direct from BSE/NSE', good: '≥ 5% = Good  |  2–5% = Fair  |  < 2% = Low' }
+},
+roa: {
+  hi: { title: 'ROA % (संपत्ति पर रिटर्न)', body: 'कंपनी अपनी कुल संपत्ति पर कितना मुनाफा कमाती है।', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = अच्छा  |  5–10% = ठीक  |  < 5% = कमजोर' },
+  gu: { title: 'ROA % (સંપત્તિ પર રિટર્ન)', body: 'કંપની કુલ સંપત્તિ પર કેટલો નફો કરે છે.', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = સારું  |  5–10% = ઠીક  |  < 5% = નબળું' },
+  en: { title: 'ROA % (Return on Assets)', body: 'How much profit the company generates from total assets.', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = Good  |  5–10% = Fair  |  < 5% = Weak' }
+},  
 };
 
 function showLearnInfo(metric, val, symRaw) {
@@ -7037,22 +7055,23 @@ function renderLearnReport(d, sym) {
   const sp = d.sharePrice;
   const lang = _learnLang;
 
-  const labels = {
-    hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' },
-    gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' },
-    en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter Holding %', rsi:'RSI (14D)' }
-  }[lang];
+  // REPLACE lines 7007-7011:
+  // REPLACE lines 7007-7011:
+const labels = {
+  hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' },
+  gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' },
+  en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' }
+}[lang];
 
-  const fmtV = (metric, val) => {
-    if (val === null) return '--';
-    if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
-    if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
-    if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter') return val.toFixed(2) + '%';
-    return val.toFixed(2);
-  };
+  // REPLACE lines 7015-7018:
+if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
+if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
+if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter' || metric === 'fii' || metric === 'dii' || metric === 'roa') return val.toFixed(2) + '%';
+return val.toFixed(2);
+};
 
   // Added RSI to metrics array
-  const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter', 'rsi'];
+  const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter','fii','dii','roa','rsi'];
 
   // [PHASE 2 INJECTION] Nivi's Intelligent Logic
   let niviText = "આ સ્ટોકના ફંડામેન્ટલ અને ટેકનિકલ પેરામીટર્સ અત્યારે ન્યુટ્રલ (Stable) છે.";
