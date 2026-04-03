@@ -3040,7 +3040,17 @@ function saveFF2Url(){
   loadSettingsUI();
   showPopup(val ? '✅ FF2 URL saved! Learn tab ready.' : 'FF2 URL cleared');
 }
+
+// જે ફંક્શનનું નામ ગાયબ હતું, તે મેં અહી ઉમેરી દીધું છે 👇
+function toggleSection(bodyId, arrId) {
   const b=document.getElementById(bodyId);
+  const a=document.getElementById(arrId);
+  if(!b||!a) return;
+  const hidden=b.style.display==='none'||b.style.display==='';
+  b.style.display=hidden?'block':'none';
+  a.textContent=hidden?'▼':'▶';
+}
+  );
   const a=document.getElementById(arrId);
   if(!b||!a) return;
   const hidden=b.style.display==='none'||b.style.display==='';
@@ -7099,7 +7109,7 @@ function downloadLearnPDF(sym) {
 
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
-  const b=document.getElementById(bodyId);
+  );
   const a=document.getElementById(arrId);
   if(!b||!a) return;
   const hidden=b.style.display==='none'||b.style.display==='';
