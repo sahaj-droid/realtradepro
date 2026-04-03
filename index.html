@@ -1204,8 +1204,7 @@ function fsVal(f){
 <div id="news" class="tab" style="padding:0;"></div>
 
 <!-- SEARCH & LEARN TAB -->
-<div id="learn" class="tab" style="padding:0;overflow-y:auto;">
-  <!-- Header -->
+<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:#060e1a;height:100%;">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#060e1a;z-index:10;">
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="width:28px;height:28px;background:rgba(251,146,60,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
@@ -1213,7 +1212,6 @@ function fsVal(f){
       </div>
       <span style="font-size:13px;font-weight:700;color:#fb923c;letter-spacing:1px;">SEARCH & LEARN</span>
     </div>
-    <!-- Language selector -->
     <div style="display:flex;gap:4px;" id="learnLangBtns">
       <button onclick="setLearnLang('hi')" id="ll-hi" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:rgba(251,146,60,0.2);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">HI</button>
       <button onclick="setLearnLang('gu')" id="ll-gu" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);">GU</button>
@@ -1221,38 +1219,40 @@ function fsVal(f){
     </div>
   </div>
 
-  <!-- Search box -->
   <div style="padding:12px 14px 8px;">
     <div style="display:flex;gap:8px;">
       <div style="flex:1;position:relative;">
         <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
           style="width:100%;background:#0d1f35;border:1px solid rgba(251,146,60,0.3);color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
-          oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
-        <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#0d1f35;border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+          onkeydown="if(event.key==='Enter'){ startDeepAnalysis(); }">
       </div>
-      <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <button onclick="startDeepAnalysis()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+        ANALYZE
       </button>
     </div>
-    <!-- Loading / error msg -->
     <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
   </div>
 
-  <!-- Results area -->
-  <div id="learnResults" style="padding:0 14px 100px;"></div>
-</div>
+  <div id="learnResultsArea" style="padding:0 14px 100px; display:none;">
+      <div id="nivi-recommendation" style="background:rgba(251,146,60,0.1); border:1px solid rgba(251,146,60,0.2); border-radius:12px; padding:15px; margin-bottom:15px; border-left:4px solid #fb923c;">
+          <div style="font-size:11px; color:#fb923c; font-weight:700; margin-bottom:4px;">NIVI'S ANALYSIS</div>
+          <div id="nivi-advice-text" style="font-size:13px; color:#e2e8f0; line-height:1.4; font-weight:500;">Please wait, calculating trends...</div>
+      </div>
 
-<!-- LEARN INFO POPUP (ℹ️ explanation) -->
-<div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:6000;align-items:center;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid rgba(251,146,60,0.3);border-radius:16px;padding:20px;width:300px;max-width:92vw;position:relative;">
-    <button onclick="document.getElementById('learnInfoModal').style.display='none'" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;line-height:1;">×</button>
-    <div id="learnInfoTitle" style="font-size:14px;font-weight:700;color:#fb923c;margin-bottom:10px;padding-right:20px;"></div>
-    <div id="learnInfoBody" style="font-size:12px;color:#cbd5e1;line-height:1.6;"></div>
-    <div id="learnInfoFormula" style="font-size:11px;color:#34d399;margin-top:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;"></div>
+      <div id="learn-data-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          </div>
   </div>
 </div>
 
-<!-- DANGER CONFIRM MODAL (bottom sheet) -->
+<div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid rgba(251,146,60,0.3);border-radius:16px;padding:20px;width:300px;max-width:92vw;position:relative;">
+    <button onclick="document.getElementById('learnInfoModal').style.display='none'" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">×</button>
+    <div id="learnInfoTitle" style="font-size:14px;font-weight:700;color:#fb923c;margin-bottom:10px;"></div>
+    <div id="learnInfoBody" style="font-size:12px;color:#cbd5e1;line-height:1.6;"></div>
+  </div>
+</div>
+
+  <!-- DANGER CONFIRM MODAL (bottom sheet) -->
 <div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid rgba(239,68,68,0.3);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;box-sizing:border-box;">
     <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 16px;"></div>
