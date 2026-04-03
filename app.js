@@ -6954,11 +6954,11 @@ function _learnDot(metric, val) {
     cr:       v => v >= 1.5 ? 'green' : v >= 1 ? 'yellow' : 'red',
     divYield: v => v >= 1 ? 'green' : v > 0 ? 'yellow' : 'red',
     promoter: v => v >= 50 ? 'green' : v >= 35 ? 'yellow' : 'red',
-    rsi:      v => v < 40 ? 'green' : v < 70 ? 'yellow' : 'red', // Added RSI Rule
-    fii:       v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red',
-    dii:       v => v >= 5  ? 'green' : v >= 2 ? 'yellow' : 'red',
-    roa:       v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red',
-  };
+    rsi:      v => v < 40 ? 'green' : v < 70 ? 'yellow' : 'red',
+    fii:      v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red',
+    dii:      v => v >= 5  ? 'green' : v >= 2 ? 'yellow' : 'red',
+    roa:      v => v >= 10 ? 'green' : v >= 5 ? 'yellow' : 'red'
+};
   const r = rules[metric] ? rules[metric](val) : 'gray';
   return r === 'green' ? '#22c55e' : r === 'yellow' ? '#f59e0b' : r === 'red' ? '#ef4444' : '#64748b';
 }
