@@ -3007,7 +3007,10 @@ function loadSettingsUI(){
   }
   // Avatar initial letter from currentUser
   const avEl = document.getElementById('settingsAvatarLetter');
-  if(avEl && currentUser) avEl.textContent = currentUser.charAt(0).toUpperCase();
+  if(avEl && currentUser) {
+  const uname = typeof currentUser === 'string' ? currentUser : (currentUser.name || '?');
+  avEl.textContent = uname.charAt(0).toUpperCase();
+}
   // FF2 URL display
   const ff2Display = document.getElementById('ff2-url-display');
   const ff2Sub = document.getElementById('ff2-url-sub');
@@ -6730,12 +6733,16 @@ function learnSearchSuggest(val) {
 
 // [PHASE 2 INJECTION] Helper to fetch Technical Data (RSI) quietly
 async function _enrichWithTechnicals(raw, sym) {
+  // Firebase Realtime DB nathi — cache thi price history thi RSI approximate kariye
   try {
-    const snap = await firebase.database().ref(`ohlcv/${sym}`).once('value');
-    const d = snap.val();
-    if(d && d.c) {
-      raw.rsi = calculateLearnRSI(d.c);
-    } else { raw.rsi = null; }
+    // Yahoo Finance proxy thi recent closes fetch kariye
+    const proxyBase = localStorage.getItem('customAPI2') || localStorage.getItem('customAPI') || (typeof API !== 'undefined' ? API : '');
+    if (!proxyBase) { raw.rsi = null; return raw; }
+    const r = await fetch(`${proxyBase}?type=ohlcv&s=${sym}&range=1mo&interval=1d`);
+    if (!r.ok) throw new Error('ohlcv fetch failed');
+    const data = await r.json();
+    const closes = (data.closes || data.c || []);
+    raw.rsi = closes.length >= 15 ? calculateLearnRSI(closes) : null;
   } catch(e) { raw.rsi = null; }
   return raw;
 }
