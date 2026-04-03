@@ -6808,19 +6808,29 @@ async function fetchLearnStock() {
       const data = await r.json();
       if (data.success && data.data) {
         const d = data.data;
-        const raw = {
-          sym, source: 'ff2',
-          netProfit:   Number(d.profit)  || 0,
-          totalEquity: Number(d.equity)  || 0,
-          totalShares: Number(d.shares)  || 0,
-          ebit:        Number(d.ebit)    || 0,
-          capEmployed: Number(d.ce)      || 0,
-          totalDebt:   Number(d.debt)    || 0,
-          dividend:    Number(d.div)     || 0,
-          currAsset:   Number(d.assets)  || 0,
-          currLiab:    Number(d.liab)    || 0,
-          promoter:    Number(d.prom)    || 0
-        };
+// NEW — replace with:
+const raw = {
+  sym, source: 'ff2',
+  netProfit:   Number(d.profit)    || 0,
+  totalEquity: Number(d.equity)    || 0,
+  totalShares: Number(d.shares)    || 0,
+  ebit:        Number(d.ebit)      || 0,
+  capEmployed: Number(d.ce)        || 0,
+  totalDebt:   Number(d.debt)      || 0,
+  dividend:    Number(d.div)       || 0,
+  currAsset:   Number(d.assets)    || 0,
+  currLiab:    Number(d.liab)      || 0,
+  promoter:    Number(d.prom)      || 0,
+  fii:         Number(d.fii)       || 0,
+  dii:         Number(d.dii)       || 0,
+  pubHolding:  Number(d.pub)       || 0,
+  eps:         Number(d.eps)       || 0,
+  opProfit:    Number(d.opProfit)  || 0,
+  fcf:         Number(d.fcf)       || 0,
+  deRatio:     Number(d.de)        || 0,
+  roa:         Number(d.roa)       || 0,
+  ebitda:      Number(d.ebitda)    || 0
+};
         raw.sharePrice = _getLivePrice(sym);
         await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
         _learnCache[sym] = raw;
