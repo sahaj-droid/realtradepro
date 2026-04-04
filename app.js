@@ -6902,8 +6902,7 @@ function calcLearnRatios(d) {
   const sp  = d.sharePrice || 0;
 
   // EPS: sheet thi direct, fallback calculate
-  const eps = (d.eps && d.eps > 0) ? d.eps
-              : (d.totalShares > 0 ? d.netProfit / d.totalShares : null);
+  const eps = (d.eps && d.eps > 0) ? d.eps : null;
 
   // PE
   const pe  = (eps && eps > 0 && sp > 0) ? sp / eps : null;
@@ -6912,7 +6911,7 @@ function calcLearnRatios(d) {
   const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
 
   // ROCE: Col F = direct ROCE % from screener
-const roce = (d.capEmployed > 0 && d.ebit > 0) ? (d.ebit / d.capEmployed) * 100 : null;
+const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
 
   // Book Value
   const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
