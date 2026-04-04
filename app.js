@@ -7055,14 +7055,12 @@ function renderLearnReport(d, sym) {
   const lang = _learnLang;
 
   // REPLACE lines 7007-7011:
-  // REPLACE lines 7007-7011:
-const labels = {
+  const labels = {
   hi: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' },
   gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' },
   en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' }
 }[lang];
-
-  // REPLACE lines 7015-7018:
+const fmtV = (metric, val) => {
 if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
 if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
 if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter' || metric === 'fii' || metric === 'dii' || metric === 'roa') return val.toFixed(2) + '%';
