@@ -6851,7 +6851,7 @@ const raw = {
   fcf:         Number(d.fcf)       || 0,
   deRatio:     Number(d.de)        || 0,
   roa:         Number(d.roa)       || 0,
-  ebitda:      Number(d.ebitda)    || 0
+  ebitda:      Number(d.ebitda)    || 0,
 };
         raw.sharePrice = _getLivePrice(sym);
         await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
