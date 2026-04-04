@@ -7367,45 +7367,35 @@ async function downloadLearnPDF(sym) {
     ['EBITDA', d.ebitda ? '₹'+d.ebitda+' Cr' : '--'],
   ].map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
 
-  // ── Section 4: Live Quarterly/Cashflow (Yahoo Finance) ──
-  let qRows = '<tr><td colspan="3" style="padding:8px 10px;color:#94a3b8;font-size:11px;">Not available — API not configured</td></tr>';
-  let cfRows = qRows;
+// ── Section 4: Quarterly from Firebase cache ──
+  const qs = ['Q1','Q2','Q3','Q4','Q5'];
+  const qLabels = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
+  const qKeys   = ['sales','exp','op','otherInc','pbt','np'];
+  const fmtCr = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
 
-  try {
-    const apiUrl = localStorage.getItem('customAPI') || localStorage.getItem('customAPI2') || (typeof API !== 'undefined' ? API : '');
-    if (apiUrl) {
-      const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`);
-      const data = await r.json();
-      const q = data.quote || data;
+  let qRows = '';
+  const hasQ = d.salesQ1 && d.salesQ1 !== 0;
+  if (hasQ) {
+    const hdrRow = `<tr><td class="td"><strong>Metric</strong></td>${qs.map(q=>`<td class="td-val" style="font-size:11px;">${q}</td>`).join('')}</tr>`;
+    qRows = hdrRow + qLabels.map((label, li) => {
+      const key = qKeys[li];
+      return `<tr><td class="td">${label}</td>${qs.map(q=>`<td class="td-val">${fmtCr(d[key+q])}</td>`).join('')}</tr>`;
+    }).join('');
+  } else {
+    qRows = `<tr><td colspan="6" style="padding:8px 10px;color:#94a3b8;font-size:11px;">Quarterly data not available</td></tr>`;
+  }
 
-      const fmtCr = v => v ? '₹'+(v/1e7).toFixed(1)+' Cr' : '--';
-      const fmtPct = v => v ? (v*100).toFixed(2)+'%' : '--';
-
-      const qItems = [
-        ['Revenue (TTM)', fmtCr(q.totalRevenue)],
-        ['Gross Profit', fmtCr(q.grossProfits)],
-        ['Net Income', fmtCr(q.netIncomeToCommon)],
-        ['EBITDA', fmtCr(q.ebitda)],
-        ['EPS (TTM)', q.trailingEps ? '₹'+q.trailingEps.toFixed(2) : '--'],
-        ['Profit Margin', fmtPct(q.profitMargins)],
-        ['Revenue Growth', fmtPct(q.revenueGrowth)],
-        ['Earnings Growth', fmtPct(q.earningsGrowth)],
-      ];
-      qRows = qItems.map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
-
-      const cfItems = [
-        ['Operating Cash Flow', fmtCr(q.operatingCashflow)],
-        ['Free Cash Flow', fmtCr(q.freeCashflow)],
-        ['Total Cash', fmtCr(q.totalCash)],
-        ['Total Debt', fmtCr(q.totalDebt)],
-        ['Cash Per Share', q.totalCashPerShare ? '₹'+q.totalCashPerShare.toFixed(2) : '--'],
-        ['Debt/Equity', q.debtToEquity ? (q.debtToEquity/100).toFixed(2)+'x' : '--'],
-        ['Quick Ratio', q.quickRatio ? q.quickRatio.toFixed(2)+'x' : '--'],
-        ['Current Ratio', q.currentRatio ? q.currentRatio.toFixed(2)+'x' : '--'],
-      ];
-      cfRows = cfItems.map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
-    }
-  } catch(e) { /* keep default rows */ }
+  // ── Cash Flow from Firebase cache ──
+  const cfItems = [
+    ['Free Cash Flow', fmtCr(d.fcf)],
+    ['Total Debt',     fmtCr(d.totalDebt)],
+    ['Current Assets', fmtCr(d.currAsset)],
+    ['Current Liab',   fmtCr(d.currLiab)],
+    ['Debt/Equity',    d.deRatio ? Number(d.deRatio).toFixed(2)+'x' : '--'],
+    ['ROA %',          d.roa    ? Number(d.roa).toFixed(2)+'%'    : '--'],
+    ['EBITDA',         fmtCr(d.ebitda)],
+  ];
+  const cfRows = cfItems.map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
 
   // ── Score summary ──
   const scored = ['pe','eps','roe','roce','de','cr','roa','promoter','fii','dii'].map(k => _learnDot(k, R[k]));
