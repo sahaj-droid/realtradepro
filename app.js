@@ -6903,19 +6903,47 @@ function _getLivePrice(sym) {
 function calcLearnRatios(d) {
   const safe = (v) => (v === null || v === undefined || isNaN(v) || !isFinite(v)) ? null : v;
 
-  // Direct from Screener — no calculation needed
-  const pe      = (d.pe      && d.pe      > 0) ? d.pe      : null;
-  const eps     = (d.eps     && d.eps     > 0) ? d.eps     : null;
-  const roe     = (d.roe     && d.roe     > 0) ? d.roe     : null;
-  const roce    = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
-  const bv      = (d.bookValue && d.bookValue > 0) ? d.bookValue : null;
-  const de      = (d.deRatio && d.deRatio > 0) ? d.deRatio : null;
-  const divY    = (d.dividend && d.dividend > 0) ? d.dividend : null;
-  const fii     = (d.fii     && d.fii     > 0) ? d.fii     : null;
-  const dii     = (d.dii     && d.dii     > 0) ? d.dii     : null;
-  const roa     = (d.roa     && d.roa     > 0) ? d.roa     : null;
+  // Direct from Screener/Firebase — use if available, else calculate from raw fields
+  // EPS: direct OR calculate from netProfit / totalShares
+  const eps = (d.eps && d.eps > 0)
+    ? d.eps
+    : (d.netProfit > 0 && d.totalShares > 0 ? d.netProfit / d.totalShares : null);
 
-  // Current Ratio — calculate (no direct field)
+  // PE: direct OR calculate from sharePrice / eps
+  const _eps = eps;
+  const pe = (d.pe && d.pe > 0)
+    ? d.pe
+    : (d.sharePrice > 0 && _eps > 0 ? d.sharePrice / _eps : null);
+
+  // ROE: direct OR calculate from netProfit / totalEquity
+  const roe = (d.roe && d.roe > 0)
+    ? d.roe
+    : (d.netProfit > 0 && d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null);
+
+  // ROCE: always calculate — ebit / capEmployed
+  const roce = (d.ebit > 0 && d.capEmployed > 0) ? (d.ebit / d.capEmployed) * 100 : null;
+
+  // Book Value: direct OR calculate from totalEquity / totalShares
+  const bv = (d.bookValue && d.bookValue > 0)
+    ? d.bookValue
+    : (d.totalEquity > 0 && d.totalShares > 0 ? d.totalEquity / d.totalShares : null);
+
+  // DE Ratio: direct OR calculate from totalDebt / totalEquity
+  const de = (d.deRatio && d.deRatio > 0)
+    ? d.deRatio
+    : (d.totalDebt >= 0 && d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null);
+
+  // Dividend Yield: (dividend / sharePrice) * 100
+  const divY = (d.dividend > 0 && d.sharePrice > 0) ? (d.dividend / d.sharePrice) * 100 : null;
+
+  // FII, DII, ROA — direct values
+  const fii = (d.fii && d.fii > 0) ? d.fii : null;
+  const dii = (d.dii && d.dii > 0) ? d.dii : null;
+  const roa = (d.roa && d.roa > 0)
+    ? d.roa
+    : (d.netProfit > 0 && (d.currAsset + d.totalDebt) > 0 ? (d.netProfit / (d.currAsset + d.totalDebt)) * 100 : null);
+
+  // Current Ratio — calculate from currAsset / currLiab
   const cr = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
 
   return {
@@ -7066,16 +7094,49 @@ const fmtV = (metric, val) => {
   // Added RSI to metrics array
   const metrics = ['pe','eps','roe','roce','bookVal','de','cr','divYield','promoter','fii','dii','roa','rsi'];
 
-  // [PHASE 2 INJECTION] Nivi's Intelligent Logic
-  let niviText = "આ સ્ટોકના ફંડામેન્ટલ અને ટેકનિકલ પેરામીટર્સ અત્યારે ન્યુટ્રલ (Stable) છે.";
-  if (R['rsi'] !== null && R['rsi'] < 40 && R['roe'] > 15) {
-      niviText = `🔥 <b>Strong Buy Zone:</b> આ સ્ટોકનો ROE (${R['roe'].toFixed(1)}%) ઘણો સારો છે અને અત્યારે RSI મુજબ Oversold છે. આ એક ઉત્તમ તક હોઈ શકે છે.`;
+  // [PHASE 2 INJECTION] Nivi's Intelligent Logic — multilingual
+  const _niviNeutral = {
+    hi: 'इस स्टॉक के फंडामेंटल और टेक्निकल पैरामीटर अभी न्यूट्रल (Stable) हैं।',
+    gu: 'આ સ્ટોકના ફંડામેન્ટલ અને ટેકનિકલ પેરામીટર્સ અત્યારે ન્યુટ્રલ (Stable) છે.',
+    en: 'The fundamental and technical parameters of this stock are currently neutral (Stable).'
+  };
+  const _niviBuy = {
+    hi: (roe) => `🔥 <b>Strong Buy Zone:</b> इस स्टॉक का ROE (${roe}%) बहुत अच्छा है और अभी RSI के अनुसार Oversold है। यह एक उत्कृष्ट अवसर हो सकता है।`,
+    gu: (roe) => `🔥 <b>Strong Buy Zone:</b> આ સ્ટોકનો ROE (${roe}%) ઘણો સારો છે અને અત્યારે RSI મુજબ Oversold છે. આ એક ઉત્તમ તક હોઈ શકે છે.`,
+    en: (roe) => `🔥 <b>Strong Buy Zone:</b> This stock has a strong ROE (${roe}%) and is currently Oversold per RSI. This could be an excellent opportunity.`
+  };
+  const _niviCaution = {
+    hi: '⚠️ <b>Caution Zone:</b> स्टॉक फंडामेंटली भले ही अच्छा हो, लेकिन अभी टेक्निकली Overbought है। नई खरीदारी के लिए थोड़ा करेक्शन आने दें।',
+    gu: '⚠️ <b>Caution Zone:</b> સ્ટોક ફંડામેન્ટલી ભલે સારો હોય, પણ અત્યારે ટેકનિકલી Overbought છે. નવી ખરીદી માટે થોડું કરેક્શન આવવા દો.',
+    en: '⚠️ <b>Caution Zone:</b> The stock may have good fundamentals, but is technically Overbought right now. Wait for a correction before fresh buying.'
+  };
+  const _niviLang = lang;
+  let niviText = _niviNeutral[_niviLang] || _niviNeutral['en'];
+  if (R['rsi'] !== null && R['rsi'] < 40 && R['roe'] !== null && R['roe'] > 15) {
+    const roeStr = R['roe'].toFixed(1);
+    niviText = (_niviBuy[_niviLang] || _niviBuy['en'])(roeStr);
   } else if (R['rsi'] !== null && R['rsi'] > 75) {
-      niviText = `⚠️ <b>Caution Zone:</b> સ્ટોક ફંડામેન્ટલી ભલે સારો હોય, પણ અત્યારે ટેકનિકલી Overbought છે. નવી ખરીદી માટે થોડું કરેક્શન આવવા દો.`;
+    niviText = _niviCaution[_niviLang] || _niviCaution['en'];
   }
 
-  // Stock header + Nivi Card
+  // Data age warning (Firebase only)
+  let ageWarningHtml = '';
+  if (d.source === 'firebase' && d.updatedAt) {
+    const updStr = (d.updatedAt.stringValue || d.updatedAt).toString().substring(0, 10);
+    const updDate = new Date(updStr);
+    const diffDays = Math.floor((Date.now() - updDate.getTime()) / 86400000);
+    if (diffDays > 3) {
+      const ageMsg = { hi: `⚠️ डेटा ${diffDays} दिन पुराना है। FF2 शीट को अपडेट करें।`, gu: `⚠️ ડેટા ${diffDays} દિવસ જૂનો છે. FF2 શીટ અપડેટ કરો.`, en: `⚠️ Data is ${diffDays} days old. Please update FF2 sheet.` };
+      ageWarningHtml = `<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#f59e0b;">${ageMsg[lang] || ageMsg['en']}</div>`;
+    }
+  }
+
+  // RSI unavailable notice
+  const rsiUnavailMsg = { hi: 'RSI: प्रॉक्सी सेट नहीं — Settings → API URL कॉन्फ़िगर करें', gu: 'RSI: Proxy સેટ નથી — Settings → API URL configure કરો', en: 'RSI: Proxy not configured — Set API URL in Settings' };
+  const showRsiNotice = R['rsi'] === null;
+
   let html = `
+    ${ageWarningHtml}
     <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);border-radius:12px;padding:12px 14px;margin-bottom:12px;border-left:4px solid #fb923c;">
        <div style="font-size:10px;color:#fb923c;font-weight:700;margin-bottom:4px;letter-spacing:1px;">NIVI'S INSIGHT</div>
        <div style="font-size:13px;color:#e2e8f0;line-height:1.4;">${niviText}</div>
@@ -7120,6 +7181,11 @@ const fmtV = (metric, val) => {
 
   html += `</div>`;
 
+  // RSI unavailable notice
+  if (showRsiNotice) {
+    html += `<div style="font-size:10px;color:#64748b;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.15);border-radius:8px;padding:7px 12px;margin-bottom:10px;">ℹ️ ${rsiUnavailMsg[lang] || rsiUnavailMsg['en']}</div>`;
+  }
+
   // Color legend
   html += `<div style="display:flex;gap:12px;padding:0 2px;margin-bottom:14px;">
     <span style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:4px;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;"></span>Good</span>
@@ -7147,16 +7213,19 @@ function downloadLearnPDF(sym) {
   const dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
 
   const metrics = [
-    {key:'pe',      label:'P/E Ratio',         unit:''},
-    {key:'eps',     label:'EPS',               unit:'₹'},
-    {key:'roe',     label:'ROE %',             unit:'%'},
-    {key:'roce',    label:'ROCE %',            unit:'%'},
-    {key:'bookVal', label:'Book Value',        unit:'₹'},
-    {key:'de',      label:'Debt-to-Equity',    unit:''},
-    {key:'cr',      label:'Current Ratio',     unit:''},
-    {key:'divYield',label:'Dividend Yield %',  unit:'%'},
-    {key:'promoter',label:'Promoter Holding %',unit:'%'},
-    {key:'rsi',     label:'RSI (14D)',         unit:''} // Added RSI to PDF
+    {key:'pe',      label:'P/E Ratio',          unit:''},
+    {key:'eps',     label:'EPS',                unit:'₹'},
+    {key:'roe',     label:'ROE %',              unit:'%'},
+    {key:'roce',    label:'ROCE %',             unit:'%'},
+    {key:'bookVal', label:'Book Value',         unit:'₹'},
+    {key:'de',      label:'Debt-to-Equity',     unit:''},
+    {key:'cr',      label:'Current Ratio',      unit:''},
+    {key:'divYield',label:'Dividend Yield %',   unit:'%'},
+    {key:'promoter',label:'Promoter Holding %', unit:'%'},
+    {key:'fii',     label:'FII Holding %',      unit:'%'},
+    {key:'dii',     label:'DII Holding %',      unit:'%'},
+    {key:'roa',     label:'ROA %',              unit:'%'},
+    {key:'rsi',     label:'RSI (14D)',          unit:''}
   ];
 
   const dotColor = (m, v) => {
@@ -7207,11 +7276,24 @@ function downloadLearnPDF(sym) {
   <div style="text-align:center;font-size:10px;color:#4b6280;margin-top:14px;">RealTradePro · Search & Learn · For personal reference only</div>
   </body></html>`;
 
-  const w = window.open('','_blank','width=820,height=680');
-  if (!w) { showPopup('Popup blocked! Allow popups for PDF.'); return; }
-  w.document.write(html);
-  w.document.close();
-  setTimeout(() => { w.focus(); w.print(); }, 500);
+  // Blob URL approach — works on mobile without popup blockers
+  try {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  } catch(e) {
+    // Fallback to window.open
+    const w = window.open('', '_blank', 'width=820,height=680');
+    if (!w) { showPopup('Popup blocked! Allow popups for PDF.'); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 500);
+  }
 }
 // ============================================================
 // END SEARCH & LEARN
