@@ -7190,7 +7190,7 @@ function _buildFundamentalsTab(d, sym) {
       const val = R[m];
       const dot = _learnDot(m, val);
       const last = idx === group.metrics.length - 1;
-      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;${last?'':'border-bottom:1px solid rgba(255,255,255,0.04);}">
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;${last?'':'border-bottom:1px solid rgba(255,255,255,0.04);'}">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
           <span style="font-size:12px;color:#cbd5e1;">${labels[m]||m}</span>
@@ -7698,8 +7698,6 @@ function _learnNoData(sym, label) {
     <div style="font-size:13px;color:#64748b;">${label} not available for ${sym}</div>
     <div style="font-size:11px;color:#4b6280;margin-top:4px;">Try checking Settings → API URL</div>
   </div>`;
-}
-res.innerHTML = html;
 }
 
 // ── PDF Download ───────────────────────────────────────────
