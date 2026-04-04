@@ -7793,6 +7793,17 @@ function downloadLearnPDF(sym) {
     <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Value</th>
     <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Benchmark</th>
   </tr></thead><tbody>${rows}</tbody></table>
+  <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;">
+<h2 style="font-size:12px;color:#34d399;margin-bottom:8px;">QUARTERLY RESULTS</h2>
+<table style="width:100%;border-collapse:collapse;font-size:11px;">
+<thead><tr><th style="text-align:left;color:#64748b;padding:4px 8px;">Metric</th>${['Q1','Q2','Q3','Q4','Q5'].map(q=>`<th style="text-align:right;color:#64748b;padding:4px 6px;">${q}</th>`).join('')}</tr></thead>
+<tbody>${qRows}</tbody>
+</table></div>
+<div style="margin-top:12px;padding:12px;background:#0d1f35;border-radius:8px;">
+<h2 style="font-size:12px;color:#fb923c;margin-bottom:8px;">CASH FLOW & LIQUIDITY</h2>
+<table style="width:100%;border-collapse:collapse;font-size:11px;">
+<tbody>${cfRows}</tbody>
+</table></div>
   <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;font-size:10px;color:#4b6280;border:1px solid #1e2d3d;">
     Raw data: Net Profit ${d.netProfit}Cr · Total Equity ${d.totalEquity}Cr · Shares ${d.totalShares}Cr · EBIT ${d.ebit}Cr · ROCE ${d.capEmployed}% · Total Debt ${d.totalDebt}Cr · Promoter ${d.promoter}%
   </div>
