@@ -7060,11 +7060,14 @@ function renderLearnReport(d, sym) {
   gu: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' },
   en: { pe:'P/E Ratio', eps:'EPS', roe:'ROE %', roce:'ROCE %', bookVal:'Book Value', de:'Debt-to-Equity', cr:'Current Ratio', divYield:'Dividend Yield %', promoter:'Promoter %', fii:'FII Holding %', dii:'DII Holding %', roa:'ROA %', rsi:'RSI (14D)' }
 }[lang];
+// REPLACE existing fmtV:
 const fmtV = (metric, val) => {
-if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
-if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
-if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter' || metric === 'fii' || metric === 'dii' || metric === 'roa') return val.toFixed(2) + '%';
-return val.toFixed(2);
+  if (val === null || val === undefined) return '--';
+  if (typeof val !== 'number' || isNaN(val)) return '--';
+  if (metric === 'pe' || metric === 'de' || metric === 'cr' || metric === 'rsi') return val.toFixed(2);
+  if (metric === 'eps' || metric === 'bookVal') return '₹' + val.toFixed(2);
+  if (metric === 'roe' || metric === 'roce' || metric === 'divYield' || metric === 'promoter' || metric === 'fii' || metric === 'dii' || metric === 'roa') return val.toFixed(2) + '%';
+  return val.toFixed(2);
 };
 
   // Added RSI to metrics array
