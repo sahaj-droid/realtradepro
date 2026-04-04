@@ -6898,34 +6898,39 @@ function _getLivePrice(sym) {
 
 // REPLACE entire calcLearnRatios function:
 function calcLearnRatios(d) {
-  const safe = (v) => (isNaN(v) || !isFinite(v)) ? null : v;
+  const safe = (v) => (v === null || v === undefined || isNaN(v) || !isFinite(v)) ? null : v;
   const sp  = d.sharePrice || 0;
 
-  // EPS: sheet thi direct aave che, calculate nahi karvu
-  const eps = d.eps && d.eps > 0 ? d.eps
+  // EPS: sheet thi direct, fallback calculate
+  const eps = (d.eps && d.eps > 0) ? d.eps
               : (d.totalShares > 0 ? d.netProfit / d.totalShares : null);
 
-  // PE: share price / eps
+  // PE
   const pe  = (eps && eps > 0 && sp > 0) ? sp / eps : null;
 
-  // ROE: net profit / equity * 100
+  // ROE
   const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
 
-  // ROCE: Col F = capEmployed = ROCE % directly (screener thi aave che)
-  const roce = d.capEmployed && d.capEmployed > 0 ? d.capEmployed : null;
+  // ROCE: Col F = direct ROCE % from screener
+  const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
 
-  // Book Value: equity / shares
+  // Book Value
   const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
 
-  // D/E: direct from sheet (deRatio), fallback calculate
-  const de  = d.deRatio && d.deRatio > 0 ? d.deRatio
+  // D/E: direct from sheet, fallback calculate
+  const de  = (d.deRatio && d.deRatio > 0) ? d.deRatio
               : (d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null);
 
   // Current Ratio
   const cr  = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
 
   // Dividend Yield
-  const divY = sp > 0 && d.dividend > 0 ? (d.dividend / sp) * 100 : null;
+  const divY = (sp > 0 && d.dividend > 0) ? (d.dividend / sp) * 100 : null;
+
+  // FII, DII, ROA — direct from sheet
+  const fii = (d.fii && d.fii > 0) ? d.fii : null;
+  const dii = (d.dii && d.dii > 0) ? d.dii : null;
+  const roa = (d.roa && d.roa > 0) ? d.roa : null;
 
   return {
     pe:       safe(pe),
@@ -6936,8 +6941,11 @@ function calcLearnRatios(d) {
     de:       safe(de),
     cr:       safe(cr),
     divYield: safe(divY),
-    promoter: d.promoter || null,
-    rsi:      d.rsi !== undefined ? d.rsi : null
+    promoter: (d.promoter && d.promoter > 0) ? d.promoter : null,
+    fii:      safe(fii),
+    dii:      safe(dii),
+    roa:      safe(roa),
+    rsi:      (d.rsi !== undefined && d.rsi !== null) ? d.rsi : null
   };
 }
 
