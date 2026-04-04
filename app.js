@@ -6815,6 +6815,13 @@ async function fetchLearnStock() {
   pe:          fv(d.pe),
   bookValue:   fv(d.bookValue),
   roe:         fv(d.roe),
+  salesQ1: fv(d.salesQ1), salesQ2: fv(d.salesQ2), salesQ3: fv(d.salesQ3), salesQ4: fv(d.salesQ4), salesQ5: fv(d.salesQ5),
+  expQ1:   fv(d.expQ1),   expQ2:   fv(d.expQ2),   expQ3:   fv(d.expQ3),   expQ4:   fv(d.expQ4),   expQ5:   fv(d.expQ5),
+  opQ1:    fv(d.opQ1),    opQ2:    fv(d.opQ2),     opQ3:    fv(d.opQ3),    opQ4:    fv(d.opQ4),    opQ5:    fv(d.opQ5),
+  npQ1:    fv(d.npQ1),    npQ2:    fv(d.npQ2),     npQ3:    fv(d.npQ3),    npQ4:    fv(d.npQ4),    npQ5:    fv(d.npQ5),
+  pbtQ1:   fv(d.pbtQ1),   pbtQ2:   fv(d.pbtQ2),   pbtQ3:   fv(d.pbtQ3),   pbtQ4:   fv(d.pbtQ4),   pbtQ5:   fv(d.pbtQ5),
+  otherIncQ1: fv(d.otherIncQ1), otherIncQ2: fv(d.otherIncQ2), otherIncQ3: fv(d.otherIncQ3), otherIncQ4: fv(d.otherIncQ4), otherIncQ5: fv(d.otherIncQ5),
+  fcf: fv(d.fcf),
 };
       raw.sharePrice = _getLivePrice(sym);
       await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
@@ -7622,141 +7629,103 @@ async function downloadLearnPDF(sym) {
 }
 
 // ============================================================
-// TAB 4 — QUARTERLY RESULTS (Yahoo Finance via GAS)
+// TAB 4 — QUARTERLY RESULTS
 // ============================================================
 async function _buildQuarterlyTab(res, sym) {
-  res.innerHTML = `<div style="text-align:center;padding:30px 0;"><div class="spinner" style="margin:0 auto 8px;"></div><div style="font-size:11px;color:#4b6280;">Fetching quarterly data...</div></div>`;
-
-  const apiUrl = localStorage.getItem('customAPI') || localStorage.getItem('customAPI2') || (typeof API !== 'undefined' ? API : '');
-  if (!apiUrl) {
-    res.innerHTML = `<div style="padding:20px 14px;font-size:12px;color:#64748b;text-align:center;">⚙️ Settings → API URL set karīne try karo</div>`;
-    return;
-  }
-
-  try {
-    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`);
-    const data = await r.json();
-    const q = data.quote || data;
-
-    // Build quarterly-like table from available data
-    const items = [
-      { label: 'Revenue (TTM)', val: q.totalRevenue, fmt: 'cr' },
-      { label: 'Gross Profit', val: q.grossProfits, fmt: 'cr' },
-      { label: 'Operating Income', val: q.operatingCashflow || q.ebitda, fmt: 'cr' },
-      { label: 'Net Income', val: q.netIncomeToCommon, fmt: 'cr' },
-      { label: 'EPS (TTM)', val: q.trailingEps, fmt: 'rs' },
-      { label: 'EBITDA', val: q.ebitda, fmt: 'cr' },
-      { label: 'Profit Margin', val: q.profitMargins, fmt: 'pct' },
-      { label: 'Revenue Growth', val: q.revenueGrowth, fmt: 'pct' },
-      { label: 'Earnings Growth', val: q.earningsGrowth, fmt: 'pct' },
-    ].filter(i => i.val !== null && i.val !== undefined);
-
-    if (items.length === 0) {
-      res.innerHTML = _learnNoData(sym, 'Quarterly data');
-      return;
-    }
-
-    const fmtCr = v => v ? '₹' + (v / 1e7).toFixed(1) + ' Cr' : '--';
-    const fmtRs = v => v ? '₹' + v.toFixed(2) : '--';
-    const fmtPct = v => v ? (v * 100).toFixed(2) + '%' : '--';
-    const fmt = (v, type) => type === 'cr' ? fmtCr(v) : type === 'rs' ? fmtRs(v) : fmtPct(v);
-
-    let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
-      <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
-        <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📅 TTM FINANCIALS (Yahoo Finance)</span>
-      </div>`;
-    items.forEach((item, idx) => {
-      const numVal = typeof item.val === 'number' ? item.val : 0;
-      const isNeg = item.fmt === 'pct' ? numVal < 0 : numVal < 0;
-      const valColor = item.fmt === 'pct' ? (numVal >= 0 ? '#22c55e' : '#ef4444') : '#e2e8f0';
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;${idx<items.length-1?'border-bottom:1px solid rgba(255,255,255,0.04);':''}">
-        <span style="font-size:12px;color:#cbd5e1;">${item.label}</span>
-        <span style="font-size:13px;font-weight:700;color:${valColor};font-family:'JetBrains Mono',monospace;">${fmt(item.val, item.fmt)}</span>
-      </div>`;
-    });
-    html += '</div>';
-    html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Yahoo Finance (TTM = Trailing 12 Months)</div>`;
-    res.innerHTML = html;
-  } catch(e) {
-    res.innerHTML = _learnNoData(sym, 'Quarterly data');
-  }
+  const d = _learnCache[sym];
+  if (!d || !d.salesQ1) { res.innerHTML = _learnNoData(sym, 'Quarterly data'); return; }
+  const qs = ['Q1','Q2','Q3','Q4','Q5'];
+  const rows = [
+    { label: 'Sales',      vals: qs.map(q => d['sales'+q]) },
+    { label: 'Expenses',   vals: qs.map(q => d['exp'+q]) },
+    { label: 'Op Profit',  vals: qs.map(q => d['op'+q]) },
+    { label: 'Other Inc',  vals: qs.map(q => d['otherInc'+q]) },
+    { label: 'PBT',        vals: qs.map(q => d['pbt'+q]) },
+    { label: 'Net Profit', vals: qs.map(q => d['np'+q]) },
+  ];
+  const fmt = v => (v && v !== 0) ? '\u20B9' + Number(v).toFixed(0) + ' Cr' : '--';
+  let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">QUARTERLY RESULTS (Last 5 Quarters)</span>
+    </div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr style="background:rgba(255,255,255,0.03);">
+        <th style="padding:8px 10px;text-align:left;color:#64748b;">Metric</th>
+        ${qs.map(q=>`<th style="padding:8px 6px;text-align:right;color:#64748b;">${q}</th>`).join('')}
+      </tr>`;
+  rows.forEach((row, idx) => {
+    html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
+      <td style="padding:8px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
+      ${row.vals.map(v=>`<td style="padding:8px 6px;text-align:right;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fmt(v)}</td>`).join('')}
+    </tr>`;
+  });
+  html += `</table></div></div>
+  <div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Screener.in via Firebase</div>`;
+  res.innerHTML = html;
 }
-
 // ============================================================
 // TAB 5 — CASH FLOW
 // ============================================================
 async function _buildCashflowTab(res, sym) {
-  res.innerHTML = `<div style="text-align:center;padding:30px 0;"><div class="spinner" style="margin:0 auto 8px;"></div><div style="font-size:11px;color:#4b6280;">Fetching cash flow...</div></div>`;
+  const d = _learnCache[sym];
+  if (!d) { res.innerHTML = _learnNoData(sym, 'Cash Flow data'); return; }
 
-  const apiUrl = localStorage.getItem('customAPI') || localStorage.getItem('customAPI2') || (typeof API !== 'undefined' ? API : '');
-  if (!apiUrl) {
-    res.innerHTML = `<div style="padding:20px 14px;font-size:12px;color:#64748b;text-align:center;">⚙️ Settings → API URL set karīne try karo</div>`;
-    return;
+  const items = [
+    { label: 'Free Cash Flow',   val: d.fcf,       positive: true,  fmt: 'cr' },
+    { label: 'Total Debt',       val: d.totalDebt,  positive: false, fmt: 'cr' },
+    { label: 'Current Assets',   val: d.currAsset,  positive: true,  fmt: 'cr' },
+    { label: 'Current Liab',     val: d.currLiab,   positive: false, fmt: 'cr' },
+    { label: 'Debt/Equity',      val: d.deRatio,    positive: null,  fmt: 'ratio' },
+    { label: 'ROA',              val: d.roa,        positive: true,  fmt: 'pct' },
+    { label: 'EBITDA',           val: d.ebitda,     positive: true,  fmt: 'cr' },
+  ].filter(i => i.val !== null && i.val !== undefined && i.val !== 0);
+
+  if (items.length === 0) { res.innerHTML = _learnNoData(sym, 'Cash Flow data'); return; }
+
+  const fmtVal = (item) => {
+    if (item.fmt === 'ratio') return Number(item.val).toFixed(2) + 'x';
+    if (item.fmt === 'pct')   return Number(item.val).toFixed(2) + '%';
+    return '\u20B9' + Number(item.val).toFixed(0) + ' Cr';
+  };
+
+  let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">CASH FLOW & LIQUIDITY</span>
+    </div>`;
+
+  items.forEach((item, idx) => {
+    const numVal = Number(item.val);
+    const dot = item.positive === true ? (numVal >= 0 ? '#22c55e' : '#ef4444')
+              : item.positive === false ? '#f59e0b' : '#64748b';
+    const valColor = item.positive === true ? (numVal >= 0 ? '#22c55e' : '#ef4444') : '#e2e8f0';
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;${idx<items.length-1?'border-bottom:1px solid rgba(255,255,255,0.04);':''}">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <div style="width:6px;height:6px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
+        <span style="font-size:12px;color:#cbd5e1;">${item.label}</span>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:${valColor};font-family:'JetBrains Mono',monospace;">${fmtVal(item)}</span>
+    </div>`;
+  });
+
+  html += '</div>';
+
+  const fcf = d.fcf;
+  if (fcf) {
+    const fcfNote = fcf > 0
+      ? `<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#86efac;margin-top:8px;">Free Cash Flow Positive (\u20B9${Number(fcf).toFixed(0)} Cr) — company generating real cash</div>`
+      : `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;color:#f87171;margin-top:8px;">Negative Free Cash Flow — monitor capital allocation</div>`;
+    html += fcfNote;
   }
 
-  try {
-    const r = await fetch(`${apiUrl}?type=quote&s=${sym}.NS`);
-    const data = await r.json();
-    const q = data.quote || data;
-
-    const items = [
-      { label: 'Operating Cash Flow', val: q.operatingCashflow, positive: true },
-      { label: 'Free Cash Flow', val: q.freeCashflow, positive: true },
-      { label: 'Total Cash', val: q.totalCash, positive: true },
-      { label: 'Total Debt', val: q.totalDebt, positive: false },
-      { label: 'Cash Per Share', val: q.totalCashPerShare, isPerShare: true },
-      { label: 'Debt/Equity Ratio', val: q.debtToEquity ? q.debtToEquity / 100 : null, isRatio: true },
-      { label: 'Quick Ratio', val: q.quickRatio, isRatio: true },
-      { label: 'Current Ratio', val: q.currentRatio, isRatio: true },
-    ].filter(i => i.val !== null && i.val !== undefined);
-
-    if (items.length === 0) {
-      res.innerHTML = _learnNoData(sym, 'Cash Flow data');
-      return;
-    }
-
-    const fmtVal = (item) => {
-      if (item.isRatio) return item.val.toFixed(2) + 'x';
-      if (item.isPerShare) return '₹' + item.val.toFixed(2);
-      return '₹' + (item.val / 1e7).toFixed(1) + ' Cr';
-    };
-
-    let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
-      <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
-        <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">💰 CASH FLOW & LIQUIDITY (Yahoo Finance)</span>
-      </div>`;
-
-    items.forEach((item, idx) => {
-      const isGood = item.isRatio ? item.val >= 1 : item.positive;
-      const valColor = item.isRatio ? (item.val >= 1 ? '#22c55e' : '#ef4444') : (item.positive ? (item.val >= 0 ? '#22c55e' : '#ef4444') : (item.val > 0 ? '#f59e0b' : '#94a3b8'));
-      const dot = item.isRatio ? (item.val >= 1 ? '#22c55e' : '#ef4444') : (item.val >= 0 && item.positive ? '#22c55e' : '#f59e0b');
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 14px;${idx<items.length-1?'border-bottom:1px solid rgba(255,255,255,0.04);':''}">
-        <div style="display:flex;align-items:center;gap:7px;">
-          <div style="width:6px;height:6px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
-          <span style="font-size:12px;color:#cbd5e1;">${item.label}</span>
-        </div>
-        <span style="font-size:13px;font-weight:700;color:${valColor};font-family:'JetBrains Mono',monospace;">${fmtVal(item)}</span>
-      </div>`;
-    });
-
-    html += '</div>';
-
-    // FCF health note
-    if (q.freeCashflow !== undefined) {
-      const fcf = q.freeCashflow;
-      const fcfNote = fcf > 0
-        ? `<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#86efac;margin-top:8px;">✅ Positive Free Cash Flow (₹${(fcf/1e7).toFixed(0)} Cr) — company generating real cash</div>`
-        : `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;color:#f87171;margin-top:8px;">⚠️ Negative Free Cash Flow — monitor capital allocation</div>`;
-      html += fcfNote;
-    }
-
-    html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Yahoo Finance</div>`;
-    res.innerHTML = html;
-  } catch(e) {
-    res.innerHTML = _learnNoData(sym, 'Cash Flow data');
+  const cr = d.currAsset && d.currLiab && d.currLiab > 0 ? (d.currAsset / d.currLiab).toFixed(2) : null;
+  if (cr) {
+    const crColor = cr >= 1.5 ? '#22c55e' : cr >= 1 ? '#f59e0b' : '#ef4444';
+    html += `<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;font-size:11px;color:${crColor};margin-top:8px;">Current Ratio: ${cr}x ${cr >= 1.5 ? '— Strong liquidity' : cr >= 1 ? '— Adequate' : '— Low liquidity risk'}</div>`;
   }
+
+  html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Screener.in via Firebase</div>`;
+  res.innerHTML = html;
 }
-
 function _learnNoData(sym, label) {
   return `<div style="text-align:center;padding:30px 14px;">
     <div style="font-size:28px;margin-bottom:8px;">📭</div>
