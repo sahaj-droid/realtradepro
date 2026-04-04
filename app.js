@@ -7805,9 +7805,7 @@ function downloadLearnPDF(sym) {
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = blobUrl;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.click();
+    a.download = sym + '_FundamentalReport.html';
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   } catch(e) {
     // Fallback to window.open
