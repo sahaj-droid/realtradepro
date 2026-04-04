@@ -6784,10 +6784,11 @@ async function fetchLearnStock() {
     if (doc.exists) {
       const d = doc.data();
       function fv(f) {
-        if (!f) return 0;
+        if (f === null || f === undefined) return 0;
+        if (typeof f === "number") return f;
+        if (typeof f === "string") return Number(f) || 0;
         if (f.doubleValue !== undefined) return Number(f.doubleValue);
         if (f.integerValue !== undefined) return Number(f.integerValue);
-        if (typeof f === 'number') return f;
         return 0;
       }
       const raw = {
