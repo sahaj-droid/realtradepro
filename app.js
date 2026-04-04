@@ -7804,9 +7804,12 @@ function downloadLearnPDF(sym) {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = sym + '_FundamentalReport.html';
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        a.href = blobUrl;
+        a.download = sym + '_FundamentalReport.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   } catch(e) {
     // Fallback to window.open
     const w = window.open('', '_blank', 'width=820,height=680');
