@@ -7205,6 +7205,70 @@ function _buildFundamentalsTab(d, sym) {
     html += '</div>';
   });
 
+  return html;
+}
+
+// ============================================================
+// TAB 2 — TECHNICALS
+// ============================================================
+function _buildTechnicalsTab(d, sym) {
+  const R = calcLearnRatios(d);
+  let html = _learnHeader(d, sym);
+
+  const techItems = [
+    { key: 'rsi',   label: 'RSI (14D)',        fmt: v => v.toFixed(1),       bench: '< 30 Oversold · 30–70 Normal · > 70 Overbought' },
+    { key: 'macd',  label: 'MACD',             fmt: v => v.toFixed(2),       bench: '> 0 Bullish · < 0 Bearish' },
+    { key: 'ema20', label: 'EMA 20',           fmt: v => '₹' + v.toFixed(2), bench: 'Price > EMA = Bullish' },
+    { key: 'ema50', label: 'EMA 50',           fmt: v => '₹' + v.toFixed(2), bench: 'Price > EMA = Bullish' },
+    { key: 'beta',  label: 'Beta',             fmt: v => v.toFixed(2),       bench: '< 1 Low Risk · > 1 High Volatility' },
+    { key: '52wHigh', label: '52W High',       fmt: v => '₹' + v.toFixed(2), bench: 'Price near high = Momentum' },
+    { key: '52wLow',  label: '52W Low',        fmt: v => '₹' + v.toFixed(2), bench: 'Price near low = Opportunity?' },
+  ];
+
+  html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;">
+    <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">⚡ TECHNICAL INDICATORS</span>
+    </div>`;
+
+  techItems.forEach((item, idx) => {
+    const val = R[item.key] !== undefined ? R[item.key] : (d[item.key] !== undefined ? d[item.key] : null);
+    const fv = val !== null && val !== undefined ? item.fmt(val) : '--';
+    const dot = _learnDot(item.key, val);
+    const last = idx === techItems.length - 1;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;${last?'':'border-bottom:1px solid rgba(255,255,255,0.04);'}">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0;"></div>
+        <span style="font-size:12px;color:#cbd5e1;">${item.label}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:700;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fv}</span>
+      </div>
+    </div>`;
+  });
+
+  html += '</div>';
+  html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Technical indicators based on available data.</div>`;
+  return html;
+}
+
+// ============================================================
+// TAB 3 — SHAREHOLDING
+// ============================================================
+function _buildShareholdingTab(d, sym) {
+  const R = calcLearnRatios(d);
+  let html = _learnHeader(d, sym);
+
+  const holders = [
+    { label:'Promoter',       val: R.promoter,         color:'#7c3aed', info:'promoter' },
+    { label:'FII (Foreign)',  val: R.fii,               color:'#0284c7', info:'fii' },
+    { label:'DII (Domestic)', val: R.dii,               color:'#059669', info:'dii' },
+    { label:'Public',         val: d.pubHolding||null,  color:'#d97706', info:null },
+  ];
+
+  const total = holders.reduce((s,h) => s + (h.val||0), 0);
+
+  html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);padding:14px;">`;
+
 // ── Full Report PDF Download (All 5 Tabs) ──────────────────
 async function downloadLearnPDF(sym) {
   const d = _learnCache[sym];
