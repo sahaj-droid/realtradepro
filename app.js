@@ -7770,7 +7770,30 @@ function downloadLearnPDF(sym) {
       <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;font-size:10px;color:#64748b;">${info?.good||''}</td>
     </tr>`;
   }).join('');
-
+// Quarterly for simple HTML
+  const qs2 = ['Q1','Q2','Q3','Q4','Q5'];
+  const qKeys2 = ['sales','exp','op','otherInc','pbt','np'];
+  const qLabels2 = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
+  const fmtCr2 = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
+  let qRows = '';
+  const hasQ2 = d.salesQ1 && d.salesQ1 !== 0;
+  if (hasQ2) {
+    qRows = qLabels2.map((label, li) => {
+      const key = qKeys2[li];
+      return `<tr><td style="padding:4px 8px;color:#cbd5e1;">${label}</td>${qs2.map(q=>`<td style="padding:4px 6px;text-align:right;color:#e2e8f0;">${fmtCr2(d[key+q])}</td>`).join('')}</tr>`;
+    }).join('');
+  } else {
+    qRows = `<tr><td colspan="6" style="padding:8px;color:#94a3b8;">Quarterly data not available</td></tr>`;
+  }
+  const cfRows = [
+    ['Free Cash Flow', fmtCr2(d.fcf)],
+    ['Total Debt', fmtCr2(d.totalDebt)],
+    ['Current Assets', fmtCr2(d.currAsset)],
+    ['Current Liab', fmtCr2(d.currLiab)],
+    ['Debt/Equity', d.deRatio ? Number(d.deRatio).toFixed(2)+'x' : '--'],
+    ['ROA %', d.roa ? Number(d.roa).toFixed(2)+'%' : '--'],
+    ['EBITDA', fmtCr2(d.ebitda)],
+  ].map(([l,v]) => `<tr><td style="padding:4px 8px;color:#cbd5e1;">${l}</td><td style="padding:4px 8px;color:#e2e8f0;">${v}</td></tr>`).join('');
   const sp = d.sharePrice > 0 ? '₹'+d.sharePrice.toFixed(2) : 'N/A';
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${sym} — Fundamental Report</title>
   <style>body{background:#060e1a;color:#e2e8f0;font-family:Arial,sans-serif;margin:0;padding:20px;}
