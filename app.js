@@ -6791,27 +6791,30 @@ async function fetchLearnStock() {
         return 0;
       }
       const raw = {
-      sym, source: 'firebase',
-      netProfit:   fv(d.netProfit),
-      totalEquity: fv(d.totalEquity),
-      totalShares: fv(d.totalShares),
-      ebit:        fv(d.ebit),
-      capEmployed: fv(d.capEmployed),
-      totalDebt:   fv(d.totalDebt),
-      dividend:    fv(d.dividend),
-      currAsset:   fv(d.currAsset),
-      currLiab:    fv(d.currLiab),
-      promoter:    fv(d.promoter),
-      fii:         fv(d.fii),
-      dii:         fv(d.dii),
-      pubHolding:  fv(d.pubHolding),
-      eps:         fv(d.eps),
-      opProfit:    fv(d.opProfit),
-      fcf:         fv(d.fcf),
-      deRatio:     fv(d.deRatio),
-      roa:         fv(d.roa),
-      ebitda:      fv(d.ebitda),
-      };
+  sym, source: 'firebase',
+  netProfit:   fv(d.netProfit),
+  totalEquity: fv(d.totalEquity),
+  totalShares: fv(d.totalShares),
+  ebit:        fv(d.ebit),
+  capEmployed: fv(d.capEmployed),
+  totalDebt:   fv(d.totalDebt),
+  dividend:    fv(d.dividend),
+  currAsset:   fv(d.currAsset),
+  currLiab:    fv(d.currLiab),
+  promoter:    fv(d.promoter),
+  fii:         fv(d.fii),
+  dii:         fv(d.dii),
+  pubHolding:  fv(d.pubHolding),
+  eps:         fv(d.eps),
+  opProfit:    fv(d.opProfit),
+  fcf:         fv(d.fcf),
+  deRatio:     fv(d.deRatio),
+  roa:         fv(d.roa),
+  ebitda:      fv(d.ebitda),
+  pe:          fv(d.pe),
+  bookValue:   fv(d.bookValue),
+  roe:         fv(d.roe),
+};
       raw.sharePrice = _getLivePrice(sym);
       await _enrichWithTechnicals(raw, sym); // Phase 2 Logic Added
       _learnCache[sym] = raw;
@@ -6899,37 +6902,21 @@ function _getLivePrice(sym) {
 // REPLACE entire calcLearnRatios function:
 function calcLearnRatios(d) {
   const safe = (v) => (v === null || v === undefined || isNaN(v) || !isFinite(v)) ? null : v;
-  const sp  = d.sharePrice || 0;
 
-  // EPS: sheet thi direct, fallback calculate
-  const eps = (d.eps && d.eps > 0) ? d.eps : null;
+  // Direct from Screener — no calculation needed
+  const pe      = (d.pe      && d.pe      > 0) ? d.pe      : null;
+  const eps     = (d.eps     && d.eps     > 0) ? d.eps     : null;
+  const roe     = (d.roe     && d.roe     > 0) ? d.roe     : null;
+  const roce    = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
+  const bv      = (d.bookValue && d.bookValue > 0) ? d.bookValue : null;
+  const de      = (d.deRatio && d.deRatio > 0) ? d.deRatio : null;
+  const divY    = (d.dividend && d.dividend > 0) ? d.dividend : null;
+  const fii     = (d.fii     && d.fii     > 0) ? d.fii     : null;
+  const dii     = (d.dii     && d.dii     > 0) ? d.dii     : null;
+  const roa     = (d.roa     && d.roa     > 0) ? d.roa     : null;
 
-  // PE
-  const pe  = (eps && eps > 0 && sp > 0) ? sp / eps : null;
-
-  // ROE
-  const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
-
-  // ROCE: Col F = direct ROCE % from screener
-const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
-
-  // Book Value
-  const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
-
-  // D/E: direct from sheet, fallback calculate
-  const de  = (d.deRatio && d.deRatio > 0) ? d.deRatio
-              : (d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null);
-
-  // Current Ratio
-  const cr  = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
-
-  // Dividend Yield
-  const divY = (sp > 0 && d.dividend > 0) ? (d.dividend / sp) * 100 : null;
-
-  // FII, DII, ROA — direct from sheet
-  const fii = (d.fii && d.fii > 0) ? d.fii : null;
-  const dii = (d.dii && d.dii > 0) ? d.dii : null;
-  const roa = (d.roa && d.roa > 0) ? d.roa : null;
+  // Current Ratio — calculate (no direct field)
+  const cr = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
 
   return {
     pe:       safe(pe),
@@ -6947,7 +6934,6 @@ const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
     rsi:      (d.rsi !== undefined && d.rsi !== null) ? d.rsi : null
   };
 }
-
 // ── Color dot logic ───────────────────────────────────────
 function _learnDot(metric, val) {
   if (val === null) return '#64748b';
