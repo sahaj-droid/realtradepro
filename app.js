@@ -7510,13 +7510,16 @@ async function downloadLearnPDF(sym) {
 
 <!-- SECTION 3: QUARTERLY FINANCIALS -->
 <div class="section">
-  <h2>📅 QUARTERLY / TTM FINANCIALS</h2>
+  <h2>QUARTERLY RESULTS (Last 5 Quarters)</h2>
   <table>
     <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Parameter</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Value (TTM)</th>
-      <th style="padding:6px 10px;border-bottom:2px solid rgba(34,197,94,0.3);"></th>
-    </tr></thead>
+      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Metric</th>
+        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q1</th>
+        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q2</th>
+        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q3</th>
+        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q4</th>
+        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q5</th>
+      </tr></thead>
     <tbody>${qRows}</tbody>
   </table>
 </div>
