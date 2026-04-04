@@ -6912,7 +6912,7 @@ function calcLearnRatios(d) {
   const roe = d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null;
 
   // ROCE: Col F = direct ROCE % from screener
-  const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
+const roce = (d.capEmployed > 0 && d.ebit > 0) ? (d.ebit / d.capEmployed) * 100 : null;
 
   // Book Value
   const bv  = d.totalShares > 0 ? d.totalEquity / d.totalShares : null;
