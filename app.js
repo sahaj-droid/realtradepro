@@ -6920,8 +6920,9 @@ function calcLearnRatios(d) {
     ? d.roe
     : (d.netProfit > 0 && d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null);
 
-  // ROCE: always calculate — ebit / capEmployed
-  const roce = (d.ebit > 0 && d.capEmployed > 0) ? (d.ebit / d.capEmployed) * 100 : null;
+  // ROCE: capEmployed field now stores ROCE% directly from Screener
+  // (Python script stores Screener's ROCE% in Col F / capEmployed field)
+  const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
 
   // Book Value: direct OR calculate from totalEquity / totalShares
   const bv = (d.bookValue && d.bookValue > 0)
@@ -7271,7 +7272,7 @@ function downloadLearnPDF(sym) {
     <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Benchmark</th>
   </tr></thead><tbody>${rows}</tbody></table>
   <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;font-size:10px;color:#4b6280;border:1px solid #1e2d3d;">
-    Raw data: Net Profit ${d.netProfit}Cr · Total Equity ${d.totalEquity}Cr · Shares ${d.totalShares}Cr · EBIT ${d.ebit}Cr · Cap.Employed ${d.capEmployed}Cr · Total Debt ${d.totalDebt}Cr · Promoter ${d.promoter}%
+    Raw data: Net Profit ${d.netProfit}Cr · Total Equity ${d.totalEquity}Cr · Shares ${d.totalShares}Cr · EBIT ${d.ebit}Cr · ROCE ${d.capEmployed}% · Total Debt ${d.totalDebt}Cr · Promoter ${d.promoter}%
   </div>
   <div style="text-align:center;font-size:10px;color:#4b6280;margin-top:14px;">RealTradePro · Search & Learn · For personal reference only</div>
   </body></html>`;
