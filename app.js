@@ -1652,29 +1652,30 @@ function setHistView(v){
 
 function renderHist(){
   let html="";
-  hist.forEach(x=>{
+  hist.forEach((x, idx)=>{
     const isBuy=x.type==='BUY';
-    const pnlStr=(!isBuy&&x.pnl!=null)?`<div style="font-weight:700;color:${x.pnl>=0?'#22c55e':'#ef4444'};">${x.pnl>=0?'+':''}${inr(x.pnl)}</div>`:'';
-    // holding days for SELL trades
+    const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
     let daysStr='';
     if(!isBuy&&x.buyDate&&x.date){
       const bd=new Date(x.buyDate), sd=new Date(x.date);
       const days=Math.floor((sd-bd)/(1000*60*60*24));
       if(days>=0) daysStr=`<span style="font-size:9px;color:#4b6280;"> | ${holdingDaysLabel(days)} held</span>`;
     }
-    const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
     html+=`
-    <div class="card" style="font-size:12px;margin-bottom:4px;padding:7px 10px;">
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin-bottom:3px;">
+    <div class="card" style="font-size:12px;margin-bottom:4px;padding:7px 10px;position:relative;">
+      <button onclick="deleteHistEntry(${idx})"
+        style="position:absolute;top:6px;right:6px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#ef4444;border-radius:6px;width:22px;height:22px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">×</button>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;margin-bottom:3px;padding-right:28px;">
         <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
           <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;">${x.sym}</span>
           <span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;background:${isBuy?'#166534':'#7f1d1d'};color:${isBuy?'#86efac':'#fca5a5'};">${isBuy?'BUY':'SELL'}</span>
+          ${typeTag}
         </div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${inr(parseFloat(x.buy))}</span>
         <span style="font-size:12px;font-weight:700;color:${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'#22c55e':'#ef4444'):'#4b6280'};text-align:right;min-width:70px;">${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'+':'')+inr(x.pnl):''}</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;">
-        <span style="font-size:10px;color:#4b6280;">Qty: ${x.qty}</span>
+      <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding-right:28px;">
+        <span style="font-size:10px;color:#4b6280;">Qty: ${x.qty}${daysStr}</span>
         <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${!isBuy&&x.sell?inr(parseFloat(x.sell)):''}</span>
         <span style="font-size:10px;color:#4b6280;text-align:right;min-width:70px;">${x.date||''}</span>
       </div>
@@ -1682,6 +1683,17 @@ function renderHist(){
   });
   const el=document.getElementById("historyList");
   if(el) el.innerHTML=html||(hist.length===0?`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No history yet</div>`:"");
+}
+function deleteHistEntry(idx) {
+  if (idx < 0 || idx >= hist.length) return;
+  const entry = hist[idx];
+  const label = `${entry.sym} ${entry.type} × ${entry.qty} @ ₹${entry.buy}`;
+  if (!confirm(`Delete this entry?\n${label}`)) return;
+  hist.splice(idx, 1);
+  localStorage.setItem('hist', JSON.stringify(hist));
+  if (currentUser) saveUserData('history');
+  renderHist();
+  showPopup('Entry deleted');
 }
 
 // ======================================
@@ -6746,10 +6758,10 @@ async function _enrichWithTechnicals(raw, sym) {
     // Yahoo Finance proxy thi recent closes fetch kariye
     const proxyBase = localStorage.getItem('customAPI2') || localStorage.getItem('customAPI') || (typeof API !== 'undefined' ? API : '');
     if (!proxyBase) { raw.rsi = null; return raw; }
-    const r = await fetch(`${proxyBase}?type=ohlcv&s=${sym}&range=1mo&interval=1d`);
+    const r = await fetch(`${proxyBase}?type=history&s=${sym}.NS&range=1mo&interval=1d`)
     if (!r.ok) throw new Error('ohlcv fetch failed');
     const data = await r.json();
-    const closes = (data.closes || data.c || []);
+    const closes = (data.close || data.closes || data.c || []);
     raw.rsi = closes.length >= 15 ? calculateLearnRSI(closes) : null;
   } catch(e) { raw.rsi = null; }
   return raw;
@@ -7062,7 +7074,9 @@ roa: {
 },
 };
 
+// AFTER:
 function showLearnInfo(metric, val, symRaw) {
+  val = (val === null || val === undefined || val === 'null' || isNaN(Number(val))) ? null : Number(val);
   const info = LEARN_INFO[metric];
   if (!info) return;
   const L = info[_learnLang] || info['en'];
@@ -7558,24 +7572,41 @@ async function downloadLearnPDF(sym) {
 </html>`;
 
   // ── Open & Print ──
+  // ── Open & Print ──
   try {
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
-    showPopup('✅ Report ready — browser mā Print/Save as PDF karo!');
+    // Hidden div mā HTML render karīne html2pdf thi PDF banāvo
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#060e1a;';
+    document.body.appendChild(container);
+
+    showPopup('⏳ PDF generate thaī rahyu che...');
+
+    const opt = {
+      margin:       [10, 10, 10, 10],
+      filename:     `${sym}_RTP_Report_${dateStr.replace(/\//g,'-')}.pdf`,
+      image:        { type: 'jpeg', quality: 0.95 },
+      html2canvas:  { scale: 2, backgroundColor: '#060e1a', useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(container).save().then(() => {
+      document.body.removeChild(container);
+      showPopup(`✅ ${sym}_RTP_Report.pdf downloaded!`);
+    }).catch(e => {
+      document.body.removeChild(container);
+      // Fallback: HTML blob open
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${sym}_RTP_Report.pdf.html`;
+      a.click();
+      showPopup('PDF fallback: HTML downloaded');
+    });
   } catch(e) {
-    const w = window.open('', '_blank', 'width=900,height=750');
-    if (!w) { showPopup('Popup blocked! Allow popups.'); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 600);
+    showPopup('PDF error: ' + e.message);
   }
-}
 
   // Stacked bar
   if (total > 0) {
