@@ -5944,7 +5944,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
   for (const k of keys) {
     for (const model of models) {
       try {
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=`
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`
         const r = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -6323,12 +6323,12 @@ async function directGeminiCall(prompt) {
   if (keys.length === 0) return { ok: false, error: 'API Key જ નથી! Settings માં જઈને નાખો.' };
 
   // બિનજરૂરી મોડેલ્સ કાઢી નાખ્યા. આ બે સૌથી ફાસ્ટ અને સ્ટેબલ છે.
-  const models = ['gemini-2.0-flash-lite', 'gemini-2.0-flash',];
+  const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b',];
 
   for (const k of keys) {
     for (const model of models) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${k}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;
         
         const r = await fetch(url, {
           method: 'POST',
