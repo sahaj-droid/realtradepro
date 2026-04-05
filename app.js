@@ -2931,62 +2931,8 @@ async function fetchFull(sym,isIndex=false){
   return null;
 }
 // =============================================
-// NIVI VOICE SETTINGS
+// NIVI VOICE SETTINGS — removed (TTS/STT not used)
 // =============================================
-function _getNiviRate()  { return parseFloat(localStorage.getItem('niviRate')  || '0.88'); }
-function _getNiviPitch() { return parseFloat(localStorage.getItem('niviPitch') || '1.15'); }
-function _getNiviAutoSpeak() { return localStorage.getItem('niviAutoSpeak') !== 'off'; }
-
-function toggleNiviAutoSpeak() {
-  const on = _getNiviAutoSpeak();
-  localStorage.setItem('niviAutoSpeak', on ? 'off' : 'on');
-  _updateNiviSettingsUI();
-  showPopup('Auto Speak ' + (on ? 'OFF' : 'ON'));
-}
-
-function updateNiviSpeed(val) {
-  localStorage.setItem('niviRate', val);
-  const labels = { 0.5:'Bahut Dheere', 0.6:'Dheere', 0.7:'Thoda Dheere', 0.8:'Normal se Kam',
-    0.9:'Normal', 1.0:'Normal+', 1.1:'Thoda Tez', 1.2:'Tez', 1.3:'Bahut Tez', 1.4:'Fast', 1.5:'Very Fast' };
-  const label = labels[parseFloat(val).toFixed(1)] || 'Custom';
-  const el = document.getElementById('nivi-speed-label');
-  if (el) el.innerText = label;
-}
-
-function updateNiviPitch(val) {
-  localStorage.setItem('niviPitch', val);
-  const v = parseFloat(val);
-  const label = v < 0.95 ? 'Mota (Deep)' : v > 1.2 ? 'Patla (High)' : 'Normal';
-  const el = document.getElementById('nivi-pitch-label');
-  if (el) el.innerText = label;
-}
-
-function niviVoiceTest() {
-  if (!window.speechSynthesis) { showPopup('TTS support nahi hai'); return; }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance('नमस्ते! मैं निवी हूँ। आपकी स्टॉक मार्केट सहायक।');
-  u.lang  = 'hi-IN';
-  u.rate  = _getNiviRate();
-  u.pitch = _getNiviPitch();
-  const voices  = speechSynthesis.getVoices();
-  const female  =
-    voices.find(v => v.lang==='hi-IN' && /neerja|female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN' && v.name.includes('Microsoft') && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN' && v.name.includes('Google')    && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN' && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN');
-  if (female) { u.voice = female; showPopup('Voice: ' + female.name); }
-  window.speechSynthesis.speak(u);
-}
-
-function _updateNiviSettingsUI() {
-  const chk = document.getElementById('nivi-autospeak-chk');
-  if (chk) { chk.checked = _getNiviAutoSpeak(); }
-  const speedSlider = document.getElementById('nivi-speed-slider');
-  if (speedSlider) { speedSlider.value = _getNiviRate(); updateNiviSpeed(_getNiviRate()); }
-  const pitchSlider = document.getElementById('nivi-pitch-slider');
-  if (pitchSlider) { pitchSlider.value = _getNiviPitch(); updateNiviPitch(_getNiviPitch()); }
-}
 
 function loadSettingsUI(){
   const d1=document.getElementById("set-api-display");
@@ -3147,10 +3093,7 @@ function toggleDupWarnChk(val){
   localStorage.setItem("dupWarn",val?"true":"false");
   showPopup(`Duplicate warning ${val?"ON":"OFF"}`);
 }
-function toggleNiviAutoSpeakChk(val){
-  localStorage.setItem('niviAutoSpeak', val ? 'on' : 'off');
-  showPopup('Auto Speak ' + (val ? 'ON' : 'OFF'));
-}
+
 function toggleAlertEngine(){
   const chk=document.getElementById('alertEngineChk');
   const next=chk?chk.checked:true;
@@ -4693,10 +4636,7 @@ function _niviSubTab(tab) {
   document.getElementById('nivi-subtab-news').style.cssText = isChat ? inactive : active;
 }
 let _tabChatHistory = [];
-let _tabMicActive   = false;
-let _tabRecognition = null;
-let _tabSpeaking    = false;
-let _tabUtterance   = null;
+
 
 function buildMoverChips() {
   if (!wl || wl.length === 0) return '';
@@ -4772,7 +4712,6 @@ async function renderNews() {
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
             <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
-            <button onclick="_tabNewsSpeak()" style="background:#065f46;color:#34d399;border:none;border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊</button>
           </div>
         </div>
       </div>
@@ -4797,12 +4736,9 @@ async function renderNews() {
           <input id="tab-nivi-input" type="text" placeholder="Ask anything to Nivi..."
             onkeydown="if(event.key==='Enter')_tabSend()"
             style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
-          <button id="tab-mic-btn" onclick="_tabMicToggle()" title="Voice Input"
-            style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;line-height:1;">🎙️</button>
           <button onclick="_tabSend()"
             style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
         </div>
-        <div id="tab-mic-status" style="font-size:9px;color:#f59e0b;margin-top:3px;display:none;font-family:'Rajdhani',sans-serif;">🔴 सुन रही है... दोबारा दबाएं रोकने के लिए</div>
       </div>
 
     </div><!-- end nivi-section-chat -->
@@ -4844,8 +4780,6 @@ async function renderNews() {
               style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
               📋 Source headlines
             </button>
-            <button id="niviNewsSpeak" onclick="niviNewsSpeak()"
-              style="background:#065f46;color:#34d399;border:none;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔊 Sunao</button>
           </div>
           <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
         </div>
@@ -4927,7 +4861,7 @@ Max 180 words. Sirf Hindi Devanagari.
     const gemKey = localStorage.getItem('geminiApiKey');
     let rawText = null;
     if (gemKey) {
-      const r = await directGeminiCall(prompt);
+      const r = await directSarvamCall(prompt);
       if (r && r.ok) rawText = r.answer;
     }
     if (!rawText) {
@@ -5014,7 +4948,7 @@ const prompt =
 
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
-    const r = await directGeminiCall(prompt);
+    const r = await directSarvamCall(prompt);
     if (r && r.ok) answer = r.answer;
   }
   if (!answer) {
@@ -5027,12 +4961,12 @@ const prompt =
   }
 
   _tabShowLoading(false);
-  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ Nivi jawab nahi de payi. Settings ma Gemini API key daalo ya GAS URL check karo.', ts:Date.now()});
+  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ Nivi jawab nahi de payi. Settings ma Sarvam API key daalo.', ts:Date.now()});
   try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e){}
-  _tabRenderChat(_getNiviAutoSpeak());
+  _tabRenderChat();
 }
 
-function _tabRenderChat(speakLast) {
+function _tabRenderChat() {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
   if (_tabChatHistory.length === 0) {
@@ -5060,10 +4994,6 @@ function _tabRenderChat(speakLast) {
     }
   }).join('');
   area.scrollTop = area.scrollHeight;
-  if (speakLast) {
-    const last = [..._tabChatHistory].reverse().find(m => m.role === 'nivi');
-    if (last) setTimeout(() => _tabSpeak(last.text), 400);
-  }
 }
 
 function _tabShowLoading(show) {
@@ -5084,67 +5014,9 @@ function _tabShowLoading(show) {
   }
 }
 
-function _tabMicToggle() {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    showPopup('Voice input browser mein support nahi hai'); return;
-  }
-  if (_tabMicActive) {
-    if (_tabRecognition) _tabRecognition.stop();
-    return;
-  }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  _tabRecognition = new SR();
-  _tabRecognition.lang = 'hi-IN';
-  _tabRecognition.interimResults = false;
-  _tabRecognition.maxAlternatives = 1;
-  _tabMicActive = true;
-  const micBtn    = document.getElementById('tab-mic-btn');
-  const micStatus = document.getElementById('tab-mic-status');
-  if (micBtn)    { micBtn.style.background = '#7f1d1d'; micBtn.style.borderColor = '#ef4444'; }
-  if (micStatus) micStatus.style.display = 'block';
-  _tabRecognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    const inp = document.getElementById('tab-nivi-input');
-    if (inp) inp.value = transcript;
-  };
-  _tabRecognition.onend = () => {
-    _tabMicActive = false;
-    if (micBtn)    { micBtn.style.background = '#0f2a1a'; micBtn.style.borderColor = '#065f46'; }
-    if (micStatus) micStatus.style.display = 'none';
-    const inp = document.getElementById('tab-nivi-input');
-    if (inp && inp.value.trim()) _tabSend();
-  };
-  _tabRecognition.onerror = () => {
-    _tabMicActive = false;
-    if (micBtn)    { micBtn.style.background = '#0f2a1a'; micBtn.style.borderColor = '#065f46'; }
-    if (micStatus) micStatus.style.display = 'none';
-  };
-  _tabRecognition.start();
-}
 
-function _tabSpeak(text) {
-  if (!window.speechSynthesis || !text) return;
-  window.speechSynthesis.cancel();
-  const clean = text.replace(/[^\w\s.,!?%₹+\-।]/g,' ').substring(0, 500);
-  _tabUtterance = new SpeechSynthesisUtterance(expandTickersForSpeech(clean));
-  _tabUtterance.lang  = 'hi-IN';
-  _tabUtterance.rate  = _getNiviRate();
-  _tabUtterance.pitch = _getNiviPitch();
-  const voices = speechSynthesis.getVoices();
-  const female =
-    voices.find(v => v.lang==='hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN' && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang==='hi-IN');
-  if (female) _tabUtterance.voice = female;
-  speechSynthesis.speak(_tabUtterance);
-}
 
-function _tabNewsSpeak() {
-  const briefBody = document.getElementById('tab-brief-body');
-  if (!briefBody) return;
-  _tabSpeak(briefBody.innerText);
-}
+
 
 function aiNewsCacheClear() {
   localStorage.removeItem('aiNewsCache_v2');
@@ -5685,8 +5557,6 @@ function setFontSize(size) {
 // 🤖 Ask Nivi — Chat UI v3
 // ======================================
 let _niviCurrentSym = '';
-let _niviSpeaking   = false;
-let _niviUtterance  = null;
 let _niviChatHistory = [];   // [{role:'user'|'nivi', text, ts}]
 let _niviMicActive  = false;
 let _niviRecognition = null;
@@ -5710,7 +5580,6 @@ async function openNivi(sym) {
   document.getElementById('nivi-sym-label').innerText = sym;
   document.getElementById('nivi-price-row').style.display = 'none';
   document.getElementById('nivi-tech-row').style.display  = 'none';
-  niviStop();
 
   // If same stock already open with chat history — just re-render, don't refetch
   if (_niviCurrentSym === sym && _niviChatHistory.length > 0) {
@@ -5780,7 +5649,7 @@ CMP: \u20b9${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)
 52 \u0938\u092a\u094d\u0924\u093e\u0939 \u0909\u091a\u094d\u091a: \u20b9${cd.fiftyTwoWeekHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.fiftyTwoWeekLow?.toFixed(2)}
 Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
 \u0915\u0947\u0935\u0932 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f\u0964 Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
-      const resp = await directGeminiCall(prompt);
+      const resp = await directSarvamCall(prompt);
       _niviShowLoading(false);
       if (resp && resp.ok) {
         // Cache to localStorage + Firebase
@@ -5888,7 +5757,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
   // 1. Direct Gemini — multi-turn contents array
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
-    const resp = await directGeminiCallMultiTurn(historyWindow.slice(0, -1), prompt);
+    const resp = await directSarvamCallMultiTurn(historyWindow.slice(0, -1), prompt);
     if (resp && resp.ok) answer = resp.answer;
   }
 
@@ -5912,56 +5781,43 @@ Max 4 lines. Data-backed. Seedha jawab.`;
 }
 
 // ── Multi-turn Gemini call — sends conversation history as contents array ──
-async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
+async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
   const key1 = localStorage.getItem('geminiApiKey');
   const key2 = localStorage.getItem('geminiApiKey2');
-  const keys  = [key1, key2].filter(Boolean);
+  const keys = [key1, key2].filter(Boolean);
   if (keys.length === 0) return { ok: false, error: 'No API key' };
 
-  const models = ['gemini-2.0-flash'];
+  const models = ['sarvam-105b', 'sarvam-30b'];
 
-  // Build Gemini contents array from prior history + current prompt
-  const contents = [];
-  // System message as first user turn (Gemini doesn't support system role in v1beta)
-  contents.push({
-    role: 'user',
-    parts: [{ text: 'Aap Nivi hain — Indian stock market expert. Sirf shuddh Hindi Devanagari mein jawab dijiye.' }]
-  });
-  contents.push({ role: 'model', parts: [{ text: 'समझ गई। मैं निवी हूँ। शुद्ध हिंदी में जवाब दूँगी।' }] });
-
-  // Inject prior conversation turns
+  const messages = [
+    { role: 'system', content: 'Aap Nivi hain — Indian stock market expert. Sirf shuddh Hindi Devanagari mein jawab dijiye.' }
+  ];
   for (const msg of priorHistory) {
     if (!msg.text || !msg.text.trim()) continue;
-    contents.push({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    });
+    messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
   }
-
-  // Current question as final user turn
-  contents.push({ role: 'user', parts: [{ text: currentPrompt }] });
+  messages.push({ role: 'user', content: currentPrompt });
 
   for (const k of keys) {
     for (const model of models) {
       try {
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`
-        const r = await fetch(url, {
+        const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents })
+          headers: { 'Content-Type': 'application/json', 'api-subscription-key': k },
+          body: JSON.stringify({ model, messages })
         });
         const j = await r.json();
-        if (j.candidates && j.candidates[0]) {
-          return { ok: true, answer: j.candidates[0].content.parts[0].text, model };
+        if (j.choices && j.choices[0]) {
+          return { ok: true, answer: j.choices[0].message.content, model };
         }
         if (j.error) {
-          console.warn(`Gemini multi-turn error (${model}):`, j.error.message);
-          if (j.error.code === 400 || j.error.code === 429) break;
+          console.warn(`Sarvam multi-turn error (${model}):`, j.error);
+          if (r.status === 400 || r.status === 429) break;
         }
-      } catch(e) { console.warn('Gemini multi-turn network error:', e.message); }
+      } catch(e) { console.warn('Sarvam multi-turn network error:', e.message); }
     }
   }
-  return { ok: false, error: 'All Gemini models failed' };
+  return { ok: false, error: 'All Sarvam models failed' };
 }
 
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
@@ -6005,46 +5861,7 @@ async function _niviLoadPersistedChat(sym) {
 }
 
 // --- MIC TOGGLE ---
-function niviMicToggle() {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    showPopup('Voice input not supported on this browser'); return;
-  }
-  if (_niviMicActive) {
-    if (_niviRecognition) _niviRecognition.stop();
-    return;
-  }
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  _niviRecognition = new SR();
-  _niviRecognition.lang = 'hi-IN';
-  _niviRecognition.interimResults = false;
-  _niviRecognition.maxAlternatives = 1;
 
-  _niviMicActive = true;
-  document.getElementById('nivi-mic-btn').style.background    = '#7f1d1d';
-  document.getElementById('nivi-mic-btn').style.borderColor   = '#ef4444';
-  document.getElementById('nivi-mic-status').style.display    = 'block';
-
-  _niviRecognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
-    const inp = document.getElementById('nivi-input');
-    if (inp) inp.value = transcript;
-  };
-  _niviRecognition.onend = () => {
-    _niviMicActive = false;
-    document.getElementById('nivi-mic-btn').style.background  = '#0f2a1a';
-    document.getElementById('nivi-mic-btn').style.borderColor = '#065f46';
-    document.getElementById('nivi-mic-status').style.display  = 'none';
-    // Auto send after mic stops
-    const inp = document.getElementById('nivi-input');
-    if (inp && inp.value.trim()) niviSend();
-  };
-  _niviRecognition.onerror = () => {
-    _niviMicActive = false;
-    document.getElementById('nivi-mic-btn').style.background  = '#0f2a1a';
-    document.getElementById('nivi-mic-status').style.display  = 'none';
-  };
-  _niviRecognition.start();
-}
 
 // --- CHAT HELPERS ---
 function _niviAddBubble(role, text, ts) {
@@ -6147,15 +5964,12 @@ function niviClearChat() {
 
 // --- CLOSE ---
 function closeNivi() {
-  niviStop();
   if (_niviMicActive && _niviRecognition) _niviRecognition.stop();
   document.getElementById('niviModal').style.display = 'none';
 }
 
-// --- SPEAK (Text-to-Speech) ---
 // ============================================================
-// GEMINI KEY MANAGEMENT
-// ============================================================
+// SARVAM KEY MANAGEMENT
 // ============================================================
 // GOOGLE SHEETS INTEGRATION — Settings + fetchFundamentals/fetchHistory override
 // ============================================================
@@ -6315,154 +6129,39 @@ function initGeminiKeyDisplay(){
 }
 
 // Smart Direct Gemini API call (Browser → Gemini)
-async function directGeminiCall(prompt) {
+async function directSarvamCall(prompt) {
   const key1 = localStorage.getItem('geminiApiKey');
   const key2 = localStorage.getItem('geminiApiKey2');
   const keys = [key1, key2].filter(Boolean);
 
-  if (keys.length === 0) return { ok: false, error: 'API Key જ નથી! Settings માં જઈને નાખો.' };
+  if (keys.length === 0) return { ok: false, error: 'API Key નથી! Settings માં નાખો.' };
 
-  // બિનજરૂરી મોડેલ્સ કાઢી નાખ્યા. આ બે સૌથી ફાસ્ટ અને સ્ટેબલ છે.
-  const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b',];
+  const models = ['sarvam-105b', 'sarvam-30b'];
 
   for (const k of keys) {
     for (const model of models) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;
-        
-        const r = await fetch(url, {
+        const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          headers: { 'Content-Type': 'application/json', 'api-subscription-key': k },
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
         });
-
         const j = await r.json();
-
-        // 1. જો જવાબ મળી જાય તો સીધો Return (લૂપ ખતમ) 🎉
-        if (j.candidates && j.candidates[0]) {
-          return { ok: true, answer: j.candidates[0].content.parts[0].text, model: model };
+        if (j.choices && j.choices[0]) {
+          return { ok: true, answer: j.choices[0].message.content, model };
         }
-
-        // 2. Smart Error Handling (લાલ કન્સોલ અટકાવવા) 🛡️
         if (j.error) {
-          console.warn(`Gemini API Error (${model} | Key ...${k.slice(-4)}):`, j.error.message);
-          
-          // જો કી જ ખોટી હોય (400) અથવા કોટા પૂરો થયો હોય (429), 
-          // તો આ કી માટે બીજા મોડેલને હેરાન કરવાનો કોઈ મતલબ નથી! લૂપ તોડો (Break).
-          if (j.error.code === 400) {
-            break; // Wrong model for this key, try next key
-          }
-          if (j.error.code === 429) {
-            continue; // This model quota done, try next model
-          }
+          console.warn(`Sarvam Error (${model}):`, j.error);
+          if (r.status === 400) break;
+          if (r.status === 429) continue;
         }
-      } catch (e) { 
-        console.warn('Gemini Network Error:', e.message); 
-      }
-    } // end model loop
-  } // end keys loop
-
-  return { ok: false, error: 'બધા પ્રયત્નો નિષ્ફળ! કદાચ Quota પૂરો થયો છે અથવા API Key ખોટી છે.' };
-}
-function expandTickersForSpeech(text) {
-  if (!text) return text;
-  // Hindi pronunciation overrides (for TTS naturalness)
-  const hindiPron = { 'RELIANCE':'रिलायंस', 'TCS':'टी सी एस', 'INFY':'इन्फोसिस',
-    'SBIN':'एस बी आई', 'HDFCBANK':'एच डी एफ सी बैंक', 'ITC':'आई टी सी', 'BLISSGVS':'ब्लिस जी वी एस' };
-  // NSE ticker → full English spoken name mapping
-  const tickerNames = {
-    'SBIN':'State Bank of India','RELIANCE':'Reliance Industries','TCS':'Tata Consultancy Services',
-    'INFY':'Infosys','WIPRO':'Wipro','HDFCBANK':'HDFC Bank','ICICIBANK':'ICICI Bank',
-    'AXISBANK':'Axis Bank','KOTAKBANK':'Kotak Mahindra Bank','BAJFINANCE':'Bajaj Finance',
-    'BAJAJFINSV':'Bajaj Finserv','BHARTIARTL':'Bharti Airtel','ITC':'ITC Limited',
-    'HINDUNILVR':'Hindustan Unilever','ASIANPAINT':'Asian Paints','MARUTI':'Maruti Suzuki',
-    'TATAMOTORS':'Tata Motors','TATASTEEL':'Tata Steel','NTPC':'NTPC Limited',
-    'POWERGRID':'Power Grid','SUNPHARMA':'Sun Pharma','DRREDDY':'Dr Reddys',
-    'CIPLA':'Cipla','DIVISLAB':'Divis Labs','APOLLOHOSP':'Apollo Hospitals',
-    'LT':'Larsen and Toubro','LTIM':'LTI Mindtree','TECHM':'Tech Mahindra',
-    'HCLTECH':'HCL Technologies','ONGC':'ONGC','COALINDIA':'Coal India',
-    'ADANIENT':'Adani Enterprises','ADANIPORTS':'Adani Ports','ADANIGREEN':'Adani Green',
-    'JSWSTEEL':'JSW Steel','HINDALCO':'Hindalco','ULTRACEMCO':'Ultratech Cement',
-    'GRASIM':'Grasim Industries','NESTLEIND':'Nestle India','BRITANNIA':'Britannia',
-    'PIDILITIND':'Pidilite','HAVELLS':'Havells','TITAN':'Titan Company',
-    'DMART':'DMart','ZOMATO':'Zomato','NYKAA':'Nykaa','PAYTM':'Paytm',
-    'IRCTC':'IRCTC','HAL':'HAL','BEL':'Bharat Electronics','BPCL':'BPCL',
-    'IOC':'Indian Oil','GAIL':'GAIL India','TATAPOWER':'Tata Power',
-    'NHPC':'NHPC','SJVN':'SJVN','RECLTD':'REC Limited','PFC':'Power Finance',
-    'BANKBARODA':'Bank of Baroda','PNB':'Punjab National Bank','CANBK':'Canara Bank',
-    'INDUSINDBK':'IndusInd Bank','FEDERALBNK':'Federal Bank','IDFCFIRSTB':'IDFC First Bank',
-    'MUTHOOTFIN':'Muthoot Finance','CHOLAFIN':'Chola Finance','HDFCLIFE':'HDFC Life',
-    'SBILIFE':'SBI Life','ICICIlombard':'ICICI Lombard','POLICYBZR':'Policy Bazaar',
-    'AUROPHARMA':'Aurobindo Pharma','TORNTPHARM':'Torrent Pharma','LUPIN':'Lupin',
-    'ALKEM':'Alkem Labs','MANKIND':'Mankind Pharma','PERSISTENT':'Persistent Systems',
-    'MPHASIS':'Mphasis','COFORGE':'Coforge','KPITTECH':'KPIT Technologies',
-    'DIXON':'Dixon Technologies','AMBER':'Amber Enterprises','KAYNES':'Kaynes Technology',
-    'TRENT':'Trent','ABFRL':'ABFRL','PAGEIND':'Page Industries',
-    'MOTHERSON':'Motherson Sumi','BOSCHLTD':'Bosch','BALKRISIND':'Balkrishna Industries',
-    'ETERNAL':'Eternal','CPPLUS':'CP Plus','JKTYRE':'JK Tyre','MOIL':'MOIL',
-    'FORCEMOT':'Force Motors','YATHARTH':'Yatharth Hospital'
-  };
-  // Replace each ticker (whole word, case-insensitive) with spoken name
-  // Priority: Hindi pron → English full name → Title-case fallback
-  let result = text.replace(/\b([A-Z]{2,12})(\.NS|\.BO)?\b/g, function(match, ticker) {
-    if (hindiPron[ticker]) return hindiPron[ticker];
-    if (tickerNames[ticker]) return tickerNames[ticker];
-    // ALL CAPS fallback: speak as title-case so TTS doesn't spell each letter
-    return ticker.charAt(0) + ticker.slice(1).toLowerCase();
-  });
-  return result;
-}
-function niviSpeak() {
-  if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
-  niviStop();
-  const area = document.getElementById('nivi-chat-area');
-  const rawText = area ? area.innerText.replace(/Nivi सोच रही है\.\.\./g,'').trim() : '';
-  if (!rawText) return;
-  const text = expandTickersForSpeech(rawText);
-
-  _niviUtterance = new SpeechSynthesisUtterance(text);
-  _niviUtterance.lang  = 'hi-IN';
-  _niviUtterance.rate  = 0.82;
-  _niviUtterance.pitch = 1.0;
-
-  // Try Google Hindi voice
-  // Female Hindi voice — priority order
-  const voices = speechSynthesis.getVoices();
-  const hiVoice =
-    voices.find(v => v.lang === 'hi-IN' && /female|woman|lekha|aditi|riya|priya/i.test(v.name)) ||
-    voices.find(v => v.lang === 'hi-IN' && v.name.includes('Google') && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang === 'hi-IN' && !/male/i.test(v.name)) ||
-    voices.find(v => v.lang === 'hi-IN');
-  if (hiVoice) _niviUtterance.voice = hiVoice;
-  _niviUtterance.pitch = _getNiviPitch();
-  _niviUtterance.rate  = _getNiviRate();
-
-  _niviUtterance.onstart = () => {
-    _niviSpeaking = true;
-    document.getElementById('nivi-speak-btn').style.display = 'none';
-    document.getElementById('nivi-stop-btn').style.display  = 'flex';
-    document.getElementById('nivi-avatar-ring').style.boxShadow = '0 0 12px #34d399';
-  };
-  _niviUtterance.onend = _niviUtterance.onerror = () => {
-    _niviSpeaking = false;
-    document.getElementById('nivi-speak-btn').style.display = 'flex';
-    document.getElementById('nivi-stop-btn').style.display  = 'none';
-    document.getElementById('nivi-avatar-ring').style.boxShadow = 'none';
-  };
-
-  speechSynthesis.speak(_niviUtterance);
+      } catch (e) { console.warn('Sarvam Network Error:', e.message); }
+    }
+  }
+  return { ok: false, error: 'બધા પ્રયત્નો નિષ્ફળ! Quota પૂરો અથવા Key ખોટી.' };
 }
 
-function niviStop() {
-  if (window.speechSynthesis) speechSynthesis.cancel();
-  _niviSpeaking = false;
-  const sb = document.getElementById('nivi-speak-btn');
-  const st = document.getElementById('nivi-stop-btn');
-  if (sb) sb.style.display = 'flex';
-  if (st) st.style.display = 'none';
-  const ring = document.getElementById('nivi-avatar-ring');
-  if (ring) ring.style.boxShadow = 'none';
-}
+
 
 function niviCopy() {
   const text = document.getElementById('nivi-bullets')?.innerText || '';
@@ -6570,39 +6269,7 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // NIVI NEWS SEARCH & VOICE (UPDATED)
 // ============================================================
 
-// 2. niviNewsSpeak — uses expandTickersForSpeech defined above
-function niviNewsSpeak() {
-  if (!window.speechSynthesis) { showPopup('TTS not supported'); return; }
-  speechSynthesis.cancel();
-  
-  var bullets = document.getElementById('niviNewsBullets');
-  if (!bullets) return;
-  var text = bullets.innerText.replace(/•/g, '').trim();
-  if (!text) { showPopup('Pehle news search karo'); return; }
-
-  // અહીંયા આપણે પેલું જાદુઈ ટૂલ વાપર્યું (શબ્દો સુધારવા માટે)
-  text = expandTickersForSpeech(text);
-
-  var u = new SpeechSynthesisUtterance(text);
-  u.lang = 'hi-IN';
-  u.rate = 0.9;  // 0.85 કરતા થોડું ફાસ્ટ, જે નેચરલ લાગે
-  u.pitch = 1.1; // અવાજમાં થોડી મીઠાશ અને નેચરલ ફીલ લાવવા માટે
-
-  // સૌથી પહેલા Google નો પ્રીમિયમ અવાજ ગોતશે
-  var voices = speechSynthesis.getVoices();
-  var hv = voices.find(function(v){ return v.lang==='hi-IN' && v.name.includes('Google') && !/male/i.test(v.name); })
-        || voices.find(function(v){ return v.lang==='hi-IN' && /female|woman|swara|lekha/i.test(v.name); })
-        || voices.find(function(v){ return v.lang==='hi-IN' && !/male/i.test(v.name); })
-        || voices.find(function(v){ return v.lang==='hi-IN'; });
-        
-  if (hv) u.voice = hv;
-
-  var btn = document.getElementById('niviNewsSpeak');
-  u.onstart = function(){ if(btn){ btn.textContent='⏹ Stop'; btn.onclick=function(){ speechSynthesis.cancel(); }; } };
-  u.onend = u.onerror = function(){ if(btn){ btn.textContent='🔊 Sunao'; btn.onclick=niviNewsSpeak; } };
-  
-  speechSynthesis.speak(u);
-}
+// 2. niviNewsSpeak — removed (TTS not used)
 
 async function niviNewsSearch() {
   var sym = (document.getElementById('niviNewsInput').value || '').trim().toUpperCase();
@@ -6652,7 +6319,7 @@ async function niviNewsSearch() {
     headlines.length + ' headlines analysed \u2022 ' +
     new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
 
-  // ── STEP 2: Browser → Gemini for Hindi AI sentiment ──
+  // ── STEP 2: Browser → Sarvam for Hindi AI sentiment ──
   var summaryHtml = '';
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
@@ -6672,7 +6339,7 @@ ${headlineText}
 4. \u091c\u094b\u0916\u093f\u092e \u092f\u093e \u0905\u0935\u0938\u0930
 Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
 
-    var resp = await directGeminiCall(sentimentPrompt);
+    var resp = await directSarvamCall(sentimentPrompt);
     if (resp && resp.ok) {
       var lines = resp.answer.split('\n').filter(function(l){ return l.trim(); });
       summaryHtml = lines.map(function(line) {
@@ -6688,7 +6355,7 @@ Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964
   // Fallback: no Gemini key or call failed
   if (!summaryHtml) {
     summaryHtml = '<div style="color:#4b6280;font-size:12px;">'
-      + (gemKey ? '\u26a0\ufe0f Gemini summary failed.' : '\u26a0\ufe0f Gemini key nahi — Settings mein add karo AI summary ke liye.')
+      + (gemKey ? '\u26a0\ufe0f Sarvam summary failed.' : '\u26a0\ufe0f Sarvam key nahi — Settings mein add karo AI summary ke liye.')
       + '</div>';
   }
 
