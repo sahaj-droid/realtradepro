@@ -13,6 +13,14 @@ let currentPINEntry = '';
   }
 })();
 
+// ── Default Sarvam API Key pre-save (first time only) ──
+(function setDefaultSarvamKey() {
+  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // <-- taro default key yaha nakh
+  if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
+    localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
+  }
+})();
+
 // ---- PIN Hash (simple SHA-256) ----
 async function hashPIN(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
@@ -301,8 +309,8 @@ async function loadUserData() {
         localStorage.setItem('customAPI', data.settings.apiUrl);
       if (data.settings.sheetId   && !localStorage.getItem('sheetId'))
         localStorage.setItem('sheetId', data.settings.sheetId);
-      if (data.settings.sarvamKey && !localStorage.getItem('sarvamApiKey'))
-        localStorage.setItem('sarvamApiKey', data.settings.sarvamKey);
+      if (data.settings.geminiKey && !localStorage.getItem('geminiApiKey'))
+        localStorage.setItem('geminiApiKey', data.settings.geminiKey);
     }
 
     // Update UI label
@@ -342,7 +350,7 @@ async function saveUserData(field) {
       payload.settings = {
         apiUrl:    localStorage.getItem('customAPI')    || '',
         sheetId:   localStorage.getItem('sheetId')     || '',
-        sarvamKey: localStorage.getItem('sarvamApiKey') || ''
+        geminiKey: localStorage.getItem('geminiApiKey') || ''
       };
     }
     await db.collection('users').doc(currentUser.userId).update(payload);
@@ -4181,7 +4189,7 @@ const FEATURE_DATA = [
     {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
   ]},
   {cat:"Ask Nivi", color:"#38bdf8", items:[
-    {name:"Ask Nivi Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Sarvam analyze kare. 30-min cache."},
+    {name:"Ask Nivi Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Sarvam AI analyze kare. 30-min cache."},
     {name:"Stock Filter", desc:"Fetches top 5 watchlist stocks. 5 min cache to save GAS quota."},
     {name:"Tabs", desc:"All / Corporate / Market filter tabs."},
     {name:"Stock Chips", desc:"Filter by individual stock (watchlist-based chips)."},
@@ -4329,7 +4337,7 @@ async function startApp(){
   startClock();
   setInterval(updateMarketStatus,60000);
   renderWLTabs();
-  initSarvamKeyDisplay();
+  initGeminiKeyDisplay();
   showLoader("Loading...");
   // Preload ALL fundamentals from Firebase (non-blocking) — any stock opens instantly
   preloadAllFundamentalsFromFirebase();
@@ -4541,7 +4549,7 @@ async function fetchLiveNews(sym) {
   const apiUrl = localStorage.getItem("customAPI") || API;
   const cleanSym = sym.replace(".NS","").replace(".BO","");
   try {
-    const r = await fetch(`${apiUrl}?niviNewsSearch&s=${encodeURIComponent(cleanSym)}`);
+    const r = await fetch(`${apiUrl}?type=newsSearch&s=${encodeURIComponent(cleanSym)}`);
     if(!r.ok) return [];
     const j = await r.json();
     if(j.news && j.news.length > 0) return j.news;
@@ -4858,7 +4866,7 @@ Bilkul shuddh Hindi Devanagari mein jawab do:
 Max 180 words. Sirf Hindi Devanagari.
 `;
   try {
-    const gemKey = localStorage.getItem('sarvamApiKey');
+    const gemKey = localStorage.getItem('geminiApiKey');
     let rawText = null;
     if (gemKey) {
       const r = await directSarvamCall(prompt);
@@ -4946,7 +4954,7 @@ const prompt =
   _tabShowLoading(true);
   let answer = null;
 
-  const gemKey = localStorage.getItem('sarvamApiKey');
+  const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     const r = await directSarvamCall(prompt);
     if (r && r.ok) answer = r.answer;
@@ -5634,8 +5642,8 @@ async function openNivi(sym) {
 
   _niviShowLoading(true);
 
-  // ── PRIMARY: Direct Sarvam (browser → Sarvam, no GAS cold start) ──
-  const gemKey = localStorage.getItem('sarvamApiKey');
+  // ── PRIMARY: Direct Sarvam (browser → Sarvam AI, no GAS cold start) ──
+  const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     const cd = cache[sym] && cache[sym].data;
     if (cd) {
@@ -5755,7 +5763,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
   let answer = null;
 
   // 1. Direct Sarvam — multi-turn contents array
-  const gemKey = localStorage.getItem('sarvamApiKey');
+  const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     const resp = await directSarvamCallMultiTurn(historyWindow.slice(0, -1), prompt);
     if (resp && resp.ok) answer = resp.answer;
@@ -5780,31 +5788,44 @@ Max 4 lines. Data-backed. Seedha jawab.`;
   _niviPersistChat();
 }
 
-// ── Multi-turn Sarvam call — sends conversation history as contents array ──
-async function directSarvamCall(prompt) {
-  const key = localStorage.getItem('sarvamApiKey');
-  if (!key) return { ok: false, error: 'Sarvam key missing' };
-  try {
-    const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-subscription-key': key
-      },
-      body: JSON.stringify({
-        model: 'sarvam-m',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 512
-      })
-    });
-    const j = await r.json();
-    if (j.choices && j.choices[0]) {
-      return { ok: true, answer: j.choices[0].message.content };
-    }
-    return { ok: false, error: JSON.stringify(j) };
-  } catch(e) {
-    return { ok: false, error: e.message };
+// ── Multi-turn Gemini call — sends conversation history as contents array ──
+async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
+  const key1 = localStorage.getItem('geminiApiKey');
+  const key2 = localStorage.getItem('geminiApiKey2');
+  const keys = [key1, key2].filter(Boolean);
+  if (keys.length === 0) return { ok: false, error: 'No API key' };
+
+  const models = ['sarvam-105b', 'sarvam-30b'];
+
+  const messages = [
+    { role: 'system', content: 'Aap Nivi hain — Indian stock market expert. Sirf shuddh Hindi Devanagari mein jawab dijiye.' }
+  ];
+  for (const msg of priorHistory) {
+    if (!msg.text || !msg.text.trim()) continue;
+    messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
   }
+  messages.push({ role: 'user', content: currentPrompt });
+
+  for (const k of keys) {
+    for (const model of models) {
+      try {
+        const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'api-subscription-key': k },
+          body: JSON.stringify({ model, messages })
+        });
+        const j = await r.json();
+        if (j.choices && j.choices[0]) {
+          return { ok: true, answer: j.choices[0].message.content, model };
+        }
+        if (j.error) {
+          console.warn(`Sarvam multi-turn error (${model}):`, j.error);
+          if (r.status === 400 || r.status === 429) break;
+        }
+      } catch(e) { console.warn('Sarvam multi-turn network error:', e.message); }
+    }
+  }
+  return { ok: false, error: 'All Sarvam models failed' };
 }
 
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
@@ -6084,41 +6105,41 @@ async function fetchHistSheet(sym){
   }catch(e){ return null; }
 }
 
-function saveSarvamKey(){
-  const val=document.getElementById('set-sarvam-key').value.trim();
+function saveGeminiKey(){
+  const val=document.getElementById('set-gemini-key').value.trim();
   if(!val){ showPopup('Key daalo pehle'); return; }
-  localStorage.setItem('sarvamApiKey',val);
+  localStorage.setItem('geminiApiKey',val);
   if (currentUser) saveUserData('settings');
-  document.getElementById('sarvam-key-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key saved — Active</span>';
-  document.getElementById('set-sarvam-key').value='';
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key saved — Active</span>';
+  document.getElementById('set-gemini-key').value='';
   showPopup('Sarvam key saved ✓');
 }
-function saveSarvamKey2(){
-  const val=document.getElementById('set-sarvam-key2').value.trim();
+function saveGeminiKey2(){
+  const val=document.getElementById('set-gemini-key2').value.trim();
   if(!val){ showPopup('Key daalo pehle'); return; }
-  localStorage.setItem('sarvamApiKey2',val);
-  document.getElementById('sarvam-key2-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key 2 saved — Fallback active</span>';
-  document.getElementById('set-sarvam-key2').value='';
+  localStorage.setItem('geminiApiKey2',val);
+  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key 2 saved — Fallback active</span>';
+  document.getElementById('set-gemini-key2').value='';
   showPopup('Sarvam Key 2 saved ✓');
 }
-function clearSarvamKey2(){
-  localStorage.removeItem('aarvamApiKey2');
-  document.getElementById('set-sarvam-key2').value='';
-  document.getElementById('sarvam-key2-status').innerHTML='<span style="color:#4b6280;">Key 2 cleared</span>';
+function clearGeminiKey2(){
+  localStorage.removeItem('geminiApiKey2');
+  document.getElementById('set-gemini-key2').value='';
+  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#4b6280;">Key 2 cleared</span>';
   showPopup('Sarvam Key 2 cleared');
 }
-function initSarvamKeyDisplay(){
-  const k=localStorage.getItem('sarvamApiKey');
-  const el=document.getElementById('sarvam-key-status');
+function initGeminiKeyDisplay(){
+  const k=localStorage.getItem('geminiApiKey');
+  const el=document.getElementById('gemini-key-status');
   if(el) el.innerHTML=k
     ?'<span style="color:#34d399;">✓ Sarvam Key saved ('+k.slice(0,8)+'...) — Active</span>'
     :'<span style="color:#4b6280;">No key saved</span>';
 }
 
-// Smart Direct Sarvam API call (Browser → Sarvam)
+// Smart Direct Gemini API call (Browser → Gemini)
 async function directSarvamCall(prompt) {
-  const key1 = localStorage.getItem('sarvamApiKey');
-  const key2 = localStorage.getItem('sarvamApiKey2');
+  const key1 = localStorage.getItem('geminiApiKey');
+  const key2 = localStorage.getItem('geminiApiKey2');
   const keys = [key1, key2].filter(Boolean);
 
   if (keys.length === 0) return { ok: false, error: 'API Key નથી! Settings માં નાખો.' };
@@ -6252,6 +6273,9 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // ============================================================
 // NIVI NEWS SEARCH
 // ============================================================
+// ============================================================
+// NIVI NEWS SEARCH & VOICE (UPDATED)
+// ============================================================
 
 // 2. niviNewsSpeak — removed (TTS not used)
 
@@ -6305,7 +6329,7 @@ async function niviNewsSearch() {
 
   // ── STEP 2: Browser → Sarvam for Hindi AI sentiment ──
   var summaryHtml = '';
-  const gemKey = localStorage.getItem('sarvamApiKey');
+  const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     var headlineText = headlines.slice(0, 8).map(function(h,i){
       return (i+1) + '. ' + (h.title || h);
@@ -6325,7 +6349,7 @@ Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964
 
     var resp = await directSarvamCall(sentimentPrompt);
     if (resp && resp.ok) {
-      var lines = (resp && resp.ok && resp.answer ? resp.answer : '').split('\n').filter(function(l){ return l.trim(); });
+      var lines = resp.answer.split('\n').filter(function(l){ return l.trim(); });
       summaryHtml = lines.map(function(line) {
         var clean = line.replace(/^[\u2022\-\*]\s*/, '').trim();
         if (!clean) return '';
@@ -6336,7 +6360,7 @@ Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964
     }
   }
 
-  // Fallback: no Sarvam key or call failed
+  // Fallback: no Gemini key or call failed
   if (!summaryHtml) {
     summaryHtml = '<div style="color:#4b6280;font-size:12px;">'
       + (gemKey ? '\u26a0\ufe0f Sarvam summary failed.' : '\u26a0\ufe0f Sarvam key nahi — Settings mein add karo AI summary ke liye.')
