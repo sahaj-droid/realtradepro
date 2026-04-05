@@ -6099,33 +6099,33 @@ async function fetchHistSheet(sym){
 
 function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
-  if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
+  if(!val){ showPopup('Key daalo pehle'); return; }
   localStorage.setItem('geminiApiKey',val);
   if (currentUser) saveUserData('settings');
-  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Key saved — Direct Gemini active</span>';
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key saved — Active</span>';
   document.getElementById('set-gemini-key').value='';
-  showPopup('Gemini key saved ✓');
+  showPopup('Sarvam key saved ✓');
 }
 function saveGeminiKey2(){
   const val=document.getElementById('set-gemini-key2').value.trim();
-  if(!val||!val.startsWith('AIza')){ showPopup('Invalid key — must start with AIza'); return; }
+  if(!val){ showPopup('Key daalo pehle'); return; }
   localStorage.setItem('geminiApiKey2',val);
-  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#34d399;">✓ Key 2 saved — Fallback active</span>';
+  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key 2 saved — Fallback active</span>';
   document.getElementById('set-gemini-key2').value='';
-  showPopup('Gemini Key 2 saved ✓');
+  showPopup('Sarvam Key 2 saved ✓');
 }
 function clearGeminiKey2(){
   localStorage.removeItem('geminiApiKey2');
   document.getElementById('set-gemini-key2').value='';
   document.getElementById('gemini-key2-status').innerHTML='<span style="color:#4b6280;">Key 2 cleared</span>';
-  showPopup('Gemini Key 2 cleared');
+  showPopup('Sarvam Key 2 cleared');
 }
 function initGeminiKeyDisplay(){
   const k=localStorage.getItem('geminiApiKey');
   const el=document.getElementById('gemini-key-status');
   if(el) el.innerHTML=k
-    ?'<span style="color:#34d399;">✓ Key saved ('+k.slice(0,8)+'...) — Direct Gemini active</span>'
-    :'<span style="color:#4b6280;">No key saved — using GAS API only</span>';
+    ?'<span style="color:#34d399;">✓ Sarvam Key saved ('+k.slice(0,8)+'...) — Active</span>'
+    :'<span style="color:#4b6280;">No key saved</span>';
 }
 
 // Smart Direct Gemini API call (Browser → Gemini)
