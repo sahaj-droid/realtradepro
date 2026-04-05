@@ -1448,7 +1448,7 @@ async function updatePrices(){
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
       pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price);checkTargets(s,price);lastUpdatedMap[s]=Date.now();
+      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
       const wrap=pe.closest('.card')||pe.parentElement;
       if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
       else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
@@ -3306,6 +3306,45 @@ function checkAlerts(sym, currentPrice) {
     }
   });
   if (updated) localStorage.setItem("alerts", JSON.stringify(alerts));
+}
+
+// ======================================
+// VOLUME SPIKE DETECTOR
+// Triggered on every price refresh (market hours only)
+// 1.5x avg volume = alert + tone. Once per stock per day.
+// ======================================
+const _volSpikeAlerted = {}; // { SYM: 'YYYY-MM-DD' } — din ma ek j vaar
+
+function checkVolumeSpike(sym, data) {
+  if (!data) return;
+  const vol    = data.regularMarketVolume || data.volume || 0;
+  const avgVol = data.avgVolume || data.averageDailyVolume3Month || 0;
+  if (!vol || !avgVol || avgVol === 0) return;
+
+  const ratio = vol / avgVol;
+  if (ratio < 1.5) return;
+
+  // Din ma ek j vaar alert
+  const today = new Date().toISOString().split('T')[0];
+  if (_volSpikeAlerted[sym] === today) return;
+  _volSpikeAlerted[sym] = today;
+
+  const ratioStr = ratio.toFixed(1);
+  const volStr   = vol >= 1e7 ? (vol/1e7).toFixed(1)+'Cr'
+                 : vol >= 1e5 ? (vol/1e5).toFixed(1)+'L'
+                 : vol >= 1e3 ? (vol/1e3).toFixed(1)+'K'
+                 : vol.toString();
+
+  playAlertSound();
+  showPopup(`🔥 ${sym} Volume Spike! ${ratioStr}x avg (${volStr})`, 7000);
+
+  // Browser notification — app open hoy tyare notification bar ma pan aavse
+  if (Notification && Notification.permission === 'granted') {
+    new Notification('🔥 Volume Spike — ' + sym, {
+      body: ratioStr + 'x avg volume (' + volStr + ')',
+      icon: '/favicon.ico'
+    });
+  }
 }
 
 function sortAZ(){
