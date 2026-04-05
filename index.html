@@ -1222,53 +1222,76 @@ function fsVal(f){
     </div>
   </div>
 
-  <!-- Search Bar -->
-  <div style="padding:12px 14px 0;">
-    <div style="display:flex;gap:8px;">
-      <div style="flex:1;position:relative;">
-        <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
-          style="width:100%;background:#0d1f35;border:1px solid rgba(251,146,60,0.3);color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
-          oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
-        <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#0d1f35;border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+  <!-- Main Tab Switcher: Company Financial | Learning -->
+  <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);background:#060e1a;position:sticky;top:53px;z-index:9;">
+    <button id="lmain-financial" onclick="switchLearnMain('financial')"
+      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
+      📊 Company Financial
+    </button>
+    <button id="lmain-school" onclick="switchLearnMain('school')"
+      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748b;letter-spacing:0.5px;transition:all 0.15s;">
+      🎓 Learning
+    </button>
+  </div>
+
+  <!-- PANEL: Company Financial -->
+  <div id="lpanel-financial" style="display:flex;flex-direction:column;">
+
+    <!-- Search Bar -->
+    <div style="padding:12px 14px 0;">
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;position:relative;">
+          <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
+            style="width:100%;background:#0d1f35;border:1px solid rgba(251,146,60,0.3);color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
+            oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
+          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#0d1f35;border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+        </div>
+        <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+          ANALYZE
+        </button>
+        <button onclick="downloadLearnPDF(document.getElementById('learnSearchInput').value.trim().toUpperCase())" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+          PDF
+        </button>
       </div>
-      <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
-        ANALYZE
-      </button>
-      <button onclick="downloadLearnPDF(document.getElementById('learnSearchInput').value.trim().toUpperCase())" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
-        Download PDF Report
-      </button>
+      <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
     </div>
-    <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
-  </div>
 
-  <!-- Sub-Tab Pills (hidden until data loads) -->
-  <div id="learnSubTabs" style="display:none;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none;">
-    <div style="display:flex;gap:6px;min-width:max-content;">
-      <button id="lst-fundamentals" onclick="switchLearnTab('fundamentals')"
-        style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;transition:all 0.15s;">
-        📊 Fundamentals
-      </button>
-      <button id="lst-technicals" onclick="switchLearnTab('technicals')"
-        style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-        ⚡ Technicals
-      </button>
-      <button id="lst-shareholding" onclick="switchLearnTab('shareholding')"
-        style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-        👥 Shareholding
-      </button>
-      <button id="lst-quarterly" onclick="switchLearnTab('quarterly')"
-        style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-        📅 Quarterly
-      </button>
-      <button id="lst-cashflow" onclick="switchLearnTab('cashflow')"
-        style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-        💰 Cash Flow
-      </button>
+    <!-- Sub-Tab Pills (hidden until data loads) -->
+    <div id="learnSubTabs" style="display:none;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none;">
+      <div style="display:flex;gap:6px;min-width:max-content;">
+        <button id="lst-fundamentals" onclick="switchLearnTab('fundamentals')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;transition:all 0.15s;">
+          📊 Fundamentals
+        </button>
+        <button id="lst-technicals" onclick="switchLearnTab('technicals')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          ⚡ Technicals
+        </button>
+        <button id="lst-shareholding" onclick="switchLearnTab('shareholding')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          👥 Shareholding
+        </button>
+        <button id="lst-quarterly" onclick="switchLearnTab('quarterly')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          📅 Quarterly
+        </button>
+        <button id="lst-cashflow" onclick="switchLearnTab('cashflow')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          💰 Cash Flow
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- Content Area -->
-  <div id="learnResults" style="padding:10px 14px 100px;"></div>
+    <!-- Content Area -->
+    <div id="learnResults" style="padding:10px 14px 100px;"></div>
+
+  </div><!-- end lpanel-financial -->
+
+  <!-- PANEL: Learning (Market School) -->
+  <div id="lpanel-school" style="display:none;padding:10px 14px 100px;">
+    <div id="marketSchoolContent"></div>
+  </div><!-- end lpanel-school -->
+
 </div>
 
 <div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;align-items:center;justify-content:center;">
