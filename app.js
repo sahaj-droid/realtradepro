@@ -7056,19 +7056,27 @@ function learnSearchSuggest(val) {
   box.style.display = 'block';
 }
 
-// [PHASE 2 INJECTION] Helper to fetch Technical Data (RSI) quietly
+// [PHASE 2 INJECTION] Helper to fetch Technical Data quietly
 async function _enrichWithTechnicals(raw, sym) {
-  // Firebase Realtime DB nathi — cache thi price history thi RSI approximate kariye
+  // 52W High/Low and Beta — map from Firebase fundlearn fields
+  raw['52wHigh'] = (raw.high52 && raw.high52 > 0) ? raw.high52 : null;
+  raw['52wLow']  = (raw.low52  && raw.low52  > 0) ? raw.low52  : null;
+  raw['beta']    = (raw.beta   && raw.beta   > 0) ? raw.beta   : null;
+
   try {
-    // Yahoo Finance proxy thi recent closes fetch kariye
     const proxyBase = localStorage.getItem('customAPI2') || localStorage.getItem('customAPI') || (typeof API !== 'undefined' ? API : '');
     if (!proxyBase) { raw.rsi = null; return raw; }
-    const r = await fetch(`${proxyBase}?type=history&s=${sym}.NS&range=1mo&interval=1d`)
+    const r = await fetch(`${proxyBase}?type=history&s=${sym}.NS&range=3mo&interval=1d`);
     if (!r.ok) throw new Error('ohlcv fetch failed');
     const data = await r.json();
     const closes = (data.close || data.closes || data.c || []);
-    raw.rsi = closes.length >= 15 ? calculateLearnRSI(closes) : null;
-  } catch(e) { raw.rsi = null; }
+    raw.rsi   = closes.length >= 15 ? calculateLearnRSI(closes) : null;
+    raw.macd  = closes.length >= 26 ? (() => { const m = calcMACD(closes); return m ? m.macd : null; })() : null;
+    raw.ema20 = closes.length >= 20 ? calcEMA(closes, 20) : null;
+    raw.ema50 = closes.length >= 50 ? calcEMA(closes, 50) : null;
+  } catch(e) {
+    raw.rsi = null; raw.macd = null; raw.ema20 = null; raw.ema50 = null;
+  }
   return raw;
 }
 
@@ -7558,7 +7566,9 @@ function _buildTechnicalsTab(d, sym) {
     </div>`;
 
   techItems.forEach((item, idx) => {
-    const val = R[item.key] !== undefined ? R[item.key] : (d[item.key] !== undefined ? d[item.key] : null);
+    const val = (d[item.key] !== undefined && d[item.key] !== null) ? d[item.key]
+              : (R[item.key] !== undefined && R[item.key] !== null) ? R[item.key]
+              : null;
     const fv = val !== null && val !== undefined ? item.fmt(val) : '--';
     const dot = _learnDot(item.key, val);
     const last = idx === techItems.length - 1;
