@@ -970,7 +970,7 @@ function fsVal(f){
         <div class="s-row-icon" style="background:rgba(52,211,153,0.1);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         </div>
-        <div class="s-row-info"><div class="s-row-title">Gemini Configuration</div><div class="s-row-sub">API Keys · Voice · Speed</div></div>
+        <div class="s-row-info"><div class="s-row-title">Sarvam Configuration</div><div class="s-row-sub">API Keys · sarvam-105b · sarvam-30b</div></div>
       </div>
       <span id="nivi-s-arr" class="s-collapse-arr" style="color:#34d399;">▼</span>
     </div>
@@ -1000,37 +1000,7 @@ function fsVal(f){
         </div>
       </div>
       <div id="gemini-key2-status" style="font-size:9px;color:#4b6280;margin-bottom:8px;"></div>
-      <div style="font-size:9px;color:#4b6280;margin-bottom:10px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com/apikey</a></div>
-      <!-- Voice controls -->
-      <div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.05);">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
-          <div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <span style="font-size:10px;color:#94a3b8;">Speed</span>
-              <span id="nivi-speed-label" style="font-size:10px;color:#34d399;font-weight:700;">Normal</span>
-            </div>
-            <input type="range" id="nivi-speed-slider" min="0.5" max="1.5" step="0.1" value="0.88" oninput="updateNiviSpeed(this.value)" style="width:100%;accent-color:#34d399;cursor:pointer;">
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-              <span style="font-size:10px;color:#94a3b8;">Pitch</span>
-              <span id="nivi-pitch-label" style="font-size:10px;color:#34d399;font-weight:700;">Normal</span>
-            </div>
-            <input type="range" id="nivi-pitch-slider" min="0.8" max="1.4" step="0.05" value="1.15" oninput="updateNiviPitch(this.value)" style="width:100%;accent-color:#34d399;cursor:pointer;">
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:11px;color:#94a3b8;">Auto Speak</span>
-            <label class="ios-tog-sm">
-              <input type="checkbox" id="nivi-autospeak-chk" checked onchange="toggleNiviAutoSpeakChk(this.checked)">
-              <div class="ios-track"></div>
-              <div class="ios-thumb"></div>
-            </label>
-          </div>
-          <button onclick="niviVoiceTest()" class="s-pill" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;font-size:10px;">Voice Test</button>
-        </div>
-      </div>
+      <div style="font-size:9px;color:#4b6280;margin-bottom:10px;">Free key: <a href="https://dashboard.sarvam.ai" target="_blank" style="color:#38bdf8;">dashboard.sarvam.ai</a></div>
     </div>
   </div>
 
@@ -1702,17 +1672,13 @@ function fsVal(f){
         <button onclick="niviChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
       </div>
 
-      <!-- Input row: text + mic + send -->
+      <!-- Input row: text + send -->
       <div style="display:flex;gap:6px;align-items:center;">
         <input id="nivi-input" type="text" placeholder="Ask anything to Nivi..." onkeydown="if(event.key==='Enter')niviSend()"
           style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;"/>
-        <button id="nivi-mic-btn" onclick="niviMicToggle()" title="Voice Input"
-          style="background:#0f2a1a;border:1px solid #065f46;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:14px;flex-shrink:0;">🎙️</button>
         <button onclick="niviSend()"
           style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Send</button>
       </div>
-      <!-- Mic status -->
-      <div id="nivi-mic-status" style="font-size:9px;color:#f59e0b;margin-top:4px;display:none;font-family:'Rajdhani',sans-serif;">🔴 Listening... (Press again to stop)</div>
       <!-- Disclaimer -->
       <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ Only for information। Not SEBI registered advisor।</div>
     </div>
