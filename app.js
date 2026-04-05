@@ -7592,6 +7592,24 @@ function _buildShareholdingTab(d, sym) {
 
   const total = holders.reduce((s,h) => s + (h.val||0), 0);
 
+  // render holders if data available
+  if (total > 0) {
+    holders.forEach(h => {
+      if (!h.val) return;
+      const pct = ((h.val / total) * 100).toFixed(1);
+      html += `<div style="margin-top:8px;font-size:12px;color:#94a3b8;">`
+            + `<span style="color:${h.color};">&#9632;</span> ${h.label}: <b style="color:#e2e8f0;">${h.val.toFixed(1)}%</b>`
+            + `</div>`;
+    });
+  } else {
+    html += `<div style="text-align:center;padding:20px;font-size:12px;color:#64748b;">Shareholding data not available</div>`;
+  }
+
+  html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Screener.in via Firebase</div>`;
+  res_sh && (res_sh.innerHTML = html);
+  return html;
+}
+
 // ── Full Report PDF Download (All 5 Tabs) ──────────────────
 async function downloadLearnPDF(sym) {
   const d = _learnCache[sym];
