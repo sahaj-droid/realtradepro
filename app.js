@@ -7903,7 +7903,7 @@ async function _buildQuarterlyTab(res, sym) {
   // ── QoQ Growth helper ──
   const growthCell = (curr, prev) => {
     const c = Number(curr), p = Number(prev);
-    if (!p || p === 0 || !curr || curr === 0) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
+    if (Math.abs(p) < 1 || Math.abs(c) < 1) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
     const g = ((c - p) / Math.abs(p)) * 100;
     const color = g >= 5 ? '#22c55e' : g >= 0 ? '#86efac' : g >= -5 ? '#fbbf24' : '#ef4444';
     const sign = g >= 0 ? '+' : '';
@@ -7913,7 +7913,7 @@ async function _buildQuarterlyTab(res, sym) {
   // ── YoY: Q5 vs Q1 (same quarter last year) ──
   const yoyCell = (curr, base) => {
     const c = Number(curr), b = Number(base);
-    if (!b || b === 0 || !curr || curr === 0) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
+    if (Math.abs(b) < 1 || Math.abs(c) < 1) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
     const g = ((c - b) / Math.abs(b)) * 100;
     const color = g >= 5 ? '#22c55e' : g >= 0 ? '#86efac' : g >= -5 ? '#fbbf24' : '#ef4444';
     const sign = g >= 0 ? '+' : '';
