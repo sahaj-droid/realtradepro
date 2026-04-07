@@ -781,6 +781,21 @@ function saveWatchlists(){
   wl = watchlists[currentWL].stocks;
   localStorage.setItem("wl",JSON.stringify(wl));
   if (currentUser) saveUserData('watchlists');
+  // ── Sync all watchlist stocks to Firebase for Python engine ──────────────
+  _syncWatchlistToFirebase();
+}
+
+// Push merged unique symbols from all watchlists → RealTradePro/config
+function _syncWatchlistToFirebase(){
+  if(typeof firebase === 'undefined') return;
+  try{
+    const allSyms = [...new Set(watchlists.flatMap(w => w.stocks || []))];
+    firebase.firestore()
+      .collection('RealTradePro').doc('config')
+      .set({ watchlist: allSyms, updated_at: new Date().toISOString() }, { merge: true })
+      .then(()=> console.log('[Watchlist] Synced to Firebase:', allSyms.length, 'stocks'))
+      .catch(e => console.warn('[Watchlist] Firebase sync failed:', e));
+  }catch(e){ console.warn('[Watchlist] sync error:', e); }
 }
 
 function renderWLTabs(){
@@ -1469,6 +1484,23 @@ function confirmAddIndex(sym,name){
 async function updatePrices(){
   // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
   // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
+
+  // ── Task 3: If Python engine active, refresh cache from Firebase first ──
+  if(window._pythonEngineActive){
+    try{
+      const db = firebase.firestore();
+      const doc = await db.collection('RealTradePro').doc('live_prices').get();
+      if(doc.exists){
+        const prices = doc.data().prices || {};
+        wl.forEach(s => {
+          const p = prices[s+'.NS'];
+          if(p){ cache[s]={data:p, time:Date.now()}; lastUpdatedMap[s]=Date.now(); }
+        });
+      }
+    }catch(e){ /* silent — fall through to fetchFull below */ }
+  }
+  // ── END Task 3 ─────────────────────────────────────────────────────────────
+
   for(let s of wl){
     let d=await fetchFull(s);if(!d) continue;
     let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
@@ -2927,6 +2959,35 @@ function normalizeBatchItem(gasData){
 
 async function batchFetchStocks(symbols, isIndex=false){
   if(!symbols||symbols.length===0) return;
+
+  // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
+  if(window._pythonEngineActive && !isIndex){
+    try{
+      const db = firebase.firestore();
+      const doc = await db.collection('RealTradePro').doc('live_prices').get();
+      if(doc.exists){
+        const prices = doc.data().prices || {};
+        let stored = 0;
+        symbols.forEach(s => {
+          const fbKey = s + '.NS';
+          if(prices[fbKey]){
+            const p = prices[fbKey];
+            cache[s] = { data: p, time: Date.now() };
+            lastUpdatedMap[s] = Date.now();
+            stored++;
+          }
+        });
+        if(stored > 0){
+          console.log('[Firebase] Live prices loaded:', stored, 'stocks');
+          return; // all found — skip GAS entirely
+        }
+      }
+    }catch(fbErr){
+      console.warn('[Firebase] live_prices fetch failed, falling back to GAS:', fbErr);
+    }
+  }
+  // ── END Task 3 ─────────────────────────────────────────────────────────────
+
   const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
   const urls=[
     localStorage.getItem('customAPI')||API,
@@ -7357,7 +7418,7 @@ let _learnActiveTab = 'fundamentals';
 
 function switchLearnTab(tabName) {
   _learnActiveTab = tabName;
-  const tabs = ['fundamentals','technicals','shareholding','quarterly','cashflow'];
+  const tabs = ['fundamentals','technicals','shareholding','quarterly','cashflow','corporate'];
   tabs.forEach(t => {
     const btn = document.getElementById('lst-' + t);
     if (!btn) return;
@@ -7399,6 +7460,7 @@ function _renderLearnTab(tabName, d, sym) {
     if (tabName === 'shareholding')  res.innerHTML = _buildShareholdingTab(d, sym);
     if (tabName === 'quarterly')     _buildQuarterlyTab(res, sym);
     if (tabName === 'cashflow')      _buildCashflowTab(res, sym);
+    if (tabName === 'corporate')     _buildCorporateActionsTab(res, sym);
   }, 80);
 }
 
@@ -8236,8 +8298,134 @@ function _downloadLearnPDF_DEPRECATED(sym) {
   }
 }
 // ============================================================
-// END SEARCH & LEARN
+// TAB 6 — CORPORATE ACTIONS
 // ============================================================
+async function _buildCorporateActionsTab(res, sym) {
+  res.innerHTML = '<div style="text-align:center;padding:20px 0;"><div class="spinner" style="margin:0 auto;"></div><div style="font-size:11px;color:#64748b;margin-top:8px;">Loading corporate actions...</div></div>';
+
+  // ── 1. Try Firebase first (Python Thread C) ───────────────────────────────
+  let fbData = null;
+  if(typeof firebase !== 'undefined'){
+    try{
+      const db = firebase.firestore();
+      const doc = await db.collection('RealTradePro').doc('corporate_actions').get();
+      if(doc.exists){
+        const all = doc.data();
+        // Filter entries matching this sym
+        fbData = {};
+        ['dividends','bonuses','splits','boardMeetings','bulkDeals','blockDeals','announcements'].forEach(k => {
+          if(all[k]) fbData[k] = all[k].filter(x => (x.symbol||'').toUpperCase() === sym.toUpperCase());
+        });
+      }
+    }catch(e){ console.warn('[Corporate] Firebase fetch failed:', e); }
+  }
+
+  // ── 2. GAS fallback for bulk/block deals ─────────────────────────────────
+  let gasBulk = [];
+  if(!fbData){
+    try{
+      const apiUrl = getActiveGASUrl();
+      const r = await fetchWithTimeout(`${apiUrl}?action=bulkDeals&symbol=${sym}.NS`, 8000);
+      const j = await r.json();
+      if(j && Array.isArray(j.data)) gasBulk = j.data;
+    }catch(e){ /* silent */ }
+  }
+
+  // ── 3. NSE announcements link (always show) ───────────────────────────────
+  const nseUrl = `https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${sym}`;
+
+  // ── 4. Build HTML ─────────────────────────────────────────────────────────
+  const sectionStyle = 'background:#0d1f35;border-radius:10px;padding:10px 12px;margin-bottom:10px;border:1px solid rgba(56,189,248,0.1);';
+  const headStyle    = 'font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:6px;display:flex;align-items:center;gap:6px;';
+  const rowStyle     = 'display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:11px;';
+  const labelStyle   = 'color:#94a3b8;';
+  const valStyle     = 'color:#e2e8f0;font-weight:600;text-align:right;max-width:55%;';
+  const emptyStyle   = 'color:#4b6280;font-size:10px;padding:4px 0;';
+
+  function buildRows(items, fields) {
+    if(!items || items.length === 0) return `<div style="${emptyStyle}">No recent data</div>`;
+    return items.slice(0,6).map(item =>
+      `<div style="${rowStyle}">${fields.map((f,i) =>
+        `<span style="${i===0?labelStyle:valStyle}">${item[f.key]||'-'}</span>`
+      ).join('')}</div>`
+    ).join('');
+  }
+
+  // Source badge
+  const srcBadge = fbData
+    ? `<span style="font-size:9px;background:rgba(52,211,153,0.15);color:#34d399;border-radius:4px;padding:2px 6px;">Firebase</span>`
+    : `<span style="font-size:9px;background:rgba(56,189,248,0.15);color:#64748b;border-radius:4px;padding:2px 6px;">GAS / Live</span>`;
+
+  const divRows   = buildRows(fbData?.dividends,    [{key:'exDate'},{key:'dividendAmount'}]);
+  const bonusRows = buildRows(fbData?.bonuses,      [{key:'exDate'},{key:'ratio'}]);
+  const splitRows = buildRows(fbData?.splits,       [{key:'exDate'},{key:'splitRatio'}]);
+  const bmRows    = buildRows(fbData?.boardMeetings,[{key:'date'},{key:'purpose'}]);
+  const bulkItems = fbData?.bulkDeals?.length ? fbData.bulkDeals : gasBulk;
+  const bulkRows  = buildRows(bulkItems,            [{key:'date'},{key:'clientName'},{key:'quantity'}]);
+  const annItems  = fbData?.announcements || [];
+  const annRows   = annItems.length
+    ? annItems.slice(0,5).map(a=>`<div style="${rowStyle}"><span style="${labelStyle}">${a.date||''}</span><span style="${valStyle}">${a.subject||a.desc||'-'}</span></div>`).join('')
+    : `<div style="${emptyStyle}">No announcements in Firebase — check NSE directly</div>`;
+
+  res.innerHTML = `
+    <div style="padding:2px 0 8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:15px;font-weight:700;color:#fb923c;font-family:'JetBrains Mono',monospace;">${sym} — Corporate Actions</div>
+        ${srcBadge}
+      </div>
+
+      <div style="${sectionStyle}">
+        <div style="${headStyle}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Dividends
+        </div>
+        ${divRows}
+      </div>
+
+      <div style="${sectionStyle}">
+        <div style="${headStyle}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          Bonus &amp; Splits
+        </div>
+        <div style="margin-bottom:4px;font-size:10px;color:#64748b;">Bonus</div>
+        ${bonusRows}
+        <div style="margin-top:6px;margin-bottom:4px;font-size:10px;color:#64748b;">Splits</div>
+        ${splitRows}
+      </div>
+
+      <div style="${sectionStyle}">
+        <div style="${headStyle}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Board Meetings
+        </div>
+        ${bmRows}
+      </div>
+
+      <div style="${sectionStyle}">
+        <div style="${headStyle}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Bulk / Block Deals
+        </div>
+        ${bulkRows}
+      </div>
+
+      <div style="${sectionStyle}">
+        <div style="${headStyle}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          NSE Announcements
+        </div>
+        ${annRows}
+        <div style="margin-top:8px;">
+          <button onclick="window.open('${nseUrl}','_blank')"
+            style="width:100%;background:rgba(56,189,248,0.1);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);border-radius:8px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+            View All on NSE
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+
 
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
