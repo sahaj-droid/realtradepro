@@ -7954,14 +7954,13 @@ async function _buildQuarterlyTab(res, sym) {
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
       <tr style="background:rgba(255,255,255,0.04);">
         <th style="padding:7px 10px;text-align:left;color:#64748b;min-width:90px;">Metric</th>
-        ${qs.map((q,i)=>`<th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;white-space:nowrap;">${qHeaders[i]}</th>`).join('')}
+        ${[1,2,3,4].map(i=>`<th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;white-space:nowrap;">${qHeaders[i]}</th>`).join('')}
       </tr>`;
 
   qoqRows.forEach((row, idx) => {
     const vals = row.vals;
     html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
       <td style="padding:7px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
-      <td style="padding:6px 8px;text-align:right;color:#4b6280;font-size:10px;">--</td>
       ${[1,2,3,4].map(i => growthCell(vals[i], vals[i-1])).join('')}
     </tr>`;
   });
