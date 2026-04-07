@@ -416,6 +416,8 @@ function logoutUser() {
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
+const API4 = "";
+const API5 = "";
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = localStorage.getItem('customAPI') || "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
@@ -1823,12 +1825,14 @@ if(isSheetEnabled()){
     return dt.getDate()+' '+months[dt.getMonth()]+' '+dt.getFullYear();
   }
   function safe(v){ return (v===undefined||v===null||v!==v)?null:v; }
-  // Try quote endpoint — all 3 API URLs as fallback
+  // Try quote endpoint — all 5 API URLs as fallback
   let d = null;
   const _quoteUrls = [
     localStorage.getItem('customAPI')||API,
     localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
   ].filter(Boolean);
 const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
   for(let _qu of _quoteUrls){
@@ -2843,7 +2847,34 @@ function cancelAPI3Edit(){
   document.getElementById('set-api3-edit').style.display='none';
   document.getElementById('changeURL3Btn').style.display='inline-block';
 }
+function startAPI4Edit(){
+  const inp=document.getElementById('set-api4-input');
+  if(inp) inp.value=localStorage.getItem('customAPI4')||'';
+  document.getElementById('set-api4-edit').style.display='block';
+  document.getElementById('changeURL4Btn').style.display='none';
+}
+function cancelAPI4Edit(){
+  document.getElementById('set-api4-edit').style.display='none';
+  document.getElementById('changeURL4Btn').style.display='inline-block';
+}
+function startAPI5Edit(){
+  const inp=document.getElementById('set-api5-input');
+  if(inp) inp.value=localStorage.getItem('customAPI5')||'';
+  document.getElementById('set-api5-edit').style.display='block';
+  document.getElementById('changeURL5Btn').style.display='none';
+}
+function cancelAPI5Edit(){
+  document.getElementById('set-api5-edit').style.display='none';
+  document.getElementById('changeURL5Btn').style.display='inline-block';
+}
 
+
+// ── Fetch with timeout (avoid slow GAS hanging) ──
+function fetchWithTimeout(url, ms=8000){
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, {signal: ctrl.signal}).finally(()=>clearTimeout(tid));
+}
 
 // ======================================
 // BATCH FETCH (parallel, single API call)
@@ -2874,20 +2905,20 @@ async function batchFetchStocks(symbols, isIndex=false){
   const urls=[
     localStorage.getItem('customAPI')||API,
     localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
   ].filter(Boolean);
 
   async function tryBatch(apiUrl){
     try{
-      const r=await fetch(`${apiUrl}?type=batch&s=${syms}`);
+      const r=await fetchWithTimeout(`${apiUrl}?type=batch&s=${syms}`, 8000);
       const j=await r.json();
       if(!j||j.error) return false;
-      // GAS batch format: { "SBIN.NS": {price,prevClose,...}, "INFY.NS": {...} }
       let stored=0;
       Object.entries(j).forEach(([sym,gasData])=>{
         const normalized=normalizeBatchItem(gasData);
         if(!normalized) return;
-        // Indices: keep "^NSEI" as-is. Stocks: strip ".NS"
         const cacheKey=isIndex?sym:sym.replace('.NS','');
         cache[cacheKey]={data:normalized,time:Date.now()};
         lastUpdatedMap[cacheKey]=Date.now();
@@ -2901,11 +2932,11 @@ async function batchFetchStocks(symbols, isIndex=false){
     const ok=await tryBatch(urls[i]);
     if(ok){ if(i>0) showPopup('Using API fallback',2000); return; }
   }
-  // All batch attempts failed  -  fallback to individual calls
+  // All batch attempts failed — fallback to individual calls
   await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
 }
 
-// -- FETCH WITH 3-URL FALLBACK --
+// -- FETCH WITH 5-URL FALLBACK --
 async function fetchFull(sym,isIndex=false){
   let key=sym, symbol=isIndex?sym:sym+".NS";
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
@@ -2914,12 +2945,14 @@ async function fetchFull(sym,isIndex=false){
   const urls=[
     localStorage.getItem("customAPI")||API,
     localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
   ].filter(Boolean);
 
   async function tryOne(apiUrl){
     try{
-      let r=await fetch(`${apiUrl}?s=${encodedSymbol}`);
+      let r=await fetchWithTimeout(`${apiUrl}?s=${encodedSymbol}`, 8000);
       let j=await r.json();
       if(j.error||!j.chart||!j.chart.result) return null;
       return j.chart.result[0].meta;
@@ -2946,11 +2979,15 @@ function loadSettingsUI(){
   const d1=document.getElementById("set-api-display");
   const d2=document.getElementById("set-api2-display");
   const d3=document.getElementById("set-api3-display");
+  const d4=document.getElementById("set-api4-display");
+  const d5=document.getElementById("set-api5-display");
   const refEl=document.getElementById("set-refresh");
   const cacheEl=document.getElementById("set-cache");
   if(d1) d1.innerText=localStorage.getItem("customAPI")||API;
   if(d2) d2.innerText=localStorage.getItem("customAPI2")||API2;
   if(d3) d3.innerText=localStorage.getItem("customAPI3")||API3;
+  if(d4) d4.innerText=localStorage.getItem("customAPI4")||'Not set';
+  if(d5) d5.innerText=localStorage.getItem("customAPI5")||'Not set';
   if(refEl) refEl.value=parseInt(localStorage.getItem("refreshSec")||"10");
   if(cacheEl) cacheEl.value=parseInt(localStorage.getItem("cacheSec")||"8000");
   // Dup warn — iOS checkbox
@@ -3071,6 +3108,20 @@ function saveSetting(type){
     cancelAPI3Edit();
     loadSettingsUI();
     showPopup(val?"Tertiary API saved!":"Tertiary API cleared");
+  }
+  if(type==="api4"){
+    const val=document.getElementById("set-api4-input").value.trim();
+    localStorage.setItem("customAPI4",val);
+    cancelAPI4Edit();
+    loadSettingsUI();
+    showPopup(val?"API 4 saved! (Mummy account)":"API 4 cleared");
+  }
+  if(type==="api5"){
+    const val=document.getElementById("set-api5-input").value.trim();
+    localStorage.setItem("customAPI5",val);
+    cancelAPI5Edit();
+    loadSettingsUI();
+    showPopup(val?"API 5 saved!":"API 5 cleared");
   }
   if(type==="refresh"){
     const val=parseInt(document.getElementById("set-refresh").value);
@@ -3363,7 +3414,100 @@ function sortPercent(){
 // ======================================
 // TAB
 // ======================================
+// ── Settings PIN Lock ──────────────────────────────────────
+let _settingsPINUnlocked = false;
+
+function _openSettingsWithPIN() {
+  // Already unlocked this session
+  if (_settingsPINUnlocked) { _switchTab('settings'); return; }
+  // No user logged in — open directly
+  if (!currentUser) { _switchTab('settings'); return; }
+
+  // Show PIN dialog
+  const overlay = document.createElement('div');
+  overlay.id = 'settings-pin-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#0d1f35;border:1px solid rgba(56,189,248,0.2);border-radius:18px;padding:28px 24px;width:300px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:6px;">🔒</div>
+      <div style="font-size:15px;font-weight:700;color:#e2e8f0;font-family:'Rajdhani',sans-serif;margin-bottom:4px;">Settings Locked</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:20px;font-family:'Rajdhani',sans-serif;">Enter your profile PIN to access</div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px;">
+        ${[0,1,2,3].map(i=>`<div id="spin-dot-${i}" style="width:14px;height:14px;border-radius:50%;background:#1e3a5f;border:2px solid #2d5a8e;transition:background 0.2s;"></div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="_spinPIN(${n})" style="background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:10px;padding:14px;font-size:18px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">${n}</button>`).join('')}
+        <button onclick="_spinPIN('clear')" style="background:#0a1628;border:1px solid #1e3a5f;color:#94a3b8;border-radius:10px;padding:14px;font-size:13px;cursor:pointer;font-family:'Rajdhani',sans-serif;">CLR</button>
+        <button onclick="_spinPIN(0)" style="background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:10px;padding:14px;font-size:18px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">0</button>
+        <button onclick="_spinPIN('back')" style="background:#0a1628;border:1px solid #1e3a5f;color:#94a3b8;border-radius:10px;padding:14px;font-size:13px;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#9003;</button>
+      </div>
+      <div id="spin-error" style="font-size:11px;color:#ef4444;min-height:16px;margin-bottom:8px;font-family:'Rajdhani',sans-serif;"></div>
+      <button onclick="document.getElementById('settings-pin-overlay').remove();_spinEntry=''" style="background:transparent;border:none;color:#4b6280;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  window._spinEntry = '';
+}
+
+function _spinPIN(val) {
+  if (!window._spinEntry) window._spinEntry = '';
+  if (val === 'clear') { window._spinEntry = ''; }
+  else if (val === 'back') { window._spinEntry = window._spinEntry.slice(0,-1); }
+  else if (window._spinEntry.length < 4) { window._spinEntry += val; }
+
+  // Update dots
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('spin-dot-'+i);
+    if (dot) dot.style.background = i < window._spinEntry.length ? '#38bdf8' : '#1e3a5f';
+  }
+
+  if (window._spinEntry.length === 4) {
+    setTimeout(async () => {
+      try {
+        const doc = await db.collection('users').doc(currentUser.userId).get();
+        const pinHash = await hashPIN(window._spinEntry);
+        window._spinEntry = '';
+        if (doc.data().profile.pinHash === pinHash) {
+          _settingsPINUnlocked = true;
+          const ov = document.getElementById('settings-pin-overlay');
+          if (ov) ov.remove();
+          _switchTab('settings');
+          // Auto-lock after 5 minutes
+          setTimeout(() => { _settingsPINUnlocked = false; }, 5 * 60 * 1000);
+        } else {
+          const err = document.getElementById('spin-error');
+          if (err) err.textContent = 'Wrong PIN — try again';
+          for (let i = 0; i < 4; i++) {
+            const dot = document.getElementById('spin-dot-'+i);
+            if (dot) dot.style.background = '#ef4444';
+          }
+          setTimeout(() => {
+            for (let i = 0; i < 4; i++) {
+              const dot = document.getElementById('spin-dot-'+i);
+              if (dot) dot.style.background = '#1e3a5f';
+            }
+            if (err) err.textContent = '';
+          }, 800);
+        }
+      } catch(e) {
+        // Firebase error — open settings directly
+        const ov = document.getElementById('settings-pin-overlay');
+        if (ov) ov.remove();
+        _switchTab('settings');
+      }
+    }, 150);
+  }
+}
+
 function tab(t){
+  // Settings tab PIN lock
+  if(t==='settings'){
+    _openSettingsWithPIN();
+    return;
+  }
+  _switchTab(t);
+}
+
+function _switchTab(t){
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove("active"));
   document.getElementById(t).classList.add("active");
   document.querySelectorAll('.bot-nav-btn').forEach(b=>b.classList.remove("active"));
@@ -5714,7 +5858,9 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   const _niviUrls = [
     API_NIVI,
     localStorage.getItem('customAPI2') || API2,
-    localStorage.getItem('customAPI3') || API3
+    localStorage.getItem('customAPI3') || API3,
+    localStorage.getItem('customAPI4') || API4,
+    localStorage.getItem('customAPI5') || API5
   ].filter(Boolean);
 
   for (const _nu of _niviUrls) {
@@ -7667,49 +7813,6 @@ async function downloadLearnPDF(sym) {
     a.target = '_blank'; a.rel = 'noopener'; a.click();
     showPopup('⚠️ PDF lib nathi — HTML tab mā print karo (Ctrl+P → Save as PDF)');
   }
-
-  // Stacked bar
-  if (total > 0) {
-    html += `<div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:14px;gap:1px;">`;
-    holders.forEach(h => {
-      if (h.val > 0) html += `<div style="flex:${h.val};background:${h.color};" title="${h.label}: ${h.val.toFixed(1)}%"></div>`;
-    });
-    html += `</div>`;
-  }
-
-  // Individual rows
-  holders.forEach(h => {
-    const dot = h.info ? _learnDot(h.info, h.val) : '#f59e0b';
-    const fv = h.val !== null ? h.val.toFixed(2) + '%' : '--';
-    const barW = h.val !== null ? Math.min(100, h.val) : 0;
-    html += `<div style="margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <div style="width:10px;height:10px;border-radius:3px;background:${h.color};flex-shrink:0;"></div>
-          <span style="font-size:12px;color:#cbd5e1;">${h.label}</span>
-          ${h.info ? `<button onclick="showLearnInfo('${h.info}',${h.val!==null?h.val:'null'},'${sym}')" style="width:16px;height:16px;border-radius:50%;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.2);color:#38bdf8;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;">ℹ</button>` : ''}
-        </div>
-        <span style="font-size:13px;font-weight:700;color:${h.color};font-family:'JetBrains Mono',monospace;">${fv}</span>
-      </div>
-      <div style="background:#0a1628;border-radius:4px;height:5px;overflow:hidden;">
-        <div style="height:100%;width:${barW}%;background:${h.color};border-radius:4px;transition:width 0.5s;"></div>
-      </div>
-    </div>`;
-  });
-
-  // Promoter pledge warning
-  const prom = R.promoter;
-  if (prom !== null) {
-    const promMsg = prom < 35
-      ? `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;color:#f87171;margin-top:8px;">⚠️ Promoter holding low (${prom.toFixed(1)}%) — low promoter confidence signal</div>`
-      : prom >= 50
-      ? `<div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:8px 12px;font-size:11px;color:#86efac;margin-top:8px;">✅ Promoter holding strong (${prom.toFixed(1)}%) — positive confidence signal</div>`
-      : '';
-    html += promMsg;
-  }
-
-  html += '</div>';
-  return html;
 }
 
 // ============================================================
@@ -7818,8 +7921,8 @@ function _learnNoData(sym, label) {
   </div>`;
 }
 
-// ── PDF Download ───────────────────────────────────────────
-function downloadLearnPDF(sym) {
+// ── PDF Download (old duplicate removed — async version above is active) ──
+function _downloadLearnPDF_DEPRECATED(sym) {
   const d = _learnCache[sym];
   if (!d) { showPopup('Data not loaded yet'); return; }
   const R = calcLearnRatios(d);
