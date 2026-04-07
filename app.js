@@ -7943,25 +7943,35 @@ async function _buildQuarterlyTab(res, sym) {
   // ── QoQ Growth Table ──
   const qoqRows = [
     { label: 'Sales',      vals: qs.map(q => d['sales'+q]) },
+    { label: 'Expenses',   vals: qs.map(q => d['exp'+q]) },
     { label: 'Op Profit',  vals: qs.map(q => d['op'+q]) },
+    { label: 'Other Inc',  vals: qs.map(q => d['otherInc'+q]) },
+    { label: 'PBT',        vals: qs.map(q => d['pbt'+q]) },
     { label: 'Net Profit', vals: qs.map(q => d['np'+q]) },
   ];
 
   html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:10px;">
     <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
-      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📈 QoQ GROWTH (Quarter over Quarter)</span>
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📈 QoQ GROWTH — ${qHeaders[3]} vs ${qHeaders[4]}</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
       <tr style="background:rgba(255,255,255,0.04);">
-        <th style="padding:7px 10px;text-align:left;color:#64748b;min-width:90px;">Metric</th>
-        ${[1,2,3,4].map(i=>`<th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;white-space:nowrap;">${qHeaders[i]}</th>`).join('')}
+        <th style="padding:7px 10px;text-align:left;color:#64748b;">Metric</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">${qHeaders[3]}</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">${qHeaders[4]}</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">QoQ %</th>
       </tr>`;
 
   qoqRows.forEach((row, idx) => {
-    const vals = row.vals;
+    const prev = Number(row.vals[3]);
+    const curr = Number(row.vals[4]);
+    const prevStr = prev ? '\u20B9'+prev.toFixed(0)+' Cr' : '--';
+    const currStr = curr ? '\u20B9'+curr.toFixed(0)+' Cr' : '--';
     html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
       <td style="padding:7px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
-      ${[1,2,3,4].map(i => growthCell(vals[i], vals[i-1])).join('')}
+      <td style="padding:6px 8px;text-align:right;color:#94a3b8;font-family:monospace;font-size:11px;">${prevStr}</td>
+      <td style="padding:6px 8px;text-align:right;color:#e2e8f0;font-family:monospace;font-size:11px;">${currStr}</td>
+      ${growthCell(curr, prev)}
     </tr>`;
   });
 
