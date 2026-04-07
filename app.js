@@ -418,9 +418,35 @@ const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQ
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 const API4 = "https://script.google.com/macros/s/AKfycbwr9sKAbHjmVf48Ihp2PJq8xjNv-D6kglwFKqY8Uxwke99icv5JCNa6RiABdmm3G_lP/exec";
 const API5 = "https://script.google.com/macros/s/AKfycbzc6tzmWVfGbpMa7ocVxg2bYlutvTRbPRbEZrqz2WtLib2MAqUCzsUz-Q9XACXDz34O/exec";
+function getActiveGASUrl() {
+  const urls = [
+    localStorage.getItem('customAPI')||API,
+    localStorage.getItem('customAPI2')||API2,
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
+  ].filter(Boolean);
+  return urls[Math.floor(Math.random()*urls.length)];
+}
+function monitorSystemHealth() {
+  if(typeof firebase === 'undefined') return;
+  try {
+    firebase.firestore()
+      .collection('system')
+      .doc('health')
+      .onSnapshot(doc => {
+        if(!doc.exists) return;
+        const status = doc.data().python_engine;
+        window._pythonEngineActive = (status === 'running');
+        console.log('[Health] Python Engine:', status);
+      });
+  } catch(e) {
+    window._pythonEngineActive = false;
+  }
+}
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
-const API_NIVI = localStorage.getItem('customAPI') || "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
+const API_NIVI = getActiveGASUrl();
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -915,7 +941,7 @@ function showSuggestions(val) {
 
 async function fetchYahooSuggestions(val, box) {
   try {
-    const api = localStorage.getItem('customAPI') || API;
+    const api = getActiveGASUrl();
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
     if (!j.ok || !j.results || j.results.length === 0) return;
@@ -1413,7 +1439,7 @@ function closeAddIndexModal(){
 async function searchIndexSuggestions(){
   const q=document.getElementById('addIdxInput').value.trim();
   if(q.length<1){document.getElementById('addIdxResults').innerHTML='';return;}
-  const apiUrl=localStorage.getItem('customAPI')||API;
+  const apiUrl=getActiveGASUrl();
   try{
     const r=await fetch(`${apiUrl}?type=search&q=${encodeURIComponent(q)}`);
     const j=await r.json();
@@ -2290,7 +2316,7 @@ async function fetchBulkDeals(sym) {
     return bulkCache[cleanSym];
   }
   try {
-    const apiUrl = localStorage.getItem("customAPI") || API;
+    const apiUrl = getActiveGASUrl();
     const r = await fetch(`${apiUrl}?type=bulk&s=${encodeURIComponent(cleanSym)}`);
     if (!r.ok) return [];
     const data = await r.json();
@@ -4516,6 +4542,7 @@ function downloadFeaturePDF(){
 }
 
 async function startApp(){
+  monitorSystemHealth();
   updateMarketStatus();
   startClock();
   setInterval(updateMarketStatus,60000);
