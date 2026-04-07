@@ -7000,12 +7000,48 @@ async function fetchLearnStock() {
   pe:          fv(d.pe),
   bookValue:   fv(d.bookValue),
   roe:         fv(d.roe),
-  salesQ1: fv(d.salesQ1), salesQ2: fv(d.salesQ2), salesQ3: fv(d.salesQ3), salesQ4: fv(d.salesQ4), salesQ5: fv(d.salesQ5),
-  expQ1:   fv(d.expQ1),   expQ2:   fv(d.expQ2),   expQ3:   fv(d.expQ3),   expQ4:   fv(d.expQ4),   expQ5:   fv(d.expQ5),
-  opQ1:    fv(d.opQ1),    opQ2:    fv(d.opQ2),     opQ3:    fv(d.opQ3),    opQ4:    fv(d.opQ4),    opQ5:    fv(d.opQ5),
-  npQ1:    fv(d.npQ1),    npQ2:    fv(d.npQ2),     npQ3:    fv(d.npQ3),    npQ4:    fv(d.npQ4),    npQ5:    fv(d.npQ5),
-  pbtQ1:   fv(d.pbtQ1),   pbtQ2:   fv(d.pbtQ2),   pbtQ3:   fv(d.pbtQ3),   pbtQ4:   fv(d.pbtQ4),   pbtQ5:   fv(d.pbtQ5),
-  otherIncQ1: fv(d.otherIncQ1), otherIncQ2: fv(d.otherIncQ2), otherIncQ3: fv(d.otherIncQ3), otherIncQ4: fv(d.otherIncQ4), otherIncQ5: fv(d.otherIncQ5),
+  // Quarterly Headers — Python 'quarterly_headers' array (e.g. ["Sep 2024","Dec 2024",...])
+  quarterlyHeaders: Array.isArray(d.quarterly_headers) && d.quarterly_headers.length
+    ? d.quarterly_headers
+    : ['Q1','Q2','Q3','Q4','Q5'],
+
+  // Support both old individual fields (salesQ1) AND new array fields (sales_q) from Python
+  salesQ1: fv(Array.isArray(d.sales_q) ? d.sales_q[0] : d.salesQ1),
+  salesQ2: fv(Array.isArray(d.sales_q) ? d.sales_q[1] : d.salesQ2),
+  salesQ3: fv(Array.isArray(d.sales_q) ? d.sales_q[2] : d.salesQ3),
+  salesQ4: fv(Array.isArray(d.sales_q) ? d.sales_q[3] : d.salesQ4),
+  salesQ5: fv(Array.isArray(d.sales_q) ? d.sales_q[4] : d.salesQ5),
+
+  expQ1: fv(Array.isArray(d.expenses_q) ? d.expenses_q[0] : d.expQ1),
+  expQ2: fv(Array.isArray(d.expenses_q) ? d.expenses_q[1] : d.expQ2),
+  expQ3: fv(Array.isArray(d.expenses_q) ? d.expenses_q[2] : d.expQ3),
+  expQ4: fv(Array.isArray(d.expenses_q) ? d.expenses_q[3] : d.expQ4),
+  expQ5: fv(Array.isArray(d.expenses_q) ? d.expenses_q[4] : d.expQ5),
+
+  opQ1: fv(Array.isArray(d.op_q) ? d.op_q[0] : d.opQ1),
+  opQ2: fv(Array.isArray(d.op_q) ? d.op_q[1] : d.opQ2),
+  opQ3: fv(Array.isArray(d.op_q) ? d.op_q[2] : d.opQ3),
+  opQ4: fv(Array.isArray(d.op_q) ? d.op_q[3] : d.opQ4),
+  opQ5: fv(Array.isArray(d.op_q) ? d.op_q[4] : d.opQ5),
+
+  npQ1: fv(Array.isArray(d.np_q) ? d.np_q[0] : d.npQ1),
+  npQ2: fv(Array.isArray(d.np_q) ? d.np_q[1] : d.npQ2),
+  npQ3: fv(Array.isArray(d.np_q) ? d.np_q[2] : d.npQ3),
+  npQ4: fv(Array.isArray(d.np_q) ? d.np_q[3] : d.npQ4),
+  npQ5: fv(Array.isArray(d.np_q) ? d.np_q[4] : d.npQ5),
+
+  pbtQ1: fv(Array.isArray(d.pbt_q) ? d.pbt_q[0] : d.pbtQ1),
+  pbtQ2: fv(Array.isArray(d.pbt_q) ? d.pbt_q[1] : d.pbtQ2),
+  pbtQ3: fv(Array.isArray(d.pbt_q) ? d.pbt_q[2] : d.pbtQ3),
+  pbtQ4: fv(Array.isArray(d.pbt_q) ? d.pbt_q[3] : d.pbtQ4),
+  pbtQ5: fv(Array.isArray(d.pbt_q) ? d.pbt_q[4] : d.pbtQ5),
+
+  otherIncQ1: fv(Array.isArray(d.other_inc_q) ? d.other_inc_q[0] : d.otherIncQ1),
+  otherIncQ2: fv(Array.isArray(d.other_inc_q) ? d.other_inc_q[1] : d.otherIncQ2),
+  otherIncQ3: fv(Array.isArray(d.other_inc_q) ? d.other_inc_q[2] : d.otherIncQ3),
+  otherIncQ4: fv(Array.isArray(d.other_inc_q) ? d.other_inc_q[3] : d.otherIncQ4),
+  otherIncQ5: fv(Array.isArray(d.other_inc_q) ? d.other_inc_q[4] : d.otherIncQ5),
+
   fcf: fv(d.fcf),
 };
       raw.sharePrice = _getLivePrice(sym);
@@ -7056,10 +7092,13 @@ const raw = {
         renderLearnReport(raw, sym);
         return;
       }
-      if (msg) { msg.textContent = '❌ ' + (data.message || 'Not found in FF2 sheet'); msg.style.color = '#f87171'; }
+      // Stock FF2 sheet ma nathi — Firebase waitlist ma add karo
+      await _addToWaitlist(sym, msg);
       return;
     } catch(e) {
       if (msg) { msg.textContent = '❌ FF2 fetch failed: ' + e.message; msg.style.color = '#f87171'; }
+      // Fetch fail thay topi waitlist ma try karo
+      await _addToWaitlist(sym, msg);
       return;
     }
   }
@@ -7079,9 +7118,31 @@ const raw = {
       renderLearnReport(data, sym);
       return;
     }
-    if (msg) { msg.textContent = '❌ ' + (data.error || 'Not found') + ' — FF2 URL Settings ma set karo'; msg.style.color = '#f87171'; }
+    // GAS ma pan nathi — waitlist ma add
+    await _addToWaitlist(sym, msg);
   } catch(e) {
-    if (msg) { msg.textContent = '❌ Fetch failed. Settings → Search & Learn → FF2 URL set karo'; msg.style.color = '#f87171'; }
+    await _addToWaitlist(sym, msg);
+  }
+}
+
+// ── Waitlist Helper — Stock Firebase new_requests ma add karo ──
+async function _addToWaitlist(sym, msg) {
+  if (msg) { msg.textContent = `⏳ "${sym}" DB ma nathi — Waitlist ma add thai rahu che...`; msg.style.color = '#f59e0b'; }
+  try {
+    await firebase.firestore().collection('new_requests').doc(sym).set({
+      symbol: sym,
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      requestedBy: (typeof currentUser !== 'undefined' && currentUser?.userId) ? currentUser.userId : 'anonymous'
+    });
+    if (msg) {
+      msg.textContent = `✅ "${sym}" waitlist ma add thayo! Python run thase tyare automatically sheet + Firebase ma aavse.`;
+      msg.style.color = '#34d399';
+    }
+  } catch(e) {
+    if (msg) {
+      msg.textContent = `❌ "${sym}" DB ma nathi. Waitlist error: ${e.message}`;
+      msg.style.color = '#f87171';
+    }
   }
 }
 
@@ -7821,33 +7882,122 @@ async function downloadLearnPDF(sym) {
 async function _buildQuarterlyTab(res, sym) {
   const d = _learnCache[sym];
   if (!d || !d.salesQ1) { res.innerHTML = _learnNoData(sym, 'Quarterly data'); return; }
+
   const qs = ['Q1','Q2','Q3','Q4','Q5'];
+
+  // Actual quarter labels (e.g. "Sep 2024") — Python pushes as quarterly_headers
+  const qHeaders = (d.quarterlyHeaders && d.quarterlyHeaders.length === 5)
+    ? d.quarterlyHeaders
+    : qs;
+
   const rows = [
-    { label: 'Sales',      vals: qs.map(q => d['sales'+q]) },
-    { label: 'Expenses',   vals: qs.map(q => d['exp'+q]) },
-    { label: 'Op Profit',  vals: qs.map(q => d['op'+q]) },
-    { label: 'Other Inc',  vals: qs.map(q => d['otherInc'+q]) },
-    { label: 'PBT',        vals: qs.map(q => d['pbt'+q]) },
-    { label: 'Net Profit', vals: qs.map(q => d['np'+q]) },
+    { label: 'Sales',      key: 'sales',    vals: qs.map(q => d['sales'+q]) },
+    { label: 'Expenses',   key: 'exp',      vals: qs.map(q => d['exp'+q]) },
+    { label: 'Op Profit',  key: 'op',       vals: qs.map(q => d['op'+q]) },
+    { label: 'Other Inc',  key: 'otherInc', vals: qs.map(q => d['otherInc'+q]) },
+    { label: 'PBT',        key: 'pbt',      vals: qs.map(q => d['pbt'+q]) },
+    { label: 'Net Profit', key: 'np',       vals: qs.map(q => d['np'+q]) },
   ];
+
   const fmt = v => (v && v !== 0) ? '\u20B9' + Number(v).toFixed(0) + ' Cr' : '--';
-  let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);">
+
+  // ── QoQ Growth helper ──
+  const growthCell = (curr, prev) => {
+    const c = Number(curr), p = Number(prev);
+    if (!p || p === 0 || !curr || curr === 0) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
+    const g = ((c - p) / Math.abs(p)) * 100;
+    const color = g >= 5 ? '#22c55e' : g >= 0 ? '#86efac' : g >= -5 ? '#fbbf24' : '#ef4444';
+    const sign = g >= 0 ? '+' : '';
+    return `<td style="padding:6px 6px;text-align:right;color:${color};font-size:10px;font-weight:600;">${sign}${g.toFixed(1)}%</td>`;
+  };
+
+  // ── YoY: Q5 vs Q1 (same quarter last year) ──
+  const yoyCell = (curr, base) => {
+    const c = Number(curr), b = Number(base);
+    if (!b || b === 0 || !curr || curr === 0) return `<td style="padding:6px 6px;text-align:right;color:#4b6280;font-size:10px;">--</td>`;
+    const g = ((c - b) / Math.abs(b)) * 100;
+    const color = g >= 5 ? '#22c55e' : g >= 0 ? '#86efac' : g >= -5 ? '#fbbf24' : '#ef4444';
+    const sign = g >= 0 ? '+' : '';
+    return `<td style="padding:6px 6px;text-align:right;color:${color};font-size:10px;font-weight:600;">${sign}${g.toFixed(1)}%</td>`;
+  };
+
+  // ── Main Table ──
+  let html = `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:10px;">
     <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
-      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">QUARTERLY RESULTS (Last 5 Quarters)</span>
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📊 QUARTERLY RESULTS (Last 5 Quarters)</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
-      <tr style="background:rgba(255,255,255,0.03);">
-        <th style="padding:8px 10px;text-align:left;color:#64748b;">Metric</th>
-        ${qs.map(q=>`<th style="padding:8px 6px;text-align:right;color:#64748b;">${q}</th>`).join('')}
+      <tr style="background:rgba(255,255,255,0.04);">
+        <th style="padding:8px 10px;text-align:left;color:#64748b;min-width:90px;">Metric</th>
+        ${qs.map((q,i)=>`<th style="padding:8px 8px;text-align:right;color:#94a3b8;font-size:10px;white-space:nowrap;">${qHeaders[i]}</th>`).join('')}
       </tr>`;
+
   rows.forEach((row, idx) => {
     html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
       <td style="padding:8px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
-      ${row.vals.map(v=>`<td style="padding:8px 6px;text-align:right;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fmt(v)}</td>`).join('')}
+      ${row.vals.map(v=>`<td style="padding:8px 8px;text-align:right;color:#e2e8f0;font-family:'JetBrains Mono',monospace;">${fmt(v)}</td>`).join('')}
     </tr>`;
   });
+
+  html += `</table></div></div>`;
+
+  // ── QoQ Growth Table ──
+  const qoqRows = [
+    { label: 'Sales',      vals: qs.map(q => d['sales'+q]) },
+    { label: 'Op Profit',  vals: qs.map(q => d['op'+q]) },
+    { label: 'Net Profit', vals: qs.map(q => d['np'+q]) },
+  ];
+
+  html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:10px;">
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📈 QoQ GROWTH (Quarter over Quarter)</span>
+    </div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr style="background:rgba(255,255,255,0.04);">
+        <th style="padding:7px 10px;text-align:left;color:#64748b;min-width:90px;">Metric</th>
+        ${qs.map((q,i)=>`<th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;white-space:nowrap;">${qHeaders[i]}</th>`).join('')}
+      </tr>`;
+
+  qoqRows.forEach((row, idx) => {
+    const vals = row.vals;
+    html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
+      <td style="padding:7px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
+      <td style="padding:6px 8px;text-align:right;color:#4b6280;font-size:10px;">--</td>
+      ${[1,2,3,4].map(i => growthCell(vals[i], vals[i-1])).join('')}
+    </tr>`;
+  });
+
+  html += `</table></div></div>`;
+
+  // ── YoY Growth Table (Q5 vs Q1 = same quarter last year) ──
+  html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);margin-bottom:10px;">
+    <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);">
+      <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">📅 YoY GROWTH — ${qHeaders[4]} vs ${qHeaders[0]}</span>
+    </div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr style="background:rgba(255,255,255,0.04);">
+        <th style="padding:7px 10px;text-align:left;color:#64748b;">Metric</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">${qHeaders[0]}</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">${qHeaders[4]}</th>
+        <th style="padding:7px 8px;text-align:right;color:#94a3b8;font-size:10px;">YoY %</th>
+      </tr>`;
+
+  qoqRows.forEach((row, idx) => {
+    const base = Number(row.vals[0]);
+    const latest = Number(row.vals[4]);
+    const baseStr = base ? '\u20B9'+base.toFixed(0)+' Cr' : '--';
+    const latestStr = latest ? '\u20B9'+latest.toFixed(0)+' Cr' : '--';
+    html += `<tr style="${idx%2===0?'background:rgba(255,255,255,0.01);':''}">
+      <td style="padding:7px 10px;color:#cbd5e1;font-weight:600;">${row.label}</td>
+      <td style="padding:6px 8px;text-align:right;color:#94a3b8;font-family:monospace;font-size:11px;">${baseStr}</td>
+      <td style="padding:6px 8px;text-align:right;color:#e2e8f0;font-family:monospace;font-size:11px;">${latestStr}</td>
+      ${yoyCell(latest, base)}
+    </tr>`;
+  });
+
   html += `</table></div></div>
-  <div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Screener.in via Firebase</div>`;
+  <div style="font-size:10px;color:#4b6280;padding:4px 2px;">Source: Screener.in via Firebase &nbsp;·&nbsp; QoQ = consecutive quarter &nbsp;·&nbsp; YoY = Q5 vs Q1</div>`;
+
   res.innerHTML = html;
 }
 // ============================================================
