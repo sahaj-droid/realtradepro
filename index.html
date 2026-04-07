@@ -1050,6 +1050,28 @@ function fsVal(f){
           <div style="display:flex;gap:5px;"><button onclick="saveSetting('api3')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI3Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
         </div>
       </div>
+      <div style="padding:6px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:11px;color:#e2e8f0;">API 4 <span class="s-badge" style="background:rgba(251,146,60,0.1);color:#fb923c;">FB3</span></span>
+          <button onclick="startAPI4Edit()" id="changeURL4Btn" class="s-pill" style="background:rgba(120,53,15,0.4);color:#fb923c;font-size:10px;padding:2px 10px;">Edit</button>
+        </div>
+        <div id="set-api4-display" class="s-url-text"></div>
+        <div id="set-api4-edit" style="display:none;margin-top:5px;">
+          <input id="set-api4-input" placeholder="Paste API 4 URL..." class="s-key-input" style="border-color:rgba(251,146,60,0.3);">
+          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api4')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI4Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
+        </div>
+      </div>
+      <div style="padding:6px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:11px;color:#e2e8f0;">API 5 <span class="s-badge" style="background:rgba(34,197,94,0.1);color:#34d399;">FB4</span></span>
+          <button onclick="startAPI5Edit()" id="changeURL5Btn" class="s-pill" style="background:rgba(6,78,59,0.4);color:#34d399;font-size:10px;padding:2px 10px;">Edit</button>
+        </div>
+        <div id="set-api5-display" class="s-url-text"></div>
+        <div id="set-api5-edit" style="display:none;margin-top:5px;">
+          <input id="set-api5-input" placeholder="Paste API 5 URL..." class="s-key-input" style="border-color:rgba(34,197,94,0.3);">
+          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api5')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI5Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
+        </div>
+      </div>
     </div>
   </div>
 
