@@ -7642,6 +7642,9 @@ async function downloadLearnPDF(sym) {
 
 // ── Section 4: Quarterly from Firebase cache ──
   const qs = ['Q1','Q2','Q3','Q4','Q5'];
+  const qHeaders_fund = (d.quarterlyHeaders && d.quarterlyHeaders.length === 5)
+    ? d.quarterlyHeaders
+    : qs;
   const qLabels = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
   const qKeys   = ['sales','exp','op','otherInc','pbt','np'];
   const fmtCr = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
@@ -7649,7 +7652,7 @@ async function downloadLearnPDF(sym) {
   let qRows = '';
   const hasQ = d.salesQ1 && d.salesQ1 !== 0;
   if (hasQ) {
-    const hdrRow = `<tr><td class="td"><strong>Metric</strong></td>${qs.map(q=>`<td class="td-val" style="font-size:11px;">${q}</td>`).join('')}</tr>`;
+    const hdrRow = `<tr><td class="td"><strong>Metric</strong></td>${qHeaders_fund.map(h=>`<td class="td-val" style="font-size:11px;">${h}</td>`).join('')}</tr>`;
     qRows = hdrRow + qLabels.map((label, li) => {
       const key = qKeys[li];
       return `<tr><td class="td">${label}</td>${qs.map(q=>`<td class="td-val">${fmtCr(d[key+q])}</td>`).join('')}</tr>`;
@@ -7787,11 +7790,7 @@ async function downloadLearnPDF(sym) {
   <table>
     <thead><tr>
       <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Metric</th>
-        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q1</th>
-        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q2</th>
-        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q3</th>
-        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q4</th>
-        <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Q5</th>
+        ${qHeaders_fund.map(h=>`<th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">${h}</th>`).join('')}
       </tr></thead>
     <tbody>${qRows}</tbody>
   </table>
@@ -8116,6 +8115,9 @@ function _downloadLearnPDF_DEPRECATED(sym) {
   }).join('');
 // Quarterly for simple HTML
   const qs2 = ['Q1','Q2','Q3','Q4','Q5'];
+  const qHeaders2 = (d.quarterlyHeaders && d.quarterlyHeaders.length === 5)
+    ? d.quarterlyHeaders
+    : qs2;
   const qKeys2 = ['sales','exp','op','otherInc','pbt','np'];
   const qLabels2 = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
   const fmtCr2 = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
@@ -8163,7 +8165,7 @@ function _downloadLearnPDF_DEPRECATED(sym) {
   <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;">
 <h2 style="font-size:12px;color:#34d399;margin-bottom:8px;">QUARTERLY RESULTS</h2>
 <table style="width:100%;border-collapse:collapse;font-size:11px;">
-<thead><tr><th style="text-align:left;color:#64748b;padding:4px 8px;">Metric</th>${['Q1','Q2','Q3','Q4','Q5'].map(q=>`<th style="text-align:right;color:#64748b;padding:4px 6px;">${q}</th>`).join('')}</tr></thead>
+<thead><tr><th style="text-align:left;color:#64748b;padding:4px 8px;">Metric</th>${qHeaders2.map(h=>`<th style="text-align:right;color:#64748b;padding:4px 6px;">${h}</th>`).join('')}</tr></thead>
 <tbody>${qRows}</tbody>
 </table></div>
 <div style="margin-top:12px;padding:12px;background:#0d1f35;border-radius:8px;">
