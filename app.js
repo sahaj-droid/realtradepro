@@ -4745,6 +4745,8 @@ document.addEventListener('touchend', e => {
   // Don't swipe when any modal is open
   const modals = ['detailModal','modal','exitModal','niviModal','target-modal-box','remove-modal-box'];
   if (modals.some(id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden') && el.style.display !== 'none'; })) return;
+  // Don't swipe when Learn tab sub-tabs are active
+  if (_curTab === 'learn') return;
   const idx = TAB_ORDER.indexOf(_curTab);
   if (dx < -55 && idx < TAB_ORDER.length - 1) window.tab(TAB_ORDER[idx + 1]); // left → next
   if (dx >  55 && idx > 0)                    window.tab(TAB_ORDER[idx - 1]); // right → prev
@@ -5027,7 +5029,7 @@ async function renderNews() {
 
       <!-- Search Bar -->
       <div style="display:flex;gap:6px;margin-bottom:10px;width:100%;max-width:100%;align-items:center;">
-        <input id="niviNewsInput" type="text" placeholder="Company naam daalo... RELIANCE, SBIN"
+        <input id="niviNewsInput" type="text" placeholder="Search Symbol"
           onkeydown="if(event.key==='Enter')niviNewsSearch()"
             style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;max-width:calc(100% - 50px);"/>
         <button onclick="niviNewsSearch()"
