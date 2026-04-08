@@ -444,6 +444,31 @@ function monitorSystemHealth() {
     window._pythonEngineActive = false;
   }
 }
+function monitorFirebaseNews() {
+  if (typeof firebase === 'undefined') return;
+  try {
+    firebase.firestore()
+      .collection('RealTradePro')
+      .doc('latest_news')
+      .onSnapshot(doc => {
+        if (!doc.exists) return;
+ 
+        // Cache invalidate karo — next _renderFirebaseNewsFeed call fresh data lavse
+        _fbNewsCache     = null;
+        _fbNewsCacheTime = 0;
+ 
+        // Sirf tyare re-render karo jyare news tab visible hoy
+        const newsSection = document.getElementById('fb-news-feed');
+        if (newsSection) {
+          console.log('[Firebase News] onSnapshot — refreshing news feed');
+          _renderFirebaseNewsFeed();
+        }
+      });
+    console.log('[Firebase News] onSnapshot listener active');
+  } catch(e) {
+    console.warn('[Firebase News] onSnapshot failed:', e.message);
+  }
+}
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = getActiveGASUrl();
@@ -4841,6 +4866,60 @@ function timeAgoDate(dateStr) {
   } catch(e) { return ''; }
 }
 
+// Firebase latest_news cache
+let _fbNewsCache = null;
+let _fbNewsCacheTime = 0;
+const FB_NEWS_CACHE_MS = 2 * 60 * 1000; // 2 min cache (Python Thread B interval sathe match)
+ 
+async function loadFirebaseNews() {
+  // Cache check — 2 min fresh hoy to re-fetch nahi
+  if (_fbNewsCache && (Date.now() - _fbNewsCacheTime < FB_NEWS_CACHE_MS)) {
+    return _fbNewsCache;
+  }
+ 
+  try {
+    if (typeof firebase === 'undefined') return [];
+ 
+    const db  = firebase.firestore();
+    const doc = await db.collection('RealTradePro').doc('latest_news').get();
+    if (!doc.exists) return [];
+ 
+    const data     = doc.data();
+    const rawNews  = data.news || [];
+    const updatedAt = data.updated_at || '';
+ 
+    // Python format → app format convert karo
+    // Python: { title, link, date, source }
+    // App:    { sym, source, type, time, _rawDate, title, link }
+    const items = rawNews.map(item => ({
+      sym:      'MARKET',          // general market news
+      source:   item.source || 'Firebase',
+      type:     detectNewsType(item.title || ''),
+      time:     timeAgoDate(item.date || ''),
+      _rawDate: item.date || '',
+      title:    item.title || '',
+      link:     item.link  || '',
+    }));
+ 
+    // Most recent first
+    items.sort((a, b) => {
+      try {
+        return new Date(b._rawDate || 0) - new Date(a._rawDate || 0);
+      } catch(e) { return 0; }
+    });
+ 
+    _fbNewsCache     = items;
+    _fbNewsCacheTime = Date.now();
+ 
+    console.log(`[Firebase News] ${items.length} items loaded | updated: ${updatedAt}`);
+    return items;
+ 
+  } catch(e) {
+    console.warn('[Firebase News] fetch failed:', e.message);
+    return [];
+  }
+}
+
 async function loadAllNews() {
   // Use cache if fresh
   if(newsCache && (Date.now() - newsCacheTime < NEWS_CACHE_MS)) return newsCache;
@@ -5076,9 +5155,104 @@ async function renderNews() {
       if (saved && saved.length > 0) _tabChatHistory = saved;
     } catch(e) {}
   }
+  _initFirebaseNewsFeed();
   _tabRenderChat();
 }
-
+async function _initFirebaseNewsFeed() {
+  // nivi-section-news div hase tya j render karo
+  const newsSection = document.getElementById('nivi-section-news');
+  if (!newsSection) return;
+ 
+  // Jova ke existing search bar ane cards upar j hase
+  // Niche Firebase feed div inject karo (first time only)
+  if (document.getElementById('fb-news-feed')) {
+    // Already injected — sirf refresh karo
+    await _renderFirebaseNewsFeed();
+    return;
+  }
+ 
+  // Feed container inject karo — search bar ane result card ni NICHE
+  const feedEl = document.createElement('div');
+  feedEl.id = 'fb-news-feed';
+  feedEl.style.cssText = 'margin-top:8px;';
+  newsSection.appendChild(feedEl);
+ 
+  await _renderFirebaseNewsFeed();
+}
+ 
+async function _renderFirebaseNewsFeed() {
+  const feedEl = document.getElementById('fb-news-feed');
+  if (!feedEl) return;
+ 
+  feedEl.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">
+        📡 LIVE MARKET NEWS
+      </div>
+      <span id="fb-news-badge" style="font-size:9px;background:rgba(52,211,153,0.15);color:#34d399;border-radius:4px;padding:2px 6px;font-family:'Rajdhani',sans-serif;">
+        Loading...
+      </span>
+    </div>
+    <div id="fb-news-list" style="display:flex;flex-direction:column;gap:6px;">
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-size:20px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
+        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Firebase thi news la raha hai...</div>
+      </div>
+    </div>`;
+ 
+  const items = await loadFirebaseNews();
+  const listEl = document.getElementById('fb-news-list');
+  const badge  = document.getElementById('fb-news-badge');
+ 
+  if (!listEl) return;
+ 
+  if (!items || items.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;color:#4b6280;font-size:11px;padding:12px 0;font-family:'Rajdhani',sans-serif;">
+      ⚠️ Firebase news nahi mili.<br>
+      <span style="font-size:10px;">Python Thread B chal raha hai? Check engine logs.</span>
+    </div>`;
+    if (badge) badge.textContent = 'No data';
+    return;
+  }
+ 
+  if (badge) badge.textContent = `${items.length} items`;
+ 
+  // Render cards — top 30 show karo
+  listEl.innerHTML = items.slice(0, 30).map(item => {
+    const sentiment = getNewsSentiment(item.title);
+    const tag       = getNewsTag(item.title);
+    const sentColor = sentiment === 'positive' ? '#34d399'
+                    : sentiment === 'negative' ? '#ef4444'
+                    : '#94a3b8';
+    const sentBg    = sentiment === 'positive' ? 'rgba(52,211,153,0.08)'
+                    : sentiment === 'negative' ? 'rgba(239,68,68,0.08)'
+                    : 'rgba(148,163,184,0.05)';
+    const srcColor  = item.source === 'Google News'   ? '#4ade80'
+                    : item.source === 'MoneyControl'  ? '#fb923c'
+                    : item.source === 'ET Markets'    ? '#38bdf8'
+                    : item.source === 'Business Line' ? '#a78bfa'
+                    : '#94a3b8';
+    const tagHtml = tag
+      ? `<span style="font-size:9px;background:rgba(56,189,248,0.12);color:#38bdf8;border-radius:3px;padding:1px 5px;font-weight:700;">${tag.label}</span>`
+      : '';
+    const linkHtml = item.link
+      ? `onclick="window.open('${item.link}','_blank')" style="cursor:pointer;"`
+      : `style="cursor:default;"`;
+ 
+    return `
+      <div ${linkHtml}
+        style="background:${sentBg};border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;border-left:3px solid ${sentColor};">
+        <div style="font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4;font-family:'Rajdhani',sans-serif;margin-bottom:5px;">
+          ${item.title}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:9px;color:${srcColor};font-weight:700;font-family:'Rajdhani',sans-serif;">${item.source}</span>
+          ${tagHtml}
+          <span style="font-size:9px;color:#4b6280;margin-left:auto;">${item.time || ''}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
 // --- MARKET BRIEF LOADER ---
 async function _tabLoadBrief() {
   const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
