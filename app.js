@@ -4711,7 +4711,7 @@ async function manualRefresh(){
 }
 
 // ── TAB SWIPE NAVIGATION ─────────────────────────────────────
-const TAB_ORDER = ['watchlist','indices','holdings','history','news'];
+const TAB_ORDER = ['watchlist','indices','holdings','history','news','learn'];
 let _curTab = 'watchlist';
 let _txStart = 0, _tyStart = 0, _swipeLocked = false;
 
@@ -4761,9 +4761,6 @@ window.addEventListener('popstate', () => {
   document.getElementById('exitModal').classList.remove('hidden');
   history.pushState(null, '', window.location.href);
 });
-
-
-
 // ======================================
 // SMART NEWS ENGINE
 // ======================================
