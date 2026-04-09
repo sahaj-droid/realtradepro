@@ -725,7 +725,7 @@ try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 
 if(!isDark){ document.body.classList.add("light"); }
 
-const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
+const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
 let indicesList=(()=>{try{const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
 function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
 
@@ -1417,6 +1417,7 @@ function renderGainersFromCache(){
 async function updateHeaderIndices(){
   // Ensure strip is rendered before updating values
   if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
+  if(i.sym === '__GIFT__') continue;
   for(let i of indicesList){
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
@@ -1438,6 +1439,36 @@ async function updateHeaderIndices(){
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
+  // GIFT NIFTY — GAS thi fetch
+  await updateGiftNifty();
+}
+let _giftNiftyCache=null,_giftNiftyCacheTime=0;
+const GIFT_CACHE_MS=60000;
+
+async function updateGiftNifty(){
+  const pe=document.getElementById('hidx-__GIFT__-p');
+  const ce=document.getElementById('hidx-__GIFT__-c');
+  if(!pe||!ce) return;
+  if(_giftNiftyCache&&(Date.now()-_giftNiftyCacheTime<GIFT_CACHE_MS)){
+    _renderGiftNifty(_giftNiftyCache,pe,ce); return;
+  }
+  try{
+    const apiUrl=localStorage.getItem('customAPI')||API;
+    const r=await fetch(`${apiUrl}?type=giftNifty`);
+    const d=await r.json();
+    if(!d.ok||!d.price) return;
+    _giftNiftyCache=d;
+    _giftNiftyCacheTime=Date.now();
+    _renderGiftNifty(d,pe,ce);
+  }catch(e){ if(ce) ce.innerText='N/A'; }
+}
+
+function _renderGiftNifty(d,pe,ce){
+  const isUp=d.change>=0;
+  const sign=isUp?'+':'';
+  pe.innerText=d.price.toLocaleString('en-IN',{maximumFractionDigits:2});
+  ce.innerText=`${sign}${d.change.toLocaleString('en-IN',{minimumFractionDigits:2})} (${sign}${Math.abs(d.changePct).toFixed(2)}%)`;
+  ce.style.color=isUp?'#22c55e':'#ef4444';
 }
 // ======================================
 // HEADER INDICES STRIP RENDERER
