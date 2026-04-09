@@ -1417,7 +1417,6 @@ function renderGainersFromCache(){
 async function updateHeaderIndices(){
   if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
   for(let i of indicesList){
-    if(i.sym === '__GIFT__') continue;
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -1442,21 +1441,23 @@ let _giftNiftyCache=null,_giftNiftyCacheTime=0;
 const GIFT_CACHE_MS=60000;
 
 async function updateGiftNifty(){
-  const pe=document.getElementById('hidx-__GIFT__-p');
-  const ce=document.getElementById('hidx-__GIFT__-c');
-  if(!pe||!ce) return;
-  if(_giftNiftyCache&&(Date.now()-_giftNiftyCacheTime<GIFT_CACHE_MS)){
-    _renderGiftNifty(_giftNiftyCache,pe,ce); return;
-  }
-  try{
-    const apiUrl=localStorage.getItem('customAPI')||API;
-    const r=await fetch(`${apiUrl}?type=giftNifty`);
-    const d=await r.json();
-    if(!d.ok||!d.price) return;
-    _giftNiftyCache=d;
-    _giftNiftyCacheTime=Date.now();
-    _renderGiftNifty(d,pe,ce);
-  }catch(e){ if(ce) ce.innerText='N/A'; }
+    const pe=document.getElementById('hidx-__GIFT__-p');
+    const ce=document.getElementById('hidx-__GIFT__-c');
+    if(!pe||!ce) return;
+    if(_giftNiftyCache&&(Date.now()-_giftNiftyCacheTime<GIFT_CACHE_MS)){
+        _renderGiftNifty(_giftNiftyCache,pe,ce); return;
+    }
+    try{
+        // Firebase live_prices ma ^NSEI j GIFT NIFTY proxy che
+        const snap = await firebase.firestore()
+            .collection('RealTradePro').doc('live_prices').get();
+        const d = snap.data()?.prices?.['\\^NSEI'];
+        if(!d||!d.ltp) return;
+        const payload = {price: d.ltp, change: d.change};
+        _giftNiftyCache = payload;
+        _giftNiftyCacheTime = Date.now();
+        _renderGiftNifty(payload, pe, ce);
+    }catch(e){ if(ce) ce.innerText='N/A'; }
 }
 
 function _renderGiftNifty(d,pe,ce){
