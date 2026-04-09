@@ -4886,20 +4886,27 @@ async function loadFirebaseNews() {
  
     const data     = doc.data();
     const rawNews  = data.news || [];
+    const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000);
     const updatedAt = data.updated_at || '';
  
     // Python format → app format convert karo
     // Python: { title, link, date, source }
     // App:    { sym, source, type, time, _rawDate, title, link }
-    const items = rawNews.map(item => ({
-      sym:      'MARKET',          // general market news
-      source:   item.source || 'Firebase',
-      type:     detectNewsType(item.title || ''),
-      time:     timeAgoDate(item.date || ''),
-      _rawDate: item.date || '',
-      title:    item.title || '',
-      link:     item.link  || '',
-    }));
+const items = rawNews
+  .filter(item => {
+    if (!item.date) return true;
+    const d = new Date(item.date).getTime();
+    return isNaN(d) || d > cutoff;
+  })
+  .map(item => ({
+    sym:      'MARKET',
+    source:   item.source || 'Firebase',
+    type:     detectNewsType(item.title || ''),
+    time:     timeAgoDate(item.date || ''),
+    _rawDate: item.date || '',
+    title:    item.title || '',
+    link:     item.link  || '',
+  }));
  
     // Most recent first
     items.sort((a, b) => {
