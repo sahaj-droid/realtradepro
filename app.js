@@ -1580,6 +1580,7 @@ async function updatePrices(){
     if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
   }
   updateHeaderIndices();
+  await updateGiftNifty();
   updatePriceTicker();
 }
 
