@@ -1586,7 +1586,11 @@ function confirmAddIndex(sym,name){
   closeAddIndexModal();
   showPopup(name+' added');
 }
-// ── GAS Fallback mode — Python engine stale ──
+// ======================================
+// UPDATE PRICES
+// ======================================
+async function updatePrices(){
+  // ── GAS Fallback mode — Python engine stale ──
   if(window._useGASPrices){
     try{
       await batchFetchStocks(wl);
@@ -1596,10 +1600,6 @@ function confirmAddIndex(sym,name){
     }catch(e){}
     return;
   }
-// ======================================
-// UPDATE PRICES
-// ======================================
-async function updatePrices(){
   // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
   // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
 
