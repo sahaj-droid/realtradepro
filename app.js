@@ -3259,35 +3259,7 @@ function loadSettingsUI(){
     if(ff2Saved) { ff2Sub.textContent = '✓ FF2 URL set · Screener data active'; ff2Sub.style.color='#fb923c'; }
     else { ff2Sub.textContent = 'Not set — tap to configure'; ff2Sub.style.color='#64748b'; }
   }
-  // ── Telegram Volume Alert Watchlist card inject ──
-  if(!document.getElementById('vol-alert-section')){
-    const aeCard = document.getElementById('alertEngineChk');
-    const alertsSection = aeCard ? aeCard.closest('div[style*="background"]')?.parentElement?.parentElement : null;
-    const target = alertsSection || document.querySelector('[id="settings-content"]') || document.body;
-    const card = document.createElement('div');
-    card.id = 'vol-alert-section';
-    card.style.cssText = 'margin:16px 0 0 0;';
-    card.innerHTML = `
-      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px;">TELEGRAM VOLUME ALERTS</div>
-      <div style="background:#0d1f2d;border:1px solid #1e3a5f;border-radius:12px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="font-size:20px;">🔥</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#e2e8f0;font-family:'Rajdhani',sans-serif;">Volume Spike Watchlist</div>
-            <div style="font-size:11px;color:#64748b;">Sirf aa stocks na volume alerts aavse</div>
-          </div>
-        </div>
-        <div id="vol-alert-list" style="margin-bottom:10px;"></div>
-        <div style="display:flex;gap:8px;">
-          <input id="vol-alert-input" placeholder="Symbol (e.g. RELIANCE)" style="flex:1;background:#0f2234;border:1px solid #1e3a5f;border-radius:8px;padding:7px 10px;color:#e2e8f0;font-size:13px;font-family:'Rajdhani',sans-serif;outline:none;" />
-          <button onclick="addVolAlertStock()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Add</button>
-        </div>
-      </div>`;
-    const insertAfter = document.getElementById('ff2-url-display')?.closest('div[style*="background"]')?.parentElement?.parentElement || null;
-    if(insertAfter && insertAfter.parentNode){
-      insertAfter.parentNode.insertBefore(card, insertAfter.nextSibling);
-    }
-  }
+  // Vol alert list render — card is now directly in index.html
   renderVolAlertList();
 }
 
@@ -8740,6 +8712,9 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
+
+
+
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
