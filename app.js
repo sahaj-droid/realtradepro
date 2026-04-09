@@ -726,7 +726,8 @@ try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 if(!isDark){ document.body.classList.add("light"); }
 
 const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
-let indicesList=(()=>{try{const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
+const INDICES_VERSION="v2";
+let indicesList=(()=>{try{const v=localStorage.getItem('indicesVersion');if(v!==INDICES_VERSION){localStorage.removeItem('indicesList');localStorage.setItem('indicesVersion',INDICES_VERSION);return INDICES_DEFAULT;}const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
 function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
 
   const NIFTY50_STOCKS=[
