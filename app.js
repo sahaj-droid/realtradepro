@@ -1448,18 +1448,16 @@ async function updateGiftNifty(){
         _renderGiftNifty(_giftNiftyCache,pe,ce); return;
     }
     try{
-        // Firebase live_prices ma ^NSEI j GIFT NIFTY proxy che
         const snap = await firebase.firestore()
-            .collection('RealTradePro').doc('live_prices').get();
-        const d = snap.data()?.prices?.['\\^NSEI'];
-        if(!d||!d.ltp) return;
-        const payload = {price: d.ltp, change: d.change};
+            .collection('RealTradePro').doc('gift_nifty').get();
+        const d = snap.data();
+        if(!d||!d.price) return;
+        const payload = {price: d.price, change: d.change_abs ?? d.change ?? 0, changePct: d.change_pct ?? d.change ?? 0};
         _giftNiftyCache = payload;
         _giftNiftyCacheTime = Date.now();
         _renderGiftNifty(payload, pe, ce);
     }catch(e){ if(ce) ce.innerText='N/A'; }
 }
-
 function _renderGiftNifty(d,pe,ce){
   const isUp=d.change>=0;
   const sign=isUp?'+':'';
