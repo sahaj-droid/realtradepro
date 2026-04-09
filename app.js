@@ -444,6 +444,58 @@ function monitorSystemHealth() {
     window._pythonEngineActive = false;
   }
 }
+// ── GAS Fallback State ──────────────────────────────────
+window._useGASPrices = false;
+
+function startEngineStaleCheck() {
+  setInterval(async () => {
+    try {
+      if (window._useGASPrices) {
+        const snap = await firebase.firestore()
+          .collection('RealTradePro').doc('live_prices').get();
+        const updatedAt = snap.data()?.updated_at;
+        if (!updatedAt) return;
+        if (Date.now() - new Date(updatedAt).getTime() < 30000) {
+          window._useGASPrices = false;
+          hideGASFallbackBar();
+          showPopup('✅ Python Engine recovered — live prices resumed', 3000);
+        }
+        return;
+      }
+      if (!window._pythonEngineActive) return;
+      const snap = await firebase.firestore()
+        .collection('RealTradePro').doc('live_prices').get();
+      const updatedAt = snap.data()?.updated_at;
+      if (!updatedAt) return;
+      if (Date.now() - new Date(updatedAt).getTime() > 30000) {
+        showGASFallbackBar();
+      }
+    } catch(e) {}
+  }, 30000);
+}
+
+function showGASFallbackBar() {
+  if (document.getElementById('gas-fallback-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'gas-fallback-bar';
+  bar.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:99999;background:#7c2d12;color:#fef2f2;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;border-bottom:2px solid #ef4444;box-shadow:0 2px 8px rgba(0,0,0,0.5);`;
+  bar.innerHTML = `<span>⚠️ Python Engine stale — prices may be outdated</span><button onclick="userEnableGASPrices()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Switch to GAS</button>`;
+  document.body.prepend(bar);
+}
+
+function hideGASFallbackBar() {
+  document.getElementById('gas-fallback-bar')?.remove();
+}
+
+function userEnableGASPrices() {
+  window._useGASPrices = true;
+  const bar = document.getElementById('gas-fallback-bar');
+  if (bar) {
+    bar.style.background = '#14532d';
+    bar.innerHTML = `<span>🔄 GAS prices active — auto-switching back when engine recovers</span><button onclick="hideGASFallbackBar();window._useGASPrices=false;" style="background:#22c55e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button>`;
+  }
+  updatePrices();
+}
 function monitorFirebaseNews() {
   if (typeof firebase === 'undefined') return;
   try {
@@ -1534,7 +1586,16 @@ function confirmAddIndex(sym,name){
   closeAddIndexModal();
   showPopup(name+' added');
 }
-
+// ── GAS Fallback mode — Python engine stale ──
+  if(window._useGASPrices){
+    try{
+      await batchFetchStocks(wl);
+      renderWL();
+      updateHeaderIndices();
+      updatePriceTicker();
+    }catch(e){}
+    return;
+  }
 // ======================================
 // UPDATE PRICES
 // ======================================
@@ -4729,6 +4790,7 @@ document.addEventListener('visibilitychange', ()=>{
     setTimeout(() => {
       updatePrices();
       startRefresh();
+      startEngineStaleCheck();
     }, 800);
   }
 });
