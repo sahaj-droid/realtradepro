@@ -3148,6 +3148,36 @@ async function fetchFull(sym,isIndex=false){
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
 
+  // Firebase first - Python engine active hoy to GAS call nahi
+  if(window._pythonEngineActive && !isIndex){
+    try{
+      const snap = await firebase.firestore()
+        .collection('RealTradePro').doc('live_prices').get();
+      if(snap.exists){
+        const prices = snap.data().prices || {};
+        const p = prices[sym+'.NS'] || prices[sym+'.BO'];
+        if(p && p.ltp){
+          const d = {
+            regularMarketPrice:         p.ltp,
+            chartPreviousClose:         p.prev_close,
+            regularMarketOpen:          p.open,
+            regularMarketDayHigh:       p.high,
+            regularMarketDayLow:        p.low,
+            regularMarketVolume:        p.volume,
+            regularMarketChange:        p.change,
+            regularMarketChangePercent: p.change_pct,
+          };
+          cache[key]={data:d, time:Date.now()};
+          lastUpdatedMap[key]=Date.now();
+          return d;
+        }
+      }
+    }catch(fbErr){
+      console.warn('[fetchFull] Firebase failed, falling back to GAS:', fbErr);
+    }
+  }
+  // END Firebase first
+
   const urls=[
     localStorage.getItem("customAPI")||API,
     localStorage.getItem('customAPI2')||API2,
