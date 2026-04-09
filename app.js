@@ -1415,10 +1415,9 @@ function renderGainersFromCache(){
 // UPDATE HEADER INDICES
 // ======================================
 async function updateHeaderIndices(){
-  // Ensure strip is rendered before updating values
   if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
-  if(i.sym === '__GIFT__') continue;
   for(let i of indicesList){
+    if(i.sym === '__GIFT__') continue;
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -1428,18 +1427,15 @@ async function updateHeaderIndices(){
     const ce=document.getElementById("hidx-"+key+"-c");
     if(pe){
       const p=d.regularMarketPrice;
-      // Full number with Indian comma grouping
       pe.innerText=p.toLocaleString('en-IN',{maximumFractionDigits:2});
     }
     if(ce){
       const adiff=Math.abs(diff);
-      // Indian rupee format with commas
       const diffStr='₹'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
       ce.innerText=(diff>=0?'+':'-')+diffStr+' ('+(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%)';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
-  // GIFT NIFTY — GAS thi fetch
   await updateGiftNifty();
 }
 let _giftNiftyCache=null,_giftNiftyCacheTime=0;
