@@ -15,9 +15,12 @@ let currentPINEntry = '';
 
 // ── Default Sarvam API Key pre-save (first time only) ──
 (function setDefaultSarvamKey() {
-  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // <-- taro default key yaha nakh
-  if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
-    localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
+  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // ← taro actual key yaha nakh
+  if (DEFAULT_SARVAM_KEY && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
+    // Sirf first time — already set hoy to override nai karo
+    if (!localStorage.getItem('geminiApiKey')) {
+      localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
+    }
   }
 })();
 
@@ -3240,18 +3243,7 @@ function loadSettingsUI(){
   if(sheetCheck) sheetCheck.checked = localStorage.getItem('sheetEnabled') === 'true';
   updateSheetStatus();
   // Alert engine toggle
-  const aeChk = document.getElementById('alertEngineChk');
-  if(aeChk) aeChk.checked = localStorage.getItem('alertEngineOn') !== 'false';
-  // Notification toggle
-  const ntChk = document.getElementById('notifToggleChk');
-  const ntStat = document.getElementById('notifPermStatus');
-  if(ntChk) ntChk.checked = localStorage.getItem('notifOn') !== 'false';
-  if(ntStat){
-    const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
-    if(perm==='granted') { ntStat.textContent='Permission: Granted ✓'; ntStat.style.color='#4ade80'; }
-    else if(perm==='denied') { ntStat.textContent='Permission: Blocked ✗ (Enable in browser)'; ntStat.style.color='#f87171'; }
-    else { ntStat.textContent='Not yet requested'; ntStat.style.color='#64748b'; }
-  }
+  // [Removed] Alert Engine + Browser Notification toggles — Telegram handles all alerts
   // Avatar initial letter from currentUser
   const avEl = document.getElementById('settingsAvatarLetter');
   if(avEl && currentUser) {
@@ -3291,8 +3283,7 @@ function loadSettingsUI(){
           <button onclick="addVolAlertStock()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Add</button>
         </div>
       </div>`;
-    const ntCard = document.getElementById('notifToggleChk');
-    const insertAfter = ntCard ? ntCard.closest('div[style*="background"]')?.parentElement?.parentElement : null;
+    const insertAfter = document.getElementById('ff2-url-display')?.closest('div[style*="background"]')?.parentElement?.parentElement || null;
     if(insertAfter && insertAfter.parentNode){
       insertAfter.parentNode.insertBefore(card, insertAfter.nextSibling);
     }
@@ -3635,8 +3626,6 @@ function confirmAlert() {
   localStorage.setItem("alerts", JSON.stringify(alerts));
   closeAlertModal();
   showPopup("🔔 Alert set: " + currentAlertSym + " " + (_alertDir==='above'?'▲':'▼') + " ₹" + price);
-  // Request browser notification permission
-  if (Notification && Notification.permission === 'default') Notification.requestPermission();
 }
 // -- CHECK ALERTS — Upgraded --
 function checkAlerts(sym, currentPrice) {
@@ -3693,14 +3682,6 @@ function checkVolumeSpike(sym, data) {
 
   playAlertSound();
   showPopup(`🔥 ${sym} Volume Spike! ${ratioStr}x avg (${volStr})`, 7000);
-
-  // Browser notification — app open hoy tyare notification bar ma pan aavse
-  if (Notification && Notification.permission === 'granted') {
-    new Notification('🔥 Volume Spike — ' + sym, {
-      body: ratioStr + 'x avg volume (' + volStr + ')',
-      icon: '/favicon.ico'
-    });
-  }
 }
 
 function sortAZ(){
@@ -4849,13 +4830,7 @@ async function startApp(){
   updateHeaderIndices();
   updatePriceTicker();
   updateGlobalTicker();
-  // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
-  setTimeout(()=>runAllTechnicalAlerts(),3000);
-  // Auto alert engine — every 5 min during market hours
-  setInterval(()=>{
-    const m=getMarketStatus();
-    if(m.open) runAllTechnicalAlerts();
-  }, 5*60*1000);
+  // [Removed] Inbuilt technical alert engine — Telegram alerts handle this via Python engine
 // Firebase fundamentals already preloaded at startup via preloadAllFundamentalsFromFirebase()
   // No GAS fundBatch call needed — all stocks instantly available via window._firebaseFundCache
   // Background: preload POPULAR_STOCKS for Gainers tab — only missing stocks (no duplicate calls)
@@ -4920,12 +4895,6 @@ async function manualRefresh(){
   
   hideLoader();
   if(btn) { btn.style.opacity="1"; btn.style.pointerEvents="auto"; }
-  // Request notification permission on first manual refresh
-  if(typeof Notification!=='undefined' && Notification.permission==='default'){
-    Notification.requestPermission();
-  }
-  // Run technical alerts on manual refresh
-  setTimeout(()=>runAllTechnicalAlerts(), 800);
   showPopup("Refreshed!");
 }
 
@@ -8292,49 +8261,22 @@ async function downloadLearnPDF(sym) {
 </body>
 </html>`;
 
-  // ── Open & Print ──
+  // ── Download as HTML file (reliable on mobile + desktop) ──
   try {
-    if (typeof html2pdf === 'undefined') throw new Error('html2pdf not loaded');
-
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#060e1a;color:#e2e8f0;';
-    document.body.appendChild(container);
-
-    showPopup('⏳ PDF generate thaī rahyu che...');
-
     const today2 = new Date();
     const ds = today2.getDate()+'-'+(today2.getMonth()+1)+'-'+today2.getFullYear();
-    const opt = {
-      margin:      [8,8,8,8],
-      filename:    `${sym}_RTP_Report_${ds}.pdf`,
-      image:       { type:'jpeg', quality:0.95 },
-      html2canvas: { scale:2, backgroundColor:'#060e1a', useCORS:true, logging:false },
-      jsPDF:       { unit:'mm', format:'a4', orientation:'portrait' },
-      pagebreak:   { mode:['avoid-all','css','legacy'] }
-    };
-
-    html2pdf().set(opt).from(container).save()
-      .then(() => {
-        document.body.removeChild(container);
-        showPopup('✅ '+sym+'_RTP_Report.pdf downloaded!');
-      })
-      .catch(err => {
-        document.body.removeChild(container);
-        // Fallback: blob open
-        const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.target = '_blank'; a.rel = 'noopener'; a.click();
-        showPopup('PDF fallback — browser mā print karo');
-      });
-  } catch(e) {
-    // html2pdf unavailable — direct blob fallback
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.target = '_blank'; a.rel = 'noopener'; a.click();
-    showPopup('⚠️ PDF lib nathi — HTML tab mā print karo (Ctrl+P → Save as PDF)');
+    a.href = blobUrl;
+    a.download = sym + '_RTP_Report_' + ds + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    showPopup('✅ ' + sym + ' Report downloaded! Browser ma open karo → Ctrl+P → Save as PDF');
+  } catch(e) {
+    showPopup('❌ Download failed: ' + e.message);
   }
 }
 
@@ -8798,7 +8740,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
