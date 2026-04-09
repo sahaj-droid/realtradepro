@@ -928,22 +928,37 @@ function fsVal(f){
     </div>
   </div>
 
-  <!-- TELEGRAM VOLUME ALERTS -->
-  <div class="s-section-label">Telegram Alerts</div>
-  <div class="s-card" id="vol-alert-section">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <div class="s-row-icon" style="background:rgba(239,68,68,0.1);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  <!-- ALERTS & NOTIFICATIONS -->
+  <div class="s-section-label">Alerts & Notifications</div>
+  <div class="s-card">
+    <div class="s-row">
+      <div class="s-row-left">
+        <div class="s-row-icon" style="background:rgba(245,158,11,0.1);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="s-row-info"><div class="s-row-title">Technical Alerts</div><div class="s-row-sub">RSI · MACD · BB · Volume</div></div>
       </div>
-      <div>
-        <div class="s-row-title">Volume Spike Watchlist</div>
-        <div class="s-row-sub">Sirf aa stocks na Telegram volume alerts aavse · Empty = badha stocks</div>
-      </div>
+      <label class="ios-tog">
+        <input type="checkbox" id="alertEngineChk" checked onchange="toggleAlertEngine()">
+        <div class="ios-track"></div>
+        <div class="ios-thumb"></div>
+      </label>
     </div>
-    <div id="vol-alert-list" style="margin-bottom:10px;"></div>
-    <div style="display:flex;gap:8px;">
-      <input id="vol-alert-input" placeholder="Symbol (e.g. RELIANCE)" style="flex:1;background:#0f2234;border:1px solid #1e3a5f;border-radius:8px;padding:7px 10px;color:#e2e8f0;font-size:13px;font-family:'Rajdhani',sans-serif;outline:none;" />
-      <button onclick="addVolAlertStock()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Add</button>
+    <div class="s-row">
+      <div class="s-row-left">
+        <div class="s-row-icon" style="background:rgba(52,211,153,0.1);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        </div>
+        <div class="s-row-info">
+          <div class="s-row-title">Browser Notifications</div>
+          <div id="notifPermStatus" class="s-row-sub">Checking...</div>
+        </div>
+      </div>
+      <label class="ios-tog">
+        <input type="checkbox" id="notifToggleChk" checked onchange="toggleNotifications()">
+        <div class="ios-track"></div>
+        <div class="ios-thumb"></div>
+      </label>
     </div>
   </div>
 
