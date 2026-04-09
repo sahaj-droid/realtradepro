@@ -3267,6 +3267,37 @@ function loadSettingsUI(){
     if(ff2Saved) { ff2Sub.textContent = '✓ FF2 URL set · Screener data active'; ff2Sub.style.color='#fb923c'; }
     else { ff2Sub.textContent = 'Not set — tap to configure'; ff2Sub.style.color='#64748b'; }
   }
+  // ── Telegram Volume Alert Watchlist card inject ──
+  if(!document.getElementById('vol-alert-section')){
+    const aeCard = document.getElementById('alertEngineChk');
+    const alertsSection = aeCard ? aeCard.closest('div[style*="background"]')?.parentElement?.parentElement : null;
+    const target = alertsSection || document.querySelector('[id="settings-content"]') || document.body;
+    const card = document.createElement('div');
+    card.id = 'vol-alert-section';
+    card.style.cssText = 'margin:16px 0 0 0;';
+    card.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;margin-bottom:8px;">TELEGRAM VOLUME ALERTS</div>
+      <div style="background:#0d1f2d;border:1px solid #1e3a5f;border-radius:12px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <span style="font-size:20px;">🔥</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#e2e8f0;font-family:'Rajdhani',sans-serif;">Volume Spike Watchlist</div>
+            <div style="font-size:11px;color:#64748b;">Sirf aa stocks na volume alerts aavse</div>
+          </div>
+        </div>
+        <div id="vol-alert-list" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input id="vol-alert-input" placeholder="Symbol (e.g. RELIANCE)" style="flex:1;background:#0f2234;border:1px solid #1e3a5f;border-radius:8px;padding:7px 10px;color:#e2e8f0;font-size:13px;font-family:'Rajdhani',sans-serif;outline:none;" />
+          <button onclick="addVolAlertStock()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">+ Add</button>
+        </div>
+      </div>`;
+    const ntCard = document.getElementById('notifToggleChk');
+    const insertAfter = ntCard ? ntCard.closest('div[style*="background"]')?.parentElement?.parentElement : null;
+    if(insertAfter && insertAfter.parentNode){
+      insertAfter.parentNode.insertBefore(card, insertAfter.nextSibling);
+    }
+  }
+  renderVolAlertList();
 }
 
 function startFF2Edit(){
@@ -3289,6 +3320,44 @@ function saveFF2Url(){
   cancelFF2Edit();
   loadSettingsUI();
   showPopup(val ? '✅ FF2 URL saved! Learn tab ready.' : 'FF2 URL cleared');
+}
+
+// ── Volume Alert Watchlist Functions ───────────────────────
+async function loadVolAlertWatchlist(){
+  try{
+    const snap=await firebase.firestore().collection('RealTradePro').doc('alert_config').get();
+    return snap.data()?.volume_watchlist||[];
+  }catch(e){ return []; }
+}
+async function saveVolAlertWatchlist(list){
+  try{
+    await firebase.firestore().collection('RealTradePro').doc('alert_config').set({volume_watchlist:list},{merge:true});
+    showPopup('✅ Volume Alert list saved!');
+  }catch(e){ showPopup('❌ Save failed: '+e.message); }
+}
+async function addVolAlertStock(){
+  const inp=document.getElementById('vol-alert-input');
+  const sym=(inp?.value||'').trim().toUpperCase();
+  if(!sym){showPopup('Symbol enter karo');return;}
+  const list=await loadVolAlertWatchlist();
+  if(list.includes(sym)){showPopup(sym+' already added');return;}
+  list.push(sym);
+  await saveVolAlertWatchlist(list);
+  if(inp) inp.value='';
+  renderVolAlertList();
+}
+async function removeVolAlertStock(sym){
+  const list=await loadVolAlertWatchlist();
+  await saveVolAlertWatchlist(list.filter(s=>s!==sym));
+  renderVolAlertList();
+}
+async function renderVolAlertList(){
+  const el=document.getElementById('vol-alert-list');
+  if(!el) return;
+  const list=await loadVolAlertWatchlist();
+  el.innerHTML=list.length
+    ?list.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#0f2234;border-radius:6px;margin-bottom:4px;"><span style="font-size:13px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;">${s}</span><button onclick="removeVolAlertStock('${s}')" style="background:#7c2d12;color:#fef2f2;border:none;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:'Rajdhani',sans-serif;">Remove</button></div>`).join('')
+    :'<div style="font-size:12px;color:#4b6280;padding:6px;">No stocks added — badha stocks na volume alerts aavse</div>';
 }
 
 // જે ફંક્શનનું નામ ગાયબ હતું, તે મેં અહી ઉમેરી દીધું છે 👇
@@ -8729,8 +8798,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
-
 
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
