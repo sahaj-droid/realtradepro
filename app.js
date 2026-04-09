@@ -1425,9 +1425,14 @@ async function updateHeaderIndices(){
     const key=i.sym.replace("^","");
     const pe=document.getElementById("hidx-"+key+"-p");
     const ce=document.getElementById("hidx-"+key+"-c");
-    if(pe){
+if(pe){
       const p=d.regularMarketPrice;
+      const oldVal=parseFloat(pe.innerText.replace(/[,]/g,''))||0;
       pe.innerText=p.toLocaleString('en-IN',{maximumFractionDigits:2});
+      if(oldVal>0&&p!==oldVal){
+        pe.classList.add(p>oldVal?'flash-green':'flash-red');
+        setTimeout(()=>pe.classList.remove('flash-green','flash-red'),1200);
+      }
     }
     if(ce){
       const adiff=Math.abs(diff);
