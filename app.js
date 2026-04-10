@@ -2896,7 +2896,7 @@ async function exportTechnicalExcel(){
     histSnap.forEach(doc => {
       const sym = doc.id;
       const data = doc.data();
-      const closes = data.close || data.closes || [];
+      const closes = data.data || data.close || data.closes || [];
       if(!closes || closes.length < 20) return;
 
       // BB calculation (20 period, 2 std dev)
