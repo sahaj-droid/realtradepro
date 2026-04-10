@@ -4504,15 +4504,26 @@ async function fetchGlobalMarkets() {
   if (_globalCacheTime && (now - _globalCacheTime) < GLOBAL_TTL && Object.keys(_globalCache).length > 0) {
     return _globalCache;
   }
-  try {
-    const apiUrl = localStorage.getItem('customAPI') || API;
-    const syms = Object.values(GLOBAL_SYMS).join(',');
-    const r = await fetch(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`);
-    const data = await r.json();
-    _globalCache = data;
-    _globalCacheTime = now;
-    return data;
-  } catch(e) { return {}; }
+  const syms = Object.values(GLOBAL_SYMS).join(',');
+  const urls = [
+    localStorage.getItem('customAPI')  || API,
+    localStorage.getItem('customAPI2') || API2,
+    localStorage.getItem('customAPI3') || API3,
+    localStorage.getItem('customAPI4') || API4,
+    localStorage.getItem('customAPI5') || API5
+  ].filter(Boolean);
+  for (const apiUrl of urls) {
+    try {
+      const r = await fetchWithTimeout(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`, 8000);
+      const data = await r.json();
+      if (data && !data.error && Object.keys(data).length > 0) {
+        _globalCache = data;
+        _globalCacheTime = now;
+        return data;
+      }
+    } catch(e) { continue; }
+  }
+  return {};
 }
 
 async function updateGlobalTicker() {
@@ -4521,7 +4532,8 @@ async function updateGlobalTicker() {
   const data = await fetchGlobalMarkets();
   const items = [];
   Object.entries(GLOBAL_SYMS).forEach(([label, sym]) => {
-    const d = data[sym] || _globalCache[sym];
+    // GAS may return key with or without ^ prefix — check both
+    const d = data[sym] || data[sym.replace('^','')] || _globalCache[sym] || _globalCache[sym.replace('^','')];
     if (!d || !d.price) return;
     const price = d.price;
     const prev  = d.prevClose || price;
