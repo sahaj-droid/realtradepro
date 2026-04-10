@@ -1388,8 +1388,10 @@ async function renderIndices(){
 async function refreshGainers(){
   const gm=document.getElementById('gmov-gainers-list');
   if(gm) gm.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
-  POPULAR_STOCKS.slice(0,80).forEach(s=>{if(cache[s]) cache[s].time=0;});
-  await batchFetchStocks(POPULAR_STOCKS.slice(0,80));
+  if(!window._pythonEngineActive){
+    POPULAR_STOCKS.slice(0,50).forEach(s=>{if(cache[s]) cache[s].time=0;});
+  }
+  await batchFetchStocks(POPULAR_STOCKS.slice(0,50));
   renderGainersFromCache();
 }
 
