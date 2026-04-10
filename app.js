@@ -2953,8 +2953,14 @@ async function exportTechnicalExcel(){
 
       // CMP + Volume from live_prices
       const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || livePrices[sym] || {};
-      const cmp = lp.ltp || closes[closes.length-1] || 0;
-      const volume = lp.today_volume || lp.volume || lp.vol || 0;
+      const cmp = lp.ltp || lp.regularMarketPrice || closes[closes.length-1] || 0;
+      const volume = lp.today_volume || lp.regularMarketVolume || lp.volume || lp.vol || 0;
+      const avgVol3M = lp.averageDailyVolume3Month || lp.avgVolume || lp.avg_volume || 0;
+
+      // MACD calculation using closes from histcache
+      const macdResult = calcMACD(closes);
+      const macdVal = macdResult ? macdResult.macd : '-';
+      const macdTrend = macdResult ? macdResult.trend : '-';
 
       rows.push({
         Symbol: sym,
@@ -2962,8 +2968,10 @@ async function exportTechnicalExcel(){
         'BB Upper': bbUpper,
         'BB Lower': bbLower,
         RSI: rsi || '-',
+        'MACD': macdVal,
+        'MACD Trend': macdTrend,
         'Today Vol': volume,
-        'Avg Vol (3M)': lp.volume || 0
+        'Avg Vol (3M)': avgVol3M
       });
     });
 
@@ -2985,7 +2993,7 @@ async function exportTechnicalExcel(){
 
     const ws = XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:14},{wch:14}];
+    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:10},{wch:12},{wch:14},{wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
 
@@ -8525,7 +8533,6 @@ async function downloadLearnPDF(sym) {
     showPopup('⚠️ PDF lib nathi — HTML tab mā print karo (Ctrl+P → Save as PDF)');
   }
 }
-
 // ============================================================
 // TAB 4 — QUARTERLY RESULTS
 // ============================================================
@@ -8665,7 +8672,6 @@ async function _buildQuarterlyTab(res, sym) {
 async function _buildCashflowTab(res, sym) {
   const d = _learnCache[sym];
   if (!d) { res.innerHTML = _learnNoData(sym, 'Cash Flow data'); return; }
-
   const items = [
     { label: 'Free Cash Flow',   val: d.fcf,       positive: true,  fmt: 'cr' },
     { label: 'Total Debt',       val: d.totalDebt,  positive: false, fmt: 'cr' },
@@ -8712,13 +8718,11 @@ async function _buildCashflowTab(res, sym) {
       : `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;color:#f87171;margin-top:8px;">Negative Free Cash Flow — monitor capital allocation</div>`;
     html += fcfNote;
   }
-
   const cr = d.currAsset && d.currLiab && d.currLiab > 0 ? (d.currAsset / d.currLiab).toFixed(2) : null;
   if (cr) {
     const crColor = cr >= 1.5 ? '#22c55e' : cr >= 1 ? '#f59e0b' : '#ef4444';
     html += `<div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;font-size:11px;color:${crColor};margin-top:8px;">Current Ratio: ${cr}x ${cr >= 1.5 ? '— Strong liquidity' : cr >= 1 ? '— Adequate' : '— Low liquidity risk'}</div>`;
   }
-
   html += `<div style="font-size:10px;color:#4b6280;padding:8px 2px;">Source: Screener.in via Firebase</div>`;
   res.innerHTML = html;
 }
@@ -8753,12 +8757,10 @@ function _downloadLearnPDF_DEPRECATED(sym) {
     {key:'roa',     label:'ROA %',              unit:'%'},
     {key:'rsi',     label:'RSI (14D)',          unit:''}
   ];
-
   const dotColor = (m, v) => {
     const c = _learnDot(m, v);
     return c === '#22c55e' ? '#16a34a' : c === '#f59e0b' ? '#b45309' : c === '#ef4444' ? '#b91c1c' : '#94a3b8';
   };
-
   const rows = metrics.map(m => {
     const val = R[m.key];
     const fv = val === null ? '--' : (m.unit === '₹' ? '₹'+val.toFixed(2) : val.toFixed(2)+m.unit);
@@ -8912,7 +8914,6 @@ async function _buildCorporateActionsTab(res, sym) {
       ).join('')}</div>`
     ).join('');
   }
-
   // Source badge
   const srcBadge = fbData
     ? `<span style="font-size:9px;background:rgba(52,211,153,0.15);color:#34d399;border-radius:4px;padding:2px 6px;">Firebase</span>`
@@ -8986,7 +8987,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
