@@ -2874,6 +2874,102 @@ try{ dupWarnEnabled = localStorage.getItem("dupWarn") !== "false"; }catch(e){}
 
 
 // ======================================
+// ======================================
+// EXPORT TECHNICAL SNAPSHOT (Excel)
+// Symbol, CMP, BB Upper, BB Lower, RSI, Volume
+// ======================================
+async function exportTechnicalExcel(){
+  const btn = document.getElementById('exportTechBtn');
+  if(btn){ btn.textContent='Loading...'; btn.style.opacity='0.6'; btn.style.pointerEvents='none'; }
+
+  try {
+    const db = firebase.firestore();
+
+    // 1. Live prices fetch
+    const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
+    const livePrices = lpDoc.exists ? (lpDoc.data().prices || {}) : {};
+
+    // 2. histcache — get all symbols
+    const histSnap = await db.collection('histcache').get();
+    const rows = [];
+
+    histSnap.forEach(doc => {
+      const sym = doc.id;
+      const data = doc.data();
+      const closes = data.close || data.closes || [];
+      if(!closes || closes.length < 20) return;
+
+      // BB calculation (20 period, 2 std dev)
+      const period = 20;
+      const slice = closes.slice(-period);
+      const sma = slice.reduce((a,b)=>a+b,0) / period;
+      const variance = slice.reduce((a,b)=>a+(b-sma)**2,0) / period;
+      const std = Math.sqrt(variance);
+      const bbUpper = +(sma + 2*std).toFixed(2);
+      const bbLower = +(sma - 2*std).toFixed(2);
+
+      // RSI calculation (14 period)
+      let rsi = null;
+      if(closes.length >= 15){
+        const rsiCloses = closes.slice(-15);
+        let gains=0, losses=0;
+        for(let i=1;i<rsiCloses.length;i++){
+          const diff = rsiCloses[i]-rsiCloses[i-1];
+          if(diff>0) gains+=diff; else losses+=Math.abs(diff);
+        }
+        const avgGain = gains/14, avgLoss = losses/14;
+        rsi = avgLoss===0 ? 100 : +(100 - (100/(1+(avgGain/avgLoss)))).toFixed(2);
+      }
+
+      // CMP + Volume from live_prices
+      const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || {};
+      const cmp = lp.ltp || closes[closes.length-1] || 0;
+      const volume = lp.volume || 0;
+
+      rows.push({
+        Symbol: sym,
+        CMP: +cmp.toFixed(2),
+        'BB Upper': bbUpper,
+        'BB Lower': bbLower,
+        RSI: rsi || '-',
+        Volume: volume
+      });
+    });
+
+    if(rows.length === 0){ showPopup('No data found'); return; }
+
+    // Sort by Symbol
+    rows.sort((a,b)=>a.Symbol.localeCompare(b.Symbol));
+
+    // SheetJS Excel export
+    if(typeof XLSX === 'undefined'){
+      // Load SheetJS dynamically
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Column widths
+    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:14}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
+
+    const ist = new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}).replace(/[/:,\s]/g,'-');
+    XLSX.writeFile(wb, `RealTradePro_Technical_${ist}.xlsx`);
+    showPopup(`Excel exported — ${rows.length} stocks`);
+
+  } catch(e) {
+    console.error('[ExportTech]', e);
+    showPopup('Export failed: ' + e.message);
+  } finally {
+    if(btn){ btn.textContent='Export'; btn.style.opacity='1'; btn.style.pointerEvents='auto'; }
+  }
+}
+
 // EXPORT CSV (History)
 // ======================================
 function exportCSV(){
