@@ -2927,9 +2927,9 @@ async function exportTechnicalExcel(){
       }
 
       // CMP + Volume from live_prices
-      const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || {};
+      const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || livePrices[sym] || {};
       const cmp = lp.ltp || closes[closes.length-1] || 0;
-      const volume = lp.today_volume || lp.volume || 0;
+      const volume = lp.today_volume || lp.volume || lp.vol || 0;
 
       rows.push({
         Symbol: sym,
