@@ -788,7 +788,6 @@ function fsVal(f){
 .ios-tog input:checked+.ios-track{background:#34d399;}
 .ios-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.4);}
 .ios-tog input:checked~.ios-thumb{transform:translateX(18px);}
-.ios-tog-sm{position:relative;width:36px;height:22px;flex-shrink:0;cursor:pointer;}.ios-tog-sm input{opacity:0;width:0;height:0;position:absolute;}.ios-tog-sm .ios-track{position:absolute;inset:0;border-radius:11px;background:rgba(255,255,255,0.12);transition:background 0.25s;}.ios-tog-sm input:checked+.ios-track{background:#34d399;}.ios-tog-sm .ios-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.4);}.ios-tog-sm input:checked~.ios-thumb{transform:translateX(14px);}
 .s-pill{border:none;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:opacity 0.15s;}
 .s-pill:active{opacity:0.7;}
 .s-pill-blue{background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;}
@@ -1194,6 +1193,20 @@ function fsVal(f){
   </div>
 
   <!-- DANGER ZONE -->
+  <!-- EXPORT -->
+  <div class="s-section-label">Export <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
+  <div class="s-card">
+    <div class="s-row">
+      <div class="s-row-left">
+        <div class="s-row-icon" style="background:rgba(34,197,94,0.1);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div class="s-row-info"><div class="s-row-title">Technical Snapshot</div><div class="s-row-sub">Symbol · CMP · BB Upper/Lower · RSI · Volume</div></div>
+      </div>
+      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:#14532d;color:#22c55e;border:1px solid #166534;padding:4px 12px;">Export</button>
+    </div>
+  </div>
+
   <div class="s-section-label" style="color:#ef4444;">Danger Zone</div>
   <div style="margin:0 10px 4px;">
     <div class="s-danger-grid">
