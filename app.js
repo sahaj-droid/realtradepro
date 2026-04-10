@@ -3242,6 +3242,8 @@ function loadSettingsUI(){
   // Alert engine toggle
   const aeChk = document.getElementById('alertEngineChk');
   if(aeChk) aeChk.checked = localStorage.getItem('alertEngineOn') !== 'false';
+  // Telegram alert toggles
+  loadTgToggles();
   // Notification toggle
   const ntChk = document.getElementById('notifToggleChk');
   const ntStat = document.getElementById('notifPermStatus');
@@ -3394,6 +3396,37 @@ function toggleAlertEngine(){
   const next=chk?chk.checked:true;
   localStorage.setItem('alertEngineOn', next?'true':'false');
   showPopup('Technical Alerts ' + (next?'ON ⚡':'OFF 🔕'));
+}
+
+function saveTgToggle(key, val){
+  localStorage.setItem(key, val?'true':'false');
+  // Save to Firebase so engine_v5 can read toggles
+  try{
+    const toggles = {
+      tgBB:  localStorage.getItem('tgBB')  !== 'false',
+      tgRSI: localStorage.getItem('tgRSI') !== 'false',
+      tgVOL: localStorage.getItem('tgVOL') !== 'false',
+      tgBRK: localStorage.getItem('tgBRK') !== 'false',
+      tgMKT: localStorage.getItem('tgMKT') !== 'false',
+    };
+    toggles[key] = val;
+    firebase.firestore().collection('RealTradePro').doc('tg_toggles').set(toggles);
+  }catch(e){}
+  showPopup((val?'✅':'🔕') + ' ' + key.replace('tg','') + ' alerts ' + (val?'ON':'OFF'));
+}
+
+function loadTgToggles(){
+  const toggles = {
+    'tgBB':  'tg-bb-chk',
+    'tgRSI': 'tg-rsi-chk',
+    'tgVOL': 'tg-vol-chk',
+    'tgBRK': 'tg-brk-chk',
+    'tgMKT': 'tg-mkt-chk',
+  };
+  Object.entries(toggles).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if(el) el.checked = localStorage.getItem(key) !== 'false';
+  });
 }
 
 // Alert History — Firebase thi load karvo
