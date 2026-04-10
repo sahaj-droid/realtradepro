@@ -1,0 +1,37 @@
+name: OLHCV Daily Update
+
+on:
+  schedule:
+    # 3:35 PM IST = 10:05 UTC (IST = UTC+5:30)
+    - cron: '5 10 * * 1-5'
+  workflow_dispatch:  # Manual trigger button GitHub par
+
+jobs:
+  run-olhcv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread yahooquery pandas firebase-admin
+
+      - name: Write keys.json from secret
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > keys.json
+
+      - name: Run OLHCV Engine
+        run: |
+          python Python\ Codes/olhcv.py
+
+      - name: Cleanup keys.json
+        if: always()
+        run: rm -f keys.json

@@ -1,0 +1,37 @@
+name: Fundlearn Daily Update
+
+on:
+  schedule:
+    # 8:00 PM IST = 14:30 UTC (IST = UTC+5:30)
+    - cron: '30 14 * * 1-5'
+  workflow_dispatch:  # Manual trigger button GitHub par
+
+jobs:
+  run-fundlearn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # 354 symbols x 18s sleep = ~100 min worst case, par usually 40-50 min
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread requests beautifulsoup4 firebase-admin oauth2client
+
+      - name: Write keys.json from secret
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > keys.json
+
+      - name: Run Fundlearn Engine
+        run: |
+          python Python\ Codes/fundlearn.py --firebase
+
+      - name: Cleanup keys.json
+        if: always()
+        run: rm -f keys.json
