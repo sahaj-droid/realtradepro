@@ -2929,7 +2929,7 @@ async function exportTechnicalExcel(){
       // CMP + Volume from live_prices
       const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || {};
       const cmp = lp.ltp || closes[closes.length-1] || 0;
-      const volume = lp.volume || 0;
+      const volume = lp.today_volume || lp.volume || 0;
 
       rows.push({
         Symbol: sym,
@@ -8924,6 +8924,9 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
+
+
+
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
