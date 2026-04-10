@@ -330,7 +330,7 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"      ❌ Sheet error: {e}")
 
-            if not SINGLE_SYM: time.sleep(18)
+            if not SINGLE_SYM: time.sleep(6)
 
         print(f"✅ Data Scraping & Sheet Update Completed!\n")
 
