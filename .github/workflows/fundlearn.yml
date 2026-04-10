@@ -30,7 +30,7 @@ jobs:
 
       - name: Run Fundlearn Engine
         run: |
-          python Python\ Codes/fundlearn.py --firebase
+          python Python\ Codes/fundlearn.py --force
 
       - name: Cleanup keys.json
         if: always()
