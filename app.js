@@ -3281,35 +3281,71 @@ async function fetchFull(sym,isIndex=false){
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
 
-  // Firebase first - Python engine active hoy to GAS call nahi
-  if(window._pythonEngineActive && !isIndex){
+  // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
+  if(!isIndex){
     try{
-      const snap = await firebase.firestore()
-        .collection('RealTradePro').doc('live_prices').get();
-      if(snap.exists){
-        const prices = snap.data().prices || {};
-        const p = prices[sym+'.NS'] || prices[sym+'.BO'];
-        if(p && p.ltp){
-          const d = {
-            regularMarketPrice:         p.ltp,
-            chartPreviousClose:         p.prev_close,
-            regularMarketOpen:          p.open,
-            regularMarketDayHigh:       p.high,
-            regularMarketDayLow:        p.low,
-            regularMarketVolume:        p.volume,
-            regularMarketChange:        p.change,
-            regularMarketChangePercent: p.change_pct,
-          };
-          cache[key]={data:d, time:Date.now()};
-          lastUpdatedMap[key]=Date.now();
-          return d;
+      // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
+      let fbOhlcv = null;
+      try{
+        const snap = await firebase.firestore().collection('olhcv').doc(sym).get();
+        if(snap.exists){
+          const p = snap.data();
+          if(p && p.close && p.close > 0){
+            fbOhlcv = {
+              chartPreviousClose: p.prev,
+              regularMarketOpen:  p.open,
+            };
+          }
         }
+      }catch(fbErr){
+        console.warn('[fetchFull] Firebase OLHCV read fail:', fbErr);
       }
-    }catch(fbErr){
-      console.warn('[fetchFull] Firebase failed, falling back to GAS:', fbErr);
+
+      // Step 2: 1 GAS call - live price + Day H/L + 52W + Volume (all live)
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      let gasLive = null;
+      try{
+        const r = await fetchWithTimeout(`${gasUrl}?s=${encodedSymbol}`, 8000);
+        const j = await r.json();
+        if(!j.error && j.chart && j.chart.result){
+          const m = j.chart.result[0].meta;
+          gasLive = {
+            regularMarketPrice:        m.regularMarketPrice,
+            regularMarketDayHigh:      m.regularMarketDayHigh,
+            regularMarketDayLow:       m.regularMarketDayLow,
+            regularMarketVolume:       m.regularMarketVolume,
+            averageDailyVolume3Month:  m.averageDailyVolume3Month,
+            averageDailyVolume10Day:   m.averageDailyVolume10Day,
+            fiftyTwoWeekHigh:          m.fiftyTwoWeekHigh,
+            fiftyTwoWeekLow:           m.fiftyTwoWeekLow,
+            trailingPE:                m.trailingPE,
+            epsTrailingTwelveMonths:   m.epsTrailingTwelveMonths,
+            marketCap:                 m.marketCap,
+          };
+        }
+      }catch(gasErr){
+        console.warn('[fetchFull] GAS live call fail:', gasErr);
+      }
+
+      // Step 3: Merge - Firebase OHLCV base + GAS live override
+      if(fbOhlcv || gasLive){
+        const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
+        // Change % calculate kariye
+        const ltp  = merged.regularMarketPrice  || 0;
+        const prev = merged.chartPreviousClose   || 0;
+        if(ltp && prev){
+          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
+          merged.regularMarketChangePercent = parseFloat(((ltp - prev) / prev * 100).toFixed(2));
+        }
+        cache[key] = {data: merged, time: Date.now()};
+        lastUpdatedMap[key] = Date.now();
+        return merged;
+      }
+    }catch(e){
+      console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
     }
   }
-  // END Firebase first
+  // END HYBRID block
 
   const urls=[
     localStorage.getItem("customAPI")||API,
@@ -8950,8 +8986,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
-
 
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
