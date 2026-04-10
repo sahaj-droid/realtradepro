@@ -1624,7 +1624,9 @@ async function updatePrices(){
   // ── END Task 3 ─────────────────────────────────────────────────────────────
 
   for(let s of wl){
-    let d=await fetchFull(s);if(!d) continue;
+    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
+    let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
+    if(!d) continue;
     let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
@@ -1644,8 +1646,18 @@ async function updatePrices(){
     }
   }
   for(let i of indicesList){
-    let d=await fetchFull(i.sym,true);if(!d) continue;
-    let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
+    // Python engine active hoy to Firebase thi index data levo — GAS call nahi
+    let d = null;
+    if(window._pythonEngineActive && i.sym !== '__GIFT__'){
+      try{
+        const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
+        if(_lp.exists){ const _p = _lp.data().prices || {}; d = _p[i.sym] || null; }
+        if(d){ cache[i.sym]={data:d, time:Date.now()}; }
+      }catch(e){}
+    }
+    if(!d) d = await fetchFull(i.sym,true);
+    if(!d) continue;
+    let price=d.regularMarketPrice||d.ltp,prev=d.chartPreviousClose||d.prev_close,diff=price-prev,pct=(diff/prev*100)||0;
     let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
     if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
     if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
@@ -8925,9 +8937,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
-
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
