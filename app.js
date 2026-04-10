@@ -3007,7 +3007,19 @@ async function exportTechnicalExcel(){
     XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
 
     const ist = new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}).replace(/[/:,\s]/g,'-');
-    XLSX.writeFile(wb, `RealTradePro_Technical_${ist}.xlsx`);
+    const fname = `RealTradePro_Technical_${ist}.xlsx`;
+
+    // Mobile-compatible download: Blob + anchor click
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob  = new Blob([wbout], {type:'application/octet-stream'});
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
+    a.href      = url;
+    a.download  = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+
     showPopup(`Excel exported — ${rows.length} stocks`);
 
   } catch(e) {
@@ -8128,10 +8140,8 @@ function _buildFundamentalsTab(d, sym) {
     });
     html += '</div>';
   });
-
   return html;
 }
-
 // ============================================================
 // TAB 2 — TECHNICALS
 // ============================================================
@@ -8261,7 +8271,6 @@ async function downloadLearnPDF(sym) {
     { key:'roa',      label:'ROA %',              fmt: v => v.toFixed(2)+'%',    bench:'≥ 10% Good · 5–10% Fair' },
     { key:'rsi',      label:'RSI (14D)',           fmt: v => v.toFixed(1),        bench:'< 30 Oversold · 30–70 Normal · > 70 Overbought' },
   ];
-
   const fundRows = fundMetrics.map(m => {
     const val = R[m.key];
     const fv = val === null ? '--' : m.fmt(val);
@@ -9003,7 +9012,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
