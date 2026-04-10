@@ -3142,8 +3142,10 @@ async function batchFetchStocks(symbols, isIndex=false){
     const ok=await tryBatch(urls[i]);
     if(ok){ if(i>0) showPopup('Using API fallback',2000); return; }
   }
-  // All batch attempts failed — fallback to individual calls
-  await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
+  // All batch attempts failed — fallback to individual calls only if Python engine not active
+  if(!window._pythonEngineActive || isIndex){
+    await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
+  }
 }
 
 // -- FETCH WITH 5-URL FALLBACK --
@@ -3208,7 +3210,10 @@ async function fetchFull(sym,isIndex=false){
       return data;
     }
   }
-  showError("All APIs failed  -  Check quota or URLs in Settings");
+  // Only show error if Python engine is not active (GAS is the only source)
+  if(!window._pythonEngineActive){
+    showError("All APIs failed  -  Check quota or URLs in Settings");
+  }
   return null;
 }
 // =============================================
