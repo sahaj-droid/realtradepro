@@ -2938,7 +2938,7 @@ async function exportTechnicalExcel(){
         'BB Lower': bbLower,
         RSI: rsi || '-',
         'Today Vol': volume,
-        'volume': lp.volume || 0
+        'Avg Vol (3M)': lp.volume || 0
       });
     });
 
