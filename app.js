@@ -2937,7 +2937,8 @@ async function exportTechnicalExcel(){
         'BB Upper': bbUpper,
         'BB Lower': bbLower,
         RSI: rsi || '-',
-        Volume: volume
+        'Today Vol': volume,
+        'Avg Vol (3M)': lp.volume || 0
       });
     });
 
@@ -2959,7 +2960,7 @@ async function exportTechnicalExcel(){
 
     const ws = XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:14}];
+    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:14},{wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
 
