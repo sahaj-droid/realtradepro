@@ -2971,6 +2971,9 @@ async function exportTechnicalExcel(){
       const cmp    = lp.ltp || lp.regularMarketPrice || cd.regularMarketPrice || closes[closes.length-1] || 0;
       const volume = lp.today_volume || lp.regularMarketVolume || cd.regularMarketVolume || lp.volume || 0;
 
+      const macdSignal = macdResult ? macdResult.signal    : '-';
+      const macdHist   = macdResult ? macdResult.histogram : '-';
+
       rows.push({
         Symbol: sym,
         CMP: +cmp.toFixed(2),
@@ -2978,7 +2981,9 @@ async function exportTechnicalExcel(){
         'BB Lower': bbLower,
         RSI: rsi || '-',
         'MACD': macdVal,
-        'MACD Trend': macdTrend,
+        'Signal Line': macdSignal,
+        'Histogram': macdHist,
+        'MACD Signal': macdTrend,
         'Today Vol': volume,
         'Avg Vol (3M)': avgVol3M
       });
@@ -3002,7 +3007,7 @@ async function exportTechnicalExcel(){
 
     const ws = XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:10},{wch:12},{wch:14},{wch:14}];
+    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:10},{wch:11},{wch:11},{wch:14},{wch:14},{wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
 
@@ -4223,21 +4228,46 @@ function calcEMA(data, period){
 
 // MACD (12,26,9)
 function calcMACD(closes){
-  if(!closes||closes.length<26) return null;
-  const ema12=calcEMA(closes,12);
-  const ema26=calcEMA(closes,26);
-  if(!ema12||!ema26) return null;
-  const macdLine=parseFloat((ema12-ema26).toFixed(2));
-  // Signal line needs 9-period EMA of MACD - simplified: use last 9 MACD values
-  // For single value output, return current MACD and trend
-  const ema12prev=calcEMA(closes.slice(0,-1),12);
-  const ema26prev=calcEMA(closes.slice(0,-1),26);
-  const prevMacd=ema12prev&&ema26prev?ema12prev-ema26prev:null;
+  if(!closes||closes.length<35) return null; // need enough data for signal line
+
+  // Build MACD line series for last 9 points (for signal EMA)
+  const macdSeries = [];
+  for(let offset = 9; offset >= 0; offset--){
+    const slice = closes.slice(0, closes.length - offset);
+    if(slice.length < 26) continue;
+    const e12 = calcEMA(slice, 12);
+    const e26 = calcEMA(slice, 26);
+    if(e12 && e26) macdSeries.push(e12 - e26);
+  }
+  if(macdSeries.length < 2) return null;
+
+  const macdLine = parseFloat(macdSeries[macdSeries.length - 1].toFixed(2));
+  const prevMacd = macdSeries[macdSeries.length - 2];
+
+  // Signal line = 9-period EMA of MACD series
+  const signalLine = parseFloat(calcEMA(macdSeries, Math.min(9, macdSeries.length)).toFixed(2));
+  const histogram  = parseFloat((macdLine - signalLine).toFixed(2));
+
+  // Signal: based on MACD vs Signal line crossover + zone
+  const aboveZero  = macdLine > 0;
+  const aboveSignal = macdLine > signalLine;
+  const bullishCross = prevMacd < signalLine && macdLine > signalLine;
+  const bearishCross = prevMacd > signalLine && macdLine < signalLine;
+
+  // Clear signal label
+  let signal = '';
+  if(bullishCross)       signal = aboveZero ? 'strong buy'  : 'buy';
+  else if(bearishCross)  signal = aboveZero ? 'sell'        : 'strong sell';
+  else if(aboveSignal)   signal = aboveZero ? 'bullish'     : 'weak bullish';
+  else                   signal = aboveZero ? 'weak bearish': 'bearish';
+
   return {
     macd: macdLine,
-    trend: prevMacd!==null?(macdLine>prevMacd?'bullish':'bearish'):'neutral',
-    bullishCross: prevMacd!==null&&prevMacd<0&&macdLine>0,
-    bearishCross: prevMacd!==null&&prevMacd>0&&macdLine<0
+    signal: signalLine,
+    histogram,
+    trend: signal,
+    bullishCross,
+    bearishCross
   };
 }
 
@@ -8140,8 +8170,10 @@ function _buildFundamentalsTab(d, sym) {
     });
     html += '</div>';
   });
+
   return html;
 }
+
 // ============================================================
 // TAB 2 — TECHNICALS
 // ============================================================
@@ -8271,6 +8303,7 @@ async function downloadLearnPDF(sym) {
     { key:'roa',      label:'ROA %',              fmt: v => v.toFixed(2)+'%',    bench:'≥ 10% Good · 5–10% Fair' },
     { key:'rsi',      label:'RSI (14D)',           fmt: v => v.toFixed(1),        bench:'< 30 Oversold · 30–70 Normal · > 70 Overbought' },
   ];
+
   const fundRows = fundMetrics.map(m => {
     const val = R[m.key];
     const fv = val === null ? '--' : m.fmt(val);
@@ -9012,6 +9045,7 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
+
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
