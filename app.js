@@ -1645,19 +1645,32 @@ async function updatePrices(){
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
+  // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
+  // Step 1: Python engine active hoy to Firebase thi badha indices ek sathe levo
+  if(window._pythonEngineActive){
+    try{
+      const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
+      if(_lp.exists){
+        const _p = _lp.data().prices || {};
+        indicesList.forEach(i=>{
+          if(i.sym==='__GIFT__') return;
+          const d = _p[i.sym];
+          if(d) cache[i.sym]={data:d, time:Date.now()};
+        });
+      }
+    }catch(e){}
+  }
+  // Step 2: Cache miss hoy te indices — single batch GAS call
+  const _missingIdx = indicesList
+    .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
+    .map(i => i.sym);
+  if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
+  // Step 3: Render all indices from cache
   for(let i of indicesList){
-    // Python engine active hoy to Firebase thi index data levo — GAS call nahi
-    let d = null;
-    if(window._pythonEngineActive && i.sym !== '__GIFT__'){
-      try{
-        const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
-        if(_lp.exists){ const _p = _lp.data().prices || {}; d = _p[i.sym] || null; }
-        if(d){ cache[i.sym]={data:d, time:Date.now()}; }
-      }catch(e){}
-    }
-    if(!d) d = await fetchFull(i.sym,true);
-    if(!d) continue;
-    let price=d.regularMarketPrice||d.ltp,prev=d.chartPreviousClose||d.prev_close,diff=price-prev,pct=(diff/prev*100)||0;
+    if(i.sym === '__GIFT__') continue;
+    const d = cache[i.sym]?.data; if(!d) continue;
+    const price=d.regularMarketPrice||d.ltp, prev=d.chartPreviousClose||d.prev_close;
+    const diff=price-prev, pct=(diff/prev*100)||0;
     let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
     if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
     if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
@@ -8937,6 +8950,9 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
+
+
+
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
