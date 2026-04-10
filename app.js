@@ -3395,6 +3395,45 @@ function toggleAlertEngine(){
   localStorage.setItem('alertEngineOn', next?'true':'false');
   showPopup('Technical Alerts ' + (next?'ON ⚡':'OFF 🔕'));
 }
+
+// Alert History — Firebase thi load karvo
+async function openAlertHistory(){
+  try{
+    const snap = await firebase.firestore()
+      .collection('RealTradePro').doc('alert_history').get();
+    if(!snap.exists){ showPopup('No alert history yet'); return; }
+    const data = snap.data();
+    const alerts = data.alerts || [];
+    if(!alerts.length){ showPopup('No alerts recorded yet'); return; }
+    // Simple modal show
+    const modal = document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);overflow-y:auto;padding:16px;';
+    const sorted = alerts.slice().reverse().slice(0,50);
+    let html=`<div style="max-width:400px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:14px;font-weight:700;color:#e2e8f0;">Alert History</span>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:#1e3a5f;color:#38bdf8;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">Close</button>
+      </div>`;
+    sorted.forEach(a=>{
+      const isUp=a.type&&(a.type.includes('BULL')||a.type.includes('Oversold')||a.type.includes('Lower')||a.type.includes('Breakout')||a.type.includes('Golden')||a.type.includes('Gap Up')||a.type.includes('Surge')&&!a.type.includes('Bearish'));
+      const col=isUp?'#22c55e':'#ef4444';
+      const ts=a.timestamp?new Date(a.timestamp).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      html+=`<div style="background:#0d1f35;border-radius:8px;padding:8px 12px;margin-bottom:6px;border-left:3px solid ${col};">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;font-weight:700;color:#e2e8f0;">${a.sym||''}</span>
+          <span style="font-size:9px;color:#4b6280;">${ts}</span>
+        </div>
+        <div style="font-size:11px;color:${col};margin-top:2px;">${a.alert_type||''}</div>
+        <div style="font-size:10px;color:#64748b;">₹${a.price||''}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+    modal.innerHTML=html;
+    document.body.appendChild(modal);
+  }catch(e){
+    showPopup('Alert history load failed');
+  }
+}
 function toggleNotifications(){
   const chk=document.getElementById('notifToggleChk');
   const next=chk?chk.checked:true;
@@ -8229,7 +8268,7 @@ async function downloadLearnPDF(sym) {
 
     const container = document.createElement('div');
     container.innerHTML = html;
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#060e1a;color:#e2e8f0;';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;';
     document.body.appendChild(container);
 
     showPopup('⏳ PDF generate thaī rahyu che...');
@@ -8240,7 +8279,7 @@ async function downloadLearnPDF(sym) {
       margin:      [8,8,8,8],
       filename:    `${sym}_RTP_Report_${ds}.pdf`,
       image:       { type:'jpeg', quality:0.95 },
-      html2canvas: { scale:2, backgroundColor:'#060e1a', useCORS:true, logging:false },
+      html2canvas: { scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false },
       jsPDF:       { unit:'mm', format:'a4', orientation:'portrait' },
       pagebreak:   { mode:['avoid-all','css','legacy'] }
     };
