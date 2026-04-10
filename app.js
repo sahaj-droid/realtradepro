@@ -2896,7 +2896,12 @@ async function exportTechnicalExcel(){
     histSnap.forEach(doc => {
       const sym = doc.id;
       const data = doc.data();
-      const closes = data.data || data.close || data.closes || [];
+      // histcache data field is a JSON string — parse it
+      let closes = [];
+      try {
+        const parsed = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+        closes = parsed.close || parsed.closes || parsed || [];
+      } catch(e) { closes = []; }
       if(!closes || closes.length < 20) return;
 
       // BB calculation (20 period, 2 std dev)
@@ -8919,9 +8924,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
-
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
