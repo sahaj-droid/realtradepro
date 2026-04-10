@@ -2031,28 +2031,40 @@ if(isSheetEnabled()){
     return dt.getDate()+' '+months[dt.getMonth()]+' '+dt.getFullYear();
   }
   function safe(v){ return (v===undefined||v===null||v!==v)?null:v; }
-  // Try quote endpoint — all 5 API URLs as fallback
   let d = null;
-  const _quoteUrls = [
-    localStorage.getItem('customAPI')||API,
-    localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3,
-    localStorage.getItem('customAPI4')||API4,
-    localStorage.getItem('customAPI5')||API5
-  ].filter(Boolean);
-const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
-  for(let _qu of _quoteUrls){
-    if(d) break;
+  const _symNS = sym.endsWith('.NS') ? sym : sym + '.NS';
+  const _cleanS = sym.replace(/\.NS$/i,'').replace(/\.BO$/i,'').toUpperCase();
+
+  // ── 1. Firebase fundCache (preloaded at startup — zero network call) ──
+  const _fbRaw = window._firebaseFundCache && window._firebaseFundCache[_cleanS];
+  if(_fbRaw && (_fbRaw.pe != null || _fbRaw.eps != null || _fbRaw.bookValue != null)) {
+    d = {
+      pe:        _fbRaw.pe,
+      eps:       _fbRaw.eps,
+      mktCap:    _fbRaw.marketCap,
+      bookValue: _fbRaw.bookValue,
+      high52:    _fbRaw.high52,
+      low52:     _fbRaw.low52,
+      // Yahoo-only fields not in Screener/Firebase — will show '--'
+      price: null, forwardPE: null, dividendYield: null,
+      earningsTimestamp: null, exDividendDate: null
+    };
+  }
+
+  // ── 2. GAS fallback — only if Firebase miss, only PRIMARY url (not 5x chain) ──
+  if(!d) {
     try {
+      const _qu = localStorage.getItem('customAPI') || API;
       const controller = new AbortController();
-      const tid = setTimeout(()=>controller.abort(), 15000);
+      const tid = setTimeout(()=>controller.abort(), 12000);
       const r = await fetch(`${_qu}?type=quote&s=${encodeURIComponent(_symNS)}`, {signal: controller.signal});
       clearTimeout(tid);
       const j = await r.json();
-      // GAS quoteFetch returns: {pe, eps, price, mktCap, bookValue, forwardPE, ...}
       if(j && !j.error && j.price) d = j;
     } catch(e){}
-  }  // Last resort: cache for volume (batch data has volume but not pe/eps)
+  }
+
+  // ── 3. Last resort: live price cache for volume ──
   const _cacheD = cache[sym]&&cache[sym].data;
 
   let pe='--',eps='--',mktCap='--',volume='--';
@@ -8950,9 +8962,6 @@ async function _buildCorporateActionsTab(res, sym) {
       </div>
     </div>`;
 }
-
-
-
 // Settings collapsible toggle (used by settings tab sections)
 function sToggle(bodyId, arrId){
   const b = document.getElementById(bodyId);
