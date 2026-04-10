@@ -467,7 +467,7 @@ function startEngineStaleCheck() {
         .collection('RealTradePro').doc('live_prices').get();
       const updatedAt = snap.data()?.updated_at;
       if (!updatedAt) return;
-      if (Date.now() - new Date(updatedAt).getTime() > 30000) {
+      if (Date.now() - new Date(updatedAt).getTime() > 120000) {
         showGASFallbackBar();
       }
     } catch(e) {}
@@ -479,7 +479,7 @@ function showGASFallbackBar() {
   const bar = document.createElement('div');
   bar.id = 'gas-fallback-bar';
   bar.style.cssText = `position:fixed;top:0;left:0;right:0;z-index:99999;background:#7c2d12;color:#fef2f2;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;border-bottom:2px solid #ef4444;box-shadow:0 2px 8px rgba(0,0,0,0.5);`;
-  bar.innerHTML = `<span>⚠️ Python Engine stale — prices may be outdated</span><button onclick="userEnableGASPrices()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Switch to GAS</button>`;
+  bar.innerHTML = `<span>⚠️ Python Engine stale — prices may be outdated</span><div style="display:flex;gap:8px;"><button onclick="userEnableGASPrices()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Switch to GAS</button><button onclick="hideGASFallbackBar()" style="background:#374151;color:#d1d5db;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button></div>`;
   document.body.prepend(bar);
 }
 
