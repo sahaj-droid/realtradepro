@@ -1388,10 +1388,11 @@ async function renderIndices(){
 async function refreshGainers(){
   const gm=document.getElementById('gmov-gainers-list');
   if(gm) gm.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
+  const _rSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
   if(!window._pythonEngineActive){
-    POPULAR_STOCKS.slice(0,50).forEach(s=>{if(cache[s]) cache[s].time=0;});
+    _rSrc.forEach(s=>{if(cache[s]) cache[s].time=0;});
   }
-  await batchFetchStocks(POPULAR_STOCKS.slice(0,50));
+  await batchFetchStocks(_rSrc);
   renderGainersFromCache();
 }
 
@@ -1413,7 +1414,8 @@ function moversSubTab(t) {
 }
 
 function renderGainersFromCache(){
-  const allStocks=[...new Set([...POPULAR_STOCKS])];
+  const _gainSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
+  const allStocks=_gainSrc;
   const results=allStocks.map(s=>{
     const d=cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -4865,7 +4867,8 @@ async function startApp(){
   // No GAS fundBatch call needed — all stocks instantly available via window._firebaseFundCache
   // Background: preload POPULAR_STOCKS for Gainers tab — only missing stocks (no duplicate calls)
   setTimeout(()=>{
-    const needFetch = POPULAR_STOCKS.slice(0,80).filter(s=>!cache[s]||!cache[s].data);
+    const _startSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
+    const needFetch = _startSrc.filter(s=>!cache[s]||!cache[s].data);
     if(needFetch.length > 0) {
       batchFetchStocks(needFetch).then(()=>{
         if(document.getElementById('indices')?.classList.contains('active')) renderGainersFromCache();
