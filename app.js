@@ -1263,12 +1263,10 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
     if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
     if (!d) continue;
 
-    const _price = d.regularMarketPrice || 0;
-    const _prev = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-    let diff = (_price && _prev) ? (_price - _prev) : 0;
-    let pct  = (_prev > 0) ? (diff / _prev * 100) : 0;
-    if(!isFinite(diff)) diff = 0;
-    if(!isFinite(pct))  pct  = 0;
+    const _price = d.regularMarketPrice || d.ltp || 0;
+    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
 
     html += `
     <div class="wl-card-wrap" id="wrap-${s}">
