@@ -5240,6 +5240,7 @@ document.addEventListener('touchmove', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
+  return; // ← bas aa ek line add karo sabse upar
   if (_swipeLocked) return;
   const dx = e.changedTouches[0].clientX - _txStart;
   const dy = e.changedTouches[0].clientY - _tyStart;
