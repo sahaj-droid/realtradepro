@@ -3335,7 +3335,7 @@ async function fetchFull(sym,isIndex=false){
       // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
       let fbOhlcv = null;
       try{
-        const snap = await firebase.firestore().collection('olhcv').doc(sym).get();
+        const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
         if(snap.exists){
           const p = snap.data();
           if(p && p.close && p.close > 0){
