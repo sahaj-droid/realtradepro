@@ -5178,7 +5178,7 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 
-startRefresh();
+setTimeout(() => startRefresh(), 2000);
     
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
