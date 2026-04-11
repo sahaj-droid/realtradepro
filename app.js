@@ -1641,7 +1641,7 @@ async function updatePrices(){
     // Python engine active hoy to cache already filled — fetchFull GAS call avoid
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
+    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
