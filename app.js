@@ -3307,7 +3307,10 @@ async function batchFetchStocks(symbols, isIndex=false){
         const normalized=normalizeBatchItem(gasData);
         if(!normalized) return;
         const cacheKey=isIndex?sym:sym.replace('.NS','');
-        cache[cacheKey]={data:normalized,time:Date.now()};
+        const existing = cache[cacheKey]?.data || {};
+        cache[cacheKey]={data: Object.assign({}, existing, 
+        Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null))
+        ), time:Date.now()};
         lastUpdatedMap[cacheKey]=Date.now();
         stored++;
       });
