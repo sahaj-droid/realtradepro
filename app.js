@@ -1630,7 +1630,11 @@ async function updatePrices(){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
           const p = prices[s+'.NS'];
-          if(p){ cache[s]={data:p, time:Date.now()}; lastUpdatedMap[s]=Date.now(); }
+          if(p){ 
+          const existing = cache[s]?.data || {};
+          cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
+          lastUpdatedMap[s]=Date.now(); 
+          }
         });
       }
     }catch(e){ /* silent — fall through to fetchFull below */ }
