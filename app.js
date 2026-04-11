@@ -418,6 +418,10 @@ const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQ
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 const API4 = "https://script.google.com/macros/s/AKfycbwr9sKAbHjmVf48Ihp2PJq8xjNv-D6kglwFKqY8Uxwke99icv5JCNa6RiABdmm3G_lP/exec";
 const API5 = "https://script.google.com/macros/s/AKfycbzc6tzmWVfGbpMa7ocVxg2bYlutvTRbPRbEZrqz2WtLib2MAqUCzsUz-Q9XACXDz34O/exec";
+// REPLACE getActiveGASUrl() function (line 421-430):
+let _urlRotationIndex = 0;
+const _urlLastUsed = {}; // track last used time per URL
+
 function getActiveGASUrl() {
   const urls = [
     localStorage.getItem('customAPI')||API,
@@ -426,7 +430,13 @@ function getActiveGASUrl() {
     localStorage.getItem('customAPI4')||API4,
     localStorage.getItem('customAPI5')||API5
   ].filter(Boolean);
-  return urls[Math.floor(Math.random()*urls.length)];
+  
+  if(urls.length === 0) return API;
+  
+  // Round robin — next URL in sequence
+  const url = urls[_urlRotationIndex % urls.length];
+  _urlRotationIndex++;
+  return url;
 }
 function monitorSystemHealth() {
   if(typeof firebase === 'undefined') return;
