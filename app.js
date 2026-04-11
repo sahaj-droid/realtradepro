@@ -8579,7 +8579,7 @@ async function downloadLearnPDF(sym) {
 
     const container = document.createElement('div');
     container.innerHTML = html;
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;';
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;visibility:hidden;';
     document.body.appendChild(container);
 
     showPopup('⏳ PDF generate thaī rahyu che...');
