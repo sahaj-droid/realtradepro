@@ -1266,7 +1266,6 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
     const _price = d.regularMarketPrice || 0;
     const _prev = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
     let diff = (_price && _prev) ? (_price - _prev) : 0;
-    let diff = _price - _prev;
     let pct  = (_prev > 0) ? (diff / _prev * 100) : 0;
     if(!isFinite(diff)) diff = 0;
     if(!isFinite(pct))  pct  = 0;
