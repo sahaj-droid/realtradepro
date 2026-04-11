@@ -7726,6 +7726,8 @@ async function fetchLearnStock() {
   totalShares: fv(d.totalShares),
   ebit:        fv(d.ebit),
   capEmployed: fv(d.capEmployed),
+  roce:        fv(d.roce),
+  ncf:         fv(d.ncf),
   totalDebt:   fv(d.totalDebt),
   dividend:    fv(d.dividend),
   currAsset:   fv(d.currAsset),
@@ -7919,19 +7921,16 @@ function calcLearnRatios(d) {
   // ROE — direct field only, realistic range 0–200%
   const roe = safeRange(d.roe, 0.01, 200);
 
-  // ROCE — direct field only (d.roce), realistic range 0–200%
-  // NOTE: capEmployed field is raw capital value NOT %, so never use it as ROCE
-  const roce = safeRange(d.roce, 0.01, 200);
-
+// ROCE — direct field (Firebase 'roce'), fallback capEmployed
+  const roce = safeRange(d.roce, 0.01, 200)
+    ?? safeRange(d.capEmployed, 0.01, 200);
   // Book Value — direct field, realistic range
   const bv = safeRange(d.bookValue, 0.01, 1000000);
-
   // DE Ratio — direct field, realistic range 0–20
   const de = safeRange(d.deRatio, 0, 20);
-
-  // Dividend Yield — calculate only if both fields valid
-  const divY = (d.dividend > 0 && d.sharePrice > 0)
-    ? safeRange((d.dividend / d.sharePrice) * 100, 0, 30)
+  // Dividend Yield — hve direct % che (0.89), calculation nahi
+  const divY = (d.dividend > 0)
+    ? safeRange(d.dividend, 0, 30)
     : null;
 
   // ROA — direct field, realistic range 0–100%
