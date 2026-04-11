@@ -3308,9 +3308,7 @@ async function batchFetchStocks(symbols, isIndex=false){
         if(!normalized) return;
         const cacheKey=isIndex?sym:sym.replace('.NS','');
         const existing = cache[cacheKey]?.data || {};
-        cache[cacheKey]={data: Object.assign({}, existing, 
-        Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null))
-        ), time:Date.now()};
+        const _existing=cache[cacheKey]?.data||{};const _clean=Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null&&v!==undefined));cache[cacheKey]={data:Object.assign({},_existing,_clean),time:Date.now()};
         lastUpdatedMap[cacheKey]=Date.now();
         stored++;
       });
