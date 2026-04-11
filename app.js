@@ -5117,7 +5117,6 @@ async function startApp(){
   // Watchlist: batch fetch | Indices: individual (^ symbols)
 // Show UI immediately — don't wait for all data
   hideLoader();
-  renderWL();
   // Fetch in background — UI updates as data arrives
   batchFetchStocks(wl).then(()=>{
     renderWL();
