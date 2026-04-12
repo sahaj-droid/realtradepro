@@ -418,6 +418,10 @@ const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQ
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 const API4 = "https://script.google.com/macros/s/AKfycbwr9sKAbHjmVf48Ihp2PJq8xjNv-D6kglwFKqY8Uxwke99icv5JCNa6RiABdmm3G_lP/exec";
 const API5 = "https://script.google.com/macros/s/AKfycbzc6tzmWVfGbpMa7ocVxg2bYlutvTRbPRbEZrqz2WtLib2MAqUCzsUz-Q9XACXDz34O/exec";
+// REPLACE getActiveGASUrl() function (line 421-430):
+let _urlRotationIndex = 0;
+const _urlLastUsed = {}; // track last used time per URL
+
 function getActiveGASUrl() {
   const urls = [
     localStorage.getItem('customAPI')||API,
@@ -426,7 +430,13 @@ function getActiveGASUrl() {
     localStorage.getItem('customAPI4')||API4,
     localStorage.getItem('customAPI5')||API5
   ].filter(Boolean);
-  return urls[Math.floor(Math.random()*urls.length)];
+  
+  if(urls.length === 0) return API;
+  
+  // Round robin — next URL in sequence
+  const url = urls[_urlRotationIndex % urls.length];
+  _urlRotationIndex++;
+  return url;
 }
 function monitorSystemHealth() {
   if(typeof firebase === 'undefined') return;
@@ -1253,8 +1263,10 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
     if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
     if (!d) continue;
 
-    let diff = d.regularMarketPrice - d.chartPreviousClose;
-    let pct = (diff / d.chartPreviousClose * 100) || 0;
+    const _price = d.regularMarketPrice || d.ltp || 0;
+    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
 
     html += `
     <div class="wl-card-wrap" id="wrap-${s}">
@@ -1282,7 +1294,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
             <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
+              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
         </div>
@@ -1616,7 +1628,11 @@ async function updatePrices(){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
           const p = prices[s+'.NS'];
-          if(p){ cache[s]={data:p, time:Date.now()}; lastUpdatedMap[s]=Date.now(); }
+          if(p){ 
+          const existing = cache[s]?.data || {};
+          cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
+          lastUpdatedMap[s]=Date.now(); 
+          }
         });
       }
     }catch(e){ /* silent — fall through to fetchFull below */ }
@@ -1627,7 +1643,7 @@ async function updatePrices(){
     // Python engine active hoy to cache already filled — fetchFull GAS call avoid
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    let price=d.regularMarketPrice,prev=d.chartPreviousClose,diff=price-prev,pct=(diff/prev*100)||0;
+    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
@@ -2910,23 +2926,23 @@ async function exportTechnicalExcel(){
   try {
     const db = firebase.firestore();
 
-    // 1. Live prices fetch
+    // 1. Live prices fetch (for CMP + today volume)
     const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
     const livePrices = lpDoc.exists ? (lpDoc.data().prices || {}) : {};
 
-    // 2. histcache — get all symbols
+    // 2. histcache — get all symbols + compute all indicators
     const histSnap = await db.collection('histcache').get();
     const rows = [];
 
     histSnap.forEach(doc => {
       const sym = doc.id;
       const data = doc.data();
-      // histcache data field is a JSON string — parse it
-      let closes = [];
+      let closes = [], volumes = [];
       try {
         const parsed = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
-        closes = parsed.close || parsed.closes || parsed || [];
-      } catch(e) { closes = []; }
+        closes  = parsed.close  || parsed.closes  || parsed || [];
+        volumes = parsed.volume || parsed.volumes || [];
+      } catch(e) { closes = []; volumes = []; }
       if(!closes || closes.length < 20) return;
 
       // BB calculation (20 period, 2 std dev)
@@ -2951,10 +2967,28 @@ async function exportTechnicalExcel(){
         rsi = avgLoss===0 ? 100 : +(100 - (100/(1+(avgGain/avgLoss)))).toFixed(2);
       }
 
-      // CMP + Volume from live_prices
+      // MACD calculation using closes from histcache
+      const macdResult = calcMACD(closes);
+      const macdVal   = macdResult ? macdResult.macd  : '-';
+      const macdTrend = macdResult ? macdResult.trend : '-';
+
+      // Avg Vol (3M) — last 63 trading days from histcache volume array (skip zeros)
+      let avgVol3M = 0;
+      if(volumes && volumes.length > 0){
+        const volSlice = volumes.slice(-63).filter(v => v > 0);
+        if(volSlice.length > 0){
+          avgVol3M = Math.round(volSlice.reduce((a,b)=>a+b,0) / volSlice.length);
+        }
+      }
+
+      // CMP + Today Volume from live_prices / in-memory cache
       const lp = livePrices[sym+'.NS'] || livePrices[sym+'.BO'] || livePrices[sym] || {};
-      const cmp = lp.ltp || closes[closes.length-1] || 0;
-      const volume = lp.today_volume || lp.volume || lp.vol || 0;
+      const cd = cache[sym]?.data || {};
+      const cmp    = lp.ltp || lp.regularMarketPrice || cd.regularMarketPrice || closes[closes.length-1] || 0;
+      const volume = lp.today_volume || lp.regularMarketVolume || cd.regularMarketVolume || lp.volume || 0;
+
+      const macdSignal = macdResult ? macdResult.signal    : '-';
+      const macdHist   = macdResult ? macdResult.histogram : '-';
 
       rows.push({
         Symbol: sym,
@@ -2962,8 +2996,12 @@ async function exportTechnicalExcel(){
         'BB Upper': bbUpper,
         'BB Lower': bbLower,
         RSI: rsi || '-',
+        'MACD': macdVal,
+        'Signal Line': macdSignal,
+        'Histogram': macdHist,
+        'MACD Signal': macdTrend,
         'Today Vol': volume,
-        'Avg Vol (3M)': lp.volume || 0
+        'Avg Vol (3M)': avgVol3M
       });
     });
 
@@ -2985,12 +3023,24 @@ async function exportTechnicalExcel(){
 
     const ws = XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:14},{wch:14}];
+    ws['!cols'] = [{wch:14},{wch:10},{wch:12},{wch:12},{wch:8},{wch:10},{wch:11},{wch:11},{wch:14},{wch:14},{wch:14}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Technical Snapshot');
 
     const ist = new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}).replace(/[/:,\s]/g,'-');
-    XLSX.writeFile(wb, `RealTradePro_Technical_${ist}.xlsx`);
+    const fname = `RealTradePro_Technical_${ist}.xlsx`;
+
+    // Mobile-compatible download: Blob + anchor click
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob  = new Blob([wbout], {type:'application/octet-stream'});
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
+    a.href      = url;
+    a.download  = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+
     showPopup(`Excel exported — ${rows.length} stocks`);
 
   } catch(e) {
@@ -3257,7 +3307,8 @@ async function batchFetchStocks(symbols, isIndex=false){
         const normalized=normalizeBatchItem(gasData);
         if(!normalized) return;
         const cacheKey=isIndex?sym:sym.replace('.NS','');
-        cache[cacheKey]={data:normalized,time:Date.now()};
+        const existing = cache[cacheKey]?.data || {};
+        const _existing=cache[cacheKey]?.data||{};const _clean=Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null&&v!==undefined));cache[cacheKey]={data:Object.assign({},_existing,_clean),time:Date.now()};
         lastUpdatedMap[cacheKey]=Date.now();
         stored++;
       });
@@ -3287,7 +3338,7 @@ async function fetchFull(sym,isIndex=false){
       // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
       let fbOhlcv = null;
       try{
-        const snap = await firebase.firestore().collection('olhcv').doc(sym).get();
+        const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
         if(snap.exists){
           const p = snap.data();
           if(p && p.close && p.close > 0){
@@ -3375,7 +3426,13 @@ async function fetchFull(sym,isIndex=false){
   }
   // Only show error if Python engine is not active (GAS is the only source)
   if(!window._pythonEngineActive){
-    showError("All APIs failed  -  Check quota or URLs in Settings");
+    // Weekend / after-hours ma error suppress karo — engine band hoy te normal che
+    const _ms = getMarketStatus();
+    if(_ms.open){
+      showError("All APIs failed  -  Check quota or URLs in Settings");
+    } else {
+      console.warn("[GAS] All APIs failed — market closed, suppressing banner");
+    }
   }
   return null;
 }
@@ -4194,21 +4251,46 @@ function calcEMA(data, period){
 
 // MACD (12,26,9)
 function calcMACD(closes){
-  if(!closes||closes.length<26) return null;
-  const ema12=calcEMA(closes,12);
-  const ema26=calcEMA(closes,26);
-  if(!ema12||!ema26) return null;
-  const macdLine=parseFloat((ema12-ema26).toFixed(2));
-  // Signal line needs 9-period EMA of MACD - simplified: use last 9 MACD values
-  // For single value output, return current MACD and trend
-  const ema12prev=calcEMA(closes.slice(0,-1),12);
-  const ema26prev=calcEMA(closes.slice(0,-1),26);
-  const prevMacd=ema12prev&&ema26prev?ema12prev-ema26prev:null;
+  if(!closes||closes.length<35) return null; // need enough data for signal line
+
+  // Build MACD line series for last 9 points (for signal EMA)
+  const macdSeries = [];
+  for(let offset = 9; offset >= 0; offset--){
+    const slice = closes.slice(0, closes.length - offset);
+    if(slice.length < 26) continue;
+    const e12 = calcEMA(slice, 12);
+    const e26 = calcEMA(slice, 26);
+    if(e12 && e26) macdSeries.push(e12 - e26);
+  }
+  if(macdSeries.length < 2) return null;
+
+  const macdLine = parseFloat(macdSeries[macdSeries.length - 1].toFixed(2));
+  const prevMacd = macdSeries[macdSeries.length - 2];
+
+  // Signal line = 9-period EMA of MACD series
+  const signalLine = parseFloat(calcEMA(macdSeries, Math.min(9, macdSeries.length)).toFixed(2));
+  const histogram  = parseFloat((macdLine - signalLine).toFixed(2));
+
+  // Signal: based on MACD vs Signal line crossover + zone
+  const aboveZero  = macdLine > 0;
+  const aboveSignal = macdLine > signalLine;
+  const bullishCross = prevMacd < signalLine && macdLine > signalLine;
+  const bearishCross = prevMacd > signalLine && macdLine < signalLine;
+
+  // Clear signal label
+  let signal = '';
+  if(bullishCross)       signal = aboveZero ? 'strong buy'  : 'buy';
+  else if(bearishCross)  signal = aboveZero ? 'sell'        : 'strong sell';
+  else if(aboveSignal)   signal = aboveZero ? 'bullish'     : 'weak bullish';
+  else                   signal = aboveZero ? 'weak bearish': 'bearish';
+
   return {
     macd: macdLine,
-    trend: prevMacd!==null?(macdLine>prevMacd?'bullish':'bearish'):'neutral',
-    bullishCross: prevMacd!==null&&prevMacd<0&&macdLine>0,
-    bearishCross: prevMacd!==null&&prevMacd>0&&macdLine<0
+    signal: signalLine,
+    histogram,
+    trend: signal,
+    bullishCross,
+    bearishCross
   };
 }
 
@@ -5000,11 +5082,25 @@ function downloadFeaturePDF(){
     "Real Trader Pro  |  Pure HTML + Tailwind CSS + Vanilla JS  |  GAS + Yahoo Finance" +
     "</div></body></html>";
 
-  const w = window.open("","_blank","width=900,height=700");
-  if(!w){ showPopup("Popup blocked! Allow popups for this site."); return; }
-  w.document.write(html);
-  w.document.close();
-  setTimeout(()=>{ w.focus(); w.print(); }, 500);
+  // Mobile-compatible: Blob download instead of window.open (popup blocked on mobile)
+  try {
+    const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'RealTradePro_FeatureGuide.html';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    showPopup('Downloaded! Open file in browser → Print → Save as PDF');
+  } catch(e) {
+    // Fallback: window.open for desktop
+    const w = window.open("","_blank","width=900,height=700");
+    if(!w){ showPopup("Popup blocked! Allow popups for this site."); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>{ w.focus(); w.print(); }, 500);
+  }
 }
 
 async function startApp(){
@@ -5021,7 +5117,6 @@ async function startApp(){
   // Watchlist: batch fetch | Indices: individual (^ symbols)
 // Show UI immediately — don't wait for all data
   hideLoader();
-  renderWL();
   // Fetch in background — UI updates as data arrives
   batchFetchStocks(wl).then(()=>{
     renderWL();
@@ -5065,7 +5160,7 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open) updatePrices();
+    updatePrices();
   }, 5000);
 }
 
@@ -5082,7 +5177,7 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 
-startRefresh();
+setTimeout(() => startRefresh(), 5000);
     
 async function manualRefresh(){
   let btn=document.getElementById("refreshBtn");
@@ -5144,6 +5239,7 @@ document.addEventListener('touchmove', e => {
 }, { passive: true });
 
 document.addEventListener('touchend', e => {
+  return; // ← bas aa ek line add karo sabse upar
   if (_swipeLocked) return;
   const dx = e.changedTouches[0].clientX - _txStart;
   const dy = e.changedTouches[0].clientY - _tyStart;
@@ -7633,6 +7729,8 @@ async function fetchLearnStock() {
   totalShares: fv(d.totalShares),
   ebit:        fv(d.ebit),
   capEmployed: fv(d.capEmployed),
+  roce:        fv(d.roce),
+  ncf:         fv(d.ncf),
   totalDebt:   fv(d.totalDebt),
   dividend:    fv(d.dividend),
   currAsset:   fv(d.currAsset),
@@ -7806,50 +7904,48 @@ function _getLivePrice(sym) {
 // REPLACE entire calcLearnRatios function:
 function calcLearnRatios(d) {
   const safe = (v) => (v === null || v === undefined || isNaN(v) || !isFinite(v)) ? null : v;
+  // Sanity check: value must be in realistic range
+  const safeRange = (v, min, max) => {
+    const n = safe(v);
+    return (n !== null && n >= min && n <= max) ? n : null;
+  };
 
-  // Direct from Screener/Firebase — use if available, else calculate from raw fields
-  // EPS: direct OR calculate from netProfit / totalShares
-  const eps = (d.eps && d.eps > 0)
-    ? d.eps
-    : (d.netProfit > 0 && d.totalShares > 0 ? d.netProfit / d.totalShares : null);
+  // EPS — direct field only (no calculation — unit mismatch risk)
+  const eps = safeRange(d.eps, 0.01, 50000);
 
-  // PE: direct OR calculate from sharePrice / eps
-  const _eps = eps;
-  const pe = (d.pe && d.pe > 0)
-    ? d.pe
-    : (d.sharePrice > 0 && _eps > 0 ? d.sharePrice / _eps : null);
+  // PE — direct field only, realistic range 0–500
+  // Fallback: sharePrice / eps only if both are valid and result is sane
+  let pe = safeRange(d.pe, 0.1, 500);
+  if (!pe && d.sharePrice > 0 && eps > 0) {
+    const calc = d.sharePrice / eps;
+    pe = safeRange(calc, 0.1, 500);
+  }
 
-  // ROE: direct OR calculate from netProfit / totalEquity
-  const roe = (d.roe && d.roe > 0)
-    ? d.roe
-    : (d.netProfit > 0 && d.totalEquity > 0 ? (d.netProfit / d.totalEquity) * 100 : null);
+  // ROE — direct field only, realistic range 0–200%
+  const roe = safeRange(d.roe, 0.01, 200);
 
-  // ROCE: capEmployed field now stores ROCE% directly from Screener
-  // (Python script stores Screener's ROCE% in Col F / capEmployed field)
-  const roce = (d.capEmployed && d.capEmployed > 0) ? d.capEmployed : null;
+// ROCE — direct field (Firebase 'roce'), fallback capEmployed
+  const roce = safeRange(d.roce, 0.01, 200)
+    ?? safeRange(d.capEmployed, 0.01, 200);
+  // Book Value — direct field, realistic range
+  const bv = safeRange(d.bookValue, 0.01, 1000000);
+  // DE Ratio — direct field, realistic range 0–20
+  const de = safeRange(d.deRatio, 0, 20);
+  // Dividend Yield — hve direct % che (0.89), calculation nahi
+  const divY = (d.dividend > 0)
+    ? safeRange(d.dividend, 0, 30)
+    : null;
 
-  // Book Value: direct OR calculate from totalEquity / totalShares
-  const bv = (d.bookValue && d.bookValue > 0)
-    ? d.bookValue
-    : (d.totalEquity > 0 && d.totalShares > 0 ? d.totalEquity / d.totalShares : null);
-
-  // DE Ratio: direct OR calculate from totalDebt / totalEquity
-  const de = (d.deRatio && d.deRatio > 0)
-    ? d.deRatio
-    : (d.totalDebt >= 0 && d.totalEquity > 0 ? d.totalDebt / d.totalEquity : null);
-
-  // Dividend Yield: (dividend / sharePrice) * 100
-  const divY = (d.dividend > 0 && d.sharePrice > 0) ? (d.dividend / d.sharePrice) * 100 : null;
-
-  // FII, DII, ROA — direct values
-  const fii = (d.fii && d.fii > 0) ? d.fii : null;
-  const dii = (d.dii && d.dii > 0) ? d.dii : null;
-  const roa = (d.roa && d.roa > 0)
-    ? d.roa
-    : (d.netProfit > 0 && (d.currAsset + d.totalDebt) > 0 ? (d.netProfit / (d.currAsset + d.totalDebt)) * 100 : null);
+  // ROA — direct field, realistic range 0–100%
+  const roa = safeRange(d.roa, 0.01, 100);
 
   // Current Ratio — calculate from currAsset / currLiab
-  const cr = d.currLiab > 0 ? d.currAsset / d.currLiab : null;
+  const cr = (d.currLiab > 0 && d.currAsset > 0)
+    ? safeRange(d.currAsset / d.currLiab, 0, 20)
+    : null;
+
+  const fii = safeRange(d.fii, 0, 100);
+  const dii = safeRange(d.dii, 0, 100);
 
   return {
     pe:       safe(pe),
@@ -7860,7 +7956,7 @@ function calcLearnRatios(d) {
     de:       safe(de),
     cr:       safe(cr),
     divYield: safe(divY),
-    promoter: (d.promoter && d.promoter > 0) ? d.promoter : null,
+    promoter: safeRange(d.promoter, 0, 100),
     fii:      safe(fii),
     dii:      safe(dii),
     roa:      safe(roa),
@@ -8486,7 +8582,7 @@ async function downloadLearnPDF(sym) {
 
     const container = document.createElement('div');
     container.innerHTML = html;
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;';
+    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;visibility:hidden;';
     document.body.appendChild(container);
 
     showPopup('⏳ PDF generate thaī rahyu che...');
