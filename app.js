@@ -7736,13 +7736,17 @@ function learnSearchSuggest(val) {
   if (!box) return;
   const v = val.trim().toUpperCase();
   if (v.length < 1) { box.style.display = 'none'; return; }
+  const _lsL = document.body.classList.contains('light');
+  const _lsClr = _lsL ? '#1c1917'                      : '#e2e8f0';
+  const _lsBdr = _lsL ? '1px solid rgba(0,0,0,0.06)'  : '1px solid rgba(255,255,255,0.05)';
+  const _lsHov = _lsL ? '#fef9ed'                      : 'rgba(251,146,60,0.1)';
   const allSyms = [...new Set([...(typeof wl!=='undefined'?wl:[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
   const matches = allSyms.filter(s => s.toUpperCase().startsWith(v)).slice(0, 8);
   if (matches.length === 0) { box.style.display = 'none'; return; }
   box.innerHTML = matches.map(s =>
     `<div onclick="document.getElementById('learnSearchInput').value='${s}';document.getElementById('learnSuggBox').style.display='none';fetchLearnStock();"
-      style="padding:8px 14px;font-size:12px;font-weight:700;color:#e2e8f0;cursor:pointer;font-family:'Rajdhani',sans-serif;border-bottom:1px solid rgba(255,255,255,0.05);"
-      onmouseover="this.style.background='rgba(251,146,60,0.1)'" onmouseout="this.style.background=''">${s}</div>`
+      style="padding:8px 14px;font-size:12px;font-weight:700;color:${_lsClr};cursor:pointer;font-family:'Rajdhani',sans-serif;border-bottom:${_lsBdr};"
+      onmouseover="this.style.background='${_lsHov}'" onmouseout="this.style.background=''">${s}</div>`
   ).join('');
   box.style.display = 'block';
 }
