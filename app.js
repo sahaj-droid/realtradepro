@@ -15,9 +15,15 @@ let currentPINEntry = '';
 
 // ── Default Sarvam API Key pre-save (first time only) ──
 (function setDefaultSarvamKey() {
-  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // <-- taro default key yaha nakh
+  const DEFAULT_SARVAM_KEY  = "taro-key-1-yahan";
+  const DEFAULT_SARVAM_KEY2 = "taro-key-2-yahan"; // ← NEW
+
   if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
     localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
+  }
+  // ← NEW: Key 2 pan same rite set karo
+  if (!localStorage.getItem('geminiApiKey2') && DEFAULT_SARVAM_KEY2 !== "") {
+    localStorage.setItem('geminiApiKey2', DEFAULT_SARVAM_KEY2);
   }
 })();
 
