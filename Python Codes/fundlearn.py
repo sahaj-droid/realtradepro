@@ -366,3 +366,92 @@ if __name__ == "__main__":
             if not SINGLE_SYM: time.sleep(1.5)
 
         print(f"✅ Data Scraping & Sheet Update Completed!\n")
+
+    # ---------------------------------------------------------
+    # STEP 2 — SHEET + CACHE → FIREBASE
+    # ---------------------------------------------------------
+    print("🔥 STEP 2: Pushing Data to Firebase...")
+    try:
+        updated_data = sheet.get_all_values()
+        fb_count = 0
+
+        for i, row in enumerate(updated_data[1:], start=2):
+            if not row or not row[0].strip(): continue
+            symbol = row[0].strip().upper()
+
+            if any(k in symbol for k in SKIP_KEYWORDS): continue
+            if SINGLE_SYM and symbol != SINGLE_SYM: continue
+            if len(row) < 2 or row[1].strip() == "": continue
+
+            def safe(v):
+                try:
+                    s = str(v).replace(',','').replace('%','').strip()
+                    if s in ('','−','-','N/A','None','nan','--','0'): return 0.0
+                    return float(s)
+                except: return 0.0
+
+            # Quarterly headers (BC-BG = index 54-58)
+            hq = []
+            for idx in range(54, 59):
+                val = row[idx].strip() if idx < len(row) else ''
+                hq.append(val if val else f'Q{idx-53}')
+
+            doc_data = {
+                'symbol':      symbol,
+                'netProfit':   safe(row[1]),   # B
+                'totalEquity': safe(row[2]),   # C
+                'totalShares': safe(row[3]),   # D
+                'ebit':        safe(row[4]),   # E
+                'roce':        safe(row[5]),   # F
+                'totalDebt':   safe(row[6]),   # G
+                'dividend':    safe(row[7]),   # H
+                'ncf':         safe(row[8]),   # I
+                'currAsset':   safe(row[9]),   # J
+                'currLiab':    safe(row[10]),  # K
+                'promoter':    safe(row[11]),  # L
+                'fii':         safe(row[12]),  # M
+                'dii':         safe(row[13]),  # N
+                'pubHolding':  safe(row[14]),  # O
+                'eps':         safe(row[15]),  # P
+                'opProfit':    safe(row[16]),  # Q
+                'fcf':         safe(row[17]),  # R
+                'deRatio':     safe(row[18]),  # S
+                'roa':         safe(row[19]),  # T
+                'ebitda':      safe(row[20]),  # U
+                'pe':          safe(row[21]),  # V
+                'bookValue':   safe(row[22]),  # W
+                'roe':         safe(row[23]),  # X
+                'salesQ1': safe(row[24]), 'salesQ2': safe(row[25]),
+                'salesQ3': safe(row[26]), 'salesQ4': safe(row[27]),
+                'salesQ5': safe(row[28]),
+                'expQ1': safe(row[29]), 'expQ2': safe(row[30]),
+                'expQ3': safe(row[31]), 'expQ4': safe(row[32]),
+                'expQ5': safe(row[33]),
+                'opQ1': safe(row[34]), 'opQ2': safe(row[35]),
+                'opQ3': safe(row[36]), 'opQ4': safe(row[37]),
+                'opQ5': safe(row[38]),
+                'otherIncQ1': safe(row[39]), 'otherIncQ2': safe(row[40]),
+                'otherIncQ3': safe(row[41]), 'otherIncQ4': safe(row[42]),
+                'otherIncQ5': safe(row[43]),
+                'pbtQ1': safe(row[44]), 'pbtQ2': safe(row[45]),
+                'pbtQ3': safe(row[46]), 'pbtQ4': safe(row[47]),
+                'pbtQ5': safe(row[48]),
+                'npQ1': safe(row[49]), 'npQ2': safe(row[50]),
+                'npQ3': safe(row[51]), 'npQ4': safe(row[52]),
+                'npQ5': safe(row[53]),
+                'quarterly_headers': hq,
+                'updatedAt': fstore.SERVER_TIMESTAMP
+            }
+
+            fdb.collection('fundlearn').document(symbol).set(doc_data, merge=True)
+            fb_count += 1
+
+            if fb_count % 20 == 0:
+                time.sleep(1)
+
+        print(f"🎉 Successfully uploaded {fb_count} stocks to Firebase!\n")
+
+    except Exception as e:
+        print(f"❌ Firebase Upload Error: {e}\n")
+
+    print("🏁 RealTradePro v8.1 Engine Completed!")
