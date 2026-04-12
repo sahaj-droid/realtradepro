@@ -284,7 +284,6 @@ html[data-fsize='large'] { font-size: 128%; }
    ====================================================== */
 body.light { background:#faf8f5; color:#1c1917; }
 
-/* ---- Core Component Classes ---- */
 body.light .card { background:#ffffff; border:1px solid #e7e5e4; box-shadow:0 1px 6px rgba(0,0,0,0.07),0 3px 12px rgba(0,0,0,0.04); color:#1c1917; }
 body.light .app-header { background:linear-gradient(90deg,#ffffff,#fdf8f0); border-bottom:1px solid #e7e5e4; color:#1c1917; box-shadow:0 1px 8px rgba(0,0,0,0.06); }
 body.light .portfolio-card { background:linear-gradient(135deg,#fff8f0,#fef3e2); border:1px solid #fcd34d; color:#1c1917; }
@@ -314,7 +313,7 @@ body.light .wl-actions-panel { background:#fef9ed !important; border-top-color:#
 body.light #loaderOverlay { background:rgba(250,248,245,0.92); }
 body.light .spinner { border-color:#e7e5e4; border-top-color:#d97706; }
 
-/* ---- SETTINGS: Class-based overrides (hardcoded in <style> tag) ---- */
+/* ---- SETTINGS: Class-based overrides ---- */
 body.light .s-card { background:#ffffff !important; border-color:#e7e5e4 !important; box-shadow:0 1px 4px rgba(0,0,0,0.05) !important; }
 body.light .s-row { border-bottom-color:#f5f5f4 !important; }
 body.light .s-row-title { color:#1c1917 !important; }
@@ -344,6 +343,51 @@ body.light #settings [style*="background:rgba(148,163,184,0.08)"] { background:#
 body.light #settings [style*="border-bottom:1px solid rgba(255,255,255,0.04)"] { border-bottom-color:#f5f5f4 !important; }
 body.light #settings [style*="border-bottom:1px solid rgba(255,255,255,0.05)"] { border-bottom-color:#f5f5f4 !important; }
 
+/* ---- BUY / SELL / EDIT Modal ---- */
+body.light #modal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
+body.light #modal #m-title { color:#1c1917 !important; }
+body.light #modal #m-price,
+body.light #modal #m-qty,
+body.light #modal #m-date { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
+body.light #modal #taxCalcBox { background:#f5f5f4 !important; border-color:#e7e5e4 !important; }
+body.light #modal #taxCalcBox [style*="color:#94a3b8"] { color:#57534e !important; }
+body.light #modal #taxCalcBox [style*="color:#e2e8f0"] { color:#1c1917 !important; }
+body.light #modal #taxCalcBox [style*="border-top:1px solid #1e3a5f"] { border-top-color:#e7e5e4 !important; }
+body.light #modal button[onclick*="closeModal"] { background:#f5f5f4 !important; color:#57534e !important; }
+body.light #modal #type-cnc { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
+body.light #modal #type-mis { background:#f5f5f4 !important; color:#57534e !important; border-color:#d6d3d1 !important; }
+
+/* ---- Stock Detail Modal ---- */
+body.light #detailModal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
+body.light #detailModal #d-title { color:#0891b2 !important; }
+body.light #detailModal button[onclick*="closeDetail"] { background:#f5f5f4 !important; color:#57534e !important; }
+body.light #detailModal [style*="border:1px solid #1e3a5f"] { border-color:#fcd34d !important; background:transparent !important; color:#78716c !important; }
+body.light #detailModal [style*="background:transparent"][style*="color:#4b6280"] { color:#a8a29e !important; }
+body.light #detailModal [style*="background:#0a1628"] { background:#f5f5f4 !important; }
+body.light #detailModal [style*="background:#0f1e33"] { background:#ffffff !important; }
+body.light #detailModal [style*="color:#e2e8f0"],
+body.light #detailModal [style*="color:#cbd5e1"] { color:#1c1917 !important; }
+body.light #detailModal [style*="color:#94a3b8"] { color:#78716c !important; }
+body.light #detailModal [style*="color:#4b6280"] { color:#a8a29e !important; }
+body.light #detailModal [style*="border:1px solid rgba(255,255,255"] { border-color:#e7e5e4 !important; }
+body.light #detailModal [style*="background:linear-gradient(145deg,#111827"] { background:#f5f5f4 !important; border-color:#e7e5e4 !important; }
+body.light #detailModal [style*="border-bottom:1px solid #1e2d3d"] { border-bottom-color:#e7e5e4 !important; }
+
+/* ---- Exit / Remove / Other Modals ---- */
+body.light #exitModal > div,
+body.light #removeModal > div,
+body.light #avgCalcModal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
+body.light #exitModal [style*="color:#e2e8f0"],
+body.light #removeModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
+body.light #exitModal [style*="color:#94a3b8"],
+body.light #removeModal [style*="color:#94a3b8"] { color:#78716c !important; }
+
+/* ---- Averaging Calculator ---- */
+body.light #avgCalcModal [style*="background:#0a1628"] { background:#f5f5f4 !important; }
+body.light #avgCalcModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
+body.light #avgCalcModal [style*="color:#4b6280"] { color:#a8a29e !important; }
+body.light #avgCalcModal input { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
+
 /* ---- LEARN tab ---- */
 body.light #learn { background:#faf8f5 !important; }
 body.light #learn [style*="background:#060e1a"] { background:#faf8f5 !important; }
@@ -351,14 +395,12 @@ body.light #learn [style*="background:#0a0f1a"] { background:#f5f5f4 !important;
 body.light #learn [style*="color:#e2e8f0"] { color:#1c1917 !important; }
 body.light #learn [style*="color:#94a3b8"] { color:#78716c !important; }
 body.light #learn [style*="border-bottom:1px solid rgba(255,255,255"] { border-bottom-color:#e7e5e4 !important; }
-/* Learn category cards — these use hardcoded dark backgrounds */
 body.light #learn [style*="background:#0f1e33"],
 body.light #learn [style*="background:#111827"],
 body.light #learn [style*="background:#0a1628"],
 body.light #learn [style*="background:#0d1f35"],
 body.light #learn [style*="background:linear-gradient(145deg,#0f1e33"],
 body.light #learn [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e7e5e4 !important; color:#1c1917 !important; }
-body.light #learn [style*="border-radius:12px"] { border-color:#e7e5e4 !important; }
 body.light #learn [style*="color:#4b6280"] { color:#a8a29e !important; }
 
 /* ---- ASK NIVI modal ---- */
@@ -368,7 +410,6 @@ body.light #nivi-price-row { background:#f0fdf4 !important; border-color:#bbf7d0
 body.light [style*="background:linear-gradient(160deg,#0a1a10"] { background:linear-gradient(160deg,#fafff7,#f0fdf4) !important; }
 body.light [style*="background:#0f2a1a"] { background:#f0fdf4 !important; }
 body.light [style*="border:1px solid #065f46"] { border-color:#86efac !important; }
-/* Nivi chat bubbles */
 body.light #niviModal [style*="background:#0a1628"] { background:#f0fdf4 !important; }
 body.light #niviModal [style*="background:#1e2d3d"] { background:#e7f7f0 !important; }
 body.light #niviModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
@@ -380,7 +421,6 @@ body.light #niviModal input { background:#f0fdf4 !important; border-color:#bbf7d
 /* ======================================================
    COMPREHENSIVE INLINE STYLE OVERRIDES (Global)
    ====================================================== */
-/* Dark bg → warm light */
 body.light [style*="background:#0a1628"]    { background:#f5f5f4 !important; }
 body.light [style*="background:#111827"]    { background:#f5f5f4 !important; }
 body.light [style*="background:#1e2d3d"]    { background:#ede9e6 !important; }
@@ -395,7 +435,6 @@ body.light [style*="background:linear-gradient(145deg,#0f1e33"] { background:#ff
 body.light [style*="background:linear-gradient(145deg,#111827,#1a2332)"] { background:#ffffff !important; border-color:#e7e5e4 !important; }
 body.light [style*="background:linear-gradient(135deg,#0d2a45"] { background:linear-gradient(135deg,#fff8f0,#fef3e2) !important; }
 
-/* Text → warm charcoal */
 body.light [style*="color:#e2e8f0"]  { color:#1c1917 !important; }
 body.light [style*="color:#f1f5f9"]  { color:#1c1917 !important; }
 body.light [style*="color:#cbd5e1"]  { color:#44403c !important; }
@@ -404,7 +443,6 @@ body.light [style*="color:#4b6280"]  { color:#a8a29e !important; }
 body.light [style*="color:#2d3f52"]  { color:#a8a29e !important; }
 body.light [style*="color:#38bdf8"]  { color:#0891b2 !important; }
 
-/* Borders → warm stone */
 body.light [style*="border:1px solid #1e3a5f"]          { border-color:#fcd34d !important; }
 body.light [style*="border:1px solid #2d3f52"]          { border-color:#d6d3d1 !important; }
 body.light [style*="border-bottom:1px solid #1e2d3d"]   { border-bottom-color:#e7e5e4 !important; }
@@ -412,14 +450,9 @@ body.light [style*="border:1px solid rgba(255,255,255,0.06)"] { border-color:#e7
 body.light [style*="border:1px solid rgba(255,255,255,0.07)"] { border-color:#e7e5e4 !important; }
 body.light [style*="border:1px solid rgba(52,211,153,0.12)"]  { border-color:rgba(217,119,6,0.2) !important; }
 
-/* Dividers */
 body.light [style*="background:#1e2d3d"][style*="width:1px"] { background:#e7e5e4 !important; }
 body.light [style*="background:#1e3a5f"][style*="height:8px"] { background:#fde68a !important; }
 
-/* Modals */
-body.light [style*="background:#0f1e33"][style*="border-radius:16px"] { background:#ffffff !important; border-color:#fcd34d !important; }
-
-/* Buttons */
 body.light [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
 body.light [style*="background:#1e3a5f"][style*="color:#93c5fd"] { background:#e0f2fe !important; color:#0369a1 !important; }
 body.light [style*="background:#0a1628"][style*="color:#6ee7b7"] { background:#d1fae5 !important; color:#065f46 !important; }
@@ -430,17 +463,16 @@ body.light [style*="background:#713f12"] { background:#fef9c3 !important; color:
 body.light [style*="background:#1a3320"] { background:#dcfce7 !important; color:#15803d !important; border-color:#86efac !important; }
 body.light [style*="background:#0f2a1e"] { background:#fef9ed !important; color:#d97706 !important; border-color:#fcd34d !important; }
 
-/* ---- News Tab ---- */
-body.light #news [style*="color:#38bdf8"]     { color:#0369a1 !important; }
+body.light #news [style*="color:#38bdf8"]      { color:#0369a1 !important; }
 body.light #news [style*="background:#0a1628"] { background:#fef9ed !important; }
 body.light #news [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light #news [style*="color:#e2e8f0"]     { color:#1c1917 !important; }
-body.light #news [style*="color:#94a3b8"]     { color:#78716c !important; }
-body.light #news [style*="color:#4b6280"]     { color:#a8a29e !important; }
-body.light #news .group-btn                   { background:#f5f5f4 !important; color:#57534e !important; border-color:#d6d3d1 !important; }
-body.light #news .group-btn.active            { background:#fef9ed !important; color:#d97706 !important; border-color:#d97706 !important; }
+body.light #news [style*="color:#e2e8f0"]      { color:#1c1917 !important; }
+body.light #news [style*="color:#94a3b8"]      { color:#78716c !important; }
+body.light #news [style*="color:#4b6280"]      { color:#a8a29e !important; }
+body.light #news .group-btn                    { background:#f5f5f4 !important; color:#57534e !important; border-color:#d6d3d1 !important; }
+body.light #news .group-btn.active             { background:#fef9ed !important; color:#d97706 !important; border-color:#d97706 !important; }
 body.light #news [style*="background:linear-gradient(135deg,#0a1e14"] { background:#f0fdf4 !important; }
-body.light #news [style*="color:#34d399"]     { color:#15803d !important; }
+body.light #news [style*="color:#34d399"]      { color:#15803d !important; }
 body.light #news [style*="background:#0a0f1a"] { background:#faf8f5 !important; }
 body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; }
 
@@ -523,7 +555,7 @@ body.light #priceTicker { background:#1c1917; border-bottom:1px solid #44403c; }
 body.light .ticker-item { border-right-color:#44403c; }
 body.light .ticker-sym  { color:#a8a29e; }
 body.light .ticker-price { color:#fef9ed; }
-/* ===== LIGHT MODE: PROFILE SCREEN FIXES ===== */
+/* ===== END LIGHT MODE ===== */
 #priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
 #priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
 #priceTicker .ticker-track:hover{animation-play-state:paused;}
