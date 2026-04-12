@@ -1268,6 +1268,11 @@ let html = "";
   // Apply sort if needed (sort displayList in place)
 if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
 
+  const _wlL = document.body.classList.contains('light');
+  const _symClr  = _wlL ? '#0891b2' : '#38bdf8';
+  const _priceClr = _wlL ? '#1c1917' : '#e2e8f0';
+  const _lblClr   = _wlL ? '#78716c' : '#94a3b8';
+
   for (let s of displayList) {
     let d = cache[s]?.data;
     if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
@@ -1285,18 +1290,18 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
 
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
           <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:${_symClr}; text-decoration:underline; text-underline-offset:2px;">${s}</span>
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:${_priceClr};">\u20b9${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
 
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:${_lblClr}; font-weight:600;">
             ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
@@ -1304,7 +1309,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
             <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
+              ${diff >= 0 ? '+' : ''}\u20b9${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
         </div>
@@ -1786,15 +1791,21 @@ function drawPieChart(){
 // ======================================
 async function renderHold(){
   let html="";
+  const _hL = document.body.classList.contains('light');
+  const _lblClr  = _hL ? '#78716c' : '#4b6280';
+  const _heldClr = _hL ? '#57534e' : '#94a3b8';
+  const _avgvBg  = _hL ? '#e0f2fe' : '#1e3a5f';
+  const _avgvClr = _hL ? '#0369a1' : '#38bdf8';
+  const _avgvBdr = _hL ? '#7dd3fc' : '#2d5a8e';
   for(let x of h){
     let d=cache[x.sym]?.data||await fetchFull(x.sym);if(!d) continue;
     x.ltp=d.regularMarketPrice;
     let uPnl=(d.regularMarketPrice-x.price)*x.qty;
     let pnlPct=((d.regularMarketPrice-x.price)/x.price*100).toFixed(2);
     const days=holdingDays(x.buyDate);
-    const daysStr=days!==null?`<span style="font-size:9px;color:#4b6280;margin-left:4px;">${holdingDaysLabel(days)}</span>`:'';
+    const daysStr=days!==null?`<span style="font-size:9px;color:${_lblClr};margin-left:4px;">${holdingDaysLabel(days)}</span>`:'';
     const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
-    const updated=lastUpdatedMap[x.sym]?`<span style="font-size:9px;color:#4b6280;">${timeAgo(lastUpdatedMap[x.sym])}</span>`:'';
+    const updated=lastUpdatedMap[x.sym]?`<span style="font-size:9px;color:${_lblClr};">${timeAgo(lastUpdatedMap[x.sym])}</span>`:'';
     html+=`
     <div class="card" style="font-size:13px;padding:8px 10px;">
       <!-- Row 1: Symbol+Badge | CMP | P&L -->
@@ -1805,7 +1816,7 @@ async function renderHold(){
         </div>
         <div style="text-align:center;">
           <div id="hcmp-${x.sym}" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;">${inr(d.regularMarketPrice)}</div>
-          <div style="font-size:9px;color:#4b6280;">CMP</div>
+          <div style="font-size:9px;color:${_lblClr};">CMP</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:13px;font-weight:700;color:${uPnl>=0?'#22c55e':'#ef4444'};">${uPnl>=0?'+':''}${inr(uPnl)}</div>
@@ -1815,22 +1826,22 @@ async function renderHold(){
       <!-- Row 2: Qty | Avg Price | Holding Days -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;margin-bottom:6px;">
         <div>
-          <div style="font-size:10px;color:#4b6280;">QTY</div>
+          <div style="font-size:10px;color:${_lblClr};">QTY</div>
           <div style="font-size:13px;font-weight:700;">${x.qty}</div>
         </div>
         <div style="text-align:center;">
-          <div style="font-size:10px;color:#4b6280;">AVG PRICE</div>
+          <div style="font-size:10px;color:${_lblClr};">AVG PRICE</div>
           <div style="font-size:13px;font-weight:700;">${inr(x.price)}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:10px;color:#4b6280;">HELD</div>
-          <div style="font-size:12px;font-weight:700;color:#94a3b8;">${days!==null?holdingDaysLabel(days):(x.buyDate?holdingDaysLabel(0):'Add date')}</div>
+          <div style="font-size:10px;color:${_lblClr};">HELD</div>
+          <div style="font-size:12px;font-weight:700;color:${_heldClr};">${days!==null?holdingDaysLabel(days):(x.buyDate?holdingDaysLabel(0):'Add date')}</div>
         </div>
       </div>
       <!-- Row 3: CMP vs Avg Bar | AVGv | EDIT | SELL -->
       <div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:5px;">
         <div>${getAvgVsCMPBar(x.price, d.regularMarketPrice)}</div>
-        <button onclick="openAvgCalc('${x.sym}',${x.price},${x.qty},${d.regularMarketPrice})" style="background:#1e3a5f;color:#38bdf8;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">AVGv</button>
+        <button onclick="openAvgCalc('${x.sym}',${x.price},${x.qty},${d.regularMarketPrice})" style="background:${_avgvBg};color:${_avgvClr};font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid ${_avgvBdr};cursor:pointer;font-family:'Rajdhani',sans-serif;">AVGv</button>
         <button onclick="openEdit('${x.sym}')" style="background:#713f12;color:#fde68a;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">EDIT</button>
         <button onclick="openModal('SELL','${x.sym}',${d.regularMarketPrice})" style="background:#7f1d1d;color:#fca5a5;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">SELL</button>
       </div>
@@ -1885,13 +1896,14 @@ let histView='list';
 
 function setHistView(v){
   histView=v;
+  const _hvL = document.body.classList.contains('light');
   ['list','calendar'].forEach(x=>{
     const btn=document.getElementById('histView'+x.charAt(0).toUpperCase()+x.slice(1));
     if(!btn) return;
     const active=x===v;
-    btn.style.background=active?'#1e3a5f':'#1e2d3d';
-    btn.style.color=active?'#38bdf8':'#94a3b8';
-    btn.style.borderColor=active?'#38bdf8':'#2d3f52';
+    btn.style.background=active?(_hvL?'#e0f2fe':'#1e3a5f'):(_hvL?'#f5f5f4':'#1e2d3d');
+    btn.style.color=active?(_hvL?'#0369a1':'#38bdf8'):(_hvL?'#57534e':'#94a3b8');
+    btn.style.borderColor=active?(_hvL?'#7dd3fc':'#38bdf8'):(_hvL?'#d6d3d1':'#2d3f52');
   });
   const hl=document.getElementById("historyList");
   const hc=document.getElementById("historyCalendar");
@@ -1902,6 +1914,10 @@ function setHistView(v){
 
 function renderHist(){
   let html="";
+  const _rhL = document.body.classList.contains('light');
+  const _rhLbl  = _rhL ? '#78716c' : '#4b6280';
+  const _rhSec  = _rhL ? '#57534e' : '#94a3b8';
+  const _rhNone = _rhL ? '#a8a29e' : '#4b6280';
   hist.forEach((x, idx)=>{
     const isBuy=x.type==='BUY';
     const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
@@ -1909,7 +1925,7 @@ function renderHist(){
     if(!isBuy&&x.buyDate&&x.date){
       const bd=new Date(x.buyDate), sd=new Date(x.date);
       const days=Math.floor((sd-bd)/(1000*60*60*24));
-      if(days>=0) daysStr=`<span style="font-size:9px;color:#4b6280;"> | ${holdingDaysLabel(days)} held</span>`;
+      if(days>=0) daysStr=`<span style="font-size:9px;color:${_rhLbl};"> | ${holdingDaysLabel(days)} held</span>`;
     }
     html+=`
     <div class="card" style="font-size:12px;margin-bottom:4px;padding:7px 10px;position:relative;">
@@ -1921,13 +1937,13 @@ function renderHist(){
           <span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;background:${isBuy?'#166534':'#7f1d1d'};color:${isBuy?'#86efac':'#fca5a5'};">${isBuy?'BUY':'SELL'}</span>
           ${typeTag}
         </div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${inr(parseFloat(x.buy))}</span>
-        <span style="font-size:12px;font-weight:700;color:${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'#22c55e':'#ef4444'):'#4b6280'};text-align:right;min-width:70px;">${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'+':'')+inr(x.pnl):''}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${_rhSec};text-align:center;">${inr(parseFloat(x.buy))}</span>
+        <span style="font-size:12px;font-weight:700;color:${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'#22c55e':'#ef4444'):_rhNone};text-align:right;min-width:70px;">${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'+':'')+inr(x.pnl):''}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding-right:28px;">
-        <span style="font-size:10px;color:#4b6280;">Qty: ${x.qty}${daysStr}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${!isBuy&&x.sell?inr(parseFloat(x.sell)):''}</span>
-        <span style="font-size:10px;color:#4b6280;text-align:right;min-width:70px;">${x.date||''}</span>
+        <span style="font-size:10px;color:${_rhLbl};">Qty: ${x.qty}${daysStr}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${_rhSec};text-align:center;">${!isBuy&&x.sell?inr(parseFloat(x.sell)):''}</span>
+        <span style="font-size:10px;color:${_rhLbl};text-align:right;min-width:70px;">${x.date||''}</span>
       </div>
     </div>`;
   });
