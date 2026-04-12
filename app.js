@@ -9058,10 +9058,18 @@ async function _buildCorporateActionsTab(res, sym) {
       const doc = await db.collection('RealTradePro').doc('corporate_actions').get();
       if(doc.exists){
         const all = doc.data();
-        // Filter entries matching this sym
+        // Engine saves: dividends, board_meetings, splits_bonus, results
+        // Map engine field names → app field names
+        const _fm = {
+          dividends:    'dividends',
+          boardMeetings:'board_meetings',
+          splits:       'splits_bonus',
+          bonuses:      'splits_bonus',
+          results:      'results'
+        };
         fbData = {};
-        ['dividends','bonuses','splits','boardMeetings','bulkDeals','blockDeals','announcements'].forEach(k => {
-          if(all[k]) fbData[k] = all[k].filter(x => (x.symbol||'').toUpperCase() === sym.toUpperCase());
+        Object.entries(_fm).forEach(([appKey, dbKey]) => {
+          if(all[dbKey]) fbData[appKey] = all[dbKey].filter(x => (x.symbol||'').toUpperCase() === sym.toUpperCase());
         });
       }
     }catch(e){ console.warn('[Corporate] Firebase fetch failed:', e); }
