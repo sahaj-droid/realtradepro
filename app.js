@@ -7734,7 +7734,7 @@ function _renderMSTopic(el, lang) {
   const svgBlock = topic.svg ? `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin-bottom:10px;"><div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">🕯️ DIAGRAM</span></div><div style="padding:16px;display:flex;justify-content:center;">${topic.svg}</div></div>` : '';
   el.innerHTML = html + svgBlock;
 }
-}
+
 // ── Search suggestions (from existing wl + POPULAR_STOCKS) ─
 function learnSearchSuggest(val) {
   const box = document.getElementById('learnSuggBox');
