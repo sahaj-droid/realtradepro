@@ -1,7 +1,8 @@
 # ==========================================
-# FILE: fetch_data_FINAL.py — v8.0 (The Auto-Expanding Masterpiece)
-# Includes: Auto-Search, Zero Fixes, Quarterly Headers, Firebase Sync, 
+# FILE: fetch_data_FINAL.py — v8.1
+# Includes: Auto-Search, Zero Fixes, Quarterly Headers,
 # AND Dynamic Database Expansion (Auto-Append New Stocks)
+# Changes v8.1: NCF added, Dividend Yield direct fetch, rounding fix
 # ==========================================
 
 import sys
@@ -118,7 +119,7 @@ def get_quarterly_with_headers(table_dict, *keys):
                 for i in range(len(vals)):
                     h_text = hdrs[i] if i < len(hdrs) else ""
                     if "TTM" not in h_text and "TRAILING" not in h_text:
-                        clean_vals.append(to_num(vals[i]))
+                        clean_vals.append(round(to_num(vals[i])))
                         clean_hdrs.append(h_text)
                 
                 if clean_vals:
@@ -148,18 +149,32 @@ def fetch_one(symbol):
     slug = NAME_MAPPER.get(symbol, symbol)
     url = f"https://www.screener.in/company/{slug}/"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    
     try:
         resp = requests.get(url, headers=headers, timeout=20)
         
+        # AUTO: Consolidated page prefer karo
+        if resp.status_code == 200 and '/consolidated' not in url:
+            soup_check = BeautifulSoup(resp.text, 'html.parser')
+            cons_link = soup_check.find('a', href=lambda h: h and '/consolidated/' in h)
+            if cons_link:
+                url = f"https://www.screener.in/company/{slug}/consolidated/"
+                resp = requests.get(url, headers=headers, timeout=20)
+        
         # 🛠️ AUTO-SEARCH LOGIC
-        if resp.status_code == 404:
+        elif resp.status_code == 404:
             search_url = f"https://www.screener.in/api/company/search/?q={symbol}"
             s_resp = requests.get(search_url, headers=headers, timeout=10)
             if s_resp.status_code == 200 and s_resp.json():
-                found_slug = s_resp.json()[0]['url'] 
+                found_slug = s_resp.json()[0]['url']
                 url = f"https://www.screener.in{found_slug}"
                 resp = requests.get(url, headers=headers, timeout=20)
+                # Fetched URL pan consolidated check karo
+                if resp.status_code == 200 and '/consolidated' not in url:
+                    soup_check = BeautifulSoup(resp.text, 'html.parser')
+                    cons_link = soup_check.find('a', href=lambda h: h and '/consolidated/' in h)
+                    if cons_link:
+                        url = url.rstrip('/') + '/consolidated/'
+                        resp = requests.get(url, headers=headers, timeout=20)
             elif '/consolidated' not in slug:
                 resp = requests.get(url + "consolidated/", headers=headers, timeout=20)
         
@@ -176,7 +191,9 @@ def fetch_one(symbol):
         # 1. Market Data
         m_cap = to_num(get_ratio_widget(soup, "market cap"))
         price = to_num(get_ratio_widget(soup, "current price"))
-        div_yield = to_num(get_ratio_widget(soup, "dividend yield"))
+
+        # ✅ CHANGE 1: Dividend yield direct fetch (0.25 aavse, calculated nahi)
+        div_yield_str = get_ratio_widget(soup, "dividend yield")
         
         # 2. Profit Figures
         net_profit_val = to_num(get_val(pl_tab, "Net Profit"))
@@ -205,6 +222,14 @@ def fetch_one(symbol):
             total_assets = total_equity + debt_val + other_liab
             if total_assets > 0: roa = str(round((net_profit_val / total_assets) * 100, 2))
 
+        # ✅ CHANGE 2: NCF fetch karo
+        ncf = get_val(cf_tab, "Net Cash Flow")
+
+        # ✅ Fallback: Screener blank hoy to calculate karo
+        roce = get_ratio_widget(soup, "roce")
+        if to_num(roce) == 0 and (total_equity + debt_val) > 0:
+            roce = str(round((op_profit_val / (total_equity + debt_val)) * 100, 2))
+
         # 4. Quarterly Data WITH HEADERS
         s_q, headers_q = get_quarterly_with_headers(q_tab, "Sales", "Revenue", "Operating Revenue")
         e_q, _ = get_quarterly_with_headers(q_tab, "Expenses", "Total Operating Expenses")
@@ -220,7 +245,8 @@ def fetch_one(symbol):
             'ebit': str(round(op_profit_val - to_num(get_val(pl_tab, "Depreciation")), 2)),
             'roce': get_ratio_widget(soup, "roce"),
             'debt': str(debt_val),
-            'dividend': str(round((div_yield * price)/100, 2)) if price > 0 else "0",
+            'dividend': div_yield_str,          # ✅ Direct % value (0.25)
+            'ncf': str(to_num(ncf)),            # ✅ Net Cash Flow
             'curr_assets': get_val(bs_tab, "Other Assets") if get_val(bs_tab, "Other Assets") != "0" else get_val(bs_tab, "Current Assets"),
             'curr_liab': str(to_num(get_val(bs_tab, "Other Liabilities"))),
             'promoters': get_val(sh_tab, "Promoters"),
@@ -249,7 +275,7 @@ def fetch_one(symbol):
 # ═══════════════════════════════════════════════════════════
 if __name__ == "__main__":
     print("=" * 60)
-    print("🚀 RealTradePro v8.0 (Auto-Expand & Sync Engine)")
+    print("🚀 RealTradePro v8.1 (NCF + Dividend Yield Fix)")
     print("=" * 60 + "\n")
 
     if not FIREBASE_ONLY:
@@ -258,18 +284,15 @@ if __name__ == "__main__":
         # ---------------------------------------------------------
         print("📥 STEP 0: Checking for New Stock Requests from App...")
         try:
-            # શીટમાં હાલના સ્ટોક્સનું લિસ્ટ
             all_data = sheet.get_all_values()
             existing_symbols = [row[0].strip().upper() for row in all_data if row and row[0].strip()]
             
-            # Firebase માંથી 'new_requests' કલેક્શન ચેક કરો
-            waitlist_ref = fdb.collection('new_requests').get()  # ← 'requests' rename karyу (Python requests lib sathe conflict)
+            waitlist_ref = fdb.collection('new_requests').get()
             new_added = False
             
             for doc in waitlist_ref:
                 req_sym = doc.id.strip().upper()
                 
-                # જો નવો સ્ટોક હોય, તો શીટમાં ખાલી નામ એડ કરો
                 if req_sym not in existing_symbols:
                     print(f"   🆕 New Stock Detected: {req_sym}. Adding permanently to Sheet!")
                     sheet.append_row([req_sym])
@@ -277,10 +300,8 @@ if __name__ == "__main__":
                 else:
                     print(f"   ℹ️ {req_sym} already in sheet. Skipping append.")
                 
-                # રિકવેસ્ટ પૂરી થાય એટલે ડિલીટ કરી દો
                 fdb.collection('new_requests').document(doc.id).delete()
                 
-            # જો નવા સ્ટોક એડ થયા હોય, તો શીટનો ડેટા ફરીથી ફેચ કરો (જેથી નીચેની લૂપમાં એ સ્ટોક આવી જાય)
             if new_added:
                 all_data = sheet.get_all_values()
                 print("   ✅ Sheet refreshed with new additions.\n")
@@ -311,14 +332,26 @@ if __name__ == "__main__":
             print(f"   [{done}] Fetching: {symbol} ...")
 
             d = fetch_one(symbol)
-            if not d: continue
+            if not d: 
+                print(f"      ❌ fetch_one returned None for {symbol}")
+                continue
+            print(f"      ✅ Fetched: PE={d['pe']}, BV={d['book_value']}, NCF={d['ncf']}, Div={d['dividend']}")
 
             MEMORY_CACHE[symbol] = d
 
+            # ✅ CHANGE 3: ncf column add karyun (BG column = index 22)
+            # Column mapping:
+            # B=net_profit, C=equity, D=shares, E=ebit, F=roce, G=debt
+            # H=dividend(yield%), I=ncf, J=curr_assets, K=curr_liab
+            # L=promoters, M=fii, N=dii, O=public, P=eps, Q=op_profit
+            # R=fcf, S=de_ratio, T=roa, U=ebitda, V=pe, W=book_value, X=roe
+            # Y..AC=sales_q(5), AD..AH=expenses_q(5), AI..AM=op_q(5)
+            # AN..AR=other_inc_q(5), AS..AW=pbt_q(5), AX..BB=np_q(5)
+            # BC..BG=headers_q(5)
             data_row = [
-                d['net_profit'], d['equity'], d['shares'], d['ebit'], d['roce'], d['debt'], 
-                d['dividend'], d['curr_assets'], d['curr_liab'], d['promoters'], d['fii'], 
-                d['dii'], d['public'], d['eps'], d['op_profit'], d['fcf'], d['de_ratio'], 
+                d['net_profit'], d['equity'], d['shares'], d['ebit'], d['roce'], d['debt'],
+                d['dividend'], d['ncf'], d['curr_assets'], d['curr_liab'], d['promoters'], d['fii'],
+                d['dii'], d['public'], d['eps'], d['op_profit'], d['fcf'], d['de_ratio'],
                 d['roa'], d['ebitda'], d['pe'], d['book_value'], d['roe'],
                 *d['sales_q'], *d['expenses_q'], *d['op_q'],
                 *d['other_inc_q'], *d['pbt_q'], *d['np_q'],
@@ -326,82 +359,10 @@ if __name__ == "__main__":
             ]
 
             try:
-                sheet.update(f'B{i+1}:BF{i+1}', [data_row])
+                sheet.update(range_name=f'B{i+1}:BG{i+1}', values=[data_row])
             except Exception as e:
                 print(f"      ❌ Sheet error: {e}")
 
-            if not SINGLE_SYM: time.sleep(6)
+            if not SINGLE_SYM: time.sleep(1.5)
 
         print(f"✅ Data Scraping & Sheet Update Completed!\n")
-
-    # ---------------------------------------------------------
-    # STEP 2 — SHEET + CACHE → FIREBASE
-    # ---------------------------------------------------------
-    print("🔥 STEP 2: Pushing Data to Firebase...")
-    try:
-        updated_data = sheet.get_all_values()
-        fb_count = 0
-        
-        for row in updated_data[1:]:
-            if not row or not row[0].strip(): continue
-            symbol = row[0].strip().upper()
-            
-            if any(k in symbol for k in SKIP_KEYWORDS): continue
-            if SINGLE_SYM and symbol != SINGLE_SYM: continue
-            if len(row) < 2 or row[1].strip() == "": continue
-            
-            doc_data = {
-                'symbol': symbol,
-                'net_profit': safe(row[1]),
-                'equity': safe(row[2]),
-                'shares': safe(row[3]),
-                'ebit': safe(row[4]),
-                'roce': safe(row[5]),
-                'debt': safe(row[6]),
-                'pe': safe(row[19]),
-                'book_value': safe(row[20]),
-                'roe': safe(row[21]),
-                'updated_at': fstore.SERVER_TIMESTAMP
-            }
-            
-            if symbol in MEMORY_CACHE:
-                cached = MEMORY_CACHE[symbol]
-                sq = cached['sales_q']
-                eq = cached['expenses_q']
-                oq = cached['op_q']
-                iq = cached['other_inc_q']
-                pq = cached['pbt_q']
-                nq = cached['np_q']
-                hq = cached['headers_q']    # e.g. ["Sep 2024", "Dec 2024", ...]
-            else:
-                # --firebase flag: Sheet columns thi read karo
-                # B(1)..BA(52) = data, BB(52)..BF(56) = headers_q (cols index 52-56)
-                sq = [safe(row[i]) for i in range(22, 27)]   # salesQ1-Q5
-                eq = [safe(row[i]) for i in range(27, 32)]
-                oq = [safe(row[i]) for i in range(32, 37)]
-                iq = [safe(row[i]) for i in range(37, 42)]
-                pq = [safe(row[i]) for i in range(42, 47)]
-                nq = [safe(row[i]) for i in range(47, 52)]
-                hq = [row[i].strip() if i < len(row) else '' for i in range(53, 58)]
-                hq = [h if h else f'Q{j+1}' for j, h in enumerate(hq)]
-
-            doc_data['quarterly_headers'] = hq
-
-            for i, sfx in enumerate(['Q1','Q2','Q3','Q4','Q5']):
-                doc_data[f'salesQ{i+1}']    = sq[i] if i < len(sq) else 0
-                doc_data[f'expQ{i+1}']      = eq[i] if i < len(eq) else 0
-                doc_data[f'opQ{i+1}']       = oq[i] if i < len(oq) else 0
-                doc_data[f'otherIncQ{i+1}'] = iq[i] if i < len(iq) else 0
-                doc_data[f'pbtQ{i+1}']      = pq[i] if i < len(pq) else 0
-                doc_data[f'npQ{i+1}']       = nq[i] if i < len(nq) else 0
-            
-            fdb.collection('fundlearn').document(symbol).set(doc_data, merge=True)
-            fb_count += 1
-            # print(f"   ⬆️ Uploaded to Firebase: {symbol}") # Output clear રાખવા કમેન્ટ કર્યું છે
-            
-        print(f"🎉 Successfully uploaded {fb_count} stocks to Firebase!\n")
-        
-    except Exception as e:
-        print(f"❌ Firebase Upload Error: {e}\n")
-
-    print("🏁 Market Pulse Backend Engine Completed!")
