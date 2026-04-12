@@ -1383,6 +1383,10 @@ async function renderAllSparklines() {
 async function renderIndices(){
   const el=document.getElementById("indices");
   if(!document.getElementById('gmovers')){
+    const _gL = document.body.classList.contains('light');
+    const _gInactive = _gL ? '#f5f5f4' : '#0f172a';
+    const _gInactiveC= _gL ? '#57534e'  : '#94a3b8';
+    const _gInactiveBdr=_gL? '#d6d3d1' : '#1e2d3d';
     el.innerHTML=`
       <div style="display:flex;gap:6px;margin-bottom:10px;">
         <button id="gsub-movers" onclick="gainersSubTab('movers')"
@@ -1390,14 +1394,14 @@ async function renderIndices(){
           Movers
         </button>
         <button id="gsub-screener" onclick="gainersSubTab('screener')"
-          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid ${_gInactiveBdr};background:${_gInactive};color:${_gInactiveC};font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
           Screener
         </button>
       </div>
       <div id="gmovers">
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <button id="gmov-gainers" onclick="moversSubTab('gainers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #166534;background:#14532d;color:#22c55e;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gainers</button>
-          <button id="gmov-losers" onclick="moversSubTab('losers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Losers</button>
+          <button id="gmov-losers" onclick="moversSubTab('losers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid ${_gInactiveBdr};background:${_gInactive};color:${_gInactiveC};font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Losers</button>
         </div>
         <div id="gmov-gainers-list"></div>
         <div id="gmov-losers-list" style="display:none;"></div>
@@ -1429,10 +1433,14 @@ function moversSubTab(t) {
   const ll = document.getElementById('gmov-losers-list');
   const gb = document.getElementById('gmov-gainers');
   const lb = document.getElementById('gmov-losers');
+  const isLight = document.body.classList.contains('light');
+  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
+  const inClr = isLight ? '#57534e' : '#94a3b8';
+  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   if(gl) gl.style.display = t==='gainers' ? 'block' : 'none';
   if(ll) ll.style.display = t==='losers' ? 'block' : 'none';
-  if(gb){ gb.style.background=t==='gainers'?'#14532d':'#0f172a'; gb.style.color=t==='gainers'?'#22c55e':'#94a3b8'; gb.style.borderColor=t==='gainers'?'#166534':'#1e2d3d'; }
-  if(lb){ lb.style.background=t==='losers'?'#7f1d1d':'#0f172a'; lb.style.color=t==='losers'?'#ef4444':'#94a3b8'; lb.style.borderColor=t==='losers'?'#991b1b':'#1e2d3d'; }
+  if(gb){ gb.style.background=t==='gainers'?'#14532d':inBg; gb.style.color=t==='gainers'?'#22c55e':inClr; gb.style.borderColor=t==='gainers'?'#166534':inBdr; }
+  if(lb){ lb.style.background=t==='losers'?'#7f1d1d':inBg; lb.style.color=t==='losers'?'#ef4444':inClr; lb.style.borderColor=t==='losers'?'#991b1b':inBdr; }
 }
 
 function renderGainersFromCache(){
@@ -3822,12 +3830,16 @@ var _alertDir = "above"; // "above" | "below"
 
 function setAlertDir(dir) {
   _alertDir = dir;
-  document.getElementById('alert-above-btn').style.background = dir==='above' ? '#166534' : '#1e2d3d';
-  document.getElementById('alert-above-btn').style.color      = dir==='above' ? '#86efac' : '#94a3b8';
-  document.getElementById('alert-above-btn').style.borderColor= dir==='above' ? '#166534' : '#2d3f52';
-  document.getElementById('alert-below-btn').style.background = dir==='below' ? '#7f1d1d' : '#1e2d3d';
-  document.getElementById('alert-below-btn').style.color      = dir==='below' ? '#fca5a5' : '#94a3b8';
-  document.getElementById('alert-below-btn').style.borderColor= dir==='below' ? '#7f1d1d' : '#2d3f52';
+  const isLight = document.body.classList.contains('light');
+  const inBg  = isLight ? '#f5f5f4' : '#1e2d3d';
+  const inClr = isLight ? '#57534e' : '#94a3b8';
+  const inBdr = isLight ? '#d6d3d1' : '#2d3f52';
+  document.getElementById('alert-above-btn').style.background  = dir==='above' ? '#166534' : inBg;
+  document.getElementById('alert-above-btn').style.color       = dir==='above' ? '#86efac' : inClr;
+  document.getElementById('alert-above-btn').style.borderColor = dir==='above' ? '#166534' : inBdr;
+  document.getElementById('alert-below-btn').style.background  = dir==='below' ? '#7f1d1d' : inBg;
+  document.getElementById('alert-below-btn').style.color       = dir==='below' ? '#fca5a5' : inClr;
+  document.getElementById('alert-below-btn').style.borderColor = dir==='below' ? '#7f1d1d' : inBdr;
 }
 
 function setAlert(sym) {
@@ -5916,27 +5928,36 @@ const prompt =
 function _tabRenderChat() {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
+  const isLight = document.body.classList.contains('light');
   if (_tabChatHistory.length === 0) {
-    area.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#1e3a2e;">
-      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#1e3a2e"/></svg>
-      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi ⬇️<br><span style="font-size:10px;color:#1a3020;">or tap on below chips</span></div>
+    const emptyClr = isLight ? '#78716c' : '#1e3a2e';
+    const emptyIcon= isLight ? '#a8a29e' : '#1e3a2e';
+    area.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:${emptyClr};">
+      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="${emptyIcon}"/></svg>
+      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi \u2B07\uFE0F<br><span style="font-size:10px;color:${emptyClr};">or tap on below chips</span></div>
     </div>`;
     return;
   }
   area.innerHTML = _tabChatHistory.map(msg => {
     if (msg.role === 'user') {
+      const uBg    = isLight ? '#d97706'  : '#1e3a5f';
+      const uColor = isLight ? '#ffffff'  : '#e2e8f0';
       return `<div style="display:flex;justify-content:flex-end;">
-        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:${uBg};color:${uColor};border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     } else {
+      const bBg     = isLight ? '#f0fdf4'                             : 'linear-gradient(135deg,#0a2218,#0f2a1a)';
+      const bBorder = isLight ? '1px solid #bbf7d0'                  : '1px solid rgba(52,211,153,0.2)';
+      const bColor  = isLight ? '#1c1917'                             : '#e2e8f0';
+      const aBg     = isLight ? '#dcfce7'                             : '#0a1628';
       const formatted = msg.text.split('\n').filter(l=>l.trim()).map(l=>
         `<div style="margin-bottom:4px;">${l.replace(/^[•\-\*]\s*/,'• ')}</div>`
       ).join('');
       return `<div style="display:flex;gap:7px;align-items:flex-start;">
-        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:${aBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
           <svg viewBox="0 0 28 28" width="13" height="13" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
         </div>
-        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
+        <div style="background:${bBg};border:${bBorder};color:${bColor};border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
       </div>`;
     }
   }).join('');
@@ -6102,27 +6123,31 @@ function calcAvg(){
   const rColor=(v)=>v>0?'#ef4444':'#22c55e';
 
   res.style.display='block';
+  const _acL = document.body.classList.contains('light');
+  const _acLbl = _acL ? '#57534e' : '#94a3b8';
+  const _acVal = _acL ? '#1c1917' : '#e2e8f0';
+  const _acDivBdr= _acL ? '#e7e5e4' : '#1e3a5f';
   res.innerHTML=`
-    <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:8px;letter-spacing:0.5px;">RESULT</div>
+    <div style="font-size:10px;font-weight:700;color:${_acL?'#a8a29e':'#4b6280'};margin-bottom:8px;letter-spacing:0.5px;">RESULT</div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:#94a3b8;">New Avg Price</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#38bdf8;">₹${newAvg.toFixed(2)}</span>
+      <span style="font-size:11px;color:${_acLbl};">New Avg Price</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#0891b2;">₹${newAvg.toFixed(2)}</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:#94a3b8;">New Total Qty</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${newQty}</span>
+      <span style="font-size:11px;color:${_acLbl};">New Total Qty</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${_acVal};">${newQty}</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:#94a3b8;">Extra Investment</span>
+      <span style="font-size:11px;color:${_acLbl};">Extra Investment</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#f59e0b;">${inr(extraInvest)}</span>
     </div>
-    <div style="border-top:1px solid #1e3a5f;margin:6px 0;"></div>
+    <div style="border-top:1px solid ${_acDivBdr};margin:6px 0;"></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:#94a3b8;">Recovery needed (old)</span>
+      <span style="font-size:11px;color:${_acLbl};">Recovery needed (old)</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${rColor(oldRecovery)};">${oldRecovery>0?'+':''}${oldRecovery.toFixed(2)}%</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-      <span style="font-size:11px;color:#94a3b8;">Recovery needed (new)</span>
+      <span style="font-size:11px;color:${_acLbl};">Recovery needed (new)</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${rColor(newRecovery)};">${newRecovery>0?'+':''}${newRecovery.toFixed(2)}%</span>
     </div>
     <div style="text-align:center;font-size:12px;font-weight:700;padding:6px;border-radius:6px;background:${better?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.12)'};color:${better?'#22c55e':'#ef4444'};">
@@ -6196,10 +6221,14 @@ let screenerFilters = new Set();
 function gainersSubTab(tab) {
   document.getElementById('gmovers').style.display = tab === 'movers' ? 'block' : 'none';
   document.getElementById('gscreener').style.display = tab === 'screener' ? 'block' : 'none';
+  const isLight = document.body.classList.contains('light');
+  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
+  const inClr = isLight ? '#57534e' : '#94a3b8';
+  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   const mb = document.getElementById('gsub-movers');
   const sb = document.getElementById('gsub-screener');
-  if(mb){ mb.style.background = tab==='movers'?'#1e3a5f':'#0f172a'; mb.style.color = tab==='movers'?'#38bdf8':'#94a3b8'; mb.style.borderColor = tab==='movers'?'#2d5a8e':'#1e2d3d'; }
-  if(sb){ sb.style.background = tab==='screener'?'#1e3a5f':'#0f172a'; sb.style.color = tab==='screener'?'#38bdf8':'#94a3b8'; sb.style.borderColor = tab==='screener'?'#2d5a8e':'#1e2d3d'; }
+  if(mb){ mb.style.background = tab==='movers'?'#1e3a5f':inBg; mb.style.color = tab==='movers'?'#38bdf8':inClr; mb.style.borderColor = tab==='movers'?'#2d5a8e':inBdr; }
+  if(sb){ sb.style.background = tab==='screener'?'#1e3a5f':inBg; sb.style.color = tab==='screener'?'#38bdf8':inClr; sb.style.borderColor = tab==='screener'?'#2d5a8e':inBdr; }
   if(tab === 'screener') renderScreener();
 }
 
@@ -6243,10 +6272,14 @@ function renderScreener() {
   let html = '';
 
   // Source selector
+  const isLight = document.body.classList.contains('light');
+  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
+  const inClr = isLight ? '#57534e' : '#4b6280';
+  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   const srcBtns = ['watchlist','popular','cached'].map(s => {
     const active = screenerSource === s;
     const labels = {watchlist:'Watchlist', popular:'Nifty 50', cached:'All Cached'};
-    return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':'#1e2d3d'};background:${active?'#1e3a5f':'#0f172a'};color:${active?'#38bdf8':'#4b6280'};">${labels[s]}</button>`;
+    return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':inBdr};background:${active?'#1e3a5f':inBg};color:${active?'#38bdf8':inClr};">${labels[s]}</button>`;
   }).join('');
   html += `<div style="display:flex;gap:4px;margin-bottom:8px;">${srcBtns}</div>`;
 
@@ -6254,7 +6287,7 @@ function renderScreener() {
   html += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">`;
   filters.forEach(f => {
     const active = screenerFilters.has(f.id);
-    html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:'#1e2d3d'};background:${active?f.color+'22':'#0f172a'};color:${active?f.color:'#4b6280'};">${f.label}</button>`;
+    html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:inBdr};background:${active?f.color+'22':inBg};color:${active?f.color:inClr};">${f.label}</button>`;
   });
   html += `</div>`;
 
