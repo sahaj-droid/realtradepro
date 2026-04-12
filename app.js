@@ -6822,19 +6822,26 @@ function _niviAddBubble(role, text, ts) {
 function _niviRenderChat() {
   const area = document.getElementById('nivi-chat-area');
   if (!area) return;
+  const isLight = document.body.classList.contains('light');
 
   let html = '';
   _niviChatHistory.forEach(msg => {
     if (msg.role === 'user') {
+      const uBg    = isLight ? '#d97706'   : '#1e3a5f';
+      const uColor = isLight ? '#ffffff'   : '#e2e8f0';
       html += `<div style="display:flex;justify-content:flex-end;">
-        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:80%;font-size:12px;line-height:1.6;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:${uBg};color:${uColor};border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:80%;font-size:12px;line-height:1.6;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     } else {
+      const bBg     = isLight ? '#f0fdf4'                              : 'linear-gradient(135deg,#0a2218,#0f2a1a)';
+      const bBorder = isLight ? '1px solid #bbf7d0'                   : '1px solid rgba(52,211,153,0.2)';
+      const bColor  = isLight ? '#1c1917'                              : '#e2e8f0';
+      const aBg     = isLight ? '#dcfce7'                              : '#0a1628';
       html += `<div style="display:flex;justify-content:flex-start;gap:7px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:${aBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
           <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
         </div>
-        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 13px;max-width:85%;font-size:13px;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:${bBg};border:${bBorder};color:${bColor};border-radius:2px 14px 14px 14px;padding:10px 13px;max-width:85%;font-size:13px;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     }
   });
@@ -6891,9 +6898,13 @@ function _niviApplyPriceAndTech(data) {
   ];
   const techEl = document.getElementById('nivi-tech-row');
   techEl.style.display = 'flex';
+  const tIsLight = document.body.classList.contains('light');
+  const tBg  = tIsLight ? '#f0fdf4'  : '#0a1628';
+  const tBdr = tIsLight ? '#bbf7d0'  : '#1e3a5f';
+  const tLbl = tIsLight ? '#78716c'  : '#4b6280';
   techEl.innerHTML = indicators.map(i =>
-    `<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:5px;padding:3px 6px;text-align:center;flex-shrink:0;">
-      <div style="font-size:7px;color:#4b6280;font-weight:700;">${i.label}</div>
+    `<div style="background:${tBg};border:1px solid ${tBdr};border-radius:5px;padding:3px 6px;text-align:center;flex-shrink:0;">
+      <div style="font-size:7px;color:${tLbl};font-weight:700;">${i.label}</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:${i.color};">${i.val}</div>
     </div>`
   ).join('');
@@ -7554,21 +7565,27 @@ function renderMarketSchool() {
 
 function _renderMSHome(el, lang) {
   const cats = Object.keys(MARKET_SCHOOL);
+  const isLight = document.body.classList.contains('light');
+  const cBg    = isLight ? '#ffffff'              : '#0d1f35';
+  const cBdr   = isLight ? 'rgba(0,0,0,0.07)'    : 'rgba(255,255,255,0.07)';
+  const cTitle = isLight ? '#1c1917'              : '#e2e8f0';
+  const cSub   = isLight ? '#78716c'              : '#64748b';
+  const cHover = isLight ? '#fef9ed'              : 'rgba(255,255,255,0.04)';
   let html = `<div style="margin-bottom:12px;">
-    <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:1px;margin-bottom:8px;">SELECT CATEGORY</div>`;
+    <div style="font-size:11px;color:${cSub};font-weight:700;letter-spacing:1px;margin-bottom:8px;">SELECT CATEGORY</div>`;
 
   cats.forEach(catKey => {
     const cat = MARKET_SCHOOL[catKey];
     const count = Object.keys(cat.topics).length;
     html += `
     <div onclick="_msCategory='${catKey}';_msTopic=null;renderMarketSchool();"
-      style="background:#0d1f35;border:1px solid rgba(255,255,255,0.07);border-left:3px solid ${cat.color};border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;"
-      onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='#0d1f35'">
+      style="background:${cBg};border:1px solid ${cBdr};border-left:3px solid ${cat.color};border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;"
+      onmouseover="this.style.background='${cHover}'" onmouseout="this.style.background='${cBg}'">
       <div style="display:flex;align-items:center;gap:12px;">
         <span style="font-size:26px;">${cat.icon}</span>
         <div>
-          <div style="font-size:13px;font-weight:700;color:#e2e8f0;">${cat.label[lang]||cat.label.en}</div>
-          <div style="font-size:10px;color:#64748b;margin-top:2px;">${count} topics</div>
+          <div style="font-size:13px;font-weight:700;color:${cTitle};">${cat.label[lang]||cat.label.en}</div>
+          <div style="font-size:10px;color:${cSub};margin-top:2px;">${count} topics</div>
         </div>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
@@ -7582,11 +7599,20 @@ function _renderMSHome(el, lang) {
 function _renderMSCategory(el, lang) {
   const cat = MARKET_SCHOOL[_msCategory];
   if (!cat) { _msCategory = null; renderMarketSchool(); return; }
+  const isLight = document.body.classList.contains('light');
+  const cBg    = isLight ? '#ffffff'           : '#0d1f35';
+  const cBdr   = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)';
+  const cTitle = isLight ? '#1c1917'           : '#e2e8f0';
+  const cSub   = isLight ? '#78716c'           : '#64748b';
+  const cHover = isLight ? '#fef9ed'           : 'rgba(255,255,255,0.04)';
+  const backBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+  const backBdr= isLight ? 'rgba(0,0,0,0.1)'  : 'rgba(255,255,255,0.1)';
+  const backClr= isLight ? '#57534e'           : '#94a3b8';
 
   let html = `
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
     <button onclick="_msCategory=null;_msTopic=null;renderMarketSchool();"
-      style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">← Back</button>
+      style="background:${backBg};border:1px solid ${backBdr};color:${backClr};border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">\u2190 Back</button>
     <span style="font-size:14px;">${cat.icon}</span>
     <span style="font-size:13px;font-weight:700;color:${cat.color};">${cat.label[lang]||cat.label.en}</span>
   </div>`;
@@ -7596,11 +7622,11 @@ function _renderMSCategory(el, lang) {
     const content = topic[lang] || topic.en;
     html += `
     <div onclick="_msTopic='${topicKey}';renderMarketSchool();"
-      style="background:#0d1f35;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;"
-      onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='#0d1f35'">
+      style="background:${cBg};border:1px solid ${cBdr};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;"
+      onmouseover="this.style.background='${cHover}'" onmouseout="this.style.background='${cBg}'">
       <div>
-        <div style="font-size:12px;font-weight:700;color:#e2e8f0;">${topic.label}</div>
-        <div style="font-size:10px;color:#64748b;margin-top:2px;">${content.what.substring(0,60)}...</div>
+        <div style="font-size:12px;font-weight:700;color:${cTitle};">${topic.label}</div>
+        <div style="font-size:10px;color:${cSub};margin-top:2px;">${content.what.substring(0,60)}...</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
