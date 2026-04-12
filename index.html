@@ -449,6 +449,12 @@ body.light [style*="border-bottom:1px solid #1e2d3d"]   { border-bottom-color:#e
 body.light [style*="border:1px solid rgba(255,255,255,0.06)"] { border-color:#e7e5e4 !important; }
 body.light [style*="border:1px solid rgba(255,255,255,0.07)"] { border-color:#e7e5e4 !important; }
 body.light [style*="border:1px solid rgba(52,211,153,0.12)"]  { border-color:rgba(217,119,6,0.2) !important; }
+/* Gainers/Losers list - rgba border dividers invisible on light bg */
+body.light [style*="border-bottom:1px solid rgba(255,255,255,0.04)"] { border-bottom-color:#e7e5e4 !important; }
+/* Gainers/Losers list - stock symbol #e2e8f0 invisible on white */
+body.light #gmovers [style*="color:#e2e8f0"] { color:#1c1917 !important; }
+/* Refresh button in gainers - dark bg */
+body.light #gmovers [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
 
 body.light [style*="background:#1e2d3d"][style*="width:1px"] { background:#e7e5e4 !important; }
 body.light [style*="background:#1e3a5f"][style*="height:8px"] { background:#fde68a !important; }
