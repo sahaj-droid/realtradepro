@@ -914,11 +914,15 @@ function renderWLTabs(){
 }
 
 function switchWL(idx){
+  if(currentWL === idx) return; // same tab click = skip
   currentWL=idx;
   wl=watchlists[currentWL].stocks;
   localStorage.setItem("currentWL",currentWL);
   renderWLTabs();
-  renderWL();
+  // Cache ma data hoy to turant render, nai to fetch
+  const needsFetch = wl.some(s => !cache[s+'.NS'] && !cache[s+'.BO']);
+  renderWL(); // UI turant show karo cached data sathe
+  if(needsFetch) batchFetchStocks(wl).then(() => renderWL());
 }
 
 // WL Name Modal state
