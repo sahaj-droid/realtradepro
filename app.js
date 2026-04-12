@@ -5160,7 +5160,7 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open) updatePrices();
+    updatePrices();
   }, 5000);
 }
 
