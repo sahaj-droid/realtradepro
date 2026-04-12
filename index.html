@@ -555,6 +555,46 @@ body.light #priceTicker { background:#1c1917; border-bottom:1px solid #44403c; }
 body.light .ticker-item { border-right-color:#44403c; }
 body.light .ticker-sym  { color:#a8a29e; }
 body.light .ticker-price { color:#fef9ed; }
+/* ---- Alert Modal ---- */
+body.light #alertModal > div { background:#ffffff !important; border-color:#fcd34d !important; }
+body.light #alert-title { color:#92400e !important; }
+body.light #alert-current-price { background:#fef9ed !important; border-color:#fcd34d !important; color:#1c1917 !important; }
+body.light #alert-price { background:#f5f5f4 !important; border-color:#fcd34d !important; color:#1c1917 !important; }
+body.light #alert-existing-list [style*="background:#0a1628"] { background:#f5f5f4 !important; border-color:#e7e5e4 !important; }
+body.light #alertModal [style*="color:#4b6280"] { color:#a8a29e !important; }
+body.light #alertModal button[onclick*="closeAlertModal"] { color:#78716c !important; }
+body.light #alertModal button[onclick*="confirmAlert"] { background:#fef9c3 !important; color:#92400e !important; }
+body.light #alertModal button[onclick*="closeAlertModal"][style*="background:#1e2d3d"] { background:#f5f5f4 !important; color:#57534e !important; }
+
+/* ---- Target Modal ---- */
+body.light #target-modal-box > div { background:#ffffff !important; border-color:#c4b5fd !important; }
+body.light #target-title { color:#6d28d9 !important; }
+body.light #target-price { background:#f5f5f4 !important; border-color:#c4b5fd !important; color:#1c1917 !important; }
+body.light #target-modal-box [style*="color:#4b6280"] { color:#a8a29e !important; }
+body.light #target-modal-box button[onclick*="confirmTarget"] { background:#ede9fe !important; color:#6d28d9 !important; }
+body.light #target-modal-box button[onclick*="closeTargetModal"] { background:#f5f5f4 !important; color:#57534e !important; }
+
+/* ---- Remove Modal ---- */
+body.light #remove-modal-box > div { background:#ffffff !important; border-color:#fca5a5 !important; }
+body.light #remove-title { color:#b91c1c !important; }
+body.light #remove-modal-box [style*="color:#94a3b8"] { color:#57534e !important; }
+body.light #remove-modal-box button[onclick*="confirmRemove"] { background:#fee2e2 !important; color:#b91c1c !important; }
+body.light #remove-modal-box button[onclick*="closeRemoveModal"] { background:#f5f5f4 !important; color:#57534e !important; }
+
+/* ---- Global Market Ticker (globalTicker bar) ---- */
+body.light #globalTicker { background:#1c1917 !important; border-bottom-color:#44403c !important; }
+body.light .gticker-label { color:#a8a29e !important; }
+body.light .gticker-val   { color:#fef9ed !important; }
+body.light .gticker-sep   { color:#44403c !important; }
+
+/* ---- Learn tab suggestion / search box ---- */
+body.light #learn input[type="text"],
+body.light #learn input[type="search"],
+body.light #lpanel-financial input { background:#ffffff !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
+body.light #learn [style*="background:#111827"][style*="border-radius:10px"] { background:#ffffff !important; border-color:#d6d3d1 !important; }
+body.light #learn .suggestion-item { color:#1c1917 !important; background:#ffffff !important; border-bottom-color:#f5f5f4 !important; }
+body.light #learn .suggestion-item:hover { background:#fef9ed !important; color:#d97706 !important; }
+
 /* ===== END LIGHT MODE ===== */
 #priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
 #priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
