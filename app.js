@@ -7986,25 +7986,37 @@ const raw = {
 
 // ── Waitlist Helper — Stock Firebase new_requests ma add karo ──
 async function _addToWaitlist(sym, msg) {
-  if (msg) { msg.textContent = `⏳ "${sym}" DB ma nathi — Waitlist ma add thai rahu che...`; msg.style.color = '#f59e0b'; }
+  if (msg) { 
+    msg.textContent = `⏳ "${sym}" DB ma nathi — Waitlist ma add thai rahu che...`; 
+    msg.style.color = '#f59e0b'; 
+  }
   try {
-    await firebase.firestore().collection('new_requests').doc(sym).set({
-      symbol: sym,
-      requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      requestedBy: (typeof currentUser !== 'undefined' && currentUser?.userId) ? currentUser.userId : 'anonymous'
+    // 🔥 FIX: Python engine 'alert_config' document no 'waitlist' array vachhe che
+    const configRef = firebase.firestore().collection('RealTradePro').document('alert_config');
+    
+    await configRef.update({
+      // arrayUnion fakt nava stock ne j array ma push karse, 350 stocks ne touch pan nahi kare!
+      waitlist: firebase.firestore.FieldValue.arrayUnion(sym.toUpperCase().strip())
     });
+
     if (msg) {
       msg.textContent = `✅ "${sym}" waitlist ma add thayo! Python run thase tyare automatically sheet + Firebase ma aavse.`;
       msg.style.color = '#34d399';
     }
   } catch(e) {
-    if (msg) {
-      msg.textContent = `❌ "${sym}" DB ma nathi. Waitlist error: ${e.message}`;
-      msg.style.color = '#f87171';
+    // Jo alert_config document na hoy to pehli vaar set karvu pade
+    try {
+      await firebase.firestore().collection('RealTradePro').document('alert_config').set({
+        waitlist: [sym.toUpperCase().strip()]
+      }, { merge: true });
+    } catch(err2) {
+      if (msg) {
+        msg.textContent = `❌ "${sym}" DB ma nathi. Waitlist error: ${e.message}`;
+        msg.style.color = '#f87171';
+      }
     }
   }
 }
-
 function _getLivePrice(sym) {
   if (typeof cache !== 'undefined' && cache[sym]?.data?.regularMarketPrice) return cache[sym].data.regularMarketPrice;
   if (typeof cache !== 'undefined' && cache[sym+'NS']?.data?.regularMarketPrice) return cache[sym+'NS'].data.regularMarketPrice;
