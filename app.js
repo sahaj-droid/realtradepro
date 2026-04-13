@@ -2363,3 +2363,71 @@ async function exportTechnicalSnapshot() {
 // ============================================================================
 // PART 22: END 
 // ============================================================================
+// ============================================================================
+// PART 23: UI HANDLERS (FIXING BUTTON ERRORS)
+// ============================================================================
+
+// 1. Fixing 'tab is not defined' - Aa global variable setup
+let currentTab = 'watchlist';
+
+// 2. Sorting Functions
+function sortAZ() {
+  wl.sort();
+  renderWL();
+  Utils.showPopup("Sorted A-Z");
+}
+
+function sortPrice() {
+  wl.sort((a, b) => {
+    const priceA = marketDataCache[a]?.Price || 0;
+    const priceB = marketDataCache[b]?.Price || 0;
+    return priceB - priceA;
+  });
+  renderWL();
+  Utils.showPopup("Sorted by Price (High-Low)");
+}
+
+function sortPercent() {
+  wl.sort((a, b) => {
+    const pcA = parseFloat(marketDataCache[a]?.['% Change'] || 0);
+    const pcB = parseFloat(marketDataCache[b]?.['% Change'] || 0);
+    return pcB - pcA;
+  });
+  renderWL();
+  Utils.showPopup("Sorted by % Change");
+}
+
+// 3. CSV Import Logic
+function triggerWatchlistCSVImport() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = event => {
+      const content = event.target.result;
+      const symbols = content.split(/[\n,]+/).map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+      
+      // Update current watchlist
+      watchlists[currentWL].stocks = [...new Set([...watchlists[currentWL].stocks, ...symbols])];
+      wl = watchlists[currentWL].stocks;
+      
+      localStorage.setItem("watchlists", JSON.stringify(watchlists));
+      renderWL();
+      updateLivePrices();
+      Utils.showPopup(`Added ${symbols.length} stocks from CSV!`);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// 4. Global Tab Helper (jethi HTML ma error na aave)
+function setTab(t) {
+  currentTab = t;
+  switchMainTab(t);
+}
+// ============================================================================
+// PART 23: END 
+// ============================================================================
