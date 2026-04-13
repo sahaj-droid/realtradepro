@@ -1284,10 +1284,10 @@ async function renderWL(){
 
     cache[s] = { data: d, time: Date.now() };
 
-    const _price = d.regularMarketPrice || d.ltp || 0;
-    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+    const _price = d.ltp || d.regularMarketPrice || 0;
+    const _prev  = d.prev_close || d.chartPreviousClose || d.regularMarketPreviousClose || 0;
+    const diff   = d.change || d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+    const pct    = d.change_pct || d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
 
     html += `
     <div class="wl-card-wrap" id="wrap-${s}">
@@ -1674,23 +1674,27 @@ async function updatePrices(){
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
 
-  for(let s of wl){
-    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
+for(let s of wl){
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
+    
+    // SAFE FALLBACK: Python = ltp/prev_close | GAS = regularMarketPrice/chartPreviousClose
+    let price = d.ltp || d.regularMarketPrice || 0;
+    let prev  = d.prev_close || d.chartPreviousClose || 0;
+    let diff  = (price && prev) ? (price - prev) : 0;
+    let pct   = (diff && prev) ? (diff / prev * 100) : 0;
+    
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
       pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
+      checkAlerts(s,price); checkTargets(s,price); checkVolumeSpike(s,d); lastUpdatedMap[s]=Date.now();
       const wrap=pe.closest('.card')||pe.parentElement;
       if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
       else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
       setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
     }
     if(ce){
-      // Format: +₹diff (pct%) — matches card render format
       const sign=diff>=0?'+':'';
       ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
@@ -3281,16 +3285,14 @@ function fetchWithTimeout(url, ms=8000){
 }
 
 // ======================================
-// BATCH FETCH (parallel, single API call)
-// ======================================
-// Normalize GAS batch item -> app cache format
 function normalizeBatchItem(gasData){
-  // GAS returns: {price, prevClose, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
-  // App expects: regularMarketPrice, chartPreviousClose, etc.
-  if(!gasData||!gasData.price) return null;
+  // GAS returns: {price, prev_close, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
+  if(!gasData || !gasData.price) return null;
   return {
     regularMarketPrice:       gasData.price,
-    chartPreviousClose:       gasData.prevClose,
+    ltp:                      gasData.price, // Python engine compatibility
+    chartPreviousClose:       gasData.prev_close || gasData.prevClose, 
+    prev_close:               gasData.prev_close || gasData.prevClose, // Standardised
     regularMarketOpen:        (gasData.open != null ? gasData.open : gasData.price),
     regularMarketDayHigh:     gasData.high,
     regularMarketDayLow:      gasData.low,
@@ -3424,22 +3426,26 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] GAS live call fail:', gasErr);
       }
 
-      // Step 3: Merge - Firebase OHLCV base + GAS live override
+// Step 3: Merge - Firebase OHLCV base + GAS live override
       if(fbOhlcv || gasLive){
         const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
-        // Change % calculate kariye
-        const ltp  = merged.regularMarketPrice  || 0;
-        const prev = merged.chartPreviousClose   || 0;
-        if(ltp && prev){
-          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
-          merged.regularMarketChangePercent = parseFloat(((ltp - prev) / prev * 100).toFixed(2));
+        // Change % calculate kariye using STANDARDISED variables
+        const currentPrice = merged.regularMarketPrice || merged.ltp || 0;
+        const previousClose = merged.prev_close || merged.chartPreviousClose || 0;
+        if(currentPrice && previousClose){
+        merged.regularMarketChange = parseFloat((currentPrice - previousClose).toFixed(2));
+        merged.regularMarketChangePercent = parseFloat(((currentPrice - previousClose) / previousClose * 100).toFixed(2));
         }
+        // Ensure standard keys exist for components reading them directly
+        merged.ltp = currentPrice;
+        merged.prev_close = previousClose;
         cache[key] = {data: merged, time: Date.now()};
         lastUpdatedMap[key] = Date.now();
         return merged;
       }
-    }catch(e){
-      console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
+    }
+    catch(e){
+    console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
     }
   }
   // END HYBRID block
