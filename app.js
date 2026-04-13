@@ -1511,23 +1511,26 @@ async function updateHeaderIndices(){
   for(let i of indicesList){
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
+    // Firebase engine uses ltp/prev_close; GAS uses regularMarketPrice/chartPreviousClose
+    const price = d.regularMarketPrice || d.ltp || 0;
+    const prev  = d.chartPreviousClose || d.prev_close || 0;
+    if(!price || !prev) continue;
+    const diff=price-prev;
+    const pct=(diff/prev*100)||0;
     const key=i.sym.replace("^","");
     const pe=document.getElementById("hidx-"+key+"-p");
     const ce=document.getElementById("hidx-"+key+"-c");
-if(pe){
-      const p=d.regularMarketPrice;
+    if(pe){
       const oldVal=parseFloat(pe.innerText.replace(/[,]/g,''))||0;
-      pe.innerText=p.toLocaleString('en-IN',{maximumFractionDigits:2});
-      if(oldVal>0&&p!==oldVal){
-        pe.classList.add(p>oldVal?'flash-green':'flash-red');
+      pe.innerText=price.toLocaleString('en-IN',{maximumFractionDigits:2});
+      if(oldVal>0&&price!==oldVal){
+        pe.classList.add(price>oldVal?'flash-green':'flash-red');
         setTimeout(()=>pe.classList.remove('flash-green','flash-red'),1200);
       }
     }
     if(ce){
       const adiff=Math.abs(diff);
-      const diffStr='₹'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const diffStr='\u20b9'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
       ce.innerText=(diff>=0?'+':'-')+diffStr+' ('+(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%)';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
