@@ -1653,11 +1653,11 @@ async function updatePrices(){
       if(doc.exists){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
-          const p = prices[s+'.NS'];
+          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
           if(p){ 
-          const existing = cache[s]?.data || {};
-          cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
-          lastUpdatedMap[s]=Date.now(); 
+            const existing = cache[s]?.data || {};
+            cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
+            lastUpdatedMap[s]=Date.now(); 
           }
         });
       }
