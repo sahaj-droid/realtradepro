@@ -1258,8 +1258,6 @@ function confirmRemove(){
   closeRemoveModal();
   doRemoveStock(sym);
 }
-
-    ```js
 // ======================================
 // RENDER WATCHLIST
 // ======================================
