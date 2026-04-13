@@ -1017,7 +1017,7 @@ function toggleTheme(){
   isDark=!isDark;
   document.body.classList.toggle("light",!isDark);
   const tb=document.getElementById("themeBtn");
-  tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+  if(tb) tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
   localStorage.setItem("theme",isDark?"dark":"light");
 }
 
@@ -1324,6 +1324,18 @@ async function renderWL(){
           </div>
         </div>
       </div>
+      <div class="wl-actions-panel" id="act-${s}">
+        <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
+        <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
+        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
+        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
+        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
+        <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
+          <span style="font-size:13px;">Ask Nivi</span>
+        </button>
+      </div>
     </div>`;
   }));
 
@@ -1511,26 +1523,23 @@ async function updateHeaderIndices(){
   for(let i of indicesList){
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
-    // Firebase engine: ltp + prev_close | GAS: regularMarketPrice + chartPreviousClose
-    const price = d.regularMarketPrice || d.ltp || 0;
-    const prev  = d.chartPreviousClose  || d.prev_close || 0;
-    if(!price || !prev) continue;
-    const diff=price-prev;
-    const pct=(diff/prev*100)||0;
+    const diff=d.regularMarketPrice-d.chartPreviousClose;
+    const pct=(diff/d.chartPreviousClose*100)||0;
     const key=i.sym.replace("^","");
     const pe=document.getElementById("hidx-"+key+"-p");
     const ce=document.getElementById("hidx-"+key+"-c");
-    if(pe){
+if(pe){
+      const p=d.regularMarketPrice;
       const oldVal=parseFloat(pe.innerText.replace(/[,]/g,''))||0;
-      pe.innerText=price.toLocaleString('en-IN',{maximumFractionDigits:2});
-      if(oldVal>0&&price!==oldVal){
-        pe.classList.add(price>oldVal?'flash-green':'flash-red');
+      pe.innerText=p.toLocaleString('en-IN',{maximumFractionDigits:2});
+      if(oldVal>0&&p!==oldVal){
+        pe.classList.add(p>oldVal?'flash-green':'flash-red');
         setTimeout(()=>pe.classList.remove('flash-green','flash-red'),1200);
       }
     }
     if(ce){
       const adiff=Math.abs(diff);
-      const diffStr='\u20b9'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const diffStr='₹'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
       ce.innerText=(diff>=0?'+':'-')+diffStr+' ('+(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%)';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
