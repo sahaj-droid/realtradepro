@@ -1,90 +1,5 @@
 // ============================================================================
-// REALTRADEPRO - PART 1: CORE CONFIG, GLOBAL STATE & UTILITIES
-// ============================================================================
-
-// ── 1. GLOBAL STATE & MEMORY MANAGEMENT ──
-let currentUser = null; // { userId, name }
-let currentPINEntry = '';
-
-// App State
-let cache = {};
-let h = []; // Holdings
-let hist = []; // History
-let alerts = [];
-let groups = {};
-let currentGroup = "ALL";
-let watchlists = [
-  { name: "Watchlist 1", stocks: ["SBIN", "RELIANCE", "TCS"] },
-  { name: "Watchlist 2", stocks: [] },
-  { name: "Watchlist 3", stocks: [] }
-];
-let currentWL = 0;
-let wl = watchlists[currentWL].stocks;
-let currentTrade = {};
-let currentTradeType = "CNC"; // CNC or MIS
-let isDark = true;
-let azAsc = true, priceAsc = false, percentAsc = false;
-window.errorShownThisSession = false; // Prevent multiple error popups
-
-// Config Constants
-const CACHE_TIME = 4000;
-const FONT_SIZES = { S: '100%', M: '112%', L: '125%' };
-
-// Default APIs
-const DEFAULT_GAS_APIS = [
-  "https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec",
-  "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec",
-  "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec",
-  "https://script.google.com/macros/s/AKfycbwr9sKAbHjmVf48Ihp2PJq8xjNv-D6kglwFKqY8Uxwke99icv5JCNa6RiABdmm3G_lP/exec",
-  "https://script.google.com/macros/s/AKfycbzc6tzmWVfGbpMa7ocVxg2bYlutvTRbPRbEZrqz2WtLib2MAqUCzsUz-Q9XACXDz34O/exec"
-];
-
-const DEFAULT_FF2_URL = "https://script.google.com/macros/s/AKfycbxcIGFZp7IWBSMJVsMIgpPR5oVmiEJbapQyknKrJ8iVpn9ahM6z9hc_QfiDKhhSMGNgiw/exec";
-const DEFAULT_SARVAM_KEY = "taro-key-1-yahan";
-const DEFAULT_SARVAM_KEY2 = "taro-key-2-yahan";
-
-// ── 2. BOILERPLATE REDUCTION: UTILITY HELPERS ──
-const Utils = {
-  // Currency Formatter
-  inr: (n) => {
-    if (isNaN(n)) return '₹0.00';
-    const abs = Math.abs(n);
-    const [intPart, dec = '00'] = abs.toFixed(2).split('.');
-    const formattedInt = intPart.length > 3 
-        ? intPart.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + intPart.slice(-3) 
-        : intPart;
-    return `${n < 0 ? '-' : ''}₹${formattedInt}.${dec}`;
-  },
-
-  // Time Formatter
-  timeAgo: (ts) => {
-    if (!ts) return '';
-    const diff = Math.floor((Date.now() - ts) / 1000);
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
-  },
-
-  // Holding Days Calculator
-  holdingDays: (buyDate) => {
-    if (!buyDate) return null;
-    return Math.floor((new Date() - new Date(buyDate)) / (1000 * 60 * 60 * 24));
-  },
-
-  holdingDaysLabel: (days) => {
-    if (days === null) return '';
-    if (days === 0) return 'Today';
-    if (days < 30) return `${days}d`;
-    if (days < 365) return `${Math.floor(days / 30)}mo ${days % 30}d`;
-    return `${Math.floor(days / 365)}yr ${Math.floor((days % 365) / 30)}mo`;
-// ============================================================================
-// STEP 1: CLOSE PREVIOUS OBJECT (Line 80-81 transition)
-// ============================================================================
-  } // Aa bracket upar na function no che
-}; // Aa semicolon sathe no bracket 'Utils' object ne bandh kare che (ZARURI!)
-
-// ============================================================================
-// PART 9: MAIN APP ROUTER (FULL REPLACEMENT)
+// PART 9: MAIN APP ROUTER (TOTAL REPLACEMENT)
 // ============================================================================
 function switchMainTab(tabName) {
   const sections = ['watchlistSection', 'holdingsSection', 'gainersSection', 'learnSection', 'niviSection'];
@@ -93,7 +8,7 @@ function switchMainTab(tabName) {
     if (el) el.style.display = 'none';
   });
 
-  // Active nav design
+  // Active navigation highlight
   document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
   const activeBtn = document.getElementById('nav' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   if (activeBtn) activeBtn.classList.add('active-nav');
@@ -101,23 +16,59 @@ function switchMainTab(tabName) {
   if (tabName === 'watchlist') {
     document.getElementById('watchlistSection').style.display = 'block';
     if (typeof renderWL === 'function') renderWL();
-  } 
-  else if (tabName === 'gainers') {
+  } else if (tabName === 'gainers') {
     document.getElementById('gainersSection').style.display = 'block';
     if (typeof renderGainersSection === 'function') renderGainersSection();
-  } 
-  else if (tabName === 'holdings') {
+  } else if (tabName === 'holdings') {
     document.getElementById('holdingsSection').style.display = 'block';
     if (typeof renderHoldings === 'function') renderHoldings();
-  } 
-  else if (tabName === 'learn') {
+  } else if (tabName === 'learn') {
     document.getElementById('learnSection').style.display = 'block';
     if (typeof renderLearnTab === 'function') renderLearnTab();
-  } 
-  else if (tabName === 'nivi') {
+  } else if (tabName === 'nivi') {
     document.getElementById('niviSection').style.display = 'block';
   }
 }
+
+// ============================================================================
+// PART 1 & 2: UI UTILS OBJECT (FIXED STRUCTURE)
+// ============================================================================
+const Utils = {
+  inr: (v) => "₹" + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
+  
+  showLoader: (msg = "Loading...") => {
+    const loaderMsg = document.getElementById("loaderMsg");
+    const loaderOverlay = document.getElementById("loaderOverlay");
+    if (loaderMsg) loaderMsg.innerText = msg;
+    if (loaderOverlay) loaderOverlay.style.display = "flex";
+  },
+
+  hideLoader: () => {
+    const loaderOverlay = document.getElementById("loaderOverlay");
+    if (loaderOverlay) loaderOverlay.style.display = "none";
+  },
+
+  showPopup: (msg, duration = 3000) => {
+    const el = document.getElementById("alertPopup");
+    const msgEl = document.getElementById("alertMsg");
+    if (el && msgEl) {
+      msgEl.innerText = msg;
+      el.style.display = "block";
+      setTimeout(() => { el.style.display = "none"; }, duration);
+    }
+  },
+
+  showError: (msg) => {
+    if (window.errorShownThisSession) return;
+    window.errorShownThisSession = true;
+    const errorMsg = document.getElementById("errorMsg");
+    const errorBanner = document.getElementById("errorBanner");
+    if (errorMsg && errorBanner) {
+      errorMsg.innerText = msg;
+      errorBanner.style.display = "flex";
+    }
+  }
+};
 // ============================================================================
 // END OF PART 9 - APP JS COMPLETELY REFACTORED
 // ============================================================================
