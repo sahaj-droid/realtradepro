@@ -6038,7 +6038,7 @@ async function fetchNSEAnnouncements() {
       return nseNewsCache;
     }
     const apiUrl = localStorage.getItem("customAPI") || API;
-    const r = await iUrl + "?type=nse");
+    const r = await fetch(apiUrl + "?type=nse");
     if (!r.ok) return [];
     const data = await r.json();
     if (data.ok && data.items && data.items.length > 0) {
