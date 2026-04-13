@@ -5357,7 +5357,7 @@ function smartSummaryTemplate(text, sym, sentiment) {
 
 // -- LIVE NEWS FETCH via GAS --
 async function fetchLiveNews(sym) {
-  const apiUrl = localStorage.getItem("customAPI") || API;
+  const apiUrl = localStorage.getItem("customAPI") || "";
   const cleanSym = sym.replace(".NS","").replace(".BO","");
   try {
     const r = await fetch(`${apiUrl}?type=newsSearch&s=${encodeURIComponent(cleanSym)}`);
@@ -6037,7 +6037,7 @@ async function fetchNSEAnnouncements() {
     if (nseNewsCache && (Date.now() - nseNewsCacheTime) < NSE_CACHE_MS) {
       return nseNewsCache;
     }
-    const apiUrl = localStorage.getItem("customAPI") || API;
+    const apiUrl = localStorage.getItem("customAPI") || "";
     const r = await fetch(apiUrl + "?type=nse");
     if (!r.ok) return [];
     const data = await r.json();
