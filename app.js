@@ -1,6 +1,8 @@
 // ============================================================================
-// PART 9: MAIN APP ROUTER (TOTAL REPLACEMENT)
+// REALTRADEPRO - CONSOLIDATED CORE (PART 1, 2, 3 & 9)
 // ============================================================================
+
+// ── 1. MAIN APP ROUTER (Part 9) ──
 function switchMainTab(tabName) {
   const sections = ['watchlistSection', 'holdingsSection', 'gainersSection', 'learnSection', 'niviSection'];
   sections.forEach(id => {
@@ -8,7 +10,7 @@ function switchMainTab(tabName) {
     if (el) el.style.display = 'none';
   });
 
-  // Active navigation highlight
+  // Navigation highlight logic
   document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
   const activeBtn = document.getElementById('nav' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   if (activeBtn) activeBtn.classList.add('active-nav');
@@ -30,9 +32,7 @@ function switchMainTab(tabName) {
   }
 }
 
-// ============================================================================
-// PART 1 & 2: UI UTILS OBJECT (FIXED STRUCTURE)
-// ============================================================================
+// ── 2. UI UTILS OBJECT (Part 1 & 2 - FIXED) ──
 const Utils = {
   inr: (v) => "₹" + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
   
@@ -67,27 +67,18 @@ const Utils = {
       errorMsg.innerText = msg;
       errorBanner.style.display = "flex";
     }
-  },
-// UI Notification & Loaders
-  showLoader: (msg = "Loading...") => {
-    const loaderMsg = document.getElementById("loaderMsg");
-    const loaderOverlay = document.getElementById("loaderOverlay");
-    if (loaderMsg) loaderMsg.innerText = msg;
-    if (loaderOverlay) loaderOverlay.style.display = "flex";
   }
 };
 
-// ── 3. CORE SETUP & INITIALIZATION ──
+// ── 3. CORE SETUP & INITIALIZATION (Part 3) ──
 const Config = {
   initDefaults: () => {
     if (!localStorage.getItem('ff2ApiUrl')) {
       localStorage.setItem('ff2ApiUrl', DEFAULT_FF2_URL);
     }
-    if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
+    const savedSarvam = localStorage.getItem('geminiApiKey');
+    if (!savedSarvam && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
       localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
-    }
-    if (!localStorage.getItem('geminiApiKey2') && DEFAULT_SARVAM_KEY2 !== "") {
-      localStorage.setItem('geminiApiKey2', DEFAULT_SARVAM_KEY2);
     }
   },
 
@@ -96,22 +87,22 @@ const Config = {
     let rotationIndex = 0;
     return () => {
       const urls = [
-        localStorage.getItem('customAPI') || DEFAULT_GAS_APIS[0],
-        localStorage.getItem('customAPI2') || DEFAULT_GAS_APIS[1],
-        localStorage.getItem('customAPI3') || DEFAULT_GAS_APIS[2],
-        localStorage.getItem('customAPI4') || DEFAULT_GAS_APIS[3],
-        localStorage.getItem('customAPI5') || DEFAULT_GAS_APIS[4]
+        localStorage.getItem('customAPI'),
+        localStorage.getItem('customAPI2'),
+        localStorage.getItem('customAPI3'),
+        localStorage.getItem('customAPI4'),
+        localStorage.getItem('customAPI5')
       ].filter(Boolean);
       
-      if (urls.length === 0) return DEFAULT_GAS_APIS[0];
-      const url = urls[rotationIndex % urls.length];
+      const sourceList = urls.length > 0 ? urls : DEFAULT_GAS_APIS;
+      const url = sourceList[rotationIndex % sourceList.length];
       rotationIndex++;
       return url;
     };
   })()
 };
 
-// PIN Hash Crypto with Try-Catch
+// ── 4. CRYPTO & DATA LOADING ──
 async function hashPIN(pin) {
   try {
     const msgBuffer = new TextEncoder().encode(pin);
@@ -124,7 +115,6 @@ async function hashPIN(pin) {
   }
 }
 
-// Robust Local Storage Load
 function loadLocalData() {
   const safeParse = (key, fallback) => {
     try { 
@@ -147,18 +137,16 @@ function loadLocalData() {
     }
 
     currentWL = parseInt(localStorage.getItem("currentWL")) || 0;
-    if (currentWL >= watchlists.length) currentWL = 0;
     wl = watchlists[currentWL].stocks;
-
     h = safeParse("h", []);
     hist = safeParse("hist", []);
     alerts = safeParse("alerts", []);
-    groups = safeParse("groups", {});
     isDark = localStorage.getItem("theme") !== "light";
 
+    // Set font size
     const fs = localStorage.getItem('fontSize') || 'M';
     document.documentElement.setAttribute('data-fsize', fs);
-    const htmlFontSize = FONT_SIZES[fs] || FONT_SIZES.M;
+    const htmlFontSize = FONT_SIZES[fs] || '16px';
     document.documentElement.style.fontSize = htmlFontSize;
 
   } catch (error) {
@@ -166,12 +154,12 @@ function loadLocalData() {
   }
 }
 
-// Initialize default parameters and data
+// Global Initialization
 Config.initDefaults();
 loadLocalData();
 
 // ============================================================================
-// END OF PART 1
+// END OF CONSOLIDATED CORE
 // ============================================================================
 
 // ============================================================================
