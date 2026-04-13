@@ -77,25 +77,27 @@ const Utils = {
     if (days < 30) return `${days}d`;
     if (days < 365) return `${Math.floor(days / 30)}mo ${days % 30}d`;
     return `${Math.floor(days / 365)}yr ${Math.floor((days % 365) / 30)}mo`;
-  },
-  
+// ============================================================================
+// STEP 1: CLOSE PREVIOUS OBJECT (Line 80-81 transition)
+// ============================================================================
+  } // Aa bracket upar na function no che
+}; // Aa semicolon sathe no bracket 'Utils' object ne bandh kare che (ZARURI!)
+
 // ============================================================================
 // PART 9: MAIN APP ROUTER (FULL REPLACEMENT)
 // ============================================================================
 function switchMainTab(tabName) {
-  // 1. Badhi sections ne hide karo
   const sections = ['watchlistSection', 'holdingsSection', 'gainersSection', 'learnSection', 'niviSection'];
   sections.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
 
-  // 2. Navigation menu ma active class set karo
+  // Active nav design
   document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
   const activeBtn = document.getElementById('nav' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   if (activeBtn) activeBtn.classList.add('active-nav');
 
-  // 3. Je tab select kari hoy enu logic render karo
   if (tabName === 'watchlist') {
     document.getElementById('watchlistSection').style.display = 'block';
     if (typeof renderWL === 'function') renderWL();
