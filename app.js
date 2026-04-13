@@ -540,8 +540,8 @@ function monitorFirebaseNews() {
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 function getNiviAPI(){ return getActiveGASUrl(); }
-const API_NIVI = getNiviAPI(); // backward compat
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=15000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 // MULTI-WATCHLIST SYSTEM
@@ -1274,16 +1274,22 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
   const _priceClr = _wlL ? '#1c1917' : '#e2e8f0';
   const _lblClr   = _wlL ? '#78716c' : '#94a3b8';
 
-  for (let s of displayList) {
-    let entry = cache[s];
-    let d = (entry && (Date.now() - entry.time) < CACHE_TIME) ? entry.data : null;
-    if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
-    if (!d) continue;
+  await Promise.all(displayList.map(async (s) => {
 
-    const _price = d.regularMarketPrice || d.ltp || 0;
-    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  let entry = cache[s];
+
+  let d = (!entry || (Date.now() - entry.time > CACHE_TIME))
+    ? await fetchFull(s)
+    : entry.data;
+
+  if(!d) return;
+
+  cache[s] = { data: d, time: Date.now() };
+
+  const _price = d.regularMarketPrice || d.ltp || 0;
+  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
 
     html += `
     <div class="wl-card-wrap" id="wrap-${s}">
@@ -5201,7 +5207,7 @@ function startRefresh(){
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
     updatePrices();
-  }, 5000);
+  }, 4000);
 }
 
 document.addEventListener('visibilitychange', ()=>{
@@ -6040,7 +6046,7 @@ async function fetchNSEAnnouncements() {
       return nseNewsCache;
     }
     const apiUrl = localStorage.getItem("customAPI") || API;
-    const r = await fetch(apiUrl + "?type=nse");
+    const r = await iUrl + "?type=nse");
     if (!r.ok) return [];
     const data = await r.json();
     if (data.ok && data.items && data.items.length > 0) {
@@ -6763,7 +6769,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
 
   // 2. GAS fallback (single-turn)
   if (!answer) {
-    const _nu = localStorage.getItem('customAPI') || API_NIVI;
+    const _nu = localStorage.getItem('customAPI') || getNiviAPI  ;
     try {
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
@@ -7293,7 +7299,7 @@ async function niviNewsSearch() {
   // ── STEP 1: GAS → fetch headlines only (CORS-safe) ──
   var headlines = [];
   try {
-    var gasUrl = API_NIVI + '?type=newsSearch&s=' + encodeURIComponent(sym);
+    var gasUrl = getNiviAPI + '?type=newsSearch&s=' + encodeURIComponent(sym);
     var gasResp = await fetch(gasUrl);
     var gasData = await gasResp.json();
     if (!gasData.ok) throw new Error(gasData.error || 'GAS news fetch failed');
