@@ -2431,3 +2431,63 @@ function setTab(t) {
 // ============================================================================
 // PART 23: END 
 // ============================================================================
+
+// ============================================================================
+// PART 24: THE CONNECTOR (FIXING HTML-JS BRIDGE)
+// ============================================================================
+
+// 1. HTML માંથી આવતા Tab switching ને હેન્ડલ કરવા
+// જો તમારા HTML માં onclick="switchMainTab(watchlist)" છે (quotes વગર), 
+// તો આ function એરર આવતી અટકાવશે.
+const watchlist = 'watchlist', gainers = 'gainers', holdings = 'holdings', 
+      history = 'history', nivi = 'nivi', learn = 'learn', settings = 'settings';
+
+// 2. Missing Sorting Functions
+function sortAZ() {
+  wl.sort();
+  renderWL();
+  Utils.showPopup("Watchlist Sorted: A-Z");
+}
+
+function sortPrice() {
+  wl.sort((a, b) => (marketDataCache[b]?.Price || 0) - (marketDataCache[a]?.Price || 0));
+  renderWL();
+  Utils.showPopup("Watchlist Sorted: Price (High to Low)");
+}
+
+function sortPercent() {
+  wl.sort((a, b) => {
+    const pA = parseFloat(marketDataCache[a]?.['% Change'] || 0);
+    const pB = parseFloat(marketDataCache[b]?.['% Change'] || 0);
+    return pB - pA;
+  });
+  renderWL();
+  Utils.showPopup("Watchlist Sorted: % Change");
+}
+
+// 3. Missing CSV Functions
+function triggerWatchlistCSVImport() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = event => {
+      const symbols = event.target.result.split(/[\n,]+/).map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+      wl = [...new Set([...wl, ...symbols])];
+      saveUserData();
+      renderWL();
+      Utils.showPopup(`Successfully imported ${symbols.length} stocks!`);
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// 4. Manual Refresh Button (Header)
+function updateLivePrices() {
+  Utils.showLoader("Refreshing Prices...");
+  // તમારું existing price update logic અહિયાં કોલ થશે
+  setTimeout(() => Utils.hideLoader(), 1000);
+}
