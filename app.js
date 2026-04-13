@@ -67,44 +67,13 @@ const Utils = {
       errorMsg.innerText = msg;
       errorBanner.style.display = "flex";
     }
-  }
-};
-// ============================================================================
-// END OF PART 9 - APP JS COMPLETELY REFACTORED
-// ============================================================================
-  // UI Notification & Loaders
+  },
+// UI Notification & Loaders
   showLoader: (msg = "Loading...") => {
     const loaderMsg = document.getElementById("loaderMsg");
     const loaderOverlay = document.getElementById("loaderOverlay");
     if (loaderMsg) loaderMsg.innerText = msg;
     if (loaderOverlay) loaderOverlay.style.display = "flex";
-  },
-  
-  hideLoader: () => {
-    const loaderOverlay = document.getElementById("loaderOverlay");
-    if (loaderOverlay) loaderOverlay.style.display = "none";
-  },
-
-  showPopup: (msg, duration = 3000) => {
-    const el = document.getElementById("alertPopup");
-    const msgEl = document.getElementById("alertMsg");
-    if (el && msgEl) {
-      msgEl.innerText = msg;
-      el.style.display = "block";
-      setTimeout(() => { el.style.display = "none"; }, duration);
-    }
-  },
-
-  showError: (msg) => {
-    if (window.errorShownThisSession) return;
-    window.errorShownThisSession = true;
-    const errorMsg = document.getElementById("errorMsg");
-    const errorBanner = document.getElementById("errorBanner");
-    if (errorMsg && errorBanner) {
-      errorMsg.innerText = msg;
-      errorBanner.style.display = "block";
-      setTimeout(() => { errorBanner.style.display = "none"; }, 8000);
-    }
   }
 };
 
