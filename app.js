@@ -911,6 +911,18 @@ function renderWLTabs(){
   if(watchlists.length<6){
     html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
   }
+  // Groups filter tabs (Portfolio, Defense, etc.)
+if(Object.keys(groups).length > 0){
+  html += `<span style="color:#2d3f52;font-size:11px;padding:0 3px;">|</span>`;
+  Object.keys(groups).forEach(g => {
+    const isGrpActive = (currentGroup === g);
+    html += `<button class="group-btn${isGrpActive?' active':''}"
+      onclick="filterGroup('${g}')"
+      data-group="${g}"
+      style="${isGrpActive?'border-color:#f59e0b;color:#f59e0b;background:#1e2d0f;':''}"
+    >${g}</button>`;
+  });
+}
   bar.innerHTML=html;
 }
 
@@ -971,7 +983,11 @@ function closeWLNameModal(){
 }
 
 function renderGroupTabs(){ renderWLTabs(); }
-function filterGroup(g){}
+function filterGroup(g){
+  currentGroup = (currentGroup === g) ? 'ALL' : g; // toggle support
+  renderWLTabs();
+  renderWL();
+}  
 function showAddGroupModal(){ addWL(); }
 function saveGroup(){}
 function deleteGroup(g){}
