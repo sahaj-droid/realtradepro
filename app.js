@@ -1,8 +1,18 @@
 // ============================================================================
-// REALTRADEPRO - CONSOLIDATED CORE (PART 1, 2, 3 & 9)
+// REALTRADEPRO - FIXED CONSOLIDATED CORE (ALL CONSTANTS INCLUDED)
 // ============================================================================
 
-// ── 1. MAIN APP ROUTER (Part 9) ──
+// ── 0. MISSING CONSTANTS (Aa add karvathi error jati rehse) ──
+const FONT_SIZES = { 'S': '14px', 'M': '16px', 'L': '18px', 'XL': '20px' };
+const DEFAULT_GAS_APIS = [
+  "YOUR_GAS_URL_1", 
+  "YOUR_GAS_URL_2"
+];
+const DEFAULT_FF2_URL = "";
+const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE";
+const DEFAULT_SARVAM_KEY2 = "";
+
+// ── 1. MAIN APP ROUTER ──
 function switchMainTab(tabName) {
   const sections = ['watchlistSection', 'holdingsSection', 'gainersSection', 'learnSection', 'niviSection'];
   sections.forEach(id => {
@@ -10,7 +20,6 @@ function switchMainTab(tabName) {
     if (el) el.style.display = 'none';
   });
 
-  // Navigation highlight logic
   document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-nav'));
   const activeBtn = document.getElementById('nav' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
   if (activeBtn) activeBtn.classList.add('active-nav');
@@ -32,7 +41,7 @@ function switchMainTab(tabName) {
   }
 }
 
-// ── 2. UI UTILS OBJECT (Part 1 & 2 - FIXED) ──
+// ── 2. UI UTILS OBJECT ──
 const Utils = {
   inr: (v) => "₹" + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
   
@@ -70,7 +79,7 @@ const Utils = {
   }
 };
 
-// ── 3. CORE SETUP & INITIALIZATION (Part 3) ──
+// ── 3. CORE SETUP & INITIALIZATION ──
 const Config = {
   initDefaults: () => {
     if (!localStorage.getItem('ff2ApiUrl')) {
@@ -82,7 +91,6 @@ const Config = {
     }
   },
 
-  // Encapsulated API Rotator
   getActiveGASUrl: (() => {
     let rotationIndex = 0;
     return () => {
@@ -102,19 +110,7 @@ const Config = {
   })()
 };
 
-// ── 4. CRYPTO & DATA LOADING ──
-async function hashPIN(pin) {
-  try {
-    const msgBuffer = new TextEncoder().encode(pin);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch (error) {
-    console.error("PIN Hashing failed:", error);
-    return null;
-  }
-}
-
+// ── 4. DATA LOADING ──
 function loadLocalData() {
   const safeParse = (key, fallback) => {
     try { 
@@ -143,7 +139,6 @@ function loadLocalData() {
     alerts = safeParse("alerts", []);
     isDark = localStorage.getItem("theme") !== "light";
 
-    // Set font size
     const fs = localStorage.getItem('fontSize') || 'M';
     document.documentElement.setAttribute('data-fsize', fs);
     const htmlFontSize = FONT_SIZES[fs] || '16px';
@@ -154,7 +149,6 @@ function loadLocalData() {
   }
 }
 
-// Global Initialization
 Config.initDefaults();
 loadLocalData();
 
