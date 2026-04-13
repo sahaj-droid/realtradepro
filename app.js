@@ -79,7 +79,7 @@ const Utils = {
     return `${Math.floor(days / 365)}yr ${Math.floor((days % 365) / 30)}mo`;
   },
   
-  // ============================================================================
+// ============================================================================
 // PART 9: MAIN APP ROUTER (FULL REPLACEMENT)
 // ============================================================================
 function switchMainTab(tabName) {
@@ -102,7 +102,7 @@ function switchMainTab(tabName) {
   } 
   else if (tabName === 'gainers') {
     document.getElementById('gainersSection').style.display = 'block';
-    if (typeof renderGainersSection === 'function') renderGainersSection(); // Part 20 logic call thase
+    if (typeof renderGainersSection === 'function') renderGainersSection();
   } 
   else if (tabName === 'holdings') {
     document.getElementById('holdingsSection').style.display = 'block';
@@ -114,7 +114,6 @@ function switchMainTab(tabName) {
   } 
   else if (tabName === 'nivi') {
     document.getElementById('niviSection').style.display = 'block';
-    // Nivi chat module logic
   }
 }
 // ============================================================================
