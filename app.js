@@ -483,7 +483,7 @@ function startEngineStaleCheck() {
         .collection('RealTradePro').doc('live_prices').get();
       const updatedAt = snap.data()?.updated_at;
       if (!updatedAt) return;
-      if (Date.now() - new Date(updatedAt).getTime() > 120000) {
+      if (Date.now() - new Date(updatedAt).getTime() > 180000) {
         showGASFallbackBar();
       }
     } catch(e) {}
