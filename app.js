@@ -1656,7 +1656,18 @@ async function updatePrices(){
           const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
           if(p){ 
             const existing = cache[s]?.data || {};
-            cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
+            // Engine fields normalize: ltp→regularMarketPrice, prev_close→chartPreviousClose
+            const normalized = Object.assign({}, existing, p, {
+              regularMarketPrice:       p.ltp        || p.regularMarketPrice       || existing.regularMarketPrice || 0,
+              chartPreviousClose:       p.prev_close || p.chartPreviousClose       || existing.chartPreviousClose || 0,
+              regularMarketOpen:        p.open       || p.regularMarketOpen        || existing.regularMarketOpen  || 0,
+              regularMarketDayHigh:     p.high       || p.regularMarketDayHigh     || existing.regularMarketDayHigh || 0,
+              regularMarketDayLow:      p.low        || p.regularMarketDayLow      || existing.regularMarketDayLow  || 0,
+              regularMarketVolume:      p.today_volume || p.regularMarketVolume    || existing.regularMarketVolume  || 0,
+              regularMarketChange:      p.change     || p.regularMarketChange      || 0,
+              regularMarketChangePercent: p.change_pct || p.regularMarketChangePercent || 0,
+            });
+            cache[s]={data: normalized, time:Date.now()}; 
             lastUpdatedMap[s]=Date.now(); 
           }
         });
@@ -1697,7 +1708,16 @@ async function updatePrices(){
         indicesList.forEach(i=>{
           if(i.sym==='__GIFT__') return;
           const d = _p[i.sym];
-          if(d) cache[i.sym]={data:d, time:Date.now()};
+          if(d){
+            // Engine fields normalize for indices
+            const normalized = Object.assign({}, d, {
+              regularMarketPrice:        d.ltp        || d.regularMarketPrice        || 0,
+              chartPreviousClose:        d.prev_close || d.chartPreviousClose        || 0,
+              regularMarketChange:       d.change     || d.regularMarketChange       || 0,
+              regularMarketChangePercent:d.change_pct || d.regularMarketChangePercent|| 0,
+            });
+            cache[i.sym]={data:normalized, time:Date.now()};
+          }
         });
       }
     }catch(e){}
@@ -3312,7 +3332,19 @@ async function batchFetchStocks(symbols, isIndex=false){
           // .NS first, .BO fallback
           const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
           if(p){
-            cache[s] = { data: p, time: Date.now() };
+            const existing = cache[s]?.data || {};
+            // Engine fields normalize: ltp→regularMarketPrice etc
+            const normalized = Object.assign({}, existing, p, {
+              regularMarketPrice:        p.ltp        || p.regularMarketPrice        || existing.regularMarketPrice || 0,
+              chartPreviousClose:        p.prev_close || p.chartPreviousClose        || existing.chartPreviousClose || 0,
+              regularMarketOpen:         p.open       || p.regularMarketOpen         || existing.regularMarketOpen  || 0,
+              regularMarketDayHigh:      p.high       || p.regularMarketDayHigh      || existing.regularMarketDayHigh || 0,
+              regularMarketDayLow:       p.low        || p.regularMarketDayLow       || existing.regularMarketDayLow  || 0,
+              regularMarketVolume:       p.today_volume || p.regularMarketVolume     || existing.regularMarketVolume  || 0,
+              regularMarketChange:       p.change     || p.regularMarketChange       || 0,
+              regularMarketChangePercent:p.change_pct || p.regularMarketChangePercent|| 0,
+            });
+            cache[s] = { data: normalized, time: Date.now() };
             lastUpdatedMap[s] = Date.now();
             stored++;
           }
