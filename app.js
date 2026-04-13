@@ -1268,6 +1268,10 @@ let html = "";
   // Apply sort if needed (sort displayList in place)
 if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
 
+  // Cache miss hoy to — batchFetchStocks() use karo (engine chalu=Firebase, band=GAS batch)
+  const _missing = displayList.filter(s => !cache[s]?.data);
+  if(_missing.length > 0) await batchFetchStocks(_missing);
+
   const _wlL = document.body.classList.contains('light');
   const _symClr  = _wlL ? '#0891b2' : '#38bdf8';
   const _priceClr = _wlL ? '#1c1917' : '#e2e8f0';
@@ -1275,8 +1279,7 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
 
   for (let s of displayList) {
     let d = cache[s]?.data;
-    if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
-    if (!d) continue;
+    if (!d) continue; // batchFetch pachhi pan nahi mlyun to skip
 
     const _price = d.regularMarketPrice || d.ltp || 0;
     const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
@@ -1797,8 +1800,11 @@ async function renderHold(){
   const _avgvBg  = _hL ? '#e0f2fe' : '#1e3a5f';
   const _avgvClr = _hL ? '#0369a1' : '#38bdf8';
   const _avgvBdr = _hL ? '#7dd3fc' : '#2d5a8e';
+  // Cache miss hoy to batch fetch
+  const _hMissing = h.map(x=>x.sym).filter(s=>!cache[s]?.data);
+  if(_hMissing.length > 0) await batchFetchStocks(_hMissing);
   for(let x of h){
-    let d=cache[x.sym]?.data||await fetchFull(x.sym);if(!d) continue;
+    let d=cache[x.sym]?.data;if(!d) continue;
     x.ltp=d.regularMarketPrice;
     let uPnl=(d.regularMarketPrice-x.price)*x.qty;
     let pnlPct=((d.regularMarketPrice-x.price)/x.price*100).toFixed(2);
@@ -3294,7 +3300,7 @@ function normalizeBatchItem(gasData){
 async function batchFetchStocks(symbols, isIndex=false){
   if(!symbols||symbols.length===0) return;
 
-  // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
+  // ── Firebase-first (Python engine active) ──────────────────────────────────
   if(window._pythonEngineActive && !isIndex){
     try{
       const db = firebase.firestore();
@@ -3303,9 +3309,9 @@ async function batchFetchStocks(symbols, isIndex=false){
         const prices = doc.data().prices || {};
         let stored = 0;
         symbols.forEach(s => {
-          const fbKey = s + '.NS';
-          if(prices[fbKey]){
-            const p = prices[fbKey];
+          // .NS first, .BO fallback
+          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+          if(p){
             cache[s] = { data: p, time: Date.now() };
             lastUpdatedMap[s] = Date.now();
             stored++;
@@ -3313,14 +3319,18 @@ async function batchFetchStocks(symbols, isIndex=false){
         });
         if(stored > 0){
           console.log('[Firebase] Live prices loaded:', stored, 'stocks');
-          return; // all found — skip GAS entirely
+          return; // GAS call bilkul nahi
         }
       }
     }catch(fbErr){
-      console.warn('[Firebase] live_prices fetch failed, falling back to GAS:', fbErr);
+      console.warn('[Firebase] live_prices fetch failed:', fbErr);
+      // engine active hoy to GAS par nahi jaavu — return
+      return;
     }
+    // engine active pan Firebase ma data nathi — return (no GAS)
+    return;
   }
-  // ── END Task 3 ─────────────────────────────────────────────────────────────
+  // ── END Firebase block — engine band hoy to GAS batch niche ────────────────
 
   const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
   const urls=[
@@ -3341,8 +3351,17 @@ async function batchFetchStocks(symbols, isIndex=false){
         const normalized=normalizeBatchItem(gasData);
         if(!normalized) return;
         const cacheKey=isIndex?sym:sym.replace('.NS','');
-        const existing = cache[cacheKey]?.data || {};
-        const _existing=cache[cacheKey]?.data||{};const _clean=Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null&&v!==undefined));cache[cacheKey]={data:Object.assign({},_existing,_clean),time:Date.now()};
+        const _existing=cache[cacheKey]?.data||{};
+        const _clean=Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null&&v!==undefined));
+        const merged = Object.assign({}, _existing, _clean);
+        // Change% recalculate
+        const ltp  = merged.regularMarketPrice || 0;
+        const prev = merged.chartPreviousClose  || 0;
+        if(ltp && prev){
+          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
+          merged.regularMarketChangePercent = parseFloat(((ltp-prev)/prev*100).toFixed(2));
+        }
+        cache[cacheKey]={data:merged,time:Date.now()};
         lastUpdatedMap[cacheKey]=Date.now();
         stored++;
       });
@@ -3354,7 +3373,7 @@ async function batchFetchStocks(symbols, isIndex=false){
     const ok=await tryBatch(urls[i]);
     if(ok){ if(i>0) showPopup('Using API fallback',2000); return; }
   }
-  // All batch attempts failed — fallback to individual calls only if Python engine not active
+  // All batch attempts failed — fallback to individual fetchFull (OLHCV only, no GAS)
   if(!window._pythonEngineActive || isIndex){
     await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
   }
@@ -3366,108 +3385,52 @@ async function fetchFull(sym,isIndex=false){
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
 
-  // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
+  // ── fetchFull: Engine chalu → live_prices, Engine band → OLHCV only (0 GAS) ──
   if(!isIndex){
-    try{
-      // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
-      let fbOhlcv = null;
+    // Engine chalu hoy to — live_prices thi j levo
+    if(window._pythonEngineActive){
       try{
-        const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
-        if(snap.exists){
-          const p = snap.data();
-          if(p && p.close && p.close > 0){
-            fbOhlcv = {
-              chartPreviousClose: p.prev,
-              regularMarketOpen:  p.open,
-            };
+        const db = firebase.firestore();
+        const doc = await db.collection('RealTradePro').doc('live_prices').get();
+        if(doc.exists){
+          const prices = doc.data().prices || {};
+          const p = prices[sym+'.NS'] || prices[sym+'.BO'] || prices[sym];
+          if(p){
+            cache[key] = {data: p, time: Date.now()};
+            lastUpdatedMap[key] = Date.now();
+            return p;
           }
         }
-      }catch(fbErr){
-        console.warn('[fetchFull] Firebase OLHCV read fail:', fbErr);
-      }
-
-      // Step 2: 1 GAS call - live price + Day H/L + 52W + Volume (all live)
-      const gasUrl = localStorage.getItem('customAPI') || API;
-      let gasLive = null;
-      try{
-        const r = await fetchWithTimeout(`${gasUrl}?s=${encodedSymbol}`, 8000);
-        const j = await r.json();
-        if(!j.error && j.chart && j.chart.result){
-          const m = j.chart.result[0].meta;
-          gasLive = {
-            regularMarketPrice:        m.regularMarketPrice,
-            regularMarketDayHigh:      m.regularMarketDayHigh,
-            regularMarketDayLow:       m.regularMarketDayLow,
-            regularMarketVolume:       m.regularMarketVolume,
-            averageDailyVolume3Month:  m.averageDailyVolume3Month,
-            averageDailyVolume10Day:   m.averageDailyVolume10Day,
-            fiftyTwoWeekHigh:          m.fiftyTwoWeekHigh,
-            fiftyTwoWeekLow:           m.fiftyTwoWeekLow,
-            trailingPE:                m.trailingPE,
-            epsTrailingTwelveMonths:   m.epsTrailingTwelveMonths,
-            marketCap:                 m.marketCap,
-          };
-        }
-      }catch(gasErr){
-        console.warn('[fetchFull] GAS live call fail:', gasErr);
-      }
-
-      // Step 3: Merge - Firebase OHLCV base + GAS live override
-      if(fbOhlcv || gasLive){
-        const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
-        // Change % calculate kariye
-        const ltp  = merged.regularMarketPrice  || 0;
-        const prev = merged.chartPreviousClose   || 0;
-        if(ltp && prev){
-          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
-          merged.regularMarketChangePercent = parseFloat(((ltp - prev) / prev * 100).toFixed(2));
-        }
-        cache[key] = {data: merged, time: Date.now()};
-        lastUpdatedMap[key] = Date.now();
-        return merged;
-      }
-    }catch(e){
-      console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
+      }catch(e){ console.warn('[fetchFull] live_prices read fail:', e); }
+      return null; // engine active pan data nathi — no GAS
     }
-  }
-  // END HYBRID block
 
-  const urls=[
-    localStorage.getItem("customAPI")||API,
-    localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3,
-    localStorage.getItem('customAPI4')||API4,
-    localStorage.getItem('customAPI5')||API5
-  ].filter(Boolean);
-
-  async function tryOne(apiUrl){
+    // Engine band hoy to — Firebase OLHCV (prev close + open) sirf
+    // GAS call NAHI — batchFetchStocks() GAS handle karse
     try{
-      let r=await fetchWithTimeout(`${apiUrl}?s=${encodedSymbol}`, 8000);
-      let j=await r.json();
-      if(j.error||!j.chart||!j.chart.result) return null;
-      return j.chart.result[0].meta;
-    }catch(e){ return null; }
+      const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
+      if(snap.exists){
+        const p = snap.data();
+        if(p && p.close && p.close > 0){
+          const merged = {
+            chartPreviousClose:           p.prev  || 0,
+            regularMarketOpen:            p.open  || 0,
+            regularMarketPrice:           p.close || 0, // last close as stale price
+            regularMarketDayHigh:         p.high  || 0,
+            regularMarketDayLow:          p.low   || 0,
+            regularMarketChange:          0,
+            regularMarketChangePercent:   0,
+            _stale: true, // stale flag — engine band che
+          };
+          cache[key] = {data: merged, time: Date.now()};
+          lastUpdatedMap[key] = Date.now();
+          return merged;
+        }
+      }
+    }catch(e){ console.warn('[fetchFull] OLHCV read fail:', e); }
+    return null; // OLHCV pan nahi mlyun — null return
   }
-
-  for(let i=0;i<urls.length;i++){
-    let data=await tryOne(urls[i]);
-    if(data){
-      if(i>0&&!sessionStorage.getItem('fallbackShown')){ showPopup('Using API fallback',2000); sessionStorage.setItem('fallbackShown','1'); }
-      cache[key]={data,time:Date.now()};
-      lastUpdatedMap[key]=Date.now();
-      return data;
-    }
-  }
-  // Only show error if Python engine is not active (GAS is the only source)
-  if(!window._pythonEngineActive){
-    // Weekend / after-hours ma error suppress karo — engine band hoy te normal che
-    const _ms = getMarketStatus();
-    if(_ms.open){
-      showError("All APIs failed  -  Check quota or URLs in Settings");
-    } else {
-      console.warn("[GAS] All APIs failed — market closed, suppressing banner");
-    }
-  }
+  // END fetchFull block — GAS call removed entirely
   return null;
 }
 // =============================================
