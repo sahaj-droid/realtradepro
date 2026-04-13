@@ -539,8 +539,9 @@ function monitorFirebaseNews() {
 }
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
-const API_NIVI = getActiveGASUrl();
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+function getNiviAPI(){ return getActiveGASUrl(); }
+const API_NIVI = getNiviAPI(); // backward compat
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=15000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 // MULTI-WATCHLIST SYSTEM
@@ -1274,7 +1275,8 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
   const _lblClr   = _wlL ? '#78716c' : '#94a3b8';
 
   for (let s of displayList) {
-    let d = cache[s]?.data;
+    let entry = cache[s];
+    let d = (entry && (Date.now() - entry.time) < CACHE_TIME) ? entry.data : null;
     if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
     if (!d) continue;
 
@@ -5840,7 +5842,7 @@ Max 180 words. Sirf Hindi Devanagari.
       if (r && r.ok) rawText = r.answer;
     }
     if (!rawText) {
-      const _mUrl = API_NIVI;
+      const _mUrl = getNiviAPI();
       const r    = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       rawText = data.answer || data.text || data.summary || null;
@@ -5928,7 +5930,7 @@ const prompt =
   }
   if (!answer) {
     try {
-      const _nu  = API_NIVI;
+      const _nu  = getNiviAPI();
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       answer = data.answer || data.text || data.summary || null;
@@ -6661,7 +6663,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   // ── FALLBACK: GAS route (backward compatible) ──
   let _niviData = null, _gasErr = null;
   const _niviUrls = [
-    API_NIVI,
+    getNiviAPI(),
     localStorage.getItem('customAPI2') || API2,
     localStorage.getItem('customAPI3') || API3,
     localStorage.getItem('customAPI4') || API4,
@@ -7550,18 +7552,21 @@ const MARKET_SCHOOL = {
       },
       doji: {
         label: 'Doji',
+        svg: `<svg viewBox="0 0 100 140" width="100" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="8" x2="50" y2="58" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="58" width="32" height="5" fill="#f59e0b" rx="1"/><line x1="50" y1="63" x2="50" y2="118" stroke="#94a3b8" stroke-width="2"/><text x="50" y="132" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="monospace">DOJI</text></svg>`,
         hi: { what: 'Doji तब बनता है जब Open और Close लगभग बराबर हों। Indecision — buyers और sellers बराबर ताकत में।', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend में Doji = Reversal का signal | Downtrend में Doji = Possible reversal up', tip: '💡 Doji को अकेले मत देखो — अगले candle की confirmation का इंतज़ार करो।', example: 'Stock लगातार बढ़ रहा था, फिर Doji बना → अगला दिन Red candle → Trend reversal' },
         gu: { what: 'Doji ત્યારે બને જ્યારે Open ≈ Close. Indecision — buyers-sellers સરખી ताकत.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend mā Doji = Reversal signal | Downtrend mā Doji = Possible bounce', tip: '💡 Doji ની confirmation next candle thī levo.', example: 'Stock વધી રહ્યો, Doji બન્યો → next day Red → Trend reversal' },
         en: { what: 'Doji forms when Open ≈ Close. Shows indecision between buyers and sellers.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Doji in Uptrend = Reversal signal | Doji in Downtrend = Possible bounce', tip: '💡 Never trade Doji alone — wait for next candle confirmation.', example: 'Stock was rising, Doji formed → next day Red candle → Trend reversal' }
       },
       hammer: {
         label: 'Hammer & Hanging Man',
+        svg: `<svg viewBox="0 0 200 140" width="200" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="8" x2="50" y2="28" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="28" width="32" height="22" fill="#22c55e" rx="2"/><line x1="50" y1="50" x2="50" y2="118" stroke="#22c55e" stroke-width="2.5"/><text x="50" y="132" text-anchor="middle" fill="#22c55e" font-size="9" font-family="monospace">HAMMER</text><line x1="150" y1="8" x2="150" y2="78" stroke="#ef4444" stroke-width="2.5"/><rect x="134" y="78" width="32" height="22" fill="#ef4444" rx="2"/><line x1="150" y1="100" x2="150" y2="118" stroke="#94a3b8" stroke-width="2"/><text x="150" y="132" text-anchor="middle" fill="#ef4444" font-size="9" font-family="monospace">HANGING MAN</text></svg>`,
         hi: { what: 'Hammer: Downtrend के बाद बनता है — छोटी body, लंबी lower wick। Bulls ने Bears को हराया। Bullish reversal।', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Downtrend में Hammer = Strong Bullish reversal | Uptrend में same shape = Hanging Man (Bearish)', tip: '💡 Hammer के बाद अगला दिन Green candle आए तो entry लो। Stop loss: Hammer का low।', example: 'Stock गिर रहा था → Hammer बना at ₹200 → अगला दिन ₹215 open → Entry!' },
         gu: { what: 'Hammer: Downtrend પછી — નાની body, લાંબી lower wick. Bulls એ Bears ને હરાવ્યા.', formula: 'Lower wick ≥ 2× body | Little/no upper wick', levels: 'Downtrend mā Hammer = Bullish reversal | Uptrend mā same = Hanging Man (Bearish)', tip: '💡 Hammer પછી next day Green candle → Entry. Stop loss: Hammer low.', example: 'Stock ઘટ્યો → Hammer ₹200 → next day ₹215 → Entry!' },
         en: { what: 'Hammer: forms after downtrend — small body, long lower wick. Bulls beat Bears. Bullish reversal.', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Hammer in Downtrend = Bullish reversal | Same in Uptrend = Hanging Man (Bearish)', tip: '💡 After Hammer, next green candle = entry. Stop loss at Hammer\'s low.', example: 'Stock fell → Hammer at ₹200 → next day opens ₹215 → Entry!' }
       },
       engulfing: {
         label: 'Engulfing Pattern',
+        svg: `<svg viewBox="0 0 200 140" width="200" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="18" x2="50" y2="28" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="28" width="32" height="40" fill="#ef4444" rx="2"/><line x1="50" y1="68" x2="50" y2="78" stroke="#94a3b8" stroke-width="2"/><text x="50" y="95" text-anchor="middle" fill="#ef4444" font-size="8" font-family="monospace">RED</text><line x1="150" y1="12" x2="150" y2="22" stroke="#94a3b8" stroke-width="2"/><rect x="130" y="22" width="40" height="56" fill="#22c55e" rx="2"/><line x1="150" y1="78" x2="150" y2="88" stroke="#94a3b8" stroke-width="2"/><text x="150" y="105" text-anchor="middle" fill="#22c55e" font-size="8" font-family="monospace">ENGULFS</text><text x="100" y="125" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="monospace">BULLISH ENGULFING</text></svg>`,
         hi: { what: 'Bullish Engulfing: छोटी Red candle के बाद बड़ी Green candle जो उसे पूरा ढक ले। Strong reversal।', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Support zone पर Bullish Engulfing = Very Strong Buy | Resistance पर Bearish Engulfing = Strong Sell', tip: '💡 Volume साथ में high हो तो signal और strong होता है।', example: 'Red candle: ₹100→₹95 | Green candle: ₹94→₹103 → Bullish Engulfing → Buy!' },
         gu: { what: 'Bullish Engulfing: નાની Red candle પછી મોટી Green candle જે તેને ઢઢ. Strong reversal.', formula: 'Bullish: Green body > prev Red | Bearish: Red body > prev Green', levels: 'Support zone + Engulfing = Very Strong Buy signal', tip: '💡 Volume high હોય તો signal stronger.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' },
         en: { what: 'Bullish Engulfing: large Green candle completely covers previous Red candle. Strong reversal.', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Bullish Engulfing at support = Very Strong Buy signal', tip: '💡 High volume with engulfing = very strong signal.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' }
@@ -7728,7 +7733,8 @@ function _renderMSTopic(el, lang) {
     <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">${L.example}</div>
   </div>`;
 
-  el.innerHTML = html;
+ const svgBlock = topic.svg ? `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin-bottom:10px;"><div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">🕯️ DIAGRAM</span></div><div style="padding:16px;display:flex;justify-content:center;">${topic.svg}</div></div>` : '';
+  el.innerHTML = html + svgBlock;
 }
 // ── Search suggestions (from existing wl + POPULAR_STOCKS) ─
 function learnSearchSuggest(val) {
