@@ -975,7 +975,6 @@ function closeWLNameModal(){
 
 function renderGroupTabs(){ renderWLTabs(); }
 function filterGroup(g){
-  // Toggle: same group click again → reset to ALL
   currentGroup = (currentGroup === g) ? 'ALL' : g;
   renderWLTabs();
   renderWL();
@@ -1270,13 +1269,171 @@ function confirmRemove(){
 // ======================================
 // RENDER WATCHLIST
 // ======================================
-async function renderWL(){
-  // Use active watchlist stocks
-  let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
-let html = "";
-  // Apply sort if needed (sort displayList in place)
-if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
+// Helper: build one card's HTML from data object
+function _buildWLCard(s, d){
+  const _price = d.regularMarketPrice || d.ltp || 0;
+  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  return `
+    <div class="wl-card-wrap" id="wrap-${s}">
+      <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+          <div style="width:75px; flex-shrink:0;">
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
+          </div>
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
+            <div id="daybar-${s}" style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
+          </div>
+          <div style="width:105px; flex-shrink:0; text-align:right;">
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">${_price > 0 ? '\u20B9'+_price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>'}</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div id="label52-${s}" style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+            ${get52WLabel(d)}${getTargetBadge(s, _price)}
+          </div>
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
+            <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
+          </div>
+          <div style="width:105px; flex-shrink:0; text-align:right;">
+            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
+              ${_price > 0 ? (diff >= 0 ? '+' : '') + '\u20B9' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wl-actions-panel" id="act-${s}">
+        <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
+        <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
+        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
+        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
+        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
+        <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
+        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
+          <span style="font-size:13px;">Ask Nivi</span>
+        </button>
+      </div>
+    </div>`;
+}
 
+// Helper: patch a single card's price/change in DOM without full re-render
+function _patchWLCard(s, d){
+  const _price = d.regularMarketPrice || d.ltp || 0;
+  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  const pe = document.getElementById('price-'+s);
+  const ce = document.getElementById('change-'+s);
+  const db = document.getElementById('daybar-'+s);
+  const b5 = document.getElementById('bar52-'+s);
+  const l5 = document.getElementById('label52-'+s);
+  if(pe) pe.innerHTML = _price > 0 ? '\u20B9'+_price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
+  if(ce) {
+    ce.innerHTML = _price > 0
+      ? (diff >= 0 ? '+' : '') + '\u20B9' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)'
+      : '<span style="color:#4b6280;">--</span>';
+    ce.style.color = diff >= 0 ? '#22c55e' : '#ef4444';
+  }
+  if(db) db.innerHTML = buildDayBar(d);
+  if(b5) b5.innerHTML = build52WBar(d);
+  if(l5) l5.innerHTML = get52WLabel(d) + getTargetBadge(s, _price);
+  // update action panel prices
+  const actPanel = document.getElementById('act-'+s);
+  if(actPanel && _price > 0){
+    actPanel.querySelectorAll('.act-btn').forEach(btn => {
+      const oc = btn.getAttribute('onclick') || '';
+      if(oc.includes('openModal')){
+        btn.setAttribute('onclick', oc.replace(/openModal\('[^']+','[^']+',[\d.]+\)/, `openModal('${oc.includes('BUY')?'BUY':'SELL'}','${s}',${_price})`));
+      }
+    });
+  }
+}
+
+async function renderWL(){
+  // ── Phase 1: Instant render from cache (no waiting) ──────────────────────
+  let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
+  // Apply group filter
+  if(currentGroup !== 'ALL' && groups[currentGroup]){
+    displayList = displayList.filter(s => groups[currentGroup].includes(s));
+  }
+  const watchlistDiv = document.getElementById("watchlist");
+  if(!displayList.length){
+    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
+    return;
+  }
+
+  let html = "";
+  const needFetch = [];
+
+  for(let s of displayList){
+    const d = cache[s]?.data;
+    if(d){
+      html += _buildWLCard(s, d);
+    } else {
+      // Placeholder card — instant skeleton, fetch baad ma
+      needFetch.push(s);
+      html += `
+        <div class="wl-card-wrap" id="wrap-${s}">
+          <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
+            <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+              <div style="width:75px; flex-shrink:0;">
+                <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
+              </div>
+              <div style="flex:1;"></div>
+              <div style="width:105px; flex-shrink:0; text-align:right;">
+                <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#4b6280;">...</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <div id="label52-${s}" style="width:75px; flex-shrink:0;"></div>
+              <div style="flex:1;"></div>
+              <div style="width:105px; flex-shrink:0; text-align:right;">
+                <div id="change-${s}" style="font-size:13px; font-weight:700; color:#4b6280;">--</div>
+              </div>
+            </div>
+          </div>
+          <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
+        </div>`;
+    }
+  }
+  // DOM instant update — user immediately sees cards
+  watchlistDiv.innerHTML = html;
+
+  // ── Phase 2: Background fetch for cache-miss stocks, patch DOM individually ─
+  if(needFetch.length > 0){
+    needFetch.forEach(async s => {
+      try{
+        const d = await fetchFull(s);
+        if(d){
+          cache[s] = { data: d, time: Date.now() };
+          // If card still in DOM (user hasn't switched), patch it
+          if(document.getElementById('price-'+s)){
+            // Rebuild full card to get action panel too
+            const wrap = document.getElementById('wrap-'+s);
+            if(wrap) wrap.outerHTML = _buildWLCard(s, d);
+          }
+        }
+      }catch(e){ /* silent */ }
+    });
+  }
+
+  // ── Legacy loop removed — was the cause of sequential blocking ────────────
+  // OLD: for (let s of displayList) { let d = cache[s]?.data; if (!d) { d = await fetchFull(s)... }
+  // This caused sequential await per stock → whole list blocks until each fetch completes
+
+  // Keeping variable declarations to avoid any reference errors below
+  let html_legacy = ""; // unused, kept for safety
+  let s_unused, d_unused; // unused
+
+  // NOTE: The actual card HTML is already rendered above in Phase 1
+  // The block below (original renderWL card builder) is REPLACED by _buildWLCard helper
+  // DO NOT add another for-loop here
+
+  if(false){ // dead code guard — original loop disabled
   for (let s of displayList) {
     let d = cache[s]?.data;
     if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
@@ -1333,14 +1490,8 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
       </div>
     </div>`;
   }
-  const watchlistDiv=document.getElementById("watchlist");
-  if(html){
-    watchlistDiv.innerHTML=html;
-    // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
-    // Auto-load disabled to prevent quota exhaustion (20k/day limit)
-  } else {
-    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
-  }
+  } // end if(false) — dead code guard
+  // Phase 1 DOM already set above — nothing to do here
 }
 
 
