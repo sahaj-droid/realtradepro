@@ -1823,11 +1823,17 @@ async function updatePrices(){
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
 
-  for(let s of wl){
-    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
+for(let s of wl){
+    // SMART FALLBACK: Engine chalu hoy to Cache, bandh hoy to GAS call
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
+    
+    // ✅ FIX 1: Watchlist Price parsing (d.price & d.close added)
+    let price = d.regularMarketPrice || d.ltp || d.price || d.close || 0;
+    let prev = d.chartPreviousClose || d.prev_close || d.prev || 0;
+    let diff = (price && prev) ? (price - prev) : 0;
+    let pct = (diff && prev) ? (diff / prev * 100) : 0;
+    
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
@@ -1839,14 +1845,13 @@ async function updatePrices(){
       setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
     }
     if(ce){
-      // Format: +₹diff (pct%) — matches card render format
       const sign=diff>=0?'+':'';
       ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
+
   // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
-  // Step 1: Python engine active hoy to Firebase thi badha indices ek sathe levo
   if(window._pythonEngineActive){
     try{
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
@@ -1860,21 +1865,36 @@ async function updatePrices(){
       }
     }catch(e){}
   }
-  // Step 2: Cache miss hoy te indices — single batch GAS call
+  
   const _missingIdx = indicesList
     .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
     .map(i => i.sym);
   if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
-  // Step 3: Render all indices from cache
+  
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    const price=d.regularMarketPrice||d.ltp, prev=d.chartPreviousClose||d.prev_close;
-    const diff=price-prev, pct=(diff/prev*100)||0;
+    
+    // ✅ FIX 2: Indices Price parsing (d.price & d.close added)
+    const price = d.regularMarketPrice || d.ltp || d.price || d.close || 0;
+    const prev = d.chartPreviousClose || d.prev_close || d.prev || 0;
+    const diff = price - prev; 
+    const pct = (prev ? (diff/prev*100) : 0);
+    
     let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
-    if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
-    if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
+    if(pe){
+        let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
+        pe.innerText="₹"+price.toFixed(2);
+        if(price>op)pe.classList.add("flash-green");
+        else if(price<op)pe.classList.add("flash-red");
+        setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);
+    }
+    if(ce){
+        ce.innerText=(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%';
+        ce.style.color=diff>=0?"#22c55e":"#ef4444";
+    }
   }
+  
   updateHeaderIndices();
   await updateGiftNifty();
   updatePriceTicker();
