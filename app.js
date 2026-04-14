@@ -3444,6 +3444,73 @@ function normalizeBatchItem(gasData){
 async function batchFetchStocks(symbols, isIndex=false){
   if(!symbols||symbols.length===0) return;
 
+  // ── Market CLOSED: Firebase OLHCV thi load karo, zero GAS call ──────────────
+  if(!isIndex && !getMarketStatus().open){
+    try{
+      const db = firebase.firestore();
+      let stored = 0;
+      // Try live_prices first (Python engine data — last trading day snapshot)
+      try{
+        const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
+        if(lpDoc.exists){
+          const prices = lpDoc.data().prices || {};
+          symbols.forEach(s => {
+            const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+            if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
+              const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
+              cache[s] = { data: Object.assign({}, p, {
+                regularMarketPrice: price,
+                chartPreviousClose: p.prev_close || p.chartPreviousClose || price,
+                regularMarketChange: 0,
+                regularMarketChangePercent: 0,
+                _source: 'firebase_lp_closed'
+              }), time: Date.now() };
+              lastUpdatedMap[s] = Date.now();
+              stored++;
+            }
+          });
+        }
+      }catch(e){}
+      // Remaining stocks — olhcv collection thi
+      const remaining = symbols.filter(s => !cache[s]?.data?._source?.startsWith('firebase'));
+      if(remaining.length > 0){
+        await Promise.all(remaining.map(async s => {
+          try{
+            const snap = await db.collection('olhcv').doc(s).get();
+            if(snap.exists){
+              const p = snap.data();
+              if(p && p.close && p.close > 0){
+                cache[s] = { data: {
+                  regularMarketPrice: p.close,
+                  chartPreviousClose: p.prev || p.close,
+                  regularMarketOpen:  p.open || p.close,
+                  regularMarketDayHigh: p.high || p.close,
+                  regularMarketDayLow:  p.low  || p.close,
+                  fiftyTwoWeekHigh: p.week52High || p.high || p.close,
+                  fiftyTwoWeekLow:  p.week52Low  || p.low  || p.close,
+                  regularMarketVolume: p.volume || 0,
+                  regularMarketChange: 0,
+                  regularMarketChangePercent: 0,
+                  _source: 'firebase_olhcv_closed'
+                }, time: Date.now() };
+                lastUpdatedMap[s] = Date.now();
+                stored++;
+              }
+            }
+          }catch(e){}
+        }));
+      }
+      if(stored > 0){
+        console.log('[Market Closed] Firebase loaded:', stored, 'stocks — zero GAS calls');
+        return;
+      }
+    }catch(e){
+      console.warn('[Market Closed] Firebase batch load failed:', e.message);
+    }
+    return; // Market closed, Firebase fail bhi thay to silent return — GAS nahi
+  }
+  // ── END Market Closed block ─────────────────────────────────────────────────
+
   // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
   if(window._pythonEngineActive && !isIndex){
     try{
@@ -3519,13 +3586,34 @@ async function fetchFull(sym,isIndex=false){
   // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
   if(!isIndex){
     try{
-      // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
+      // Step 1: Firebase olhcv — full OHLCV snapshot (last trading day)
       let fbOhlcv = null;
       try{
         const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
         if(snap.exists){
           const p = snap.data();
           if(p && p.close && p.close > 0){
+            const mktStatus = getMarketStatus();
+            if(!mktStatus.open){
+              // ── Market CLOSED: Firebase close = last known price, skip GAS entirely ──
+              const closedData = {
+                regularMarketPrice:        p.close,
+                chartPreviousClose:        p.prev  || p.close,
+                regularMarketOpen:         p.open  || p.close,
+                regularMarketDayHigh:      p.high  || p.close,
+                regularMarketDayLow:       p.low   || p.close,
+                fiftyTwoWeekHigh:          p.week52High || p.high || p.close,
+                fiftyTwoWeekLow:           p.week52Low  || p.low  || p.close,
+                regularMarketVolume:       p.volume || 0,
+                regularMarketChange:       0,
+                regularMarketChangePercent:0,
+                _source: 'firebase_closed'
+              };
+              cache[key] = {data: closedData, time: Date.now()};
+              lastUpdatedMap[key] = Date.now();
+              return closedData;
+            }
+            // Market open: just save prev+open for merge below
             fbOhlcv = {
               chartPreviousClose: p.prev,
               regularMarketOpen:  p.open,
@@ -3536,7 +3624,7 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] Firebase OLHCV read fail:', fbErr);
       }
 
-      // Step 2: 1 GAS call - live price + Day H/L + 52W + Volume (all live)
+      // Step 2: GAS call — only runs when market is OPEN
       const gasUrl = localStorage.getItem('customAPI') || API;
       let gasLive = null;
       try{
@@ -3562,7 +3650,7 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] GAS live call fail:', gasErr);
       }
 
-      // Step 3: Merge - Firebase OHLCV base + GAS live override
+      // Step 3: Merge — Firebase OHLCV base + GAS live override
       if(fbOhlcv || gasLive){
         const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
         // Change % calculate kariye
