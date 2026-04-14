@@ -15,15 +15,9 @@ let currentPINEntry = '';
 
 // ── Default Sarvam API Key pre-save (first time only) ──
 (function setDefaultSarvamKey() {
-  const DEFAULT_SARVAM_KEY  = "taro-key-1-yahan";
-  const DEFAULT_SARVAM_KEY2 = "taro-key-2-yahan"; // ← NEW
-
+  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // <-- taro default key yaha nakh
   if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
     localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
-  }
-  // ← NEW: Key 2 pan same rite set karo
-  if (!localStorage.getItem('geminiApiKey2') && DEFAULT_SARVAM_KEY2 !== "") {
-    localStorage.setItem('geminiApiKey2', DEFAULT_SARVAM_KEY2);
   }
 })();
 
@@ -292,7 +286,7 @@ async function loadUserData() {
     // Watchlists: Firebase array length > local → use Firebase
     const localWL  = JSON.parse(localStorage.getItem('watchlists') || '[]');
     const fbWL     = data.watchlists || [];
-    if (fbWL.length > localWL.length) { // Firebase wins only if it has MORE stocks (not equal, to preserve local deletions)
+    if (fbWL.length >= localWL.length) {
       localStorage.setItem('watchlists', JSON.stringify(fbWL));
     }
 
@@ -539,8 +533,7 @@ function monitorFirebaseNews() {
 }
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
-function getNiviAPI(){ return getActiveGASUrl(); }
-
+const API_NIVI = getActiveGASUrl();
 let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
@@ -635,27 +628,27 @@ function renderHolidays(){
     <span style="font-size:12px;font-weight:700;color:#22c55e;letter-spacing:0.5px;">NSE MARKET HOLIDAYS</span>
   </div>`;
   if(upcoming.length===0){html+=`<div style="color:#4b6280;font-size:12px;padding:10px;text-align:center;">No upcoming holidays</div>`;}
-  upcoming.forEach(hol=>{
-    const isToday=hol.date===today;
+  upcoming.forEach(h=>{
+    const isToday=h.date===today;
     html+=`<div class="card" style="margin-bottom:5px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${isToday?"#f59e0b":"#e2e8f0"};">${fmt(hol.date)}</div>
-          <div style="font-size:11px;font-weight:600;color:#38bdf8;margin-top:1px;">${hol.name}</div>
-          <div style="font-size:9px;color:#4b6280;">${dayName(hol.date)}${isToday?"  -  Today!":""}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${isToday?"#f59e0b":"#e2e8f0"};">${fmt(h.date)}</div>
+          <div style="font-size:11px;font-weight:600;color:#38bdf8;margin-top:1px;">${h.name}</div>
+          <div style="font-size:9px;color:#4b6280;">${dayName(h.date)}${isToday?"  -  Today!":""}</div>
         </div>
         <div style="font-size:10px;padding:4px 8px;border-radius:6px;background:#7f1d1d;color:#fca5a5;font-weight:700;text-align:center;flex-shrink:0;">Market<br>Closed</div>
       </div>
     </div>`;
   });
   html+=`<div style="font-size:11px;font-weight:700;color:#4b6280;margin:10px 0 6px;">PAST HOLIDAYS</div>`;
-  past.forEach(hol=>{
+  past.forEach(h=>{
     html+=`<div class="card" style="margin-bottom:4px;opacity:0.6;display:flex;justify-content:space-between;align-items:center;">
       <div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">${fmt(hol.date)}</div>
-        <div style="font-size:10px;color:#64748b;">${hol.name}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">${fmt(h.date)}</div>
+        <div style="font-size:10px;color:#64748b;">${h.name}</div>
       </div>
-      <div style="font-size:9px;color:#4b6280;">${dayName(hol.date)}</div>
+      <div style="font-size:9px;color:#4b6280;">${dayName(h.date)}</div>
     </div>`;
   });
   el.innerHTML=html;
@@ -792,7 +785,7 @@ try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
   wl=watchlists[currentWL].stocks;
 })();
 
-if(!isDark){ document.body.classList.add("light"); document.body.classList.add("light-mode"); }
+if(!isDark){ document.body.classList.add("light"); }
 
 const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
 const INDICES_VERSION="v2";
@@ -886,7 +879,7 @@ function _syncWatchlistToFirebase(){
   try{
     const allSyms = [...new Set(watchlists.flatMap(w => w.stocks || []))];
     firebase.firestore()
-      .collection('RealTradePro').doc('alert_config')
+      .collection('RealTradePro').doc('config')
       .set({ watchlist: allSyms, updated_at: new Date().toISOString() }, { merge: true })
       .then(()=> console.log('[Watchlist] Synced to Firebase:', allSyms.length, 'stocks'))
       .catch(e => console.warn('[Watchlist] Firebase sync failed:', e));
@@ -911,31 +904,29 @@ function renderWLTabs(){
   if(watchlists.length<6){
     html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
   }
-  // Groups filter tabs (Portfolio, Defense, etc.)
-if(Object.keys(groups).length > 0){
-  html += `<span style="color:#2d3f52;font-size:11px;padding:0 3px;">|</span>`;
-  Object.keys(groups).forEach(g => {
-    const isGrpActive = (currentGroup === g);
-    html += `<button class="group-btn${isGrpActive?' active':''}"
-      onclick="filterGroup('${g}')"
-      data-group="${g}"
-      style="${isGrpActive?'border-color:#f59e0b;color:#f59e0b;background:#1e2d0f;':''}"
-    >${g}</button>`;
-  });
-}
+  // Group filter tabs (Portfolio, Defense, etc.) — separator + amber highlight
+  const gKeys=Object.keys(groups);
+  if(gKeys.length>0){
+    html+=`<span style="color:#2d3f52;font-size:13px;padding:0 2px;line-height:1;align-self:center;">|</span>`;
+    gKeys.forEach(g=>{
+      const isGrpActive=(currentGroup===g);
+      html+=`<button class="group-btn${isGrpActive?' active':''}"
+        onclick="filterGroup('${g}')"
+        data-group="${g}"
+        style="${isGrpActive?'border-color:#f59e0b;color:#f59e0b;background:#291d05;':''}"
+      >${g}</button>`;
+    });
+  }
   bar.innerHTML=html;
 }
 
 function switchWL(idx){
-  if(currentWL === idx) return; // same tab click = skip
   currentWL=idx;
+  currentGroup='ALL'; // reset group filter on WL switch
   wl=watchlists[currentWL].stocks;
   localStorage.setItem("currentWL",currentWL);
   renderWLTabs();
-  // Cache ma data hoy to turant render, nai to fetch
-  const needsFetch = wl.some(s => !cache[s+'.NS'] && !cache[s+'.BO']);
-  renderWL(); // UI turant show karo cached data sathe
-  if(needsFetch) batchFetchStocks(wl).then(() => renderWL());
+  renderWL();
 }
 
 // WL Name Modal state
@@ -984,10 +975,11 @@ function closeWLNameModal(){
 
 function renderGroupTabs(){ renderWLTabs(); }
 function filterGroup(g){
-  currentGroup = (currentGroup === g) ? 'ALL' : g; // toggle support
+  // Toggle: same group click again → reset to ALL
+  currentGroup = (currentGroup === g) ? 'ALL' : g;
   renderWLTabs();
   renderWL();
-}  
+}
 function showAddGroupModal(){ addWL(); }
 function saveGroup(){}
 function deleteGroup(g){}
@@ -1032,9 +1024,8 @@ async function handleWatchlistCSV(event){
 function toggleTheme(){
   isDark=!isDark;
   document.body.classList.toggle("light",!isDark);
-  document.body.classList.toggle("light-mode",!isDark);
   const tb=document.getElementById("themeBtn");
-  if(tb) tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+  tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
   localStorage.setItem("theme",isDark?"dark":"light");
 }
 
@@ -1275,40 +1266,26 @@ function confirmRemove(){
   closeRemoveModal();
   doRemoveStock(sym);
 }
+
 // ======================================
 // RENDER WATCHLIST
 // ======================================
 async function renderWL(){
+  // Use active watchlist stocks
   let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
-  // Apply group filter if active
-  if(currentGroup !== 'ALL' && groups[currentGroup] && groups[currentGroup].length > 0){
-    displayList = displayList.filter(s => groups[currentGroup].includes(s));
-  }
-  let html = "";
+let html = "";
+  // Apply sort if needed (sort displayList in place)
+if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to active wl */ }
 
-  if(azAsc !== undefined) { /* sorting handled */ }
+  for (let s of displayList) {
+    let d = cache[s]?.data;
+    if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
+    if (!d) continue;
 
-  const _wlL = document.body.classList.contains('light');
-  const _symClr  = _wlL ? '#0891b2' : '#38bdf8';
-  const _priceClr = _wlL ? '#1c1917' : '#e2e8f0';
-  const _lblClr   = _wlL ? '#78716c' : '#94a3b8';
-
-  await Promise.all(displayList.map(async (s) => {
-
-    let entry = cache[s];
-
-    let d = (!entry || (Date.now() - entry.time > CACHE_TIME))
-      ? await fetchFull(s)
-      : entry.data;
-
-    if(!d) return;
-
-    cache[s] = { data: d, time: Date.now() };
-
-    const _price = d.ltp || d.regularMarketPrice || 0;
-    const _prev  = d.prev_close || d.chartPreviousClose || d.regularMarketPreviousClose || 0;
-    const diff   = d.change || d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-    const pct    = d.change_pct || d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+    const _price = d.regularMarketPrice || d.ltp || 0;
+    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
+    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
+    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
 
     html += `
     <div class="wl-card-wrap" id="wrap-${s}">
@@ -1317,61 +1294,55 @@ async function renderWL(){
 
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
           <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:${_symClr}; text-decoration:underline;">${s}</span>
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
           </div>
-
-          <div style="flex:1; display:flex; justify-content:center;">
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
           </div>
-
-          <div style="width:105px; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:${_priceClr};">₹${_price.toFixed(2)}</div>
+          <div style="width:105px; flex-shrink:0; text-align:right;">
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
           </div>
         </div>
 
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div style="width:75px; font-size:9px; color:${_lblClr}; font-weight:600;">
-            ${get52WLabel(d)}${getTargetBadge(s, _price)}
+          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+            ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
           </div>
-
-          <div style="flex:1; display:flex; justify-content:center;">
+          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div style="width:100%; max-width:140px;">${build52WBar(d)}</div>
           </div>
-
-          <div style="width:105px; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'};">
-              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${pct.toFixed(2)}%)
+          <div style="width:105px; flex-shrink:0; text-align:right;">
+            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
+              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
             </div>
           </div>
         </div>
       </div>
+
       <div class="wl-actions-panel" id="act-${s}">
-        <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
-        <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
+        <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
+        <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
         <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
         <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
         <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
-        <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
+        <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
         <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
           <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
           <span style="font-size:13px;">Ask Nivi</span>
         </button>
       </div>
     </div>`;
-  }));
-
-  const watchlistDiv = document.getElementById("watchlist");
-
+  }
+  const watchlistDiv=document.getElementById("watchlist");
   if(html){
-    watchlistDiv.innerHTML = html;
+    watchlistDiv.innerHTML=html;
+    // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
+    // Auto-load disabled to prevent quota exhaustion (20k/day limit)
   } else {
-    watchlistDiv.innerHTML = `<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">
-      ${watchlists[currentWL] && watchlists[currentWL].stocks.length===0
-        ? 'Search stock above to add to '+watchlists[currentWL].name
-        : 'Type stock name in search box (Press Enter)'}
-    </div>`;
+    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
   }
 }
+
 
 // ======================================
 // SPARKLINE: 7-day price line for watchlist
@@ -1421,10 +1392,6 @@ async function renderAllSparklines() {
 async function renderIndices(){
   const el=document.getElementById("indices");
   if(!document.getElementById('gmovers')){
-    const _gL = document.body.classList.contains('light');
-    const _gInactive = _gL ? '#f5f5f4' : '#0f172a';
-    const _gInactiveC= _gL ? '#57534e'  : '#94a3b8';
-    const _gInactiveBdr=_gL? '#d6d3d1' : '#1e2d3d';
     el.innerHTML=`
       <div style="display:flex;gap:6px;margin-bottom:10px;">
         <button id="gsub-movers" onclick="gainersSubTab('movers')"
@@ -1432,14 +1399,14 @@ async function renderIndices(){
           Movers
         </button>
         <button id="gsub-screener" onclick="gainersSubTab('screener')"
-          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid ${_gInactiveBdr};background:${_gInactive};color:${_gInactiveC};font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+          style="flex:1;padding:5px 0;border-radius:8px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
           Screener
         </button>
       </div>
       <div id="gmovers">
         <div style="display:flex;gap:6px;margin-bottom:8px;">
           <button id="gmov-gainers" onclick="moversSubTab('gainers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #166534;background:#14532d;color:#22c55e;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Gainers</button>
-          <button id="gmov-losers" onclick="moversSubTab('losers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid ${_gInactiveBdr};background:${_gInactive};color:${_gInactiveC};font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Losers</button>
+          <button id="gmov-losers" onclick="moversSubTab('losers')" style="flex:1;padding:4px 0;border-radius:6px;border:1px solid #1e2d3d;background:#0f172a;color:#94a3b8;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Losers</button>
         </div>
         <div id="gmov-gainers-list"></div>
         <div id="gmov-losers-list" style="display:none;"></div>
@@ -1471,27 +1438,20 @@ function moversSubTab(t) {
   const ll = document.getElementById('gmov-losers-list');
   const gb = document.getElementById('gmov-gainers');
   const lb = document.getElementById('gmov-losers');
-  const isLight = document.body.classList.contains('light');
-  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
-  const inClr = isLight ? '#57534e' : '#94a3b8';
-  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   if(gl) gl.style.display = t==='gainers' ? 'block' : 'none';
   if(ll) ll.style.display = t==='losers' ? 'block' : 'none';
-  if(gb){ gb.style.background=t==='gainers'?'#14532d':inBg; gb.style.color=t==='gainers'?'#22c55e':inClr; gb.style.borderColor=t==='gainers'?'#166534':inBdr; }
-  if(lb){ lb.style.background=t==='losers'?'#7f1d1d':inBg; lb.style.color=t==='losers'?'#ef4444':inClr; lb.style.borderColor=t==='losers'?'#991b1b':inBdr; }
+  if(gb){ gb.style.background=t==='gainers'?'#14532d':'#0f172a'; gb.style.color=t==='gainers'?'#22c55e':'#94a3b8'; gb.style.borderColor=t==='gainers'?'#166534':'#1e2d3d'; }
+  if(lb){ lb.style.background=t==='losers'?'#7f1d1d':'#0f172a'; lb.style.color=t==='losers'?'#ef4444':'#94a3b8'; lb.style.borderColor=t==='losers'?'#991b1b':'#1e2d3d'; }
 }
 
 function renderGainersFromCache(){
   const _gainSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
   const allStocks=_gainSrc;
   const results=allStocks.map(s=>{
-    const d=cache[s]?.data; if(!d) return null;
-    const prevClose=d.chartPreviousClose||d.prev_close||0;
-    const curPrice=d.regularMarketPrice||d.ltp||0;
-    if(!prevClose||!curPrice) return null;
-    const diff=curPrice-prevClose;
-    const pct=(diff/prevClose*100)||0;
-    return {sym:s,price:curPrice,diff,pct};
+    const d=cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
+    const diff=d.regularMarketPrice-d.chartPreviousClose;
+    const pct=(diff/d.chartPreviousClose*100)||0;
+    return {sym:s,price:d.regularMarketPrice,diff,pct};
   }).filter(Boolean);
 
   const refreshBtn=`<button onclick="refreshGainers()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>`;
@@ -1686,7 +1646,7 @@ async function updatePrices(){
       if(doc.exists){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
-          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+          const p = prices[s+'.NS'];
           if(p){ 
           const existing = cache[s]?.data || {};
           cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
@@ -1698,27 +1658,23 @@ async function updatePrices(){
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
 
-for(let s of wl){
+  for(let s of wl){
+    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    
-    // SAFE FALLBACK: Python = ltp/prev_close | GAS = regularMarketPrice/chartPreviousClose
-    let price = d.ltp || d.regularMarketPrice || 0;
-    let prev  = d.prev_close || d.chartPreviousClose || 0;
-    let diff  = (price && prev) ? (price - prev) : 0;
-    let pct   = (diff && prev) ? (diff / prev * 100) : 0;
-    
+    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
     let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
       pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price); checkTargets(s,price); checkVolumeSpike(s,d); lastUpdatedMap[s]=Date.now();
+      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
       const wrap=pe.closest('.card')||pe.parentElement;
       if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
       else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
       setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
     }
     if(ce){
+      // Format: +₹diff (pct%) — matches card render format
       const sign=diff>=0?'+':'';
       ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
@@ -1831,21 +1787,15 @@ function drawPieChart(){
 // ======================================
 async function renderHold(){
   let html="";
-  const _hL = document.body.classList.contains('light');
-  const _lblClr  = _hL ? '#78716c' : '#4b6280';
-  const _heldClr = _hL ? '#57534e' : '#94a3b8';
-  const _avgvBg  = _hL ? '#e0f2fe' : '#1e3a5f';
-  const _avgvClr = _hL ? '#0369a1' : '#38bdf8';
-  const _avgvBdr = _hL ? '#7dd3fc' : '#2d5a8e';
   for(let x of h){
     let d=cache[x.sym]?.data||await fetchFull(x.sym);if(!d) continue;
     x.ltp=d.regularMarketPrice;
     let uPnl=(d.regularMarketPrice-x.price)*x.qty;
     let pnlPct=((d.regularMarketPrice-x.price)/x.price*100).toFixed(2);
     const days=holdingDays(x.buyDate);
-    const daysStr=days!==null?`<span style="font-size:9px;color:${_lblClr};margin-left:4px;">${holdingDaysLabel(days)}</span>`:'';
+    const daysStr=days!==null?`<span style="font-size:9px;color:#4b6280;margin-left:4px;">${holdingDaysLabel(days)}</span>`:'';
     const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
-    const updated=lastUpdatedMap[x.sym]?`<span style="font-size:9px;color:${_lblClr};">${timeAgo(lastUpdatedMap[x.sym])}</span>`:'';
+    const updated=lastUpdatedMap[x.sym]?`<span style="font-size:9px;color:#4b6280;">${timeAgo(lastUpdatedMap[x.sym])}</span>`:'';
     html+=`
     <div class="card" style="font-size:13px;padding:8px 10px;">
       <!-- Row 1: Symbol+Badge | CMP | P&L -->
@@ -1856,7 +1806,7 @@ async function renderHold(){
         </div>
         <div style="text-align:center;">
           <div id="hcmp-${x.sym}" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;">${inr(d.regularMarketPrice)}</div>
-          <div style="font-size:9px;color:${_lblClr};">CMP</div>
+          <div style="font-size:9px;color:#4b6280;">CMP</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:13px;font-weight:700;color:${uPnl>=0?'#22c55e':'#ef4444'};">${uPnl>=0?'+':''}${inr(uPnl)}</div>
@@ -1866,22 +1816,22 @@ async function renderHold(){
       <!-- Row 2: Qty | Avg Price | Holding Days -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;margin-bottom:6px;">
         <div>
-          <div style="font-size:10px;color:${_lblClr};">QTY</div>
+          <div style="font-size:10px;color:#4b6280;">QTY</div>
           <div style="font-size:13px;font-weight:700;">${x.qty}</div>
         </div>
         <div style="text-align:center;">
-          <div style="font-size:10px;color:${_lblClr};">AVG PRICE</div>
+          <div style="font-size:10px;color:#4b6280;">AVG PRICE</div>
           <div style="font-size:13px;font-weight:700;">${inr(x.price)}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:10px;color:${_lblClr};">HELD</div>
-          <div style="font-size:12px;font-weight:700;color:${_heldClr};">${days!==null?holdingDaysLabel(days):(x.buyDate?holdingDaysLabel(0):'Add date')}</div>
+          <div style="font-size:10px;color:#4b6280;">HELD</div>
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;">${days!==null?holdingDaysLabel(days):(x.buyDate?holdingDaysLabel(0):'Add date')}</div>
         </div>
       </div>
       <!-- Row 3: CMP vs Avg Bar | AVGv | EDIT | SELL -->
       <div style="display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:5px;">
         <div>${getAvgVsCMPBar(x.price, d.regularMarketPrice)}</div>
-        <button onclick="openAvgCalc('${x.sym}',${x.price},${x.qty},${d.regularMarketPrice})" style="background:${_avgvBg};color:${_avgvClr};font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid ${_avgvBdr};cursor:pointer;font-family:'Rajdhani',sans-serif;">AVGv</button>
+        <button onclick="openAvgCalc('${x.sym}',${x.price},${x.qty},${d.regularMarketPrice})" style="background:#1e3a5f;color:#38bdf8;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">AVGv</button>
         <button onclick="openEdit('${x.sym}')" style="background:#713f12;color:#fde68a;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">EDIT</button>
         <button onclick="openModal('SELL','${x.sym}',${d.regularMarketPrice})" style="background:#7f1d1d;color:#fca5a5;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">SELL</button>
       </div>
@@ -1936,15 +1886,13 @@ let histView='list';
 
 function setHistView(v){
   histView=v;
-  const _hvL = document.body.classList.contains('light');
-  const idMap = {list: 'histViewList', calendar: 'histViewCal'};
   ['list','calendar'].forEach(x=>{
-    const btn=document.getElementById(idMap[x]);
+    const btn=document.getElementById('histView'+x.charAt(0).toUpperCase()+x.slice(1));
     if(!btn) return;
     const active=x===v;
-    btn.style.background=active?(_hvL?'#e0f2fe':'#1e3a5f'):(_hvL?'#f5f5f4':'#1e2d3d');
-    btn.style.color=active?(_hvL?'#0369a1':'#38bdf8'):(_hvL?'#57534e':'#94a3b8');
-    btn.style.borderColor=active?(_hvL?'#7dd3fc':'#38bdf8'):(_hvL?'#d6d3d1':'#2d3f52');
+    btn.style.background=active?'#1e3a5f':'#1e2d3d';
+    btn.style.color=active?'#38bdf8':'#94a3b8';
+    btn.style.borderColor=active?'#38bdf8':'#2d3f52';
   });
   const hl=document.getElementById("historyList");
   const hc=document.getElementById("historyCalendar");
@@ -1955,10 +1903,6 @@ function setHistView(v){
 
 function renderHist(){
   let html="";
-  const _rhL = document.body.classList.contains('light');
-  const _rhLbl  = _rhL ? '#78716c' : '#4b6280';
-  const _rhSec  = _rhL ? '#57534e' : '#94a3b8';
-  const _rhNone = _rhL ? '#a8a29e' : '#4b6280';
   hist.forEach((x, idx)=>{
     const isBuy=x.type==='BUY';
     const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
@@ -1966,7 +1910,7 @@ function renderHist(){
     if(!isBuy&&x.buyDate&&x.date){
       const bd=new Date(x.buyDate), sd=new Date(x.date);
       const days=Math.floor((sd-bd)/(1000*60*60*24));
-      if(days>=0) daysStr=`<span style="font-size:9px;color:${_rhLbl};"> | ${holdingDaysLabel(days)} held</span>`;
+      if(days>=0) daysStr=`<span style="font-size:9px;color:#4b6280;"> | ${holdingDaysLabel(days)} held</span>`;
     }
     html+=`
     <div class="card" style="font-size:12px;margin-bottom:4px;padding:7px 10px;position:relative;">
@@ -1978,13 +1922,13 @@ function renderHist(){
           <span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;background:${isBuy?'#166534':'#7f1d1d'};color:${isBuy?'#86efac':'#fca5a5'};">${isBuy?'BUY':'SELL'}</span>
           ${typeTag}
         </div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${_rhSec};text-align:center;">${inr(parseFloat(x.buy))}</span>
-        <span style="font-size:12px;font-weight:700;color:${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'#22c55e':'#ef4444'):_rhNone};text-align:right;min-width:70px;">${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'+':'')+inr(x.pnl):''}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${inr(parseFloat(x.buy))}</span>
+        <span style="font-size:12px;font-weight:700;color:${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'#22c55e':'#ef4444'):'#4b6280'};text-align:right;min-width:70px;">${(!isBuy&&x.pnl!=null)?(x.pnl>=0?'+':'')+inr(x.pnl):''}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding-right:28px;">
-        <span style="font-size:10px;color:${_rhLbl};">Qty: ${x.qty}${daysStr}</span>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${_rhSec};text-align:center;">${!isBuy&&x.sell?inr(parseFloat(x.sell)):''}</span>
-        <span style="font-size:10px;color:${_rhLbl};text-align:right;min-width:70px;">${x.date||''}</span>
+        <span style="font-size:10px;color:#4b6280;">Qty: ${x.qty}${daysStr}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;text-align:center;">${!isBuy&&x.sell?inr(parseFloat(x.sell)):''}</span>
+        <span style="font-size:10px;color:#4b6280;text-align:right;min-width:70px;">${x.date||''}</span>
       </div>
     </div>`;
   });
@@ -3310,22 +3254,22 @@ function fetchWithTimeout(url, ms=8000){
 }
 
 // ======================================
+// BATCH FETCH (parallel, single API call)
+// ======================================
+// Normalize GAS batch item -> app cache format
 function normalizeBatchItem(gasData){
-  // GAS returns: {price, prev_close, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
-  if(!gasData || !gasData.price) return null;
+  // GAS returns: {price, prevClose, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
+  // App expects: regularMarketPrice, chartPreviousClose, etc.
+  if(!gasData||!gasData.price) return null;
   return {
     regularMarketPrice:       gasData.price,
-    ltp:                      gasData.price, // Python engine compatibility
-    chartPreviousClose:       gasData.prev_close || gasData.prevClose, 
-    prev_close:               gasData.prev_close || gasData.prevClose, // Standardised
+    chartPreviousClose:       gasData.prevClose,
     regularMarketOpen:        (gasData.open != null ? gasData.open : gasData.price),
     regularMarketDayHigh:     gasData.high,
     regularMarketDayLow:      gasData.low,
     fiftyTwoWeekHigh:         gasData.week52High,
     fiftyTwoWeekLow:          gasData.week52Low,
     regularMarketVolume:      gasData.volume,
-    avg_vol_3m:               gasData.avg_vol_3m || 0,
-    avgVolume:                gasData.avg_vol_3m || gasData.avgVolume || 0,
     trailingPE:               gasData.pe,
     epsTrailingTwelveMonths:  gasData.eps,
     marketCap:                gasData.mktCap
@@ -3453,26 +3397,22 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] GAS live call fail:', gasErr);
       }
 
-// Step 3: Merge - Firebase OHLCV base + GAS live override
+      // Step 3: Merge - Firebase OHLCV base + GAS live override
       if(fbOhlcv || gasLive){
         const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
-        // Change % calculate kariye using STANDARDISED variables
-        const currentPrice = merged.regularMarketPrice || merged.ltp || 0;
-        const previousClose = merged.prev_close || merged.chartPreviousClose || 0;
-        if(currentPrice && previousClose){
-        merged.regularMarketChange = parseFloat((currentPrice - previousClose).toFixed(2));
-        merged.regularMarketChangePercent = parseFloat(((currentPrice - previousClose) / previousClose * 100).toFixed(2));
+        // Change % calculate kariye
+        const ltp  = merged.regularMarketPrice  || 0;
+        const prev = merged.chartPreviousClose   || 0;
+        if(ltp && prev){
+          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
+          merged.regularMarketChangePercent = parseFloat(((ltp - prev) / prev * 100).toFixed(2));
         }
-        // Ensure standard keys exist for components reading them directly
-        merged.ltp = currentPrice;
-        merged.prev_close = previousClose;
         cache[key] = {data: merged, time: Date.now()};
         lastUpdatedMap[key] = Date.now();
         return merged;
       }
-    }
-    catch(e){
-    console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
+    }catch(e){
+      console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
     }
   }
   // END HYBRID block
@@ -3891,16 +3831,12 @@ var _alertDir = "above"; // "above" | "below"
 
 function setAlertDir(dir) {
   _alertDir = dir;
-  const isLight = document.body.classList.contains('light');
-  const inBg  = isLight ? '#f5f5f4' : '#1e2d3d';
-  const inClr = isLight ? '#57534e' : '#94a3b8';
-  const inBdr = isLight ? '#d6d3d1' : '#2d3f52';
-  document.getElementById('alert-above-btn').style.background  = dir==='above' ? '#166534' : inBg;
-  document.getElementById('alert-above-btn').style.color       = dir==='above' ? '#86efac' : inClr;
-  document.getElementById('alert-above-btn').style.borderColor = dir==='above' ? '#166534' : inBdr;
-  document.getElementById('alert-below-btn').style.background  = dir==='below' ? '#7f1d1d' : inBg;
-  document.getElementById('alert-below-btn').style.color       = dir==='below' ? '#fca5a5' : inClr;
-  document.getElementById('alert-below-btn').style.borderColor = dir==='below' ? '#7f1d1d' : inBdr;
+  document.getElementById('alert-above-btn').style.background = dir==='above' ? '#166534' : '#1e2d3d';
+  document.getElementById('alert-above-btn').style.color      = dir==='above' ? '#86efac' : '#94a3b8';
+  document.getElementById('alert-above-btn').style.borderColor= dir==='above' ? '#166534' : '#2d3f52';
+  document.getElementById('alert-below-btn').style.background = dir==='below' ? '#7f1d1d' : '#1e2d3d';
+  document.getElementById('alert-below-btn').style.color      = dir==='below' ? '#fca5a5' : '#94a3b8';
+  document.getElementById('alert-below-btn').style.borderColor= dir==='below' ? '#7f1d1d' : '#2d3f52';
 }
 
 function setAlert(sym) {
@@ -3989,7 +3925,7 @@ const _volSpikeAlerted = {}; // { SYM: 'YYYY-MM-DD' } — din ma ek j vaar
 function checkVolumeSpike(sym, data) {
   if (!data) return;
   const vol    = data.regularMarketVolume || data.volume || 0;
-  const avgVol = data.avg_vol_3m || data.avgVol_3m || data.avgVolume || data.averageDailyVolume3Month || 0;
+  const avgVol = data.avgVolume || data.averageDailyVolume3Month || 0;
   if (!vol || !avgVol || avgVol === 0) return;
 
   const ratio = vol / avgVol;
@@ -5243,8 +5179,8 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open || window._useGASPrices) updatePrices();
-  }, 4000);
+    updatePrices();
+  }, 5000);
 }
 
 document.addEventListener('visibilitychange', ()=>{
@@ -5402,7 +5338,7 @@ function smartSummaryTemplate(text, sym, sentiment) {
 
 // -- LIVE NEWS FETCH via GAS --
 async function fetchLiveNews(sym) {
-  const apiUrl = localStorage.getItem("customAPI") || "";
+  const apiUrl = localStorage.getItem("customAPI") || API;
   const cleanSym = sym.replace(".NS","").replace(".BO","");
   try {
     const r = await fetch(`${apiUrl}?type=newsSearch&s=${encodeURIComponent(cleanSym)}`);
@@ -5581,7 +5517,7 @@ function buildMoverChips() {
     const bg    = isGainer ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)';
     const border= isGainer ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
     const sign  = isGainer ? '+' : '';
-    html += `<span onclick="openDetail('${s.sym}', false)" style="flex-shrink:0;cursor:pointer;background:${bg};border:1px solid ${border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:${color};font-family:'Rajdhani',sans-serif;white-space:nowrap;">${s.sym} ${sign}${s.pct.toFixed(2)}%</span>`;
+    html += `<span onclick="openStockDetail('${s.sym}')" style="flex-shrink:0;cursor:pointer;background:${bg};border:1px solid ${border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:${color};font-family:'Rajdhani',sans-serif;white-space:nowrap;">${s.sym} ${sign}${s.pct.toFixed(2)}%</span>`;
   });
   return html;
 }
@@ -5650,7 +5586,7 @@ async function renderNews() {
       <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;position:sticky;bottom:0;z-index:2;">
         <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
           <button id="tab-mood-toggle-btn" onclick="_tabToggleMood()" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">📊 बाज़ार मूड</button>
-          <button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
+          <<button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
           <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
           <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
           <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
@@ -5885,7 +5821,7 @@ Max 180 words. Sirf Hindi Devanagari.
       if (r && r.ok) rawText = r.answer;
     }
     if (!rawText) {
-      const _mUrl = getNiviAPI();
+      const _mUrl = API_NIVI;
       const r    = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       rawText = data.answer || data.text || data.summary || null;
@@ -5973,7 +5909,7 @@ const prompt =
   }
   if (!answer) {
     try {
-      const _nu  = getNiviAPI();
+      const _nu  = API_NIVI;
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       answer = data.answer || data.text || data.summary || null;
@@ -5989,36 +5925,27 @@ const prompt =
 function _tabRenderChat() {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
-  const isLight = document.body.classList.contains('light');
   if (_tabChatHistory.length === 0) {
-    const emptyClr = isLight ? '#78716c' : '#1e3a2e';
-    const emptyIcon= isLight ? '#a8a29e' : '#1e3a2e';
-    area.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:${emptyClr};">
-      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="${emptyIcon}"/></svg>
-      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi \u2B07\uFE0F<br><span style="font-size:10px;color:${emptyClr};">or tap on below chips</span></div>
+    area.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#1e3a2e;">
+      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#1e3a2e"/></svg>
+      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi ⬇️<br><span style="font-size:10px;color:#1a3020;">or tap on below chips</span></div>
     </div>`;
     return;
   }
   area.innerHTML = _tabChatHistory.map(msg => {
     if (msg.role === 'user') {
-      const uBg    = isLight ? '#d97706'  : '#1e3a5f';
-      const uColor = isLight ? '#ffffff'  : '#e2e8f0';
       return `<div style="display:flex;justify-content:flex-end;">
-        <div style="background:${uBg};color:${uColor};border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     } else {
-      const bBg     = isLight ? '#f0fdf4'                             : 'linear-gradient(135deg,#0a2218,#0f2a1a)';
-      const bBorder = isLight ? '1px solid #bbf7d0'                  : '1px solid rgba(52,211,153,0.2)';
-      const bColor  = isLight ? '#1c1917'                             : '#e2e8f0';
-      const aBg     = isLight ? '#dcfce7'                             : '#0a1628';
       const formatted = msg.text.split('\n').filter(l=>l.trim()).map(l=>
         `<div style="margin-bottom:4px;">${l.replace(/^[•\-\*]\s*/,'• ')}</div>`
       ).join('');
       return `<div style="display:flex;gap:7px;align-items:flex-start;">
-        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:${aBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
           <svg viewBox="0 0 28 28" width="13" height="13" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
         </div>
-        <div style="background:${bBg};border:${bBorder};color:${bColor};border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
+        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
       </div>`;
     }
   }).join('');
@@ -6082,7 +6009,7 @@ async function fetchNSEAnnouncements() {
     if (nseNewsCache && (Date.now() - nseNewsCacheTime) < NSE_CACHE_MS) {
       return nseNewsCache;
     }
-    const apiUrl = localStorage.getItem("customAPI") || "";
+    const apiUrl = localStorage.getItem("customAPI") || API;
     const r = await fetch(apiUrl + "?type=nse");
     if (!r.ok) return [];
     const data = await r.json();
@@ -6184,31 +6111,27 @@ function calcAvg(){
   const rColor=(v)=>v>0?'#ef4444':'#22c55e';
 
   res.style.display='block';
-  const _acL = document.body.classList.contains('light');
-  const _acLbl = _acL ? '#57534e' : '#94a3b8';
-  const _acVal = _acL ? '#1c1917' : '#e2e8f0';
-  const _acDivBdr= _acL ? '#e7e5e4' : '#1e3a5f';
   res.innerHTML=`
-    <div style="font-size:10px;font-weight:700;color:${_acL?'#a8a29e':'#4b6280'};margin-bottom:8px;letter-spacing:0.5px;">RESULT</div>
+    <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:8px;letter-spacing:0.5px;">RESULT</div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:${_acLbl};">New Avg Price</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#0891b2;">₹${newAvg.toFixed(2)}</span>
+      <span style="font-size:11px;color:#94a3b8;">New Avg Price</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#38bdf8;">₹${newAvg.toFixed(2)}</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:${_acLbl};">New Total Qty</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${_acVal};">${newQty}</span>
+      <span style="font-size:11px;color:#94a3b8;">New Total Qty</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#e2e8f0;">${newQty}</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:${_acLbl};">Extra Investment</span>
+      <span style="font-size:11px;color:#94a3b8;">Extra Investment</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#f59e0b;">${inr(extraInvest)}</span>
     </div>
-    <div style="border-top:1px solid ${_acDivBdr};margin:6px 0;"></div>
+    <div style="border-top:1px solid #1e3a5f;margin:6px 0;"></div>
     <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:11px;color:${_acLbl};">Recovery needed (old)</span>
+      <span style="font-size:11px;color:#94a3b8;">Recovery needed (old)</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${rColor(oldRecovery)};">${oldRecovery>0?'+':''}${oldRecovery.toFixed(2)}%</span>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-      <span style="font-size:11px;color:${_acLbl};">Recovery needed (new)</span>
+      <span style="font-size:11px;color:#94a3b8;">Recovery needed (new)</span>
       <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:${rColor(newRecovery)};">${newRecovery>0?'+':''}${newRecovery.toFixed(2)}%</span>
     </div>
     <div style="text-align:center;font-size:12px;font-weight:700;padding:6px;border-radius:6px;background:${better?'rgba(34,197,94,0.12)':'rgba(239,68,68,0.12)'};color:${better?'#22c55e':'#ef4444'};">
@@ -6282,14 +6205,10 @@ let screenerFilters = new Set();
 function gainersSubTab(tab) {
   document.getElementById('gmovers').style.display = tab === 'movers' ? 'block' : 'none';
   document.getElementById('gscreener').style.display = tab === 'screener' ? 'block' : 'none';
-  const isLight = document.body.classList.contains('light');
-  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
-  const inClr = isLight ? '#57534e' : '#94a3b8';
-  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   const mb = document.getElementById('gsub-movers');
   const sb = document.getElementById('gsub-screener');
-  if(mb){ mb.style.background = tab==='movers'?'#1e3a5f':inBg; mb.style.color = tab==='movers'?'#38bdf8':inClr; mb.style.borderColor = tab==='movers'?'#2d5a8e':inBdr; }
-  if(sb){ sb.style.background = tab==='screener'?'#1e3a5f':inBg; sb.style.color = tab==='screener'?'#38bdf8':inClr; sb.style.borderColor = tab==='screener'?'#2d5a8e':inBdr; }
+  if(mb){ mb.style.background = tab==='movers'?'#1e3a5f':'#0f172a'; mb.style.color = tab==='movers'?'#38bdf8':'#94a3b8'; mb.style.borderColor = tab==='movers'?'#2d5a8e':'#1e2d3d'; }
+  if(sb){ sb.style.background = tab==='screener'?'#1e3a5f':'#0f172a'; sb.style.color = tab==='screener'?'#38bdf8':'#94a3b8'; sb.style.borderColor = tab==='screener'?'#2d5a8e':'#1e2d3d'; }
   if(tab === 'screener') renderScreener();
 }
 
@@ -6333,14 +6252,10 @@ function renderScreener() {
   let html = '';
 
   // Source selector
-  const isLight = document.body.classList.contains('light');
-  const inBg  = isLight ? '#f5f5f4' : '#0f172a';
-  const inClr = isLight ? '#57534e' : '#4b6280';
-  const inBdr = isLight ? '#d6d3d1' : '#1e2d3d';
   const srcBtns = ['watchlist','popular','cached'].map(s => {
     const active = screenerSource === s;
     const labels = {watchlist:'Watchlist', popular:'Nifty 50', cached:'All Cached'};
-    return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':inBdr};background:${active?'#1e3a5f':inBg};color:${active?'#38bdf8':inClr};">${labels[s]}</button>`;
+    return `<button onclick="screenerSetSource('${s}')" style="flex:1;padding:4px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?'#2d5a8e':'#1e2d3d'};background:${active?'#1e3a5f':'#0f172a'};color:${active?'#38bdf8':'#4b6280'};">${labels[s]}</button>`;
   }).join('');
   html += `<div style="display:flex;gap:4px;margin-bottom:8px;">${srcBtns}</div>`;
 
@@ -6348,7 +6263,7 @@ function renderScreener() {
   html += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">`;
   filters.forEach(f => {
     const active = screenerFilters.has(f.id);
-    html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:inBdr};background:${active?f.color+'22':inBg};color:${active?f.color:inClr};">${f.label}</button>`;
+    html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:'#1e2d3d'};background:${active?f.color+'22':'#0f172a'};color:${active?f.color:'#4b6280'};">${f.label}</button>`;
   });
   html += `</div>`;
 
@@ -6601,7 +6516,6 @@ let _niviCurrentSym = '';
 let _niviChatHistory = [];   // [{role:'user'|'nivi', text, ts}]
 let _niviMicActive  = false;
 let _niviRecognition = null;
-let _niviNewsHeadlines = []; // stores last fetched news headlines
 const NIVI_CACHE_MS = 30 * 60 * 1000;
 
 // --- BUILD WATCHLIST CONTEXT STRING ---
@@ -6707,7 +6621,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   // ── FALLBACK: GAS route (backward compatible) ──
   let _niviData = null, _gasErr = null;
   const _niviUrls = [
-    getNiviAPI(),
+    API_NIVI,
     localStorage.getItem('customAPI2') || API2,
     localStorage.getItem('customAPI3') || API3,
     localStorage.getItem('customAPI4') || API4,
@@ -6807,7 +6721,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
 
   // 2. GAS fallback (single-turn)
   if (!answer) {
-    const _nu = localStorage.getItem('customAPI') || getNiviAPI();
+    const _nu = localStorage.getItem('customAPI') || API_NIVI;
     try {
       const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
@@ -6917,26 +6831,19 @@ function _niviAddBubble(role, text, ts) {
 function _niviRenderChat() {
   const area = document.getElementById('nivi-chat-area');
   if (!area) return;
-  const isLight = document.body.classList.contains('light');
 
   let html = '';
   _niviChatHistory.forEach(msg => {
     if (msg.role === 'user') {
-      const uBg    = isLight ? '#d97706'   : '#1e3a5f';
-      const uColor = isLight ? '#ffffff'   : '#e2e8f0';
       html += `<div style="display:flex;justify-content:flex-end;">
-        <div style="background:${uBg};color:${uColor};border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:80%;font-size:12px;line-height:1.6;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:80%;font-size:12px;line-height:1.6;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     } else {
-      const bBg     = isLight ? '#f0fdf4'                              : 'linear-gradient(135deg,#0a2218,#0f2a1a)';
-      const bBorder = isLight ? '1px solid #bbf7d0'                   : '1px solid rgba(52,211,153,0.2)';
-      const bColor  = isLight ? '#1c1917'                              : '#e2e8f0';
-      const aBg     = isLight ? '#dcfce7'                              : '#0a1628';
       html += `<div style="display:flex;justify-content:flex-start;gap:7px;align-items:flex-start;">
-        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:${aBg};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
           <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
         </div>
-        <div style="background:${bBg};border:${bBorder};color:${bColor};border-radius:2px 14px 14px 14px;padding:10px 13px;max-width:85%;font-size:13px;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 13px;max-width:85%;font-size:13px;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
       </div>`;
     }
   });
@@ -6993,13 +6900,9 @@ function _niviApplyPriceAndTech(data) {
   ];
   const techEl = document.getElementById('nivi-tech-row');
   techEl.style.display = 'flex';
-  const tIsLight = document.body.classList.contains('light');
-  const tBg  = tIsLight ? '#f0fdf4'  : '#0a1628';
-  const tBdr = tIsLight ? '#bbf7d0'  : '#1e3a5f';
-  const tLbl = tIsLight ? '#78716c'  : '#4b6280';
   techEl.innerHTML = indicators.map(i =>
-    `<div style="background:${tBg};border:1px solid ${tBdr};border-radius:5px;padding:3px 6px;text-align:center;flex-shrink:0;">
-      <div style="font-size:7px;color:${tLbl};font-weight:700;">${i.label}</div>
+    `<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:5px;padding:3px 6px;text-align:center;flex-shrink:0;">
+      <div style="font-size:7px;color:#4b6280;font-weight:700;">${i.label}</div>
       <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:${i.color};">${i.val}</div>
     </div>`
   ).join('');
@@ -7169,12 +7072,6 @@ function saveGeminiKey2(){
   document.getElementById('set-gemini-key2').value='';
   showPopup('Sarvam Key 2 saved ✓');
 }
-function clearGeminiKey(){
-  localStorage.removeItem('geminiApiKey');
-  document.getElementById('set-gemini-key').value='';
-  document.getElementById('gemini-key-status').innerHTML='<span style="color:#4b6280;">Key cleared</span>';
-  showPopup('Sarvam Key 1 cleared');
-}
 function clearGeminiKey2(){
   localStorage.removeItem('geminiApiKey2');
   document.getElementById('set-gemini-key2').value='';
@@ -7343,7 +7240,7 @@ async function niviNewsSearch() {
   // ── STEP 1: GAS → fetch headlines only (CORS-safe) ──
   var headlines = [];
   try {
-    var gasUrl = getNiviAPI() + '?type=newsSearch&s=' + encodeURIComponent(sym);
+    var gasUrl = API_NIVI + '?type=newsSearch&s=' + encodeURIComponent(sym);
     var gasResp = await fetch(gasUrl);
     var gasData = await gasResp.json();
     if (!gasData.ok) throw new Error(gasData.error || 'GAS news fetch failed');
@@ -7602,21 +7499,18 @@ const MARKET_SCHOOL = {
       },
       doji: {
         label: 'Doji',
-        svg: `<svg viewBox="0 0 100 140" width="100" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="8" x2="50" y2="58" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="58" width="32" height="5" fill="#f59e0b" rx="1"/><line x1="50" y1="63" x2="50" y2="118" stroke="#94a3b8" stroke-width="2"/><text x="50" y="132" text-anchor="middle" fill="#f59e0b" font-size="10" font-family="monospace">DOJI</text></svg>`,
         hi: { what: 'Doji तब बनता है जब Open और Close लगभग बराबर हों। Indecision — buyers और sellers बराबर ताकत में।', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend में Doji = Reversal का signal | Downtrend में Doji = Possible reversal up', tip: '💡 Doji को अकेले मत देखो — अगले candle की confirmation का इंतज़ार करो।', example: 'Stock लगातार बढ़ रहा था, फिर Doji बना → अगला दिन Red candle → Trend reversal' },
         gu: { what: 'Doji ત્યારે બને જ્યારે Open ≈ Close. Indecision — buyers-sellers સરખી ताकत.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend mā Doji = Reversal signal | Downtrend mā Doji = Possible bounce', tip: '💡 Doji ની confirmation next candle thī levo.', example: 'Stock વધી રહ્યો, Doji બન્યો → next day Red → Trend reversal' },
         en: { what: 'Doji forms when Open ≈ Close. Shows indecision between buyers and sellers.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Doji in Uptrend = Reversal signal | Doji in Downtrend = Possible bounce', tip: '💡 Never trade Doji alone — wait for next candle confirmation.', example: 'Stock was rising, Doji formed → next day Red candle → Trend reversal' }
       },
       hammer: {
         label: 'Hammer & Hanging Man',
-        svg: `<svg viewBox="0 0 200 140" width="200" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="8" x2="50" y2="28" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="28" width="32" height="22" fill="#22c55e" rx="2"/><line x1="50" y1="50" x2="50" y2="118" stroke="#22c55e" stroke-width="2.5"/><text x="50" y="132" text-anchor="middle" fill="#22c55e" font-size="9" font-family="monospace">HAMMER</text><line x1="150" y1="8" x2="150" y2="78" stroke="#ef4444" stroke-width="2.5"/><rect x="134" y="78" width="32" height="22" fill="#ef4444" rx="2"/><line x1="150" y1="100" x2="150" y2="118" stroke="#94a3b8" stroke-width="2"/><text x="150" y="132" text-anchor="middle" fill="#ef4444" font-size="9" font-family="monospace">HANGING MAN</text></svg>`,
         hi: { what: 'Hammer: Downtrend के बाद बनता है — छोटी body, लंबी lower wick। Bulls ने Bears को हराया। Bullish reversal।', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Downtrend में Hammer = Strong Bullish reversal | Uptrend में same shape = Hanging Man (Bearish)', tip: '💡 Hammer के बाद अगला दिन Green candle आए तो entry लो। Stop loss: Hammer का low।', example: 'Stock गिर रहा था → Hammer बना at ₹200 → अगला दिन ₹215 open → Entry!' },
         gu: { what: 'Hammer: Downtrend પછી — નાની body, લાંબી lower wick. Bulls એ Bears ને હરાવ્યા.', formula: 'Lower wick ≥ 2× body | Little/no upper wick', levels: 'Downtrend mā Hammer = Bullish reversal | Uptrend mā same = Hanging Man (Bearish)', tip: '💡 Hammer પછી next day Green candle → Entry. Stop loss: Hammer low.', example: 'Stock ઘટ્યો → Hammer ₹200 → next day ₹215 → Entry!' },
         en: { what: 'Hammer: forms after downtrend — small body, long lower wick. Bulls beat Bears. Bullish reversal.', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Hammer in Downtrend = Bullish reversal | Same in Uptrend = Hanging Man (Bearish)', tip: '💡 After Hammer, next green candle = entry. Stop loss at Hammer\'s low.', example: 'Stock fell → Hammer at ₹200 → next day opens ₹215 → Entry!' }
       },
       engulfing: {
         label: 'Engulfing Pattern',
-        svg: `<svg viewBox="0 0 200 140" width="200" height="140" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="18" x2="50" y2="28" stroke="#94a3b8" stroke-width="2"/><rect x="34" y="28" width="32" height="40" fill="#ef4444" rx="2"/><line x1="50" y1="68" x2="50" y2="78" stroke="#94a3b8" stroke-width="2"/><text x="50" y="95" text-anchor="middle" fill="#ef4444" font-size="8" font-family="monospace">RED</text><line x1="150" y1="12" x2="150" y2="22" stroke="#94a3b8" stroke-width="2"/><rect x="130" y="22" width="40" height="56" fill="#22c55e" rx="2"/><line x1="150" y1="78" x2="150" y2="88" stroke="#94a3b8" stroke-width="2"/><text x="150" y="105" text-anchor="middle" fill="#22c55e" font-size="8" font-family="monospace">ENGULFS</text><text x="100" y="125" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="monospace">BULLISH ENGULFING</text></svg>`,
         hi: { what: 'Bullish Engulfing: छोटी Red candle के बाद बड़ी Green candle जो उसे पूरा ढक ले। Strong reversal।', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Support zone पर Bullish Engulfing = Very Strong Buy | Resistance पर Bearish Engulfing = Strong Sell', tip: '💡 Volume साथ में high हो तो signal और strong होता है।', example: 'Red candle: ₹100→₹95 | Green candle: ₹94→₹103 → Bullish Engulfing → Buy!' },
         gu: { what: 'Bullish Engulfing: નાની Red candle પછી મોટી Green candle જે તેને ઢઢ. Strong reversal.', formula: 'Bullish: Green body > prev Red | Bearish: Red body > prev Green', levels: 'Support zone + Engulfing = Very Strong Buy signal', tip: '💡 Volume high હોય તો signal stronger.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' },
         en: { what: 'Bullish Engulfing: large Green candle completely covers previous Red candle. Strong reversal.', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Bullish Engulfing at support = Very Strong Buy signal', tip: '💡 High volume with engulfing = very strong signal.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' }
@@ -7669,27 +7563,21 @@ function renderMarketSchool() {
 
 function _renderMSHome(el, lang) {
   const cats = Object.keys(MARKET_SCHOOL);
-  const isLight = document.body.classList.contains('light');
-  const cBg    = isLight ? '#ffffff'              : '#0d1f35';
-  const cBdr   = isLight ? 'rgba(0,0,0,0.07)'    : 'rgba(255,255,255,0.07)';
-  const cTitle = isLight ? '#1c1917'              : '#e2e8f0';
-  const cSub   = isLight ? '#78716c'              : '#64748b';
-  const cHover = isLight ? '#fef9ed'              : 'rgba(255,255,255,0.04)';
   let html = `<div style="margin-bottom:12px;">
-    <div style="font-size:11px;color:${cSub};font-weight:700;letter-spacing:1px;margin-bottom:8px;">SELECT CATEGORY</div>`;
+    <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:1px;margin-bottom:8px;">SELECT CATEGORY</div>`;
 
   cats.forEach(catKey => {
     const cat = MARKET_SCHOOL[catKey];
     const count = Object.keys(cat.topics).length;
     html += `
     <div onclick="_msCategory='${catKey}';_msTopic=null;renderMarketSchool();"
-      style="background:${cBg};border:1px solid ${cBdr};border-left:3px solid ${cat.color};border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;"
-      onmouseover="this.style.background='${cHover}'" onmouseout="this.style.background='${cBg}'">
+      style="background:#0d1f35;border:1px solid rgba(255,255,255,0.07);border-left:3px solid ${cat.color};border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;"
+      onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='#0d1f35'">
       <div style="display:flex;align-items:center;gap:12px;">
         <span style="font-size:26px;">${cat.icon}</span>
         <div>
-          <div style="font-size:13px;font-weight:700;color:${cTitle};">${cat.label[lang]||cat.label.en}</div>
-          <div style="font-size:10px;color:${cSub};margin-top:2px;">${count} topics</div>
+          <div style="font-size:13px;font-weight:700;color:#e2e8f0;">${cat.label[lang]||cat.label.en}</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px;">${count} topics</div>
         </div>
       </div>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
@@ -7703,20 +7591,11 @@ function _renderMSHome(el, lang) {
 function _renderMSCategory(el, lang) {
   const cat = MARKET_SCHOOL[_msCategory];
   if (!cat) { _msCategory = null; renderMarketSchool(); return; }
-  const isLight = document.body.classList.contains('light');
-  const cBg    = isLight ? '#ffffff'           : '#0d1f35';
-  const cBdr   = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.07)';
-  const cTitle = isLight ? '#1c1917'           : '#e2e8f0';
-  const cSub   = isLight ? '#78716c'           : '#64748b';
-  const cHover = isLight ? '#fef9ed'           : 'rgba(255,255,255,0.04)';
-  const backBg = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
-  const backBdr= isLight ? 'rgba(0,0,0,0.1)'  : 'rgba(255,255,255,0.1)';
-  const backClr= isLight ? '#57534e'           : '#94a3b8';
 
   let html = `
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
     <button onclick="_msCategory=null;_msTopic=null;renderMarketSchool();"
-      style="background:${backBg};border:1px solid ${backBdr};color:${backClr};border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">\u2190 Back</button>
+      style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">← Back</button>
     <span style="font-size:14px;">${cat.icon}</span>
     <span style="font-size:13px;font-weight:700;color:${cat.color};">${cat.label[lang]||cat.label.en}</span>
   </div>`;
@@ -7726,11 +7605,11 @@ function _renderMSCategory(el, lang) {
     const content = topic[lang] || topic.en;
     html += `
     <div onclick="_msTopic='${topicKey}';renderMarketSchool();"
-      style="background:${cBg};border:1px solid ${cBdr};border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;"
-      onmouseover="this.style.background='${cHover}'" onmouseout="this.style.background='${cBg}'">
+      style="background:#0d1f35;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;"
+      onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='#0d1f35'">
       <div>
-        <div style="font-size:12px;font-weight:700;color:${cTitle};">${topic.label}</div>
-        <div style="font-size:10px;color:${cSub};margin-top:2px;">${content.what.substring(0,60)}...</div>
+        <div style="font-size:12px;font-weight:700;color:#e2e8f0;">${topic.label}</div>
+        <div style="font-size:10px;color:#64748b;margin-top:2px;">${content.what.substring(0,60)}...</div>
       </div>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`;
@@ -7783,8 +7662,7 @@ function _renderMSTopic(el, lang) {
     <div style="font-size:12px;color:#cbd5e1;line-height:1.6;">${L.example}</div>
   </div>`;
 
- const svgBlock = topic.svg ? `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin-bottom:10px;"><div style="background:rgba(255,255,255,0.03);padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);"><span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;">🕯️ DIAGRAM</span></div><div style="padding:16px;display:flex;justify-content:center;">${topic.svg}</div></div>` : '';
-  el.innerHTML = html + svgBlock;
+  el.innerHTML = html;
 }
 // ── Search suggestions (from existing wl + POPULAR_STOCKS) ─
 function learnSearchSuggest(val) {
@@ -7792,17 +7670,13 @@ function learnSearchSuggest(val) {
   if (!box) return;
   const v = val.trim().toUpperCase();
   if (v.length < 1) { box.style.display = 'none'; return; }
-  const _lsL = document.body.classList.contains('light');
-  const _lsClr = _lsL ? '#1c1917'                      : '#e2e8f0';
-  const _lsBdr = _lsL ? '1px solid rgba(0,0,0,0.06)'  : '1px solid rgba(255,255,255,0.05)';
-  const _lsHov = _lsL ? '#fef9ed'                      : 'rgba(251,146,60,0.1)';
   const allSyms = [...new Set([...(typeof wl!=='undefined'?wl:[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
   const matches = allSyms.filter(s => s.toUpperCase().startsWith(v)).slice(0, 8);
   if (matches.length === 0) { box.style.display = 'none'; return; }
   box.innerHTML = matches.map(s =>
     `<div onclick="document.getElementById('learnSearchInput').value='${s}';document.getElementById('learnSuggBox').style.display='none';fetchLearnStock();"
-      style="padding:8px 14px;font-size:12px;font-weight:700;color:${_lsClr};cursor:pointer;font-family:'Rajdhani',sans-serif;border-bottom:${_lsBdr};"
-      onmouseover="this.style.background='${_lsHov}'" onmouseout="this.style.background=''">${s}</div>`
+      style="padding:8px 14px;font-size:12px;font-weight:700;color:#e2e8f0;cursor:pointer;font-family:'Rajdhani',sans-serif;border-bottom:1px solid rgba(255,255,255,0.05);"
+      onmouseover="this.style.background='rgba(251,146,60,0.1)'" onmouseout="this.style.background=''">${s}</div>`
   ).join('');
   box.style.display = 'block';
 }
@@ -8020,37 +7894,25 @@ const raw = {
 
 // ── Waitlist Helper — Stock Firebase new_requests ma add karo ──
 async function _addToWaitlist(sym, msg) {
-  if (msg) { 
-    msg.textContent = `⏳ "${sym}" DB ma nathi — Waitlist ma add thai rahu che...`; 
-    msg.style.color = '#f59e0b'; 
-  }
+  if (msg) { msg.textContent = `⏳ "${sym}" DB ma nathi — Waitlist ma add thai rahu che...`; msg.style.color = '#f59e0b'; }
   try {
-    // 🔥 FIX: Python engine 'alert_config' document no 'waitlist' array vachhe che
-    const configRef = firebase.firestore().collection('RealTradePro').doc('alert_config');
-    
-    await configRef.update({
-      // arrayUnion fakt nava stock ne j array ma push karse, 350 stocks ne touch pan nahi kare!
-      waitlist: firebase.firestore.FieldValue.arrayUnion(sym.toUpperCase().trim())
+    await firebase.firestore().collection('new_requests').doc(sym).set({
+      symbol: sym,
+      requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      requestedBy: (typeof currentUser !== 'undefined' && currentUser?.userId) ? currentUser.userId : 'anonymous'
     });
-
     if (msg) {
       msg.textContent = `✅ "${sym}" waitlist ma add thayo! Python run thase tyare automatically sheet + Firebase ma aavse.`;
       msg.style.color = '#34d399';
     }
   } catch(e) {
-    // Jo alert_config document na hoy to pehli vaar set karvu pade
-    try {
-      await firebase.firestore().collection('RealTradePro').doc('alert_config').set({
-        waitlist: [sym.toUpperCase().trim()]
-      }, { merge: true });
-    } catch(err2) {
-      if (msg) {
-        msg.textContent = `❌ "${sym}" DB ma nathi. Waitlist error: ${e.message}`;
-        msg.style.color = '#f87171';
-      }
+    if (msg) {
+      msg.textContent = `❌ "${sym}" DB ma nathi. Waitlist error: ${e.message}`;
+      msg.style.color = '#f87171';
     }
   }
 }
+
 function _getLivePrice(sym) {
   if (typeof cache !== 'undefined' && cache[sym]?.data?.regularMarketPrice) return cache[sym].data.regularMarketPrice;
   if (typeof cache !== 'undefined' && cache[sym+'NS']?.data?.regularMarketPrice) return cache[sym+'NS'].data.regularMarketPrice;
@@ -9126,18 +8988,10 @@ async function _buildCorporateActionsTab(res, sym) {
       const doc = await db.collection('RealTradePro').doc('corporate_actions').get();
       if(doc.exists){
         const all = doc.data();
-        // Engine saves: dividends, board_meetings, splits_bonus, results
-        // Map engine field names → app field names
-        const _fm = {
-          dividends:    'dividends',
-          boardMeetings:'board_meetings',
-          splits:       'splits_bonus',
-          bonuses:      'splits_bonus',
-          results:      'results'
-        };
+        // Filter entries matching this sym
         fbData = {};
-        Object.entries(_fm).forEach(([appKey, dbKey]) => {
-          if(all[dbKey]) fbData[appKey] = all[dbKey].filter(x => (x.symbol||'').toUpperCase() === sym.toUpperCase());
+        ['dividends','bonuses','splits','boardMeetings','bulkDeals','blockDeals','announcements'].forEach(k => {
+          if(all[k]) fbData[k] = all[k].filter(x => (x.symbol||'').toUpperCase() === sym.toUpperCase());
         });
       }
     }catch(e){ console.warn('[Corporate] Firebase fetch failed:', e); }
