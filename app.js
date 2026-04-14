@@ -2,18 +2,39 @@
 // REALTRADEPRO MASTER UI CONTROLLER - FINAL VERIFIED BLOCK
 // ============================================================================
 
-// ── 0. HTML BUTTON FIX (તમારા કન્સોલની TypeError સોલ્વ કરવા માટે) ──
+// ── 0. HTML BRIDGES (તમારા કન્સોલની બધી જ એરર્સ અહીં સોલ્વ થશે) ──
 window.tab = function(tabName) {
-  // HTML માંથી આવતા tab() કોલને આ ફંક્શન હેન્ડલ કરશે
-  if (typeof switchMainTab === 'function') {
-    switchMainTab(tabName);
+  // HTML ના onclick="tab('watchlist')" ને આ ફંક્શન હેન્ડલ કરશે
+  if (typeof switchMainTab === 'function') switchMainTab(tabName);
+};
+
+window.showSuggestions = function() {
+  // HTML ના oninput="showSuggestions()" ને આ ફંક્શન હેન્ડલ કરશે
+  const input = document.getElementById('stockSearchInput');
+  const box = document.getElementById('searchSuggestions');
+  if (!input || !box) return;
+  
+  const query = input.value.toUpperCase().trim();
+  if (query.length < 1) { box.style.display = 'none'; return; }
+
+  const ALL_STOCKS = ["RELIANCE", "TCS", "HDFCBANK", "INFY", "SBIN", "ICICIBANK", "TATAMOTORS", "ZOMATO", "SUZLON", "PAYTM", "ADANIENT"];
+  const matches = ALL_STOCKS.filter(s => s.includes(query)).slice(0, 8);
+  
+  if (matches.length > 0) {
+    box.innerHTML = matches.map(m => 
+      `<div onclick="addNewStockToWatchlist('${m}'); document.getElementById('stockSearchInput').value=''; document.getElementById('searchSuggestions').style.display='none';" 
+            style="padding:12px; border-bottom:1px solid rgba(128,128,128,0.1); cursor:pointer; color:var(--text-main); font-weight:500;">${m}</div>`
+    ).join('');
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
   }
 };
 
 const FONT_SIZES = { 'S': '14px', 'M': '16px', 'L': '18px', 'XL': '20px' };
 const DEFAULT_GAS_APIS = ["YOUR_GAS_URL_1", "YOUR_GAS_URL_2"];
 
-// ── 1. UI UTILS OBJECT ──
+// ── 1. UI UTILS OBJECT (Loader, Popups, etc.) ──
 const Utils = {
   inr: (v) => "₹" + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2 }),
   showLoader: (msg = "Loading...") => {
@@ -60,20 +81,14 @@ function switchMainTab(tabName) {
   const target = document.getElementById(tabName + 'Section');
   if (target) target.style.display = 'block';
 
-  // Watchlist Render Trigger
   if (tabName === 'watchlist' && typeof renderWL === 'function') renderWL();
 }
 
-// ── 3. MISSING ACTIONS (તમારા કન્સોલની ReferenceErrors ફિક્સ કરવા માટે) ──
+// ── 3. CORE ACTIONS ──
 function manualRefresh() {
   Utils.showLoader("Refreshing Market...");
   if (typeof updateLivePrices === 'function') updateLivePrices();
   setTimeout(() => Utils.hideLoader(), 1500);
-}
-
-function openAddIndexModal() {
-  const sym = prompt("Enter Symbol to track in header:");
-  if (sym) Utils.showPopup(`${sym.toUpperCase()} added to tracker.`);
 }
 
 function sortAZ() {
@@ -120,6 +135,14 @@ function triggerWatchlistCSVImport() {
     reader.readAsText(file);
   };
   input.click();
+}
+
+function addNewStockToWatchlist(symbol) {
+  if (!window.wl.includes(symbol)) {
+    window.wl.push(symbol);
+    if (typeof renderWL === 'function') renderWL();
+    Utils.showPopup(`${symbol} added to watchlist!`);
+  }
 }
 
 // ── 4. DATA INITIALIZATION ──
