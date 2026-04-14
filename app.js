@@ -2,10 +2,6 @@
 // FIREBASE MULTI-USER SYSTEM
 // ========================================
 
-let currentUser = null; // { userId, name }// ========================================
-// FIREBASE MULTI-USER SYSTEM
-// ========================================
-
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
