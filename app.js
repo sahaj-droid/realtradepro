@@ -534,7 +534,7 @@ function monitorFirebaseNews() {
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = getActiveGASUrl();
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=4000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=300000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 // MULTI-WATCHLIST SYSTEM
@@ -1772,6 +1772,20 @@ function confirmAddIndex(sym,name){
   closeAddIndexModal();
   showPopup(name+' added');
 }
+// Patch visible WL cards from cache — no full re-render, no GAS call
+function _patchVisibleWLPrices(){
+  let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
+  if(currentGroup !== 'ALL' && groups[currentGroup]){
+    displayList = displayList.filter(s => groups[currentGroup].includes(s));
+  }
+  displayList.forEach(s => {
+    const d = cache[s]?.data;
+    if(d && document.getElementById('price-'+s)){
+      _patchWLCard(s, d);
+    }
+  });
+}
+
 // ======================================
 // UPDATE PRICES
 // ======================================
@@ -1780,7 +1794,7 @@ async function updatePrices(){
   if(window._useGASPrices){
     try{
       await batchFetchStocks(wl);
-      renderWL();
+      _patchVisibleWLPrices();
       updateHeaderIndices();
       updatePriceTicker();
     }catch(e){}
@@ -5330,7 +5344,7 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    updatePrices();
+    if(m.open) updatePrices();
   }, 5000);
 }
 
