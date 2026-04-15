@@ -5,6 +5,10 @@
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
+
+
+
+
 // ---- PIN Hash (simple SHA-256) ----
 async function hashPIN(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
@@ -427,12 +431,15 @@ function monitorSystemHealth() {
       .onSnapshot(doc => {
         if(!doc.exists) return;
         const status = doc.data().python_engine;
-                console.log('[Health] Python Engine:', status);
+        window._pythonEngineActive = (status === 'running');
+        console.log('[Health] Python Engine:', status);
       });
   } catch(e) {
-      }
+    window._pythonEngineActive = false;
+  }
 }
 // ── GAS Fallback State ──────────────────────────────────
+
 
 function startEngineStaleCheck() {
   setInterval(async () => {
@@ -443,7 +450,8 @@ function startEngineStaleCheck() {
         const updatedAt = snap.data()?.updated_at;
         if (!updatedAt) return;
         if (Date.now() - new Date(updatedAt).getTime() < 30000) {
-                    hideGASFallbackBar();
+          
+          hideGASFallbackBar();
           showPopup('✅ Python Engine recovered — live prices resumed', 3000);
         }
         return;
@@ -474,10 +482,11 @@ function hideGASFallbackBar() {
 }
 
 function userEnableGASPrices() {
-    const bar = document.getElementById('gas-fallback-bar');
+  
+  const bar = document.getElementById('gas-fallback-bar');
   if (bar) {
     bar.style.background = '#14532d';
-    bar.innerHTML = `<span>🔄 GAS prices active — auto-switching back when engine recovers</span><button onclick="hideGASFallbackBar();window._useGASPrices=false;" style="background:#22c55e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button>`;
+    bar.innerHTML = `<span>🔄 GAS prices active — auto-switching back when engine recovers</span><button onclick="hideGASFallbackBar();" style="background:#22c55e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button>`;
   }
   updatePrices();
 }
@@ -658,8 +667,7 @@ function updateTaxCalc(){
   const gst=brok*0.18;
   const exchange=val*0.0000345;
 
-  // STT
-  let stt=0;
+    let stt=0;
   if(currentTradeType==="CNC"){
     stt=val*0.001; // 0.1% on buy+sell both
   } else {
@@ -3170,17 +3178,14 @@ function renderCalendar(){
 // ======================================
 // TERTIARY API EDIT (Settings)
 // ======================================
-
 function cancelAPI3Edit(){
   document.getElementById('set-api3-edit').style.display='none';
   document.getElementById('changeURL3Btn').style.display='inline-block';
 }
-
 function cancelAPI4Edit(){
   document.getElementById('set-api4-edit').style.display='none';
   document.getElementById('changeURL4Btn').style.display='inline-block';
 }
-
 function cancelAPI5Edit(){
   document.getElementById('set-api5-edit').style.display='none';
   document.getElementById('changeURL5Btn').style.display='inline-block';
@@ -3217,12 +3222,186 @@ function normalizeBatchItem(gasData){
   };
 }
 
+async function batchFetchStocks(symbols, isIndex=false){
+  if(!symbols||symbols.length===0) return;
 
+  // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
+  if(window._pythonEngineActive && !isIndex){
+    try{
+      const db = firebase.firestore();
+      const doc = await db.collection('RealTradePro').doc('live_prices').get();
+      if(doc.exists){
+        const prices = doc.data().prices || {};
+        let stored = 0;
+        symbols.forEach(s => {
+          const fbKey = s + '.NS';
+          if(prices[fbKey]){
+            const p = prices[fbKey];
+            cache[s] = { data: p, time: Date.now() };
+            lastUpdatedMap[s] = Date.now();
+            stored++;
+          }
+        });
+        if(stored > 0){
+          console.log('[Firebase] Live prices loaded:', stored, 'stocks');
+          return; // all found — skip GAS entirely
+        }
+      }
+    }catch(fbErr){
+      console.warn('[Firebase] live_prices fetch failed, falling back to GAS:', fbErr);
+    }
+  }
+  // ── END Task 3 ─────────────────────────────────────────────────────────────
+
+  const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
+  const urls=[
+    localStorage.getItem('customAPI')||API,
+    localStorage.getItem('customAPI2')||API2,
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
+  ].filter(Boolean);
+
+  async function tryBatch(apiUrl){
+    try{
+      const r=await fetchWithTimeout(`${apiUrl}?type=batch&s=${syms}`, 8000);
+      const j=await r.json();
+      if(!j||j.error) return false;
+      let stored=0;
+      Object.entries(j).forEach(([sym,gasData])=>{
+        const normalized=normalizeBatchItem(gasData);
+        if(!normalized) return;
+        const cacheKey=isIndex?sym:sym.replace('.NS','');
+        const existing = cache[cacheKey]?.data || {};
+        const _existing=cache[cacheKey]?.data||{};const _clean=Object.fromEntries(Object.entries(normalized).filter(([,v])=>v!=null&&v!==undefined));cache[cacheKey]={data:Object.assign({},_existing,_clean),time:Date.now()};
+        lastUpdatedMap[cacheKey]=Date.now();
+        stored++;
+      });
+      return stored>0;
+    }catch(e){ return false; }
+  }
+
+  for(let i=0;i<urls.length;i++){
+    const ok=await tryBatch(urls[i]);
+    if(ok){ if(i>0) showPopup('Using API fallback',2000); return; }
+  }
+  // All batch attempts failed — fallback to individual calls only if Python engine not active
+  if(!window._pythonEngineActive || isIndex){
+    await Promise.all(symbols.map(s=>fetchFull(s,isIndex)));
+  }
+}
 
 // -- FETCH WITH 5-URL FALLBACK --
+async function fetchFull(sym,isIndex=false){
+  let key=sym, symbol=isIndex?sym:sym+".NS";
+  let encodedSymbol=symbol.replace(/\^/g,"%5E");
+  if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
 
+  // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
+  if(!isIndex){
+    try{
+      // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
+      let fbOhlcv = null;
+      try{
+        const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
+        if(snap.exists){
+          const p = snap.data();
+          if(p && p.close && p.close > 0){
+            fbOhlcv = {
+              chartPreviousClose: p.prev,
+              regularMarketOpen:  p.open,
+            };
+          }
+        }
+      }catch(fbErr){
+        console.warn('[fetchFull] Firebase OLHCV read fail:', fbErr);
+      }
+
+      // Step 2: 1 GAS call - live price + Day H/L + 52W + Volume (all live)
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      let gasLive = null;
+      try{
+        const r = await fetchWithTimeout(`${gasUrl}?s=${encodedSymbol}`, 8000);
+        const j = await r.json();
+        if(!j.error && j.chart && j.chart.result){
+          const m = j.chart.result[0].meta;
+          gasLive = {
+            regularMarketPrice:        m.ltp,
+            regularMarketDayHigh:      m.regularMarketDayHigh,
+            regularMarketDayLow:       m.regularMarketDayLow,
+            regularMarketVolume:       m.regularMarketVolume,
+            averageDailyVolume3Month:  m.averageDailyVolume3Month,
+            averageDailyVolume10Day:   m.averageDailyVolume10Day,
+            fiftyTwoWeekHigh:          m.fiftyTwoWeekHigh,
+            fiftyTwoWeekLow:           m.fiftyTwoWeekLow,
+            trailingPE:                m.trailingPE,
+            epsTrailingTwelveMonths:   m.epsTrailingTwelveMonths,
+            marketCap:                 m.marketCap,
+          };
+        }
+      }catch(gasErr){
+        console.warn('[fetchFull] GAS live call fail:', gasErr);
+      }
+
+      // Step 3: Merge - Firebase OHLCV base + GAS live override
+      if(fbOhlcv || gasLive){
+        const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
+        // Change % calculate kariye
+        const ltp  = merged.ltp  || 0;
+        const prev = merged.chartPreviousClose   || 0;
+        if(ltp && prev){
+          merged.regularMarketChange        = parseFloat((ltp - prev).toFixed(2));
+          merged.regularMarketChangePercent = parseFloat(((ltp - prev) / prev * 100).toFixed(2));
+        }
+        cache[key] = {data: merged, time: Date.now()};
+        lastUpdatedMap[key] = Date.now();
+        return merged;
+      }
+    }catch(e){
+      console.warn('[fetchFull] Hybrid block error, falling back to GAS:', e);
+    }
+  }
+  // END HYBRID block
+
+  const urls=[
+    localStorage.getItem("customAPI")||API,
+    localStorage.getItem('customAPI2')||API2,
+    localStorage.getItem('customAPI3')||API3,
+    localStorage.getItem('customAPI4')||API4,
+    localStorage.getItem('customAPI5')||API5
+  ].filter(Boolean);
+
+  async function tryOne(apiUrl){
+    try{
+      let r=await fetchWithTimeout(`${apiUrl}?s=${encodedSymbol}`, 8000);
+      let j=await r.json();
+      if(j.error||!j.chart||!j.chart.result) return null;
+      return j.chart.result[0].meta;
+    }catch(e){ return null; }
+  }
+
+  for(let i=0;i<urls.length;i++){
+    let data=await tryOne(urls[i]);
+    if(data){
+      if(i>0&&!sessionStorage.getItem('fallbackShown')){ showPopup('Using API fallback',2000); sessionStorage.setItem('fallbackShown','1'); }
+      cache[key]={data,time:Date.now()};
+      lastUpdatedMap[key]=Date.now();
+      return data;
+    }
+  }
+  // Only show error if Python engine is not active (GAS is the only source)
+  if(!window._pythonEngineActive){
+    // Weekend / after-hours ma error suppress karo — engine band hoy te normal che
+    const _ms = getMarketStatus();
+    if(_ms.open){
+      showError("All APIs failed  -  Check quota or URLs in Settings");
+    } else {
+      console.warn("[GAS] All APIs failed — market closed, suppressing banner");
+    }
+  }
+  return null;
+}
 // =============================================
-// NIVI VOICE SETTINGS — removed (TTS/STT not used)
 // =============================================
 
 function loadSettingsUI(){
@@ -3285,7 +3464,12 @@ function loadSettingsUI(){
   }
 }
 
-
+function startFF2Edit(){
+  const inp = document.getElementById('ff2-url-input');
+  if(inp) inp.value = localStorage.getItem('ff2ApiUrl') || '';
+  document.getElementById('ff2-url-edit').style.display = 'block';
+  document.getElementById('changeFF2Btn').style.display = 'none';
+}
 function cancelFF2Edit(){
   document.getElementById('ff2-url-edit').style.display = 'none';
   document.getElementById('changeFF2Btn').style.display = 'inline-block';
@@ -3311,12 +3495,10 @@ function toggleSection(bodyId, arrId) {
   b.style.display=hidden?'block':'none';
   a.textContent=hidden?'▼':'▶';
 }
-
 function cancelAPIEdit(){
   document.getElementById("set-api-edit").style.display="none";
   document.getElementById("changeURLBtn").style.display="inline-block";
 }
-
 function cancelAPI2Edit(){
   document.getElementById("set-api2-edit").style.display="none";
   document.getElementById("changeURL2Btn").style.display="inline-block";
@@ -4927,62 +5109,65 @@ async function startApp(){
 // ======================================
   
 function startRefresh() {
-  if (window.priceListener) {
-    window.priceListener(); // Unsubscribe existing
-  }
+  if (refreshInterval) clearInterval(refreshInterval);
+  // Real-time Integration: Firebase Listener replacing old Polling system
   const db = firebase.firestore();
-  console.log("RealTradePro: Real-time Price Listener Active");
-  window.priceListener = db.collection('RealTradePro').doc('live_prices').onSnapshot(doc => {
+  db.collection('RealTradePro').doc('live_prices').onSnapshot((doc) => {
     if (doc.exists) {
-      updateFromRealtime(doc.data().prices || {});
+      const prices = doc.data().prices || {};
+      updateFromRealtime(prices);
     }
-  }, (error) => {
-    console.error("Firestore Listener Error:", error);
+  }, (err) => {
+    console.error("Firestore Listener Error:", err);
   });
+  console.log("Real-time Listener Started.");
 }
 
-function updateFromRealtime(prices) {
-  if (!window.wl) return;
+async function updateFromRealtime(prices) {
+  // Uniform keys: ltp, change, pct
   wl.forEach(s => {
     const d = prices[s + '.NS'] || prices[s];
     if (!d) return;
+    
     const ltp = d.ltp || d.price || 0;
     const change = d.change || 0;
     const pct = d.pct || 0;
+    
     const pe = document.getElementById(`price-${s}`);
     const ce = document.getElementById(`change-${s}`);
+    
     if (pe) {
-      const old = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
+      const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
       pe.innerText = "₹" + ltp.toFixed(2);
-      if (ltp > old) {
-        flashElement(pe, 'green');
-      } else if (ltp < old) {
-        flashElement(pe, 'red');
+      
+      // Flash effect logic
+      const wrap = pe.closest('.card') || pe.parentElement;
+      if (ltp > oldPrice) {
+        pe.classList.add("flash-green");
+        if (wrap) wrap.classList.add("flash-green");
+      } else if (ltp < oldPrice) {
+        pe.classList.add("flash-red");
+        if (wrap) wrap.classList.add("flash-red");
       }
-      if (typeof checkAlerts === 'function') checkAlerts(s, ltp);
-      if (typeof checkTargets === 'function') checkTargets(s, ltp);
+      setTimeout(() => {
+        pe.classList.remove("flash-green", "flash-red");
+        if (wrap) wrap.classList.remove("flash-green", "flash-red");
+      }, 1200);
+      
+      checkAlerts(s, ltp);
+      checkTargets(s, ltp);
       lastUpdatedMap[s] = Date.now();
     }
+    
     if (ce) {
       ce.innerText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${pct.toFixed(2)}%)`;
       ce.style.color = change >= 0 ? '#22c55e' : '#ef4444';
     }
   });
-  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-  if (typeof updatePriceTicker === 'function') updatePriceTicker();
+  updateHeaderIndices();
+  updatePriceTicker();
+}, 5000);
 }
-
-function flashElement(el, color) {
-  const card = el.closest('.card') || el.parentElement;
-  const cls = 'flash-' + color;
-  el.classList.add(cls);
-  if (card) card.classList.add(cls);
-  setTimeout(() => {
-    el.classList.remove(cls);
-    if (card) card.classList.remove(cls);
-  }, 1000);
-}
-
 
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
@@ -5363,8 +5548,7 @@ async function renderNews() {
 <!-- Collapsible Market Brief -->
       <div style="flex-shrink:0;">
         <div id="tab-brief-card" style="display:none;background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
-   
-       <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
+          <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
             ${buildMoverChips()}
           </div>
           <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
@@ -6738,7 +6922,12 @@ const DEFAULT_SHEET_ID = '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
 function getSheetId(){ return localStorage.getItem('sheetId') || DEFAULT_SHEET_ID; }
 function isSheetEnabled(){ return localStorage.getItem('sheetEnabled') === 'true'; }
 
-
+function startSheetEdit(){
+  const inp = document.getElementById('sheet-id-input');
+  if(inp) inp.value = getSheetId();
+  document.getElementById('sheet-id-edit').style.display = 'block';
+  document.getElementById('changeSheetBtn').style.display = 'none';
+}
 function cancelSheetEdit(){
   document.getElementById('sheet-id-edit').style.display = 'none';
   document.getElementById('changeSheetBtn').style.display = 'inline-block';
@@ -7024,7 +7213,6 @@ setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 900
 // NIVI NEWS SEARCH & VOICE (UPDATED)
 // ============================================================
 
-// 2. niviNewsSpeak — removed (TTS not used)
 
 async function niviNewsSearch() {
   var sym = (document.getElementById('niviNewsInput').value || '').trim().toUpperCase();
