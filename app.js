@@ -5,10 +5,6 @@
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
-
-
-
-
 // ---- PIN Hash (simple SHA-256) ----
 async function hashPIN(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
