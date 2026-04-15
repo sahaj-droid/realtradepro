@@ -1822,64 +1822,120 @@ async function updatePrices(){
     }catch(e){ /* silent — fall through to fetchFull below */ }
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
+// 1. Market Status ane Batch Fetch
+  const isMarketOpen = getMarketStatus().open;
+  if (isMarketOpen && !window._pythonEngineActive) {
+    try { await batchFetchStocks(wl); } catch(e) {}
+  }
 
+  // 2. Main Watchlist Loop
   for(let s of wl){
-    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
-    let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
-    if(!d) continue;
-    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
-    let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
+    // Jo cache ma data j na hoy to aagad vadho
+    if(!cache[s]?.data) continue;
+
+    // 🔥 THE BRAHMASTRA FIX 🔥
+    const fund = cache[s]?.fundamentals || {};
+    let d = { ...cache[s].data }; // Live price ni copy banavo jethi reference break thay
+    
+    // Firebase na "doubleValue" wrapper ne todva mate no master-key
+    const getRealVal = (val) => {
+       if (val !== null && typeof val === 'object') {
+           return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
+       }
+       return Number(val || 0);
+    };
+
+    // Fundamentals mathi sacho number kadho
+    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
+    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
+
+    // Live Prices par DADA-GIRI (Force overwrite): 
+    // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
+    if (fund_h52 > 0) d.h52 = fund_h52;
+    if (fund_l52 > 0) d.l52 = fund_l52;
+
+    // ✅ Bracket ni andar j aa badhi calculation aavvi joiye
+    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
+    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
+    let diff = price - prev;
+    let pct = prev ? (diff / prev * 100) : 0;
+
+    // ... (Ahiya tamaru aagad nu logic aavse jem ke document.getElementById('price-' + s) vagere)
+    
+    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
+    
     if(pe){
-      let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
-      pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
-      const wrap=pe.closest('.card')||pe.parentElement;
-      if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
-      else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
-      setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
+      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
+      pe.innerText = "₹" + price.toFixed(2);
+      
+      const wrap = pe.closest('.card') || pe.parentElement;
+      if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
+      else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
+      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
+
+      // ✅ FEATURE 1 & 2: Bars have 100% aavse karan ke 'd' pase have fundamentals chhe
+      const barContainer = document.getElementById(`bar-container-${s}`);
+      if(barContainer){
+        barContainer.innerHTML = buildDualBar(d);
+      }
+
+      // ✅ FEATURE 3: Banner have pachhu aavi jase
+      const bannerElem = document.getElementById(`banner-${s}`);
+      if(bannerElem){
+        bannerElem.innerHTML = get52WLabel(d);
+      }
+
+      checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
+      lastUpdatedMap[s] = Date.now();
     }
+
     if(ce){
-      // Format: +₹diff (pct%) — matches card render format
-      const sign=diff>=0?'+':'';
-      ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
-      ce.style.color=diff>=0?"#22c55e":"#ef4444";
+      // Jo positive hoy to '+', negative hoy to '-', ane zero hoy to kai nai
+      const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
     }
   }
-  // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
-  // Step 1: Python engine active hoy to Firebase thi badha indices ek sathe levo
+
+  // 3. Indices Logic
   if(window._pythonEngineActive){
-    try{
+    try {
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
       if(_lp.exists){
         const _p = _lp.data().prices || {};
-        indicesList.forEach(i=>{
-          if(i.sym==='__GIFT__') return;
-          const d = _p[i.sym];
-          if(d) cache[i.sym]={data:d, time:Date.now()};
+        indicesList.forEach(i => {
+          if(i.sym === '__GIFT__') return;
+          if(_p[i.sym]) cache[i.sym] = { data: _p[i.sym], time: Date.now() };
         });
       }
-    }catch(e){}
+    } catch(e) {}
   }
-  // Step 2: Cache miss hoy te indices — single batch GAS call
-  const _missingIdx = indicesList
-    .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
-    .map(i => i.sym);
-  if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
-  // Step 3: Render all indices from cache
+
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    const price=d.regularMarketPrice||d.ltp, prev=d.chartPreviousClose||d.prev_close;
-    const diff=price-prev, pct=(diff/prev*100)||0;
-    let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
-    if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
-    if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
+    
+    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
+    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
+    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
+    
+    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
+    if(pe){
+      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
+      pe.innerText = "₹" + price.toFixed(2);
+      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
+      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
+    }
+    if(ce){
+      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
+      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+    }
   }
+
   updateHeaderIndices();
   await updateGiftNifty();
   updatePriceTicker();
 }
-
 // ======================================
 // PIE CHART (Portfolio Diversity)
 // ======================================
@@ -2867,40 +2923,50 @@ function get52WLabel(d){
 }
 
 // ======================================
-// DUAL BAR — Day H/L top + 52W H/L bottom, perfectly aligned
+// DUAL BAR — Day H/L top + 52W H/L bottom (FIXED VERSION)
 // ======================================
-function buildDualBar(d){
-  if(!d) return '';
-  let dayHtml='',w52Html='';
-  if(d.regularMarketDayHigh&&d.regularMarketDayLow){
-    const lo=d.regularMarketDayLow,hi=d.regularMarketDayHigh,cur=d.regularMarketPrice;
-    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
-    dayHtml=
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
-      +'</div>'
-      +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">'
-      +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
-      +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>'
-      +'</div>';
-  }
-  if(d.fiftyTwoWeekHigh&&d.fiftyTwoWeekLow){
-    const lo=d.fiftyTwoWeekLow,hi=d.fiftyTwoWeekHigh,cur=d.regularMarketPrice;
-    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
-    w52Html=
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
-      +'</div>'
-      +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
-      +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>'
-      +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>'
-      +'</div>';
-  }
-  return '<div>'+dayHtml+w52Html+'</div>';
-}
+function buildDualBar(d) {
+  if (!d) return '';
 
+  // ✅ Universal Mapping: Juna (Yahoo), Nava (Standard), ane Firestore (Live) badhu handle thase
+  const cur = parseFloat(Number(d.price || d.ltp || d.regularMarketPrice || d.close || 0).toFixed(2));
+  const hi  = parseFloat(Number(d.high  || d.regularMarketDayHigh || cur).toFixed(2));
+  const lo  = parseFloat(Number(d.low   || d.regularMarketDayLow  || cur).toFixed(2));
+  
+  // 52W High/Low mate badhi possibility check karo
+  const h52 = parseFloat(Number(d.h52 || d.high52 || d.week52High || d.fiftyTwoWeekHigh || cur).toFixed(2));
+  const l52 = parseFloat(Number(d.l52 || d.low52  || d.week52Low  || d.fiftyTwoWeekLow  || cur).toFixed(2));
+
+  if (cur === 0 || hi === 0 || h52 === 0) return ''; // Jo data j na hoy to hide rahe
+
+  let dayHtml = '', w52Html = '';
+
+  // Day Bar
+  const pctDay = hi > lo ? (((cur - lo) / (hi - lo)) * 100).toFixed(0) : 50;
+  dayHtml = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">${lo.toFixed(0)}</span></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">${hi.toFixed(0)}</span></span>
+    </div>
+    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">
+      <div style="position:absolute;left:0;width:${pctDay}%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>
+      <div style="position:absolute;left:calc(${pctDay}% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>
+    </div>`;
+
+  // 52W Bar
+  const pct52 = h52 > l52 ? (((cur - l52) / (h52 - l52)) * 100).toFixed(0) : 50;
+  w52Html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">${l52.toFixed(0)}</span></span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">${h52.toFixed(0)}</span></span>
+    </div>
+    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">
+      <div style="position:absolute;left:0;width:${pct52}%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>
+      <div style="position:absolute;left:calc(${pct52}% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>
+    </div>`;
+
+  return '<div>' + dayHtml + w52Html + '</div>';
+}
 // ======================================
 // FEATURE 2: STOCK NEWS
 // ======================================
@@ -3458,11 +3524,14 @@ async function batchFetchStocks(symbols, isIndex=false){
             const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
             if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
               const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
+              const prevP = p.prev_close || p.chartPreviousClose || price;
+              const chgP  = (price && prevP) ? parseFloat((price - prevP).toFixed(2)) : 0;
+              const pctP  = (price && prevP && prevP > 0) ? parseFloat(((price - prevP) / prevP * 100).toFixed(2)) : 0;
               cache[s] = { data: Object.assign({}, p, {
                 regularMarketPrice: price,
-                chartPreviousClose: p.prev_close || p.chartPreviousClose || price,
-                regularMarketChange: 0,
-                regularMarketChangePercent: 0,
+                chartPreviousClose: prevP,
+                regularMarketChange: chgP,
+                regularMarketChangePercent: pctP,
                 _source: 'firebase_lp_closed'
               }), time: Date.now() };
               lastUpdatedMap[s] = Date.now();
@@ -3480,17 +3549,21 @@ async function batchFetchStocks(symbols, isIndex=false){
             if(snap.exists){
               const p = snap.data();
               if(p && p.close && p.close > 0){
+                const _c2  = p.close;
+                const _prv2 = p.prev || p.close;
+                const _chg2 = (_c2 && _prv2) ? parseFloat((_c2 - _prv2).toFixed(2)) : 0;
+                const _pct2 = (_c2 && _prv2 && _prv2 > 0) ? parseFloat(((_c2 - _prv2) / _prv2 * 100).toFixed(2)) : 0;
                 cache[s] = { data: {
-                  regularMarketPrice: p.close,
-                  chartPreviousClose: p.prev || p.close,
-                  regularMarketOpen:  p.open || p.close,
-                  regularMarketDayHigh: p.high || p.close,
-                  regularMarketDayLow:  p.low  || p.close,
-                  fiftyTwoWeekHigh: p.week52High || p.high || p.close,
-                  fiftyTwoWeekLow:  p.week52Low  || p.low  || p.close,
+                  regularMarketPrice: _c2,
+                  chartPreviousClose: _prv2,
+                  regularMarketOpen:  p.open || _c2,
+                  regularMarketDayHigh: p.high || _c2,
+                  regularMarketDayLow:  p.low  || _c2,
+                  fiftyTwoWeekHigh: p.week52High || p.high52 || p.high || _c2,
+                  fiftyTwoWeekLow:  p.week52Low  || p.low52  || p.low  || _c2,
                   regularMarketVolume: p.volume || 0,
-                  regularMarketChange: 0,
-                  regularMarketChangePercent: 0,
+                  regularMarketChange: _chg2,
+                  regularMarketChangePercent: _pct2,
                   _source: 'firebase_olhcv_closed'
                 }, time: Date.now() };
                 lastUpdatedMap[s] = Date.now();
@@ -3596,17 +3669,21 @@ async function fetchFull(sym,isIndex=false){
             const mktStatus = getMarketStatus();
             if(!mktStatus.open){
               // ── Market CLOSED: Firebase close = last known price, skip GAS entirely ──
+              const _c   = p.close;
+              const _prv = p.prev || p.close;
+              const _chg  = (_c && _prv) ? parseFloat((_c - _prv).toFixed(2)) : 0;
+              const _pct  = (_c && _prv && _prv > 0) ? parseFloat(((_c - _prv) / _prv * 100).toFixed(2)) : 0;
               const closedData = {
-                regularMarketPrice:        p.close,
-                chartPreviousClose:        p.prev  || p.close,
-                regularMarketOpen:         p.open  || p.close,
-                regularMarketDayHigh:      p.high  || p.close,
-                regularMarketDayLow:       p.low   || p.close,
-                fiftyTwoWeekHigh:          p.week52High || p.high || p.close,
-                fiftyTwoWeekLow:           p.week52Low  || p.low  || p.close,
+                regularMarketPrice:        _c,
+                chartPreviousClose:        _prv,
+                regularMarketOpen:         p.open  || _c,
+                regularMarketDayHigh:      p.high  || _c,
+                regularMarketDayLow:       p.low   || _c,
+                fiftyTwoWeekHigh:          p.week52High || p.high52 || p.high || _c,
+                fiftyTwoWeekLow:           p.week52Low  || p.low52  || p.low  || _c,
                 regularMarketVolume:       p.volume || 0,
-                regularMarketChange:       0,
-                regularMarketChangePercent:0,
+                regularMarketChange:       _chg,
+                regularMarketChangePercent:_pct,
                 _source: 'firebase_closed'
               };
               cache[key] = {data: closedData, time: Date.now()};
