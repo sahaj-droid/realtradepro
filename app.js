@@ -1899,6 +1899,7 @@ async function updatePrices(){
   updateHeaderIndices();
   await updateGiftNifty(); // <--- Rule 3: Khali aa 1 call jase GAS par (GIFT Nifty mate)
   updatePriceTicker();
+}
 // ======================================
 // PIE CHART (Portfolio Diversity)
 // ======================================
