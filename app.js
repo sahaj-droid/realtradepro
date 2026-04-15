@@ -1830,15 +1830,12 @@ async function updatePrices(){
 
   // 2. Main Watchlist Loop
   for(let s of wl){
-    let d = cache[s]?.data;
-    if(!d) continue;
+    // Jo cache ma data j na hoy to aagad vadho
+    if(!cache[s]?.data) continue;
 
-    // 🔥 THE ARCHITECT'S FIX: Force Merge Fundamentals
-    // Jo live data ma 52W data missing hoy, to fundamentals collection mathi bhengu karo
-    const fund = cache[s]?.fundamentals || {};
     // 🔥 THE BRAHMASTRA FIX 🔥
     const fund = cache[s]?.fundamentals || {};
-    let d = { ...(cache[s]?.data || {}) }; // Live price ni copy banavo
+    let d = { ...cache[s].data }; // Live price ni copy banavo jethi reference break thay
     
     // Firebase na "doubleValue" wrapper ne todva mate no master-key
     const getRealVal = (val) => {
@@ -1856,11 +1853,14 @@ async function updatePrices(){
     // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
-  }
+
+    // ✅ Bracket ni andar j aa badhi calculation aavvi joiye
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
     let diff = price - prev;
     let pct = prev ? (diff / prev * 100) : 0;
+
+    // ... (Ahiya tamaru aagad nu logic aavse jem ke document.getElementById('price-' + s) vagere)
     
     let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
     
