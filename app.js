@@ -1854,9 +1854,7 @@ async function updatePrices(){
     let price = parseFloat(Number(d.ltp || d.regularMarketPrice || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || d.prev || 0).toFixed(2));
     let diff = parseFloat((price - prev).toFixed(2));
-    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
-  }
-    
+    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;    
     let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
     
     if(pe){
