@@ -1822,82 +1822,97 @@ async function updatePrices(){
     }catch(e){ /* silent — fall through to fetchFull below */ }
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
-// Market status ek j vaar check kari lo
+// 1. Market Status ane Batch Fetch (Efficiency mate)
   const isMarketOpen = getMarketStatus().open;
-
-  // 🚀 THE BATCH FETCH MASTERSTROKE (1 Call for all stocks) 🚀
   if (isMarketOpen && !window._pythonEngineActive) {
-    // Rule 2: Market chalu chhe pan Engine bandh chhe -> Aakhi Watchlist mate khali 1 GAS Call!
-    try {
-      await batchFetchStocks(wl);
-    } catch(e) {}
+    try { await batchFetchStocks(wl); } catch(e) {}
   }
 
+  // 2. Main Watchlist Loop
   for(let s of wl){
-    // Have data tamari pase ready j hase (Kato Python Cache mathi, kato upar na Batch Fetch mathi)
     let d = cache[s]?.data;
     if(!d) continue;
     
-    // ✅ FIX 1: Watchlist Price parsing (+ Float Precision Fix)
+    // ✅ Precision Fix (Blinking problem dur thase)
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
-    let diff = (price && prev) ? (price - prev) : 0;
-    let pct = (diff && prev) ? (diff / prev * 100) : 0;
+    let diff = price - prev;
+    let pct = prev ? (diff / prev * 100) : 0;
     
-    let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
+    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
+    
     if(pe){
-      let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
-      pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
-      const wrap=pe.closest('.card')||pe.parentElement;
-      if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
-      else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
-      setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
+      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
+      pe.innerText = "₹" + price.toFixed(2);
+      
+      // Flash Logic
+      const wrap = pe.closest('.card') || pe.parentElement;
+      if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
+      else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
+      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
+
+      // ✅ FEATURE 1 & 2 APPEARANCE: Day H/L & 52W Dual Bars
+      // Tamara card ma jya bars dekhadvana chhe, e container nu ID ahiya check karjo
+      const barContainer = document.getElementById(`bar-container-${s}`);
+      if(barContainer){
+        barContainer.innerHTML = buildDualBar(d); // Ahiya tamaru existing function call thay chhe
+      }
+
+      // ✅ FEATURE 3 APPEARANCE: 52W Banner Label
+      const bannerElem = document.getElementById(`banner-${s}`);
+      if(bannerElem){
+        bannerElem.innerHTML = get52WLabel(d); // Ahiya tamaru banner function call thay chhe
+      }
+
+      // Existing alerts/logic
+      checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
+      lastUpdatedMap[s] = Date.now();
     }
+
     if(ce){
-      const sign=diff>=0?'+':'';
-      ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
-      ce.style.color=diff>=0?"#22c55e":"#ef4444";
+      const sign = diff >= 0 ? '+' : '';
+      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
     }
   }
-  // ── Indices: Firebase ONLY (No GAS Fallback) ──────────────────────────
+
+  // 3. Indices Logic (Firebase Only)
   if(window._pythonEngineActive){
-    try{
+    try {
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
       if(_lp.exists){
         const _p = _lp.data().prices || {};
-        indicesList.forEach(i=>{
-          if(i.sym==='__GIFT__') return;
-          const d = _p[i.sym];
-          if(d) cache[i.sym]={data:d, time:Date.now()};
+        indicesList.forEach(i => {
+          if(i.sym === '__GIFT__') return;
+          if(_p[i.sym]) cache[i.sym] = { data: _p[i.sym], time: Date.now() };
         });
       }
-    }catch(e){}
+    } catch(e) {}
   }
-    for(let i of indicesList){
+
+  for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    // ✅ FIX 2: Indices Price parsing (+ Float Precision Fix)
+    
     const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
-    const diff = price - prev; 
-    const pct = (prev ? (diff/prev*100) : 0);
+    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
     
-    let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
+    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
     if(pe){
-        let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
-        pe.innerText="₹"+price.toFixed(2);
-        if(price>op)pe.classList.add("flash-green");
-        else if(price<op)pe.classList.add("flash-red");
-        setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);
+      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
+      pe.innerText = "₹" + price.toFixed(2);
+      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
+      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
     }
     if(ce){
-        ce.innerText=(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%';
-        ce.style.color=diff>=0?"#22c55e":"#ef4444";
+      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
+      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
     }
   }
+
   updateHeaderIndices();
-  await updateGiftNifty(); // <--- Rule 3: Khali aa 1 call jase GAS par (GIFT Nifty mate)
+  await updateGiftNifty();
   updatePriceTicker();
 }
 // ======================================
