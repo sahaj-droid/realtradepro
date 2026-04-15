@@ -2902,15 +2902,25 @@ function get52WLabel(d){
 }
 
 // ======================================
-// DUAL BAR — Day H/L top + 52W H/L bottom, perfectly aligned
+// DUAL BAR — Day H/L top + 52W H/L bottom (FIXED VERSION)
 // ======================================
 function buildDualBar(d){
   if(!d) return '';
-  let dayHtml='',w52Html='';
-  if(d.regularMarketDayHigh&&d.regularMarketDayLow){
-    const lo=d.regularMarketDayLow,hi=d.regularMarketDayHigh,cur=d.regularMarketPrice;
-    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
-    dayHtml=
+  
+  // ✅ STEP 1: Normalization (Terminology Conflict Fix)
+  // Data bhale GAS thi aave ke Firebase thi, badha variable set kari do
+  const cur = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
+  const hi  = parseFloat(Number(d.regularMarketDayHigh || d.high || cur).toFixed(2));
+  const lo  = parseFloat(Number(d.regularMarketDayLow || d.low || cur).toFixed(2));
+  const h52 = parseFloat(Number(d.fiftyTwoWeekHigh || d.h52 || cur).toFixed(2));
+  const l52 = parseFloat(Number(d.fiftyTwoWeekLow || d.l52 || cur).toFixed(2));
+
+  let dayHtml='', w52Html='';
+  
+  // ✅ STEP 2: Day High/Low Bar
+  if(hi > 0 && lo > 0){
+    const pct = hi > lo ? Math.min(100, Math.max(0, ((cur - lo) / (hi - lo)) * 100)).toFixed(0) : 50;
+    dayHtml = 
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
       +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
       +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
@@ -2920,22 +2930,23 @@ function buildDualBar(d){
       +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>'
       +'</div>';
   }
-  if(d.fiftyTwoWeekHigh&&d.fiftyTwoWeekLow){
-    const lo=d.fiftyTwoWeekLow,hi=d.fiftyTwoWeekHigh,cur=d.regularMarketPrice;
-    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
-    w52Html=
+
+  // ✅ STEP 3: 52 Week High/Low Bar
+  if(h52 > 0 && l52 > 0){
+    const pct = h52 > l52 ? Math.min(100, Math.max(0, ((cur - l52) / (h52 - l52)) * 100)).toFixed(0) : 50;
+    w52Html = 
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
-      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">'+l52.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">'+h52.toFixed(0)+'</span></span>'
       +'</div>'
       +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
       +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>'
       +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>'
       +'</div>';
   }
-  return '<div>'+dayHtml+w52Html+'</div>';
-}
 
+  return '<div>' + dayHtml + w52Html + '</div>';
+}
 // ======================================
 // FEATURE 2: STOCK NEWS
 // ======================================
