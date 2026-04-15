@@ -5491,7 +5491,8 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open) updatePrices();
+    // ✅ Market open hoy to update chalu rakho
+    if(m.open) updatePrices(); 
   }, 5000);
 }
 
@@ -5499,15 +5500,22 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     if(refreshInterval) clearInterval(refreshInterval);
   } else {
-    // Android WebView: short delay to let network reconnect after resume
-    setTimeout(() => {
-      updatePrices();
-      startRefresh();
+    // Android/Mobile mate network re-connect thava mate delay jaruri chhe
+    setTimeout(async () => {
+      console.log("🔄 Resuming App: Fetching fresh ticks...");
+      
+      // ✅ Resume thava par sauthi pehla fresh data fetch karo
+      const wl = getActiveWatchlistSymbols(); 
+      if(wl.length > 0) {
+          try { await batchFetchStocks(wl); } catch(e) { console.error(e); }
+      }
+      
+      updatePrices(); // UI update karo
+      startRefresh(); // Timer pacho chalu karo
       startEngineStaleCheck();
-    }, 800);
+    }, 1000); // 800ms karta 1000ms vadhare safe chhe WebView mate
   }
 });
-
 setTimeout(() => startRefresh(), 5000);
     
 async function manualRefresh(){
