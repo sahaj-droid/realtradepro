@@ -1839,7 +1839,7 @@ async function updatePrices(){
     d = { ...fund, ...d }; // Funda pehla, Live Price pachi (LTP latest rahe e mate)
     
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
+    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
     let diff = price - prev;
     let pct = prev ? (diff / prev * 100) : 0;
     
@@ -1871,7 +1871,8 @@ async function updatePrices(){
     }
 
     if(ce){
-      const sign = diff >= 0 ? '+' : '';
+      // Jo positive hoy to '+', negative hoy to '-', ane zero hoy to kai nai
+      const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
       ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
       ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
     }
