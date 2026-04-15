@@ -1856,7 +1856,7 @@ async function updatePrices(){
     // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
-    
+  }
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
     let diff = price - prev;
