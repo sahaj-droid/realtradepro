@@ -1830,14 +1830,12 @@ async function updatePrices(){
 
   // 2. Main Watchlist Loop
   for(let s of wl){
-    // Jo cache ma data j na hoy to aagad vadho
     if(!cache[s]?.data) continue;
 
-    // 🔥 THE BRAHMASTRA FIX 🔥
     const fund = cache[s]?.fundamentals || {};
-    let d = { ...cache[s].data }; // Live price ni copy banavo jethi reference break thay
+    let d = { ...cache[s].data }; // Reference break karva mate copy banavo
     
-    // Firebase na "doubleValue" wrapper ne todva mate no master-key
+    // 🔥 THE BRAHMASTRA FIX: Firebase na wrapper mathi sacho number kadho
     const getRealVal = (val) => {
        if (val !== null && typeof val === 'object') {
            return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
@@ -1845,22 +1843,19 @@ async function updatePrices(){
        return Number(val || 0);
     };
 
-    // Fundamentals mathi sacho number kadho
-    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
-    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
-
-    // Live Prices par DADA-GIRI (Force overwrite): 
-    // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
+    // Fundamentals mathi 52W High/Low force sync karo
+    let fund_h52 = getRealVal(fund.h52 || fund.high52);
+    let fund_l52 = getRealVal(fund.l52 || fund.low52);
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
 
-    // ✅ Bracket ni andar j aa badhi calculation aavvi joiye
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
-    let diff = price - prev;
-    let pct = prev ? (diff / prev * 100) : 0;
-
-    // ... (Ahiya tamaru aagad nu logic aavse jem ke document.getElementById('price-' + s) vagere)
+    // --- ASALI CALCULATION START ---
+    
+    let price = parseFloat(Number(d.ltp || d.regularMarketPrice || d.price || d.close || 0).toFixed(2));
+    let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || d.prev || 0).toFixed(2));
+    let diff = parseFloat((price - prev).toFixed(2));
+    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
+  }
     
     let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
     
