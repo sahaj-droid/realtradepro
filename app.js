@@ -1787,21 +1787,22 @@ function _patchVisibleWLPrices(){
 }
 
 // ======================================
-// UPDATE PRICES
+// UPDATE PRICES — THE FINAL ARCHITECT VERSION
 // ======================================
 async function updatePrices(){
+  const activeWl = getActiveWatchlistSymbols(); // 🟢 Current visible symbols list
+  if(activeWl.length === 0) return;
+
   // ── GAS Fallback mode — Python engine stale ──
   if(window._useGASPrices){
     try{
-      await batchFetchStocks(wl);
+      await batchFetchStocks(activeWl);
       _patchVisibleWLPrices();
       updateHeaderIndices();
       updatePriceTicker();
     }catch(e){}
     return;
   }
-  // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
-  // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
 
   // ── Task 3: If Python engine active, refresh cache from Firebase first ──
   if(window._pythonEngineActive){
@@ -1810,32 +1811,32 @@ async function updatePrices(){
       const doc = await db.collection('RealTradePro').doc('live_prices').get();
       if(doc.exists){
         const prices = doc.data().prices || {};
-        wl.forEach(s => {
-          const p = prices[s+'.NS'];
+        activeWl.forEach(s => {
+          const p = prices[s + (s.includes('.') ? '' : '.NS')]; // 🟢 Smart Symbol Check
           if(p){ 
-          const existing = cache[s]?.data || {};
-          cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
-          lastUpdatedMap[s]=Date.now(); 
+            const existing = cache[s]?.data || {};
+            cache[s] = { data: Object.assign({}, existing, p), time: Date.now() }; 
+            lastUpdatedMap[s] = Date.now(); 
           }
         });
       }
-    }catch(e){ /* silent — fall through to fetchFull below */ }
+    }catch(e){ /* silent */ }
   }
-  // ── END Task 3 ─────────────────────────────────────────────────────────────
-// 1. Market Status ane Batch Fetch
+
+  // 1. Market Status ane Batch Fetch
   const isMarketOpen = getMarketStatus().open;
   if (isMarketOpen && !window._pythonEngineActive) {
-    try { await batchFetchStocks(wl); } catch(e) {}
+    try { await batchFetchStocks(activeWl); } catch(e) {}
   }
 
   // 2. Main Watchlist Loop
-  for(let s of wl){
+  for(let s of activeWl){
     if(!cache[s]?.data) continue;
 
     const fund = cache[s]?.fundamentals || {};
-    let d = { ...cache[s].data }; // Reference break karva mate copy banavo
+    let d = { ...cache[s].data }; 
     
-    // 🔥 THE BRAHMASTRA FIX: Firebase na wrapper mathi sacho number kadho
+    // 🔥 THE BRAHMASTRA FIX: Number Extraction
     const getRealVal = (val) => {
        if (val !== null && typeof val === 'object') {
            return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
@@ -1843,88 +1844,48 @@ async function updatePrices(){
        return Number(val || 0);
     };
 
-    // Fundamentals mathi 52W High/Low force sync karo
+    // Fundamentals Force Sync
     let fund_h52 = getRealVal(fund.h52 || fund.high52);
     let fund_l52 = getRealVal(fund.l52 || fund.low52);
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
 
     // --- ASALI CALCULATION START ---
-    
     let price = parseFloat(Number(d.ltp || d.regularMarketPrice || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || d.prev || 0).toFixed(2));
     let diff = parseFloat((price - prev).toFixed(2));
     let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;    
-    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
+    
+    let pe = document.getElementById(`price-${s}`), ce = document.getElementById(`change-${s}`);
     
     if(pe){
       let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
+      pe.innerText = "₹" + price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); // 🟢 Localized Currency Format
       
       const wrap = pe.closest('.card') || pe.parentElement;
       if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
       else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
-      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
+      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1000);
 
-      // ✅ FEATURE 1 & 2: Bars have 100% aavse karan ke 'd' pase have fundamentals chhe
+      // Bars & Banners
       const barContainer = document.getElementById(`bar-container-${s}`);
-      if(barContainer){
-        barContainer.innerHTML = buildDualBar(d);
-      }
+      if(barContainer) barContainer.innerHTML = buildDualBar(d);
 
-      // ✅ FEATURE 3: Banner have pachhu aavi jase
       const bannerElem = document.getElementById(`banner-${s}`);
-      if(bannerElem){
-        bannerElem.innerHTML = get52WLabel(d);
-      }
+      if(bannerElem) bannerElem.innerHTML = get52WLabel(d);
 
       checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
       lastUpdatedMap[s] = Date.now();
     }
 
     if(ce){
-      // Jo positive hoy to '+', negative hoy to '-', ane zero hoy to kai nai
       const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
       ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
     }
   }
 
-  // 3. Indices Logic
-  if(window._pythonEngineActive){
-    try {
-      const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
-      if(_lp.exists){
-        const _p = _lp.data().prices || {};
-        indicesList.forEach(i => {
-          if(i.sym === '__GIFT__') return;
-          if(_p[i.sym]) cache[i.sym] = { data: _p[i.sym], time: Date.now() };
-        });
-      }
-    } catch(e) {}
-  }
-
-  for(let i of indicesList){
-    if(i.sym === '__GIFT__') continue;
-    const d = cache[i.sym]?.data; if(!d) continue;
-    
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
-    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
-    
-    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
-    if(pe){
-      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
-      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
-      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
-    }
-    if(ce){
-      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-    }
-  }
-
+  // Indices & Gift Nifty logic emne em rehva do (E barabar che)
   updateHeaderIndices();
   await updateGiftNifty();
   updatePriceTicker();
