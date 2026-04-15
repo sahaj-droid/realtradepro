@@ -1822,7 +1822,7 @@ async function updatePrices(){
     }catch(e){ /* silent — fall through to fetchFull below */ }
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
-// 1. Market Status ane Batch Fetch (Efficiency mate)
+// 1. Market Status ane Batch Fetch
   const isMarketOpen = getMarketStatus().open;
   if (isMarketOpen && !window._pythonEngineActive) {
     try { await batchFetchStocks(wl); } catch(e) {}
@@ -1832,8 +1832,12 @@ async function updatePrices(){
   for(let s of wl){
     let d = cache[s]?.data;
     if(!d) continue;
+
+    // 🔥 THE ARCHITECT'S FIX: Force Merge Fundamentals
+    // Jo live data ma 52W data missing hoy, to fundamentals collection mathi bhengu karo
+    const fund = cache[s]?.fundamentals || {};
+    d = { ...fund, ...d }; // Funda pehla, Live Price pachi (LTP latest rahe e mate)
     
-    // ✅ Precision Fix (Blinking problem dur thase)
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
     let diff = price - prev;
@@ -1845,26 +1849,23 @@ async function updatePrices(){
       let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
       pe.innerText = "₹" + price.toFixed(2);
       
-      // Flash Logic
       const wrap = pe.closest('.card') || pe.parentElement;
       if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
       else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
       setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
 
-      // ✅ FEATURE 1 & 2 APPEARANCE: Day H/L & 52W Dual Bars
-      // Tamara card ma jya bars dekhadvana chhe, e container nu ID ahiya check karjo
+      // ✅ FEATURE 1 & 2: Bars have 100% aavse karan ke 'd' pase have fundamentals chhe
       const barContainer = document.getElementById(`bar-container-${s}`);
       if(barContainer){
-        barContainer.innerHTML = buildDualBar(d); // Ahiya tamaru existing function call thay chhe
+        barContainer.innerHTML = buildDualBar(d);
       }
 
-      // ✅ FEATURE 3 APPEARANCE: 52W Banner Label
+      // ✅ FEATURE 3: Banner have pachhu aavi jase
       const bannerElem = document.getElementById(`banner-${s}`);
       if(bannerElem){
-        bannerElem.innerHTML = get52WLabel(d); // Ahiya tamaru banner function call thay chhe
+        bannerElem.innerHTML = get52WLabel(d);
       }
 
-      // Existing alerts/logic
       checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
       lastUpdatedMap[s] = Date.now();
     }
@@ -1876,7 +1877,7 @@ async function updatePrices(){
     }
   }
 
-  // 3. Indices Logic (Firebase Only)
+  // 3. Indices Logic
   if(window._pythonEngineActive){
     try {
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
