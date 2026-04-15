@@ -1825,18 +1825,17 @@ async function updatePrices(){
 // Market status ek j vaar check kari lo
   const isMarketOpen = getMarketStatus().open;
 
+  // 🚀 THE BATCH FETCH MASTERSTROKE (1 Call for all stocks) 🚀
+  if (isMarketOpen && !window._pythonEngineActive) {
+    // Rule 2: Market chalu chhe pan Engine bandh chhe -> Aakhi Watchlist mate khali 1 GAS Call!
+    try {
+      await batchFetchStocks(wl);
+    } catch(e) {}
+  }
+
   for(let s of wl){
-    let d;
-    
-    // --- THE SMART LOGIC ---
-    if (isMarketOpen && !window._pythonEngineActive) {
-      // Rule 2: Market chalu chhe PAN Engine bandh chhe -> Watchlist mate GAS call
-      d = await fetchFull(s);
-    } else {
-      // Rule 1 & 3: Market bandh hoy ATHVA Engine chalu hoy -> Strictly Cache (0 GAS)
-      d = cache[s]?.data;
-    }
-    
+    // Have data tamari pase ready j hase (Kato Python Cache mathi, kato upar na Batch Fetch mathi)
+    let d = cache[s]?.data;
     if(!d) continue;
     
     // ✅ FIX 1: Watchlist Price parsing (+ Float Precision Fix)
@@ -1861,7 +1860,6 @@ async function updatePrices(){
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
-
   // ── Indices: Firebase ONLY (No GAS Fallback) ──────────────────────────
   if(window._pythonEngineActive){
     try{
@@ -1876,11 +1874,9 @@ async function updatePrices(){
       }
     }catch(e){}
   }
-  
-  for(let i of indicesList){
+    for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    
     // ✅ FIX 2: Indices Price parsing (+ Float Precision Fix)
     const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
@@ -1900,11 +1896,9 @@ async function updatePrices(){
         ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
-  
   updateHeaderIndices();
   await updateGiftNifty(); // <--- Rule 3: Khali aa 1 call jase GAS par (GIFT Nifty mate)
   updatePriceTicker();
-
 // ======================================
 // PIE CHART (Portfolio Diversity)
 // ======================================
