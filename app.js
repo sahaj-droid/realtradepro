@@ -1822,15 +1822,26 @@ async function updatePrices(){
     }catch(e){ /* silent — fall through to fetchFull below */ }
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
+// Market status ek j vaar check kari lo
+  const isMarketOpen = getMarketStatus().open;
 
-for(let s of wl){
-    // SMART FALLBACK: Engine chalu hoy to Cache, bandh hoy to GAS call
-    let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
+  for(let s of wl){
+    let d;
+    
+    // --- THE SMART LOGIC ---
+    if (isMarketOpen && !window._pythonEngineActive) {
+      // Rule 2: Market chalu chhe PAN Engine bandh chhe -> Watchlist mate GAS call
+      d = await fetchFull(s);
+    } else {
+      // Rule 1 & 3: Market bandh hoy ATHVA Engine chalu hoy -> Strictly Cache (0 GAS)
+      d = cache[s]?.data;
+    }
+    
     if(!d) continue;
     
-    // ✅ FIX 1: Watchlist Price parsing (d.price & d.close added)
-    let price = d.regularMarketPrice || d.ltp || d.price || d.close || 0;
-    let prev = d.chartPreviousClose || d.prev_close || d.prev || 0;
+    // ✅ FIX 1: Watchlist Price parsing (+ Float Precision Fix)
+    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
+    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
     let diff = (price && prev) ? (price - prev) : 0;
     let pct = (diff && prev) ? (diff / prev * 100) : 0;
     
@@ -1851,7 +1862,7 @@ for(let s of wl){
     }
   }
 
-  // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
+  // ── Indices: Firebase ONLY (No GAS Fallback) ──────────────────────────
   if(window._pythonEngineActive){
     try{
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
@@ -1866,18 +1877,13 @@ for(let s of wl){
     }catch(e){}
   }
   
-  const _missingIdx = indicesList
-    .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
-    .map(i => i.sym);
-  if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
-  
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
     
-    // ✅ FIX 2: Indices Price parsing (d.price & d.close added)
-    const price = d.regularMarketPrice || d.ltp || d.price || d.close || 0;
-    const prev = d.chartPreviousClose || d.prev_close || d.prev || 0;
+    // ✅ FIX 2: Indices Price parsing (+ Float Precision Fix)
+    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
+    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
     const diff = price - prev; 
     const pct = (prev ? (diff/prev*100) : 0);
     
@@ -1896,9 +1902,8 @@ for(let s of wl){
   }
   
   updateHeaderIndices();
-  await updateGiftNifty();
+  await updateGiftNifty(); // <--- Rule 3: Khali aa 1 call jase GAS par (GIFT Nifty mate)
   updatePriceTicker();
-}
 
 // ======================================
 // PIE CHART (Portfolio Diversity)
