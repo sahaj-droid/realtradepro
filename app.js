@@ -3882,19 +3882,39 @@ function saveSetting(type){
     loadSettingsUI();
     showPopup(val?"API 5 saved!":"API 5 cleared");
   }
-  if(type==="refresh"){
-    const val=parseInt(document.getElementById("set-refresh").value);
-    if(val<10){ showPopup("Minimum 10 seconds"); return; }
-    localStorage.setItem("refreshSec",val);
-    if(refreshInterval) clearInterval(refreshInterval);
-    refreshInterval=setInterval(()=>{updatePrices();},val*1000);
-    showPopup(`Refresh set to ${val}s`);
+if (type === "refresh") {
+    const val = parseInt(document.getElementById("set-refresh").value);
+    
+    // 🛡️ FIX 1: isNaN check add karyo (Khali input app ne crash nahi kare)
+    if (isNaN(val) || val < 10) { 
+        showPopup("Minimum 10 seconds required"); 
+        return; 
+    }
+    
+    localStorage.setItem("refreshSec", val);
+    if (refreshInterval) clearInterval(refreshInterval);
+    
+    // 🛡️ FIX 2: Market chalu hoy to j refresh thase (API quota bachshe)
+    refreshInterval = setInterval(() => {
+        const m = getMarketStatus();
+        if (m.open) updatePrices();
+    }, val * 1000);
+    
+    showPopup(`Auto-Refresh set to ${val}s`);
   }
-  if(type==="cache"){
-    const val=parseInt(document.getElementById("set-cache").value);
-    if(val<1000){ showPopup("Minimum 1000ms"); return; }
-    CACHE_TIME=val;
-    localStorage.setItem("cacheSec",val);
+
+  if (type === "cache") {
+    const val = parseInt(document.getElementById("set-cache").value);
+    
+    // 🛡️ FIX 1: isNaN check ahiya pan jaruri chhe
+    if (isNaN(val) || val < 1000) { 
+        showPopup("Minimum 1000ms required"); 
+        return; 
+    }
+    
+    CACHE_TIME = val;
+    // Nodh: 'val' milliseconds ma chhe, pan juna code mujab key 'cacheSec' rakhi chhe
+    localStorage.setItem("cacheSec", val); 
     showPopup(`Cache set to ${val}ms`);
   }
 }
