@@ -534,7 +534,7 @@ function monitorFirebaseNews() {
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = getActiveGASUrl();
-let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=300000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
+let wl=["SBIN","RELIANCE","TCS"],cache={},CACHE_TIME=60000,h=[],hist=[],alerts=[],currentTrade={},isDark=true;
 let azAsc=true,priceAsc=false,percentAsc=false;
 let groups={},currentGroup="ALL";
 // MULTI-WATCHLIST SYSTEM
@@ -904,7 +904,7 @@ function renderWLTabs(){
   if(watchlists.length<6){
     html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
   }
-  // Group filter tabs (Portfolio, Defense, etc.) — separator + amber highlight
+  // Group filter tabs (Portfolio, Defense, etc.) — amber highlight
   const gKeys=Object.keys(groups);
   if(gKeys.length>0){
     html+=`<span style="color:#2d3f52;font-size:13px;padding:0 2px;line-height:1;align-self:center;">|</span>`;
@@ -922,7 +922,7 @@ function renderWLTabs(){
 
 function switchWL(idx){
   currentWL=idx;
-  currentGroup='ALL'; // reset group filter on WL switch
+  currentGroup='ALL';
   wl=watchlists[currentWL].stocks;
   localStorage.setItem("currentWL",currentWL);
   renderWLTabs();
@@ -1269,94 +1269,60 @@ function confirmRemove(){
 // ======================================
 // RENDER WATCHLIST
 // ======================================
-// Helper: build one card's HTML from data object
+// ── Card builder helper ─────────────────────────────────────────────────────
 function _buildWLCard(s, d){
   const _price = d.regularMarketPrice || d.ltp || 0;
   const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price-_prev).toFixed(2)) : 0);
+  const pct    = d.regularMarketChangePercent || ((_prev>0&&diff) ? parseFloat((diff/_prev*100).toFixed(2)) : 0);
+  const priceHtml  = _price>0 ? '\u20B9'+_price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
+  const changeHtml = _price>0
+    ? (diff>=0?'+':'')+'\u20B9'+Math.abs(diff).toFixed(2)+' ('+(diff>=0?'+':'')+pct.toFixed(2)+'%)'
+    : '<span style="color:#4b6280;">--</span>';
   return `
-    <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-          <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div id="daybar-${s}" style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">${_price > 0 ? '\u20B9'+_price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>'}</div>
-          </div>
+  <div class="wl-card-wrap" id="wrap-${s}">
+    <div class="card" onclick="toggleActions('${s}')" style="padding:10px;position:relative;cursor:pointer;margin-bottom:3px;">
+      <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute;top:1px;right:2px;color:#ef4444;font-size:6px;background:none;border:none;cursor:pointer;z-index:10;padding:4px;">&#x2715;</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div style="width:75px;flex-shrink:0;">
+          <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;color:#38bdf8;text-decoration:underline;text-underline-offset:2px;">${s}</span>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div id="label52-${s}" style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
-            ${get52WLabel(d)}${getTargetBadge(s, _price)}
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${_price > 0 ? (diff >= 0 ? '+' : '') + '\u20B9' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
-            </div>
-          </div>
+        <div style="flex:1;min-width:0;display:flex;justify-content:center;">
+          <div id="daybar-${s}" style="width:100%;max-width:140px;">${buildDayBar(d)}</div>
+        </div>
+        <div style="width:105px;flex-shrink:0;text-align:right;">
+          <div id="price-${s}" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#e2e8f0;">${priceHtml}</div>
         </div>
       </div>
-      <div class="wl-actions-panel" id="act-${s}">
-        <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
-        <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
-        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
-        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
-        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
-        <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
-          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
-          <span style="font-size:13px;">Ask Nivi</span>
-        </button>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div id="label52-${s}" style="width:75px;flex-shrink:0;font-size:9px;line-height:1.2;color:#94a3b8;font-weight:600;">${get52WLabel(d)}${getTargetBadge(s,_price)}</div>
+        <div style="flex:1;min-width:0;display:flex;justify-content:center;">
+          <div id="bar52-${s}" style="width:100%;max-width:140px;">${build52WBar(d)}</div>
+        </div>
+        <div style="width:105px;flex-shrink:0;text-align:right;">
+          <div id="change-${s}" style="font-size:13px;font-weight:700;color:${diff>=0?'#22c55e':'#ef4444'};white-space:nowrap;">${changeHtml}</div>
+        </div>
       </div>
-    </div>`;
-}
-
-// Helper: patch a single card's price/change in DOM without full re-render
-function _patchWLCard(s, d){
-  const _price = d.regularMarketPrice || d.ltp || 0;
-  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
-  const pe = document.getElementById('price-'+s);
-  const ce = document.getElementById('change-'+s);
-  const db = document.getElementById('daybar-'+s);
-  const b5 = document.getElementById('bar52-'+s);
-  const l5 = document.getElementById('label52-'+s);
-  if(pe) pe.innerHTML = _price > 0 ? '\u20B9'+_price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
-  if(ce) {
-    ce.innerHTML = _price > 0
-      ? (diff >= 0 ? '+' : '') + '\u20B9' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)'
-      : '<span style="color:#4b6280;">--</span>';
-    ce.style.color = diff >= 0 ? '#22c55e' : '#ef4444';
-  }
-  if(db) db.innerHTML = buildDayBar(d);
-  if(b5) b5.innerHTML = build52WBar(d);
-  if(l5) l5.innerHTML = get52WLabel(d) + getTargetBadge(s, _price);
-  // update action panel prices
-  const actPanel = document.getElementById('act-'+s);
-  if(actPanel && _price > 0){
-    actPanel.querySelectorAll('.act-btn').forEach(btn => {
-      const oc = btn.getAttribute('onclick') || '';
-      if(oc.includes('openModal')){
-        btn.setAttribute('onclick', oc.replace(/openModal\('[^']+','[^']+',[\d.]+\)/, `openModal('${oc.includes('BUY')?'BUY':'SELL'}','${s}',${_price})`));
-      }
-    });
-  }
+    </div>
+    <div class="wl-actions-panel" id="act-${s}">
+      <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534;color:#86efac;padding:8px 0;">BUY</button>
+      <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d;color:#fca5a5;padding:8px 0;">SELL</button>
+      <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#60a5fa;padding:8px 0;">CHART</button>
+      <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40;color:#a78bfa;padding:8px 0;">NEWS</button>
+      <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12;color:#fde68a;padding:8px 0;">ALERT</button>
+      <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96;color:#c4b5fd;padding:8px 0;">TARGET</button>
+      <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;grid-column:span 2;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 0;">
+        <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
+        <span style="font-size:13px;">Ask Nivi</span>
+      </button>
+    </div>
+  </div>`;
 }
 
 async function renderWL(){
-  // ── Phase 1: Instant render from cache (no waiting) ──────────────────────
   let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
   // Apply group filter
-  if(currentGroup !== 'ALL' && groups[currentGroup]){
+  if(currentGroup!=='ALL' && groups[currentGroup]){
     displayList = displayList.filter(s => groups[currentGroup].includes(s));
   }
   const watchlistDiv = document.getElementById("watchlist");
@@ -1365,133 +1331,57 @@ async function renderWL(){
     return;
   }
 
+  // ── Phase 1: Instant DOM from cache — zero await ──────────────────────────
   let html = "";
   const needFetch = [];
-
   for(let s of displayList){
     const d = cache[s]?.data;
     if(d){
       html += _buildWLCard(s, d);
     } else {
-      // Placeholder card — instant skeleton, fetch baad ma
       needFetch.push(s);
+      // Skeleton card — symbol visible immediately, price loads in Phase 2
       html += `
-        <div class="wl-card-wrap" id="wrap-${s}">
-          <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-            <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-              <div style="width:75px; flex-shrink:0;">
-                <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
-              </div>
-              <div style="flex:1;"></div>
-              <div style="width:105px; flex-shrink:0; text-align:right;">
-                <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#4b6280;">...</div>
-              </div>
+      <div class="wl-card-wrap" id="wrap-${s}">
+        <div class="card" style="padding:10px;position:relative;margin-bottom:3px;cursor:pointer;" onclick="toggleActions('${s}')">
+          <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute;top:1px;right:2px;color:#ef4444;font-size:6px;background:none;border:none;cursor:pointer;z-index:10;padding:4px;">&#x2715;</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <div style="width:75px;flex-shrink:0;">
+              <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;color:#38bdf8;text-decoration:underline;text-underline-offset:2px;">${s}</span>
             </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-              <div id="label52-${s}" style="width:75px; flex-shrink:0;"></div>
-              <div style="flex:1;"></div>
-              <div style="width:105px; flex-shrink:0; text-align:right;">
-                <div id="change-${s}" style="font-size:13px; font-weight:700; color:#4b6280;">--</div>
-              </div>
+            <div style="flex:1;"></div>
+            <div style="width:105px;flex-shrink:0;text-align:right;">
+              <div id="price-${s}" style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#4b6280;">...</div>
             </div>
           </div>
-          <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
-        </div>`;
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div id="label52-${s}" style="width:75px;flex-shrink:0;"></div>
+            <div style="flex:1;"></div>
+            <div style="width:105px;flex-shrink:0;text-align:right;">
+              <div id="change-${s}" style="font-size:13px;font-weight:700;color:#4b6280;">--</div>
+            </div>
+          </div>
+        </div>
+        <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
+      </div>`;
     }
   }
-  // DOM instant update — user immediately sees cards
-  watchlistDiv.innerHTML = html;
+  watchlistDiv.innerHTML = html; // instant DOM paint
 
-  // ── Phase 2: Background fetch for cache-miss stocks, patch DOM individually ─
+  // ── Phase 2: Parallel fetch for cache-miss stocks ─────────────────────────
   if(needFetch.length > 0){
     needFetch.forEach(async s => {
       try{
         const d = await fetchFull(s);
         if(d){
           cache[s] = { data: d, time: Date.now() };
-          // If card still in DOM (user hasn't switched), patch it
-          if(document.getElementById('price-'+s)){
-            // Rebuild full card to get action panel too
-            const wrap = document.getElementById('wrap-'+s);
-            if(wrap) wrap.outerHTML = _buildWLCard(s, d);
-          }
+          // Patch only if card still in DOM (user hasn't switched WL/group)
+          const wrap = document.getElementById('wrap-'+s);
+          if(wrap) wrap.outerHTML = _buildWLCard(s, d);
         }
-      }catch(e){ /* silent */ }
+      }catch(e){ /* silent — card stays as skeleton */ }
     });
   }
-
-  // ── Legacy loop removed — was the cause of sequential blocking ────────────
-  // OLD: for (let s of displayList) { let d = cache[s]?.data; if (!d) { d = await fetchFull(s)... }
-  // This caused sequential await per stock → whole list blocks until each fetch completes
-
-  // Keeping variable declarations to avoid any reference errors below
-  let html_legacy = ""; // unused, kept for safety
-  let s_unused, d_unused; // unused
-
-  // NOTE: The actual card HTML is already rendered above in Phase 1
-  // The block below (original renderWL card builder) is REPLACED by _buildWLCard helper
-  // DO NOT add another for-loop here
-
-  if(false){ // dead code guard — original loop disabled
-  for (let s of displayList) {
-    let d = cache[s]?.data;
-    if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
-    if (!d) continue;
-
-    const _price = d.regularMarketPrice || d.ltp || 0;
-    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
-
-    html += `
-    <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-          <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
-            ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:140px;">${build52WBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="wl-actions-panel" id="act-${s}">
-        <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
-        <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
-        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
-        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
-        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
-        <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
-          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
-          <span style="font-size:13px;">Ask Nivi</span>
-        </button>
-      </div>
-    </div>`;
-  }
-  } // end if(false) — dead code guard
-  // Phase 1 DOM already set above — nothing to do here
 }
 
 
@@ -1772,28 +1662,41 @@ function confirmAddIndex(sym,name){
   closeAddIndexModal();
   showPopup(name+' added');
 }
-// Patch visible WL cards from cache — no full re-render, no GAS call
-function _patchVisibleWLPrices(){
-  let displayList = watchlists[currentWL] ? [...watchlists[currentWL].stocks] : [];
-  if(currentGroup !== 'ALL' && groups[currentGroup]){
-    displayList = displayList.filter(s => groups[currentGroup].includes(s));
-  }
-  displayList.forEach(s => {
-    const d = cache[s]?.data;
-    if(d && document.getElementById('price-'+s)){
-      _patchWLCard(s, d);
-    }
-  });
-}
-
 // ======================================
 // UPDATE PRICES
 // ======================================
+// Patch price/change DOM elements in-place — no full re-render, no ₹0.00 flash
+function _patchVisibleWLPrices(){
+  const list = watchlists[currentWL]?.stocks || [];
+  list.forEach(s => {
+    const d = cache[s]?.data;
+    if(!d) return;
+    const price = d.regularMarketPrice||d.ltp||0;
+    const prev  = d.chartPreviousClose||d.prev_close||0;
+    const diff  = d.regularMarketChange || ((price&&prev) ? parseFloat((price-prev).toFixed(2)) : 0);
+    const pct   = d.regularMarketChangePercent || ((prev>0&&diff) ? parseFloat((diff/prev*100).toFixed(2)) : 0);
+    const pe = document.getElementById('price-'+s);
+    const ce = document.getElementById('change-'+s);
+    const db = document.getElementById('daybar-'+s);
+    const b5 = document.getElementById('bar52-'+s);
+    const l5 = document.getElementById('label52-'+s);
+    if(pe && price>0) pe.innerHTML = '\u20B9'+price.toFixed(2);
+    if(ce && price>0){
+      ce.innerHTML = (diff>=0?'+':'')+'\u20B9'+Math.abs(diff).toFixed(2)+' ('+(diff>=0?'+':'')+pct.toFixed(2)+'%)';
+      ce.style.color = diff>=0 ? '#22c55e' : '#ef4444';
+    }
+    if(db) db.innerHTML = buildDayBar(d);
+    if(b5) b5.innerHTML = build52WBar(d);
+    if(l5) l5.innerHTML = get52WLabel(d)+getTargetBadge(s,price);
+  });
+}
+
 async function updatePrices(){
   // ── GAS Fallback mode — Python engine stale ──
   if(window._useGASPrices){
     try{
       await batchFetchStocks(wl);
+      // Patch DOM directly — avoid full renderWL() re-render which causes ₹0.00 flash
       _patchVisibleWLPrices();
       updateHeaderIndices();
       updatePriceTicker();
@@ -1822,120 +1725,67 @@ async function updatePrices(){
     }catch(e){ /* silent — fall through to fetchFull below */ }
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
-// 1. Market Status ane Batch Fetch
-  const isMarketOpen = getMarketStatus().open;
-  if (isMarketOpen && !window._pythonEngineActive) {
-    try { await batchFetchStocks(wl); } catch(e) {}
-  }
 
-  // 2. Main Watchlist Loop
   for(let s of wl){
-    // Jo cache ma data j na hoy to aagad vadho
-    if(!cache[s]?.data) continue;
-
-    // 🔥 THE BRAHMASTRA FIX 🔥
-    const fund = cache[s]?.fundamentals || {};
-    let d = { ...cache[s].data }; // Live price ni copy banavo jethi reference break thay
-    
-    // Firebase na "doubleValue" wrapper ne todva mate no master-key
-    const getRealVal = (val) => {
-       if (val !== null && typeof val === 'object') {
-           return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
-       }
-       return Number(val || 0);
-    };
-
-    // Fundamentals mathi sacho number kadho
-    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
-    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
-
-    // Live Prices par DADA-GIRI (Force overwrite): 
-    // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
-    if (fund_h52 > 0) d.h52 = fund_h52;
-    if (fund_l52 > 0) d.l52 = fund_l52;
-
-    // ✅ Bracket ni andar j aa badhi calculation aavvi joiye
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
-    let diff = price - prev;
-    let pct = prev ? (diff / prev * 100) : 0;
-
-    // ... (Ahiya tamaru aagad nu logic aavse jem ke document.getElementById('price-' + s) vagere)
-    
-    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
-    
+    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
+    let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
+    if(!d) continue;
+    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
+    let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
     if(pe){
-      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
-      
-      const wrap = pe.closest('.card') || pe.parentElement;
-      if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
-      else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
-      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
-
-      // ✅ FEATURE 1 & 2: Bars have 100% aavse karan ke 'd' pase have fundamentals chhe
-      const barContainer = document.getElementById(`bar-container-${s}`);
-      if(barContainer){
-        barContainer.innerHTML = buildDualBar(d);
+      let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
+      pe.innerText="\u20B9"+price.toFixed(2);
+      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
+      // Flash only during market hours AND price actually changed
+      const _ms = getMarketStatus();
+      if(_ms.open && price !== op && op > 0){
+        const wrap=pe.closest('.card')||pe.parentElement;
+        if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
+        else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
+        setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
       }
-
-      // ✅ FEATURE 3: Banner have pachhu aavi jase
-      const bannerElem = document.getElementById(`banner-${s}`);
-      if(bannerElem){
-        bannerElem.innerHTML = get52WLabel(d);
-      }
-
-      checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
-      lastUpdatedMap[s] = Date.now();
     }
-
     if(ce){
-      // Jo positive hoy to '+', negative hoy to '-', ane zero hoy to kai nai
-      const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      const sign=diff>=0?'+':'';
+      ce.innerHTML=sign+'\u20B9'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
+      ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
-
-  // 3. Indices Logic
+  // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
+  // Step 1: Python engine active hoy to Firebase thi badha indices ek sathe levo
   if(window._pythonEngineActive){
-    try {
+    try{
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
       if(_lp.exists){
         const _p = _lp.data().prices || {};
-        indicesList.forEach(i => {
-          if(i.sym === '__GIFT__') return;
-          if(_p[i.sym]) cache[i.sym] = { data: _p[i.sym], time: Date.now() };
+        indicesList.forEach(i=>{
+          if(i.sym==='__GIFT__') return;
+          const d = _p[i.sym];
+          if(d) cache[i.sym]={data:d, time:Date.now()};
         });
       }
-    } catch(e) {}
+    }catch(e){}
   }
-
+  // Step 2: Cache miss hoy te indices — single batch GAS call
+  const _missingIdx = indicesList
+    .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
+    .map(i => i.sym);
+  if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
+  // Step 3: Render all indices from cache
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
-    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
-    
-    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
-    if(pe){
-      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
-      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
-      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
-    }
-    if(ce){
-      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-    }
+    const price=d.regularMarketPrice||d.ltp, prev=d.chartPreviousClose||d.prev_close;
+    const diff=price-prev, pct=(diff/prev*100)||0;
+    let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
+    if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
+    if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
   }
-
   updateHeaderIndices();
   await updateGiftNifty();
   updatePriceTicker();
 }
+
 // ======================================
 // PIE CHART (Portfolio Diversity)
 // ======================================
@@ -2923,50 +2773,40 @@ function get52WLabel(d){
 }
 
 // ======================================
-// DUAL BAR — Day H/L top + 52W H/L bottom (FIXED VERSION)
+// DUAL BAR — Day H/L top + 52W H/L bottom, perfectly aligned
 // ======================================
-function buildDualBar(d) {
-  if (!d) return '';
-
-  // ✅ Universal Mapping: Juna (Yahoo), Nava (Standard), ane Firestore (Live) badhu handle thase
-  const cur = parseFloat(Number(d.price || d.ltp || d.regularMarketPrice || d.close || 0).toFixed(2));
-  const hi  = parseFloat(Number(d.high  || d.regularMarketDayHigh || cur).toFixed(2));
-  const lo  = parseFloat(Number(d.low   || d.regularMarketDayLow  || cur).toFixed(2));
-  
-  // 52W High/Low mate badhi possibility check karo
-  const h52 = parseFloat(Number(d.h52 || d.high52 || d.week52High || d.fiftyTwoWeekHigh || cur).toFixed(2));
-  const l52 = parseFloat(Number(d.l52 || d.low52  || d.week52Low  || d.fiftyTwoWeekLow  || cur).toFixed(2));
-
-  if (cur === 0 || hi === 0 || h52 === 0) return ''; // Jo data j na hoy to hide rahe
-
-  let dayHtml = '', w52Html = '';
-
-  // Day Bar
-  const pctDay = hi > lo ? (((cur - lo) / (hi - lo)) * 100).toFixed(0) : 50;
-  dayHtml = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">${lo.toFixed(0)}</span></span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">${hi.toFixed(0)}</span></span>
-    </div>
-    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">
-      <div style="position:absolute;left:0;width:${pctDay}%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>
-      <div style="position:absolute;left:calc(${pctDay}% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>
-    </div>`;
-
-  // 52W Bar
-  const pct52 = h52 > l52 ? (((cur - l52) / (h52 - l52)) * 100).toFixed(0) : 50;
-  w52Html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">${l52.toFixed(0)}</span></span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">${h52.toFixed(0)}</span></span>
-    </div>
-    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">
-      <div style="position:absolute;left:0;width:${pct52}%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>
-      <div style="position:absolute;left:calc(${pct52}% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>
-    </div>`;
-
-  return '<div>' + dayHtml + w52Html + '</div>';
+function buildDualBar(d){
+  if(!d) return '';
+  let dayHtml='',w52Html='';
+  if(d.regularMarketDayHigh&&d.regularMarketDayLow){
+    const lo=d.regularMarketDayLow,hi=d.regularMarketDayHigh,cur=d.regularMarketPrice;
+    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
+    dayHtml=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
+      +'</div>'
+      +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">'
+      +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+      +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>'
+      +'</div>';
+  }
+  if(d.fiftyTwoWeekHigh&&d.fiftyTwoWeekLow){
+    const lo=d.fiftyTwoWeekLow,hi=d.fiftyTwoWeekHigh,cur=d.regularMarketPrice;
+    const pct=hi>lo?Math.min(100,Math.max(0,((cur-lo)/(hi-lo))*100)).toFixed(0):50;
+    w52Html=
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">'+lo.toFixed(0)+'</span></span>'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">'+hi.toFixed(0)+'</span></span>'
+      +'</div>'
+      +'<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
+      +'<div style="position:absolute;left:0;width:'+pct+'%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>'
+      +'<div style="position:absolute;left:calc('+pct+'% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>'
+      +'</div>';
+  }
+  return '<div>'+dayHtml+w52Html+'</div>';
 }
+
 // ======================================
 // FEATURE 2: STOCK NEWS
 // ======================================
@@ -3510,73 +3350,6 @@ function normalizeBatchItem(gasData){
 async function batchFetchStocks(symbols, isIndex=false){
   if(!symbols||symbols.length===0) return;
 
-  // ── Market CLOSED: Firebase OLHCV thi load karo, zero GAS call ──────────────
-  if(!isIndex && !getMarketStatus().open){
-    try{
-      const db = firebase.firestore();
-      let stored = 0;
-      // Try live_prices first (Python engine data — last trading day snapshot)
-      try{
-        const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
-        if(lpDoc.exists){
-          const prices = lpDoc.data().prices || {};
-          symbols.forEach(s => {
-            const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
-            if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
-              const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
-              cache[s] = { data: Object.assign({}, p, {
-                regularMarketPrice: price,
-                chartPreviousClose: p.prev_close || p.chartPreviousClose || price,
-                regularMarketChange: 0,
-                regularMarketChangePercent: 0,
-                _source: 'firebase_lp_closed'
-              }), time: Date.now() };
-              lastUpdatedMap[s] = Date.now();
-              stored++;
-            }
-          });
-        }
-      }catch(e){}
-      // Remaining stocks — olhcv collection thi
-      const remaining = symbols.filter(s => !cache[s]?.data?._source?.startsWith('firebase'));
-      if(remaining.length > 0){
-        await Promise.all(remaining.map(async s => {
-          try{
-            const snap = await db.collection('olhcv').doc(s).get();
-            if(snap.exists){
-              const p = snap.data();
-              if(p && p.close && p.close > 0){
-                cache[s] = { data: {
-                  regularMarketPrice: p.close,
-                  chartPreviousClose: p.prev || p.close,
-                  regularMarketOpen:  p.open || p.close,
-                  regularMarketDayHigh: p.high || p.close,
-                  regularMarketDayLow:  p.low  || p.close,
-                  fiftyTwoWeekHigh: p.week52High || p.high || p.close,
-                  fiftyTwoWeekLow:  p.week52Low  || p.low  || p.close,
-                  regularMarketVolume: p.volume || 0,
-                  regularMarketChange: 0,
-                  regularMarketChangePercent: 0,
-                  _source: 'firebase_olhcv_closed'
-                }, time: Date.now() };
-                lastUpdatedMap[s] = Date.now();
-                stored++;
-              }
-            }
-          }catch(e){}
-        }));
-      }
-      if(stored > 0){
-        console.log('[Market Closed] Firebase loaded:', stored, 'stocks — zero GAS calls');
-        return;
-      }
-    }catch(e){
-      console.warn('[Market Closed] Firebase batch load failed:', e.message);
-    }
-    return; // Market closed, Firebase fail bhi thay to silent return — GAS nahi
-  }
-  // ── END Market Closed block ─────────────────────────────────────────────────
-
   // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
   if(window._pythonEngineActive && !isIndex){
     try{
@@ -3652,34 +3425,13 @@ async function fetchFull(sym,isIndex=false){
   // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
   if(!isIndex){
     try{
-      // Step 1: Firebase olhcv — full OHLCV snapshot (last trading day)
+      // Step 1: Firebase olhcv - sirf Prev Close + Open (daily snapshot)
       let fbOhlcv = null;
       try{
         const snap = await firebase.firestore().collection('olhcv').doc(sym.replace(/\.(NS|BO)$/,'')).get();
         if(snap.exists){
           const p = snap.data();
           if(p && p.close && p.close > 0){
-            const mktStatus = getMarketStatus();
-            if(!mktStatus.open){
-              // ── Market CLOSED: Firebase close = last known price, skip GAS entirely ──
-              const closedData = {
-                regularMarketPrice:        p.close,
-                chartPreviousClose:        p.prev  || p.close,
-                regularMarketOpen:         p.open  || p.close,
-                regularMarketDayHigh:      p.high  || p.close,
-                regularMarketDayLow:       p.low   || p.close,
-                fiftyTwoWeekHigh:          p.week52High || p.high || p.close,
-                fiftyTwoWeekLow:           p.week52Low  || p.low  || p.close,
-                regularMarketVolume:       p.volume || 0,
-                regularMarketChange:       0,
-                regularMarketChangePercent:0,
-                _source: 'firebase_closed'
-              };
-              cache[key] = {data: closedData, time: Date.now()};
-              lastUpdatedMap[key] = Date.now();
-              return closedData;
-            }
-            // Market open: just save prev+open for merge below
             fbOhlcv = {
               chartPreviousClose: p.prev,
               regularMarketOpen:  p.open,
@@ -3690,7 +3442,7 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] Firebase OLHCV read fail:', fbErr);
       }
 
-      // Step 2: GAS call — only runs when market is OPEN
+      // Step 2: 1 GAS call - live price + Day H/L + 52W + Volume (all live)
       const gasUrl = localStorage.getItem('customAPI') || API;
       let gasLive = null;
       try{
@@ -3716,7 +3468,7 @@ async function fetchFull(sym,isIndex=false){
         console.warn('[fetchFull] GAS live call fail:', gasErr);
       }
 
-      // Step 3: Merge — Firebase OHLCV base + GAS live override
+      // Step 3: Merge - Firebase OHLCV base + GAS live override
       if(fbOhlcv || gasLive){
         const merged = Object.assign({}, fbOhlcv || {}, gasLive || {});
         // Change % calculate kariye
@@ -5498,7 +5250,8 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open) updatePrices();
+    if(!m.open) return; // market closed — GAS calls skip, battery/quota save
+    updatePrices();
   }, 5000);
 }
 
