@@ -1836,7 +1836,26 @@ async function updatePrices(){
     // 🔥 THE ARCHITECT'S FIX: Force Merge Fundamentals
     // Jo live data ma 52W data missing hoy, to fundamentals collection mathi bhengu karo
     const fund = cache[s]?.fundamentals || {};
-    d = { ...fund, ...d }; // Funda pehla, Live Price pachi (LTP latest rahe e mate)
+    // 🔥 THE BRAHMASTRA FIX 🔥
+    const fund = cache[s]?.fundamentals || {};
+    let d = { ...(cache[s]?.data || {}) }; // Live price ni copy banavo
+    
+    // Firebase na "doubleValue" wrapper ne todva mate no master-key
+    const getRealVal = (val) => {
+       if (val !== null && typeof val === 'object') {
+           return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
+       }
+       return Number(val || 0);
+    };
+
+    // Fundamentals mathi sacho number kadho
+    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
+    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
+
+    // Live Prices par DADA-GIRI (Force overwrite): 
+    // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
+    if (fund_h52 > 0) d.h52 = fund_h52;
+    if (fund_l52 > 0) d.l52 = fund_l52;
     
     let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
     let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
