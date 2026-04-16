@@ -5121,7 +5121,7 @@ function downloadFeaturePDF(){
 }
 
 // ======================================
-// MAIN APP INITIALIZATION
+// MAIN APP INITIALIZATION (CLEANED)
 // ======================================
 async function startApp(){
   monitorSystemHealth();
@@ -5132,20 +5132,14 @@ async function startApp(){
   initGeminiKeyDisplay();
   showLoader("Loading...");
   
-  // Preload ALL fundamentals from Firebase (non-blocking)
   preloadAllFundamentalsFromFirebase();
   hideLoader();
 
-  // 🚀 THE MISSING LINK: START FIREBASE LIVE ENGINE!
-  // આ લાઈન વગર ભાવ ક્યારેય ઓટો-અપડેટ નહીં થાય!
+  // 🚀 LIVE ENGINE STARTER (આના વગર ભાવ નહિ બદલાય)
   if (typeof initGlobalPriceListener === 'function') {
-      console.log("Nivi: Starting Live Firebase Price Engine...");
       initGlobalPriceListener();
-  } else {
-      console.error("Nivi: ERROR! initGlobalPriceListener not found!");
   }
 
-  // Fetch in background — UI updates as history/metadata arrives
   batchFetchStocks(wl).then(()=>{
     renderWL();
     renderHeaderStrip();
@@ -5159,16 +5153,12 @@ async function startApp(){
 
   updateGlobalTicker();
 
-  // Run technical alerts 
   setTimeout(()=>runAllTechnicalAlerts(),3000);
-  
-  // Auto alert engine — every 5 min during market hours
   setInterval(()=>{
     const m=getMarketStatus();
     if(m.open) runAllTechnicalAlerts();
   }, 5*60*1000);
 
-  // Background: preload POPULAR_STOCKS for Gainers tab
   setTimeout(()=>{
     const _startSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
     const needFetch = _startSrc.filter(s=>!cache[s]||!cache[s].data);
