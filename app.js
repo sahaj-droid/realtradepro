@@ -5125,6 +5125,9 @@ function downloadFeaturePDF(){
   }
 }
 
+// ======================================
+// MAIN APP INITIALIZATION
+// ======================================
 async function startApp(){
   monitorSystemHealth();
   updateMarketStatus();
@@ -5133,36 +5136,44 @@ async function startApp(){
   renderWLTabs();
   initGeminiKeyDisplay();
   showLoader("Loading...");
-  // Preload ALL fundamentals from Firebase (non-blocking) — any stock opens instantly
+  
+  // Preload ALL fundamentals from Firebase (non-blocking)
   preloadAllFundamentalsFromFirebase();
-  // Data already loaded from Firebase via loadUserData() before startApp()
-  // Watchlist: batch fetch | Indices: individual (^ symbols)
-// Show UI immediately — don't wait for all data
   hideLoader();
-  // Fetch in background — UI updates as data arrives
+
+  // 🚀 THE MISSING LINK: START FIREBASE LIVE ENGINE!
+  // આ લાઈન વગર ભાવ ક્યારેય ઓટો-અપડેટ નહીં થાય!
+  if (typeof initGlobalPriceListener === 'function') {
+      console.log("Nivi: Starting Live Firebase Price Engine...");
+      initGlobalPriceListener();
+  } else {
+      console.error("Nivi: ERROR! initGlobalPriceListener not found!");
+  }
+
+  // Fetch in background — UI updates as history/metadata arrives
   batchFetchStocks(wl).then(()=>{
     renderWL();
     renderHeaderStrip();
     updateHeaderIndices();
     updatePriceTicker();
   });
+
   Promise.all(indicesList.map(i=>fetchFull(i.sym,true))).then(()=>{
     updateHeaderIndices();
   });
-  renderHeaderStrip();
-  updateHeaderIndices();
-  updatePriceTicker();
+
   updateGlobalTicker();
-  // Run technical alerts (volume breakout = immediate, RSI/MACD = after history fetch)
+
+  // Run technical alerts 
   setTimeout(()=>runAllTechnicalAlerts(),3000);
+  
   // Auto alert engine — every 5 min during market hours
   setInterval(()=>{
     const m=getMarketStatus();
     if(m.open) runAllTechnicalAlerts();
   }, 5*60*1000);
-// Firebase fundamentals already preloaded at startup via preloadAllFundamentalsFromFirebase()
-  // No GAS fundBatch call needed — all stocks instantly available via window._firebaseFundCache
-  // Background: preload POPULAR_STOCKS for Gainers tab — only missing stocks (no duplicate calls)
+
+  // Background: preload POPULAR_STOCKS for Gainers tab
   setTimeout(()=>{
     const _startSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
     const needFetch = _startSrc.filter(s=>!cache[s]||!cache[s].data);
@@ -5173,7 +5184,6 @@ async function startApp(){
     }
   },1500);
 }
-
 // ======================================
 // AUTO REFRESH & MANUAL
 // ======================================
@@ -9186,52 +9196,4 @@ window.updatePortfolioRow = function(sym, d) {
     let price = d.ltp || d.regularMarketPrice || 0;
     let pe = document.getElementById(`hcmp-${sym}`);
     if (pe) pe.innerText = "₹" + price.toFixed(2);
-};
-// ==========================================
-// AUTO-START LISTENER & DEBUG RADAR
-// ==========================================
-
-// 1. App ખુલે એટલે તરત જ લિસનર ચાલુ કરો
-document.addEventListener("DOMContentLoaded", function() {
-    console.log("Nivi: DOM Loaded. Starting Firebase Listener...");
-    if (typeof initGlobalPriceListener === 'function') {
-        initGlobalPriceListener();
-    }
-});
-
-// Backup Start (જો DOM પહેલેથી લોડ થઇ ગયું હોય)
-setTimeout(() => {
-    if (typeof initGlobalPriceListener === 'function') initGlobalPriceListener();
-}, 3000);
-
-// 2. આવતા ડેટાને ચેક કરવા માટેનું રાડાર
-window.renderPriceUpdate = function(sym, d) {
-    let price = d.ltp || d.regularMarketPrice || 0;
-    
-    // આ લાઈન આપણને બતાવશે કે ડેટા બ્રાઉઝર સુધી પહોંચ્યો કે નહીં!
-    console.log(`[NIVI RADAR] Symbol: ${sym} | Live Price: ₹${price}`); 
-    
-    let pe = document.getElementById(`price-${sym}`);
-    
-    if (pe) {
-        let op = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
-        pe.innerText = "₹" + price.toFixed(2);
-        
-        // ફ્લેશ ઇફેક્ટ
-        const wrap = pe.closest('.card') || pe.parentElement;
-        if (price > op && op > 0) { 
-            pe.classList.add("flash-green"); 
-            if (wrap) wrap.classList.add("flash-green"); 
-        } else if (price < op && op > 0) { 
-            pe.classList.add("flash-red"); 
-            if (wrap) wrap.classList.add("flash-red"); 
-        }
-        setTimeout(() => { 
-            pe.classList.remove("flash-green", "flash-red"); 
-            if (wrap) wrap.classList.remove("flash-green", "flash-red"); 
-        }, 1200);
-    } else {
-        // જો ID નહિ મળે તો કન્સોલમાં એરર બતાવશે
-        console.warn(`[NIVI ERROR] HTML ma ID nathi malyu: price-${sym}`);
-    }
 };
