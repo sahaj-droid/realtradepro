@@ -1436,7 +1436,6 @@ if(azAsc !== undefined) { /* sorting handled by sort functions on wl, mirror to 
   const watchlistDiv=document.getElementById("watchlist");
   if(html){
     watchlistDiv.innerHTML=html;
-    // Sparklines are ON-DEMAND only - tap "7D TREND" label to load
     // Auto-load disabled to prevent quota exhaustion (20k/day limit)
   } else {
     watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
@@ -1600,129 +1599,7 @@ function renderGainersFromCache(){
   moversSubTab(_moversTab);
 }
 // ======================================
-// UPDATE HEADER INDICES
-// ======================================
-async function updateHeaderIndices(){
-  if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
-  for(let i of indicesList){
-    let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
-    if(!d) continue;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
-    const key=i.sym.replace("^","");
-    const pe=document.getElementById("hidx-"+key+"-p");
-    const ce=document.getElementById("hidx-"+key+"-c");
-if(pe){
-      const p=d.regularMarketPrice;
-      const oldVal=parseFloat(pe.innerText.replace(/[,]/g,''))||0;
-      pe.innerText=p.toLocaleString('en-IN',{maximumFractionDigits:2});
-      if(oldVal>0&&p!==oldVal){
-        pe.classList.add(p>oldVal?'flash-green':'flash-red');
-        setTimeout(()=>pe.classList.remove('flash-green','flash-red'),1200);
-      }
-    }
-    if(ce){
-      const adiff=Math.abs(diff);
-      const diffStr='₹'+adiff.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-      ce.innerText=(diff>=0?'+':'-')+diffStr+' ('+(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%)';
-      ce.style.color=diff>=0?"#22c55e":"#ef4444";
-    }
-  }
-  await updateGiftNifty();
-}
-let _giftNiftyCache=null,_giftNiftyCacheTime=0;
-const GIFT_CACHE_MS=60000;
-
-async function updateGiftNifty(){
-    const pe=document.getElementById('hidx-__GIFT__-p');
-    const ce=document.getElementById('hidx-__GIFT__-c');
-    if(!pe||!ce) return;
-    if(_giftNiftyCache&&(Date.now()-_giftNiftyCacheTime<GIFT_CACHE_MS)){
-        _renderGiftNifty(_giftNiftyCache,pe,ce); return;
-    }
-    try{
-        const snap = await firebase.firestore()
-            .collection('RealTradePro').doc('gift_nifty').get();
-        const d = snap.data();
-        if(!d||!d.price) return;
-        const payload = {price: d.price, change: d.change_abs ?? d.change ?? 0, changePct: d.change_pct ?? d.change ?? 0};
-        _giftNiftyCache = payload;
-        _giftNiftyCacheTime = Date.now();
-        _renderGiftNifty(payload, pe, ce);
-    }catch(e){ if(ce) ce.innerText='N/A'; }
-}
-function _renderGiftNifty(d,pe,ce){
-  const isUp=d.change>=0;
-  const sign=isUp?'+':'';
-  pe.innerText=d.price.toLocaleString('en-IN',{maximumFractionDigits:2});
-  ce.innerText=`${sign}${d.change.toLocaleString('en-IN',{minimumFractionDigits:2})} (${sign}${Math.abs(d.changePct).toFixed(2)}%)`;
-  ce.style.color=isUp?'#22c55e':'#ef4444';
-}
-// ======================================
-// HEADER INDICES STRIP RENDERER
-// ======================================
-function renderHeaderStrip(){
-  const strip=document.getElementById('indicesStrip');
-  if(!strip) return;
-  strip.innerHTML=indicesList.map((idx,i)=>{
-    const key=idx.sym.replace('^','');
-    const sep=i<indicesList.length-1?`<div style="width:1px;background:#1e3a5f;height:32px;flex-shrink:0;"></div>`:'';
-    return `
-      <div style="text-align:center;cursor:pointer;padding:2px 10px;scroll-snap-align:start;flex-shrink:0;position:relative;" onclick="openDetail('${idx.sym}',true)">
-        <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;white-space:nowrap;">${idx.name}</div>
-        <div id="hidx-${key}-p" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e2e8f0;white-space:nowrap;">--</div>
-        <div id="hidx-${key}-c" style="font-size:10px;font-weight:700;color:#94a3b8;line-height:1.3;white-space:nowrap;">--</div>
-        ${i>=3?`<span onclick="event.stopPropagation();removeIndex(${i})" style="position:absolute;top:0;right:2px;font-size:9px;color:#4b6280;cursor:pointer;line-height:1;">✕</span>`:''}
-      </div>${sep}`;
-  }).join('');
-}
-
-function removeIndex(i){
-  if(i<3){showPopup('Default indices cannot be removed.');return;}
-  indicesList.splice(i,1);
-  saveIndicesList();
-  renderHeaderStrip();
-  updateHeaderIndices();
-}
-
-// Add Index Modal
-function openAddIndexModal(){
-  document.getElementById('addIdxOverlay').style.display='flex';
-  document.getElementById('addIdxInput').value='';
-  document.getElementById('addIdxResults').innerHTML='';
-  setTimeout(()=>document.getElementById('addIdxInput').focus(),100);
-}
-function closeAddIndexModal(){
-  document.getElementById('addIdxOverlay').style.display='none';
-}
-async function searchIndexSuggestions(){
-  const q=document.getElementById('addIdxInput').value.trim();
-  if(q.length<1){document.getElementById('addIdxResults').innerHTML='';return;}
-  const apiUrl=getActiveGASUrl();
-  try{
-    const r=await fetch(`${apiUrl}?type=search&q=${encodeURIComponent(q)}`);
-    const j=await r.json();
-    const res=(j.results||[]).filter(x=>x.type==='INDEX'||x.symbol?.startsWith('^'));
-    document.getElementById('addIdxResults').innerHTML=res.length
-      ?res.map(x=>`<div onclick="confirmAddIndex('${x.symbol}','${(x.name||x.symbol).replace(/'/g,"\\'")}') " style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #1e2d3d;font-size:13px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;">
-          <span style="font-weight:700;color:#38bdf8;">${x.symbol}</span>
-          <span style="color:#94a3b8;font-size:11px;margin-left:6px;">${x.name||''}</span>
-        </div>`).join('')
-      :'<div style="padding:8px 12px;font-size:12px;color:#4b6280;">No indices found. Try: ^CNXIT, ^NSMIDCP, ^CNXAUTO</div>';
-  }catch(e){document.getElementById('addIdxResults').innerHTML='<div style="padding:8px 12px;font-size:12px;color:#ef4444;">Search failed</div>';}
-}
-function confirmAddIndex(sym,name){
-  if(indicesList.find(x=>x.sym===sym)){showPopup('Already added');closeAddIndexModal();return;}
-  indicesList.push({sym,name});
-  saveIndicesList();
-  renderHeaderStrip();
-  // Fetch and update the new index
-  fetchFull(sym,true).then(()=>updateHeaderIndices());
-  closeAddIndexModal();
-  showPopup(name+' added');
-}
-// ======================================
-// UPDATE PRICES
+// UPDATE PRICES (FROZEN UI TABLE FIX)
 // ======================================
 async function updatePrices(){
   // ── GAS Fallback mode — Python engine stale ──
@@ -1735,10 +1612,8 @@ async function updatePrices(){
     }catch(e){}
     return;
   }
-  // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
-  // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
 
-  // ── Task 3: If Python engine active, refresh cache from Firebase first ──
+  // ── Python Engine Live Fetch ──
   if(window._pythonEngineActive){
     try{
       const db = firebase.firestore();
@@ -1746,42 +1621,63 @@ async function updatePrices(){
       if(doc.exists){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
-          const p = prices[s+'.NS'];
+          const p = prices[s+'.NS'] || prices[s]; // Handling with or without .NS
           if(p){ 
-          const existing = cache[s]?.data || {};
-          cache[s]={data: Object.assign({}, existing, p), time:Date.now()}; 
-          lastUpdatedMap[s]=Date.now(); 
+            const existing = cache[s]?.data || {};
+            cache[s] = {data: Object.assign({}, existing, p), time:Date.now()}; 
+            lastUpdatedMap[s] = Date.now(); 
           }
         });
       }
-    }catch(e){ /* silent — fall through to fetchFull below */ }
+    }catch(e){ /* silent */ }
   }
-  // ── END Task 3 ─────────────────────────────────────────────────────────────
 
+  // ── Watchlist Table Update Loop ──
   for(let s of wl){
-    // Python engine active hoy to cache already filled — fetchFull GAS call avoid
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
-    let price=d.regularMarketPrice||d.ltp||0, prev=d.chartPreviousClose||d.prev_close||0, diff=(price&&prev)?(price-prev):0, pct=(diff&&prev)?(diff/prev*100):0;
-    let pe=document.getElementById(`price-${s}`),ce=document.getElementById(`change-${s}`);
+    
+    let price = d.regularMarketPrice || d.ltp || 0;
+    let prev = d.chartPreviousClose || d.prev_close || 0;
+    let diff = (price && prev) ? (price - prev) : 0;
+    let pct = (diff && prev) ? (diff / prev * 100) : 0;
+    
+    let pe = document.getElementById(`price-${s}`);
+    let ce = document.getElementById(`change-${s}`);
+    let row = pe ? pe.closest('tr') : null; // NEW: પકડશે Table ની Row ને
+    
     if(pe){
-      let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;
-      pe.innerText="₹"+price.toFixed(2);
-      checkAlerts(s,price);checkTargets(s,price);checkVolumeSpike(s,d);lastUpdatedMap[s]=Date.now();
-      const wrap=pe.closest('.card')||pe.parentElement;
-      if(price>op){pe.classList.add("flash-green");if(wrap)wrap.classList.add("flash-green");}
-      else if(price<op){pe.classList.add("flash-red");if(wrap)wrap.classList.add("flash-red");}
-      setTimeout(()=>{pe.classList.remove("flash-green","flash-red");if(wrap)wrap.classList.remove("flash-green","flash-red");},1200);
+      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
+      pe.innerHTML = `<b>${price.toFixed(2)}</b>`; // Formatting fixed
+      checkAlerts(s,price); checkTargets(s,price); checkVolumeSpike(s,d); lastUpdatedMap[s]=Date.now();
+      
+      // Flash Logic for Table Row
+      if(price > op && op > 0){
+        if(row) row.classList.add("flash-green");
+      } else if(price < op && op > 0){
+        if(row) row.classList.add("flash-red");
+      }
+      setTimeout(()=>{ 
+        if(row) row.classList.remove("flash-green","flash-red"); 
+      }, 1200);
     }
+    
     if(ce){
-      // Format: +₹diff (pct%) — matches card render format
-      const sign=diff>=0?'+':'';
-      ce.innerHTML=sign+'₹'+Math.abs(diff).toFixed(2)+' <span style="font-size:12px;">('+sign+pct.toFixed(2)+'%)</span>';
-      ce.style.color=diff>=0?"#22c55e":"#ef4444";
+      const sign = diff >= 0 ? '+' : '';
+      // 1. Update Price Diff Column
+      ce.innerText = sign + Math.abs(diff).toFixed(2);
+      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      
+      // 2. Update Pct Column (તમારી અલગ કોલમ માટેનો જાદુ)
+      let pctCell = ce.nextElementSibling; 
+      if(pctCell){
+        pctCell.innerText = sign + Math.abs(pct).toFixed(2) + "%";
+        pctCell.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      }
     }
   }
-  // ── Indices: Firebase first, batch GAS fallback ──────────────────────────
-  // Step 1: Python engine active hoy to Firebase thi badha indices ek sathe levo
+
+  // ── Indices Update ──
   if(window._pythonEngineActive){
     try{
       const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
@@ -1789,32 +1685,39 @@ async function updatePrices(){
         const _p = _lp.data().prices || {};
         indicesList.forEach(i=>{
           if(i.sym==='__GIFT__') return;
-          const d = _p[i.sym];
+          const d = _p[i.sym] || _p[i.sym+'.NS'];
           if(d) cache[i.sym]={data:d, time:Date.now()};
         });
       }
     }catch(e){}
   }
-  // Step 2: Cache miss hoy te indices — single batch GAS call
-  const _missingIdx = indicesList
-    .filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data)
-    .map(i => i.sym);
+  const _missingIdx = indicesList.filter(i => i.sym !== '__GIFT__' && !cache[i.sym]?.data).map(i => i.sym);
   if(_missingIdx.length > 0) await batchFetchStocks(_missingIdx, true);
-  // Step 3: Render all indices from cache
+  
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-    const price=d.regularMarketPrice||d.ltp, prev=d.chartPreviousClose||d.prev_close;
-    const diff=price-prev, pct=(diff/prev*100)||0;
-    let pe=document.getElementById(`idx-price-${i.sym}`),ce=document.getElementById(`idx-change-${i.sym}`);
-    if(pe){let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0;pe.innerText="₹"+price.toFixed(2);if(price>op)pe.classList.add("flash-green");else if(price<op)pe.classList.add("flash-red");setTimeout(()=>{pe.classList.remove("flash-green","flash-red");},1200);}
-    if(ce){ce.innerText=(diff>=0?'+':'-')+pct.toFixed(2)+'%';ce.style.color=diff>=0?"#22c55e":"#ef4444";}
+        const price = d.regularMarketPrice||d.ltp, prev = d.chartPreviousClose||d.prev_close;
+    const diff = price-prev, pct = (diff/prev*100)||0;
+    
+    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
+    // Header Index Flash 
+    if(pe){
+      let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0; 
+      pe.innerText=price.toLocaleString('en-IN',{maximumFractionDigits:2});
+      if(price>op) pe.classList.add("flash-green"); 
+      else if(price<op) pe.classList.add("flash-red");
+      setTimeout(()=>{pe.classList.remove("flash-green","flash-red");}, 1200);
+    }
+    if(ce){
+      ce.innerText=(diff>=0?'+':'-')+Math.abs(pct).toFixed(2)+'%';
+      ce.style.color=diff>=0?"#22c55e":"#ef4444";
+    }
   }
-  updateHeaderIndices();
+    updateHeaderIndices();
   await updateGiftNifty();
-  updatePriceTicker();
+  if(typeof updatePriceTicker === 'function') updatePriceTicker();
 }
-
 // ======================================
 // PIE CHART (Portfolio Diversity)
 // ======================================
