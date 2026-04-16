@@ -1836,7 +1836,7 @@ async function updatePrices(){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
           // .NS first, .BO fallback (Bug Fix: BO stocks pan malse)
-          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+          const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
           if(p){
             const existing = cache[s]?.data || {};
             const price   = p.ltp || p.price || p.regularMarketPrice || 0;
