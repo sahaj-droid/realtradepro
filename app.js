@@ -3563,25 +3563,43 @@ async function batchFetchStocks(symbols, isIndex=false){
       try{
         const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
         if(lpDoc.exists){
-          const prices = lpDoc.data().prices || {};
-          symbols.forEach(s => {
-            const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
-            if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
-              const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
-              const prevP = p.prev_close || p.chartPreviousClose || price;
-              const chgP  = (price && prevP) ? parseFloat((price - prevP).toFixed(2)) : 0;
-              const pctP  = (price && prevP && prevP > 0) ? parseFloat(((price - prevP) / prevP * 100).toFixed(2)) : 0;
-              cache[s] = { data: Object.assign({}, p, {
-                regularMarketPrice: price,
-                chartPreviousClose: prevP,
-                regularMarketChange: chgP,
-                regularMarketChangePercent: pctP,
-                _source: 'firebase_lp_closed'
-              }), time: Date.now() };
-              lastUpdatedMap[s] = Date.now();
-              stored++;
-            }
-          });
+          // 🔴 STALENESS CHECK: 20+ kalaak purano data hoy to skip karo
+          const updatedAt = lpDoc.data()?.updated_at;
+          const ageHours = updatedAt ? (Date.now() - new Date(updatedAt).getTime()) / 3600000 : 99;
+          const isStale = ageHours > 20; // 20 hours — aajno market data nathi
+
+          if(!isStale){
+            const prices = lpDoc.data().prices || {};
+            symbols.forEach(s => {
+              const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
+              if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
+                const existing = cache[s]?.data || {};
+                const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
+                const prevP = p.prevClose || p.prev_close || p.chartPreviousClose || price;
+                const chgP  = p.change    != null ? p.change    : parseFloat((price-prevP).toFixed(2));
+                const pctP  = p.change_pct!= null ? p.change_pct: (prevP>0?parseFloat(((price-prevP)/prevP*100).toFixed(2)):0);
+                cache[s] = { data: Object.assign({}, existing, p, {
+                  regularMarketPrice:         price,
+                  chartPreviousClose:         prevP,
+                  regularMarketChange:        chgP,
+                  regularMarketChangePercent: pctP,
+                  regularMarketOpen:    p.open  || existing.regularMarketOpen  || price,
+                  regularMarketDayHigh: p.high  || existing.regularMarketDayHigh || price,
+                  regularMarketDayLow:  p.low   || existing.regularMarketDayLow  || price,
+                  fiftyTwoWeekHigh: p.high52||p.h52||p.fiftyTwoWeekHigh||existing.fiftyTwoWeekHigh||0,
+                  fiftyTwoWeekLow:  p.low52 ||p.l52||p.fiftyTwoWeekLow ||existing.fiftyTwoWeekLow ||0,
+                  h52: p.h52||p.high52||p.fiftyTwoWeekHigh||existing.h52||0,
+                  l52: p.l52||p.low52 ||p.fiftyTwoWeekLow ||existing.l52||0,
+                  _source: 'firebase_lp_closed'
+                }), time: Date.now() };
+                lastUpdatedMap[s] = Date.now();
+                stored++;
+              }
+            });
+            console.log(`[Market Closed] Firebase age: ${ageHours.toFixed(1)}h — ${stored} stocks loaded`);
+          } else {
+            console.log(`[Market Closed] Firebase stale (${ageHours.toFixed(1)}h) — falling through to GAS`);
+          }
         }
       }catch(e){}
       // Remaining stocks — olhcv collection thi
