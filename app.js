@@ -9284,3 +9284,51 @@ window.updatePortfolioRow = function(sym, d) {
     let pe = document.getElementById(`hcmp-${sym}`);
     if (pe) pe.innerText = "₹" + price.toFixed(2);
 };
+// ==========================================
+// AUTO-START LISTENER & DEBUG RADAR
+// ==========================================
+
+// 1. App ખુલે એટલે તરત જ લિસનર ચાલુ કરો
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Nivi: DOM Loaded. Starting Firebase Listener...");
+    if (typeof initGlobalPriceListener === 'function') {
+        initGlobalPriceListener();
+    }
+});
+
+// Backup Start (જો DOM પહેલેથી લોડ થઇ ગયું હોય)
+setTimeout(() => {
+    if (typeof initGlobalPriceListener === 'function') initGlobalPriceListener();
+}, 3000);
+
+// 2. આવતા ડેટાને ચેક કરવા માટેનું રાડાર
+window.renderPriceUpdate = function(sym, d) {
+    let price = d.ltp || d.regularMarketPrice || 0;
+    
+    // આ લાઈન આપણને બતાવશે કે ડેટા બ્રાઉઝર સુધી પહોંચ્યો કે નહીં!
+    console.log(`[NIVI RADAR] Symbol: ${sym} | Live Price: ₹${price}`); 
+    
+    let pe = document.getElementById(`price-${sym}`);
+    
+    if (pe) {
+        let op = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
+        pe.innerText = "₹" + price.toFixed(2);
+        
+        // ફ્લેશ ઇફેક્ટ
+        const wrap = pe.closest('.card') || pe.parentElement;
+        if (price > op && op > 0) { 
+            pe.classList.add("flash-green"); 
+            if (wrap) wrap.classList.add("flash-green"); 
+        } else if (price < op && op > 0) { 
+            pe.classList.add("flash-red"); 
+            if (wrap) wrap.classList.add("flash-red"); 
+        }
+        setTimeout(() => { 
+            pe.classList.remove("flash-green", "flash-red"); 
+            if (wrap) wrap.classList.remove("flash-green", "flash-red"); 
+        }, 1200);
+    } else {
+        // જો ID નહિ મળે તો કન્સોલમાં એરર બતાવશે
+        console.warn(`[NIVI ERROR] HTML ma ID nathi malyu: price-${sym}`);
+    }
+};
