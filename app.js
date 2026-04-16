@@ -1599,7 +1599,7 @@ function renderGainersFromCache(){
   moversSubTab(_moversTab);
 }
 // ======================================
-// UPDATE PRICES (FROZEN UI TABLE FIX)
+// UPDATE PRICES (MAIN APP - CARD UI FIX)
 // ======================================
 async function updatePrices(){
   // ── GAS Fallback mode — Python engine stale ──
@@ -1621,7 +1621,7 @@ async function updatePrices(){
       if(doc.exists){
         const prices = doc.data().prices || {};
         wl.forEach(s => {
-          const p = prices[s+'.NS'] || prices[s]; // Handling with or without .NS
+          const p = prices[s+'.NS'] || prices[s]; // Firebase ના keys હેન્ડલ કરવા
           if(p){ 
             const existing = cache[s]?.data || {};
             cache[s] = {data: Object.assign({}, existing, p), time:Date.now()}; 
@@ -1632,7 +1632,7 @@ async function updatePrices(){
     }catch(e){ /* silent */ }
   }
 
-  // ── Watchlist Table Update Loop ──
+  // ── Watchlist CARD Update Loop ──
   for(let s of wl){
     let d = (window._pythonEngineActive && cache[s]?.data) ? cache[s].data : await fetchFull(s);
     if(!d) continue;
@@ -1644,36 +1644,31 @@ async function updatePrices(){
     
     let pe = document.getElementById(`price-${s}`);
     let ce = document.getElementById(`change-${s}`);
-    let row = pe ? pe.closest('tr') : null; // NEW: પકડશે Table ની Row ને
     
     if(pe){
       let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerHTML = `<b>${price.toFixed(2)}</b>`; // Formatting fixed
+      pe.innerText = "₹" + price.toFixed(2);
+      
       checkAlerts(s,price); checkTargets(s,price); checkVolumeSpike(s,d); lastUpdatedMap[s]=Date.now();
       
-      // Flash Logic for Table Row
+      // MAIN APP LOGIC: આખા કાર્ડ ને ફ્લેશ મારવાનું લોજિક
+      const wrap = pe.closest('.card') || pe.parentElement;
       if(price > op && op > 0){
-        if(row) row.classList.add("flash-green");
+        pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green");
       } else if(price < op && op > 0){
-        if(row) row.classList.add("flash-red");
+        pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red");
       }
-      setTimeout(()=>{ 
-        if(row) row.classList.remove("flash-green","flash-red"); 
+      setTimeout(()=>{
+        pe.classList.remove("flash-green","flash-red"); 
+        if(wrap) wrap.classList.remove("flash-green","flash-red");
       }, 1200);
     }
     
     if(ce){
+      // MAIN APP LOGIC: રૂપિયા અને ટકાવારી એક જ બોક્સમાં
       const sign = diff >= 0 ? '+' : '';
-      // 1. Update Price Diff Column
-      ce.innerText = sign + Math.abs(diff).toFixed(2);
+      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
       ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-      
-      // 2. Update Pct Column (તમારી અલગ કોલમ માટેનો જાદુ)
-      let pctCell = ce.nextElementSibling; 
-      if(pctCell){
-        pctCell.innerText = sign + Math.abs(pct).toFixed(2) + "%";
-        pctCell.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-      }
     }
   }
 
@@ -1697,11 +1692,10 @@ async function updatePrices(){
   for(let i of indicesList){
     if(i.sym === '__GIFT__') continue;
     const d = cache[i.sym]?.data; if(!d) continue;
-        const price = d.regularMarketPrice||d.ltp, prev = d.chartPreviousClose||d.prev_close;
+    const price = d.regularMarketPrice||d.ltp, prev = d.chartPreviousClose||d.prev_close;
     const diff = price-prev, pct = (diff/prev*100)||0;
     
     let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
-    // Header Index Flash 
     if(pe){
       let op=parseFloat(pe.innerText.replace(/[₹,]/g,""))||0; 
       pe.innerText=price.toLocaleString('en-IN',{maximumFractionDigits:2});
@@ -1714,7 +1708,8 @@ async function updatePrices(){
       ce.style.color=diff>=0?"#22c55e":"#ef4444";
     }
   }
-    updateHeaderIndices();
+  
+  updateHeaderIndices();
   await updateGiftNifty();
   if(typeof updatePriceTicker === 'function') updatePriceTicker();
 }
