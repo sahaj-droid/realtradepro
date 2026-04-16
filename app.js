@@ -5,11 +5,9 @@
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
-// ========================================
-// V9 NUCLEAR FIX: OVERRIDE UPDATE_PRICES
-// ========================================
-
-// 1. Initialize Real-time Listener (The only source of truth now)
+// =========================================================
+// 🔥 FIXED: FIREBASE REAL-TIME LISTENER (Live UI + Animations)
+// =========================================================
 function initGlobalPriceListener() {
     if (typeof firebase === 'undefined') return;
     const db = firebase.firestore();
@@ -19,47 +17,113 @@ function initGlobalPriceListener() {
         const prices = doc.data().prices || {};
         
         if (typeof cache === 'undefined') window.cache = {};
+        if (typeof lastUpdatedMap === 'undefined') window.lastUpdatedMap = {};
         
         Object.keys(prices).forEach(rawKey => {
             const symbol = rawKey.split('.')[0]; 
             const p = prices[rawKey];
             
-            // Normalize ALL possible keys to ensure UI never fails
-            const normalizedData = {
-                symbol: symbol,
-                regularMarketPrice: p.ltp || p.price || p.regularMarketPrice || 0,
-                regularMarketChange: p.change || p.regularMarketChange || 0,
-                regularMarketChangePercent: p.pct || p.regularMarketChangePercent || 0,
-                fiftyTwoWeekHigh: p.high52 || p.h52 || p.fiftyTwoWeekHigh || 0,
-                fiftyTwoWeekLow: p.low52 || p.l52 || p.fiftyTwoWeekLow || 0,
-                chartPreviousClose: p.prev_close || p.pc || p.chartPreviousClose || 0,
-                regularMarketDayHigh: p.dayHigh || p.h || p.regularMarketDayHigh || 0,
-                regularMarketDayLow: p.dayLow || p.l || p.regularMarketDayLow || 0,
-                ltp: p.ltp || p.price || 0,
-                change: p.change || 0,
-                pct: p.pct || 0
-            };
+            // 1. Data Normalization
+            const price = p.ltp || p.price || p.regularMarketPrice || 0;
+            const prev = p.prev_close || p.pc || p.chartPreviousClose || 0;
+            const diff = price && prev ? (price - prev) : (p.change || p.regularMarketChange || 0);
+            const pct = diff && prev ? (diff / prev * 100) : (p.pct || p.regularMarketChangePercent || 0);
 
-            // STRICT OVERRIDE: Never overwrite a valid price with 0
-            if (normalizedData.regularMarketPrice === 0 && cache[symbol] && cache[symbol].data.regularMarketPrice > 0) {
-                 return; // Ignore this 0 update
+            if (price === 0) return; // Ignore 0 updates
+
+            // 2. Update Cache
+            if (cache[symbol]) {
+                cache[symbol].data = Object.assign({}, cache[symbol].data, p, {
+                    regularMarketPrice: price,
+                    chartPreviousClose: prev,
+                    regularMarketChange: diff,
+                    regularMarketChangePercent: pct
+                });
+                cache[symbol].time = Date.now() + 86400000; // 24 hours expiry
+            } else {
+                cache[symbol] = {
+                    data: {
+                        regularMarketPrice: price,
+                        chartPreviousClose: prev,
+                        regularMarketChange: diff,
+                        regularMarketChangePercent: pct
+                    },
+                    time: Date.now() + 86400000
+                };
+            }
+            lastUpdatedMap[symbol] = Date.now();
+
+            // 3. Update Holdings Array (For Portfolio)
+            if (typeof h !== 'undefined' && Array.isArray(h)) {
+                let holdingItem = h.find(x => x.sym === symbol);
+                if (holdingItem) holdingItem.ltp = price;
             }
 
-            // Save to cache
-            window.cache[symbol] = {
-                data: normalizedData,
-                time: Date.now() + 86400000 // Set expiry to 24 hours to prevent GAS fallback
-            };
-
-            // Trigger UI updates safely
-            if (typeof renderPriceUpdate === 'function') renderPriceUpdate(symbol, normalizedData);
-            if (typeof updatePortfolioRow === 'function') updatePortfolioRow(symbol, normalizedData);
+            // 4. Trigger Watchlist Card UI & Flash Animation
+            let pe = document.getElementById(`price-${symbol}`);
+            let ce = document.getElementById(`change-${symbol}`);
             
+            if (pe) {
+                let op = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
+                pe.innerText = "₹" + price.toFixed(2);
+                
+                const wrap = pe.closest('.card') || pe.parentElement;
+                
+                // Flash Animation (Green / Red)
+                if (price > op && op > 0) {
+                    pe.classList.add("flash-green");
+                    if (wrap) wrap.classList.add("flash-green");
+                } else if (price < op && op > 0) {
+                    pe.classList.add("flash-red");
+                    if (wrap) wrap.classList.add("flash-red");
+                }
+                
+                setTimeout(() => {
+                    pe.classList.remove("flash-green", "flash-red");
+                    if (wrap) wrap.classList.remove("flash-green", "flash-red");
+                }, 1200);
+                
+                // Alerts & Targets
+                if (typeof checkAlerts === 'function') checkAlerts(symbol, price);
+                if (typeof checkTargets === 'function') checkTargets(symbol, price);
+                if (typeof checkVolumeSpike === 'function') checkVolumeSpike(symbol, cache[symbol].data);
+            }
+            
+            if (ce) {
+                const sign = diff >= 0 ? '+' : '';
+                ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+                ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+            }
+
+            // 5. Trigger Header Indices (Top strip live updates)
+            let idxKey = symbol.replace('^', '');
+            let hpe = document.getElementById(`hidx-${idxKey}-p`);
+            let hce = document.getElementById(`hidx-${idxKey}-c`);
+            
+            if (hpe) {
+                let oldVal = parseFloat(hpe.innerText.replace(/[,]/g, '')) || 0;
+                hpe.innerText = price.toLocaleString('en-IN', {maximumFractionDigits: 2});
+                
+                if (oldVal > 0 && price !== oldVal) {
+                    hpe.classList.add(price > oldVal ? 'flash-green' : 'flash-red');
+                    setTimeout(() => hpe.classList.remove('flash-green', 'flash-red'), 1200);
+                }
+            }
+            
+            if (hce) {
+                const sign = diff >= 0 ? '+' : '-';
+                const adiff = Math.abs(diff);
+                const diffStr = '₹' + adiff.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                hce.innerText = sign + diffStr + ' (' + sign + Math.abs(pct).toFixed(2) + '%)';
+                hce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+            }
+
+            // 6. Update Dual Bar (જો તમે જૂના કોડમાં વાપરતા હોવ તો)
             const row = document.querySelector(`[data-symbol="${symbol}"]`);
             if (row && typeof buildDualBar === 'function') {
                 const barContainer = row.querySelector('.dual-bar-container');
                 if (barContainer) {
-                    barContainer.innerHTML = buildDualBar(normalizedData);
+                    barContainer.innerHTML = buildDualBar(cache[symbol].data);
                 }
             }
         });
