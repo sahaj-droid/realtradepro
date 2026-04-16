@@ -3565,7 +3565,7 @@ async function batchFetchStocks(symbols, isIndex=false){
         if(lpDoc.exists){
           const prices = lpDoc.data().prices || {};
           symbols.forEach(s => {
-            const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+            const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
             if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
               const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
               const prevP = p.prev_close || p.chartPreviousClose || price;
@@ -3638,7 +3638,7 @@ async function batchFetchStocks(symbols, isIndex=false){
         let stored = 0;
         symbols.forEach(s => {
           // .NS first, .BO fallback + normalize — Bug Fix
-          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+          const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
           if(p){
             const existing = cache[s]?.data || {};
             const price  = p.ltp || p.price || p.regularMarketPrice || 0;
