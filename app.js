@@ -9214,3 +9214,73 @@ function sToggle(bodyId, arrId){
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
 }
+// ========================================
+// UI RENDER FIX: Bridge Firebase to UI (Flashing & Prices)
+// ========================================
+window.renderPriceUpdate = function(sym, d) {
+    let price = d.ltp || d.regularMarketPrice || 0;
+    let change = d.change || d.regularMarketChange || 0;
+    let pct = d.pct || d.regularMarketChangePercent || 0;
+    
+    // Watchlist Elements
+    let pe = document.getElementById(`price-${sym}`);
+    let ce = document.getElementById(`change-${sym}`);
+    
+    // Indices Elements (For Header)
+    let idxKey = sym.replace('^', '');
+    let hpe = document.getElementById(`hidx-${idxKey}-p`);
+    let hce = document.getElementById(`hidx-${idxKey}-c`);
+
+    // 1. Update Watchlist Rows (With Flash)
+    if (pe) {
+        let op = parseFloat(pe.innerText.replace(/[₹,]/g, "")) || 0;
+        pe.innerText = "₹" + price.toFixed(2);
+        
+        // Background Alert Checks
+        if (typeof checkAlerts === 'function') checkAlerts(sym, price);
+        if (typeof checkTargets === 'function') checkTargets(sym, price);
+        
+        // Green / Red Flash Logic
+        const wrap = pe.closest('.card') || pe.parentElement;
+        if (price > op && op > 0) { 
+            pe.classList.add("flash-green"); 
+            if (wrap) wrap.classList.add("flash-green"); 
+        } else if (price < op && op > 0) { 
+            pe.classList.add("flash-red"); 
+            if (wrap) wrap.classList.add("flash-red"); 
+        }
+        
+        setTimeout(() => { 
+            pe.classList.remove("flash-green", "flash-red"); 
+            if (wrap) wrap.classList.remove("flash-green", "flash-red"); 
+        }, 1200);
+    }
+    
+    if (ce) {
+        const sign = change >= 0 ? '+' : '';
+        ce.innerHTML = sign + '₹' + Math.abs(change).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+        ce.style.color = change >= 0 ? "#22c55e" : "#ef4444";
+    }
+
+    // 2. Update Header Indices (NIFTY, BANKNIFTY)
+    if (hpe) {
+        let hop = parseFloat(hpe.innerText.replace(/[,]/g, "")) || 0;
+        hpe.innerText = price.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        if (price > hop && hop > 0) hpe.classList.add("flash-green");
+        else if (price < hop && hop > 0) hpe.classList.add("flash-red");
+        setTimeout(() => hpe.classList.remove("flash-green", "flash-red"), 1200);
+    }
+    if (hce) {
+        const sign = change >= 0 ? '+' : '-';
+        const absDiff = '₹' + Math.abs(change).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        hce.innerText = sign + absDiff + ' (' + sign + Math.abs(pct).toFixed(2) + '%)';
+        hce.style.color = change >= 0 ? "#22c55e" : "#ef4444";
+    }
+};
+
+// Holdings Tab Update Logic
+window.updatePortfolioRow = function(sym, d) {
+    let price = d.ltp || d.regularMarketPrice || 0;
+    let pe = document.getElementById(`hcmp-${sym}`);
+    if (pe) pe.innerText = "₹" + price.toFixed(2);
+};
