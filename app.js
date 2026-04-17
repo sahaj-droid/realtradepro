@@ -31,7 +31,19 @@ function normalizeStockData(p, existing = {}) {
     regularMarketChangePercent: pct
   };
 }
+let cache = {};
+let refreshInterval = null;
+let symbols = typeof wl !== 'undefined' ? wl : [];
+let lastUpdatedMap = {};
 
+function startClock() {
+    const clockEl = document.getElementById('market-time') || document.getElementById('clock');
+    if (!clockEl) return;
+    setInterval(() => {
+        const now = new Date();
+        clockEl.innerText = now.toLocaleTimeString('en-IN');
+    }, 1000);
+}
 let currentUser = null; // { userId, name }
 let currentPINEntry = '';
 
