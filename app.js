@@ -9541,3 +9541,22 @@ function sToggle(bodyId, arrId){
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
 }
+// ── Smart Fallback Controller (0 Cost) ──
+window._pythonEngineActive = true; // ડિફોલ્ટ એક્ટિવ 
+
+setInterval(() => {
+  if (!window._lastPriceUpdateTime) return;
+  
+  const diff = Date.now() - window._lastPriceUpdateTime;
+  
+  // જો 2 મિનિટ (120,000ms) થી ડેટા ના આવ્યો હોય, તો GAS પર શિફ્ટ કરો
+  if (diff > 120000 && window._pythonEngineActive !== false) {
+    window._pythonEngineActive = false; 
+    console.warn("⚠️ Python Engine Timeout! Switched to GAS fallback.");
+  } 
+  // જો નવો ડેટા 30 સેકન્ડ (30,000ms) ની અંદરનો હોય, તો પાછા Python પર આવી જાઓ
+  else if (diff < 30000 && window._pythonEngineActive === false) {
+    window._pythonEngineActive = true; 
+    console.log("✅ Python Engine back online! Stopped GAS.");
+  }
+}, 10000); // દર 10 સેકન્ડે ખાલી લોકલ ટાઈમ ચેક કરશે (Firebase ને કોઈ કોલ નહીં)
