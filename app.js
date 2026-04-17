@@ -1061,53 +1061,29 @@ function showSuggestions(val) {
 }
 
 async function fetchYahooSuggestions(val, box) {
-  // Try all GAS URLs — search ke liye round-robin avoid karo (stale URL skip ho sakti hai)
-  const allUrls = [
-    localStorage.getItem('customAPI') ||API,
-    localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3,
-    localStorage.getItem('customAPI4')||API4,
-    localStorage.getItem('customAPI5')||API5
-  ].filter(Boolean);
-
-  let j = null;
-  for(const api of allUrls){
-    try{
-      const r = await Promise.race([
-        fetch(`${api}?type=search&q=${encodeURIComponent(val)}`),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      const parsed = await r.json();
-      if(parsed.ok && parsed.results && parsed.results.length > 0){ j = parsed; break; }
-    }catch(e){ continue; }
-  }
-  if(!j) return;
-
-  const alreadyIn = new Set(wl);
-  const INDIAN_EXCHANGES = new Set(['NSI','BSE','NSE','NMS']);
-  const results = j.results
-    .filter(r => {
-      const sym = r.symbol || '';
-      const exch = (r.exchange || r.exchDisp || '').toUpperCase();
-      const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
-      const cleanSym = sym.replace('.NS','').replace('.BO','');
-      const notInWL = !alreadyIn.has(cleanSym);
-      return isIndian && notInWL;
-    })
-    .slice(0, 7);
-
-  // .BO stocks mate exchange hint save karo — fetchFull ma use thashe
-  results.forEach(r => {
-    const sym = r.symbol || '';
-    if(sym.endsWith('.BO')){
-      if(!window._exchangeHint) window._exchangeHint = {};
-      window._exchangeHint[sym.replace('.BO','')] = 'BO';
+  try {
+    const api = getActiveGASUrl();
+    const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
+    const j = await r.json();
+    if (!j.ok || !j.results || j.results.length === 0) return;
+    // STRICT: Only Indian NSE/BSE stocks (.NS or .BO exchange)
+    const alreadyIn = new Set(wl);
+    const INDIAN_EXCHANGES = new Set(['NSI','BSE','NSE','NMS']);
+    const results = j.results
+      .filter(r => {
+        const sym = r.symbol || '';
+        const exch = (r.exchange || r.exchDisp || '').toUpperCase();
+        // Must be .NS or .BO suffix, OR exchange is NSI/BSE
+        const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
+        const cleanSym = sym.replace('.NS','').replace('.BO','');
+        const notInWL = !alreadyIn.has(cleanSym);
+        return isIndian && notInWL;
+      })
+      .slice(0, 7);
+    if (results.length > 0 && _lastSearchVal === val) {
+      renderSuggestions(results, box, false);
     }
-  });
-
-  if (results.length > 0 && _lastSearchVal === val) {
-    renderSuggestions(results, box, false);
-  }
+  } catch(e) {}
 }
 
 function renderSuggestions(items, box, isLocal) {
@@ -1291,14 +1267,25 @@ function confirmRemove(){
 }
 
 // ======================================
+// ======================================
+// UNIVERSAL PRICE RESOLVER
+// Single source of truth — handles Yahoo, GAS, Firebase/Engine keys
+// ======================================
+function _resolvePrice(d) {
+  if (!d) return { price: 0, prev: 0, diff: 0, pct: 0 };
+  const price = parseFloat(Number(d.ltp || d.regularMarketPrice || d.price || d.close || 0).toFixed(2));
+  const prev  = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
+  // Use engine pre-calculated change if available — avoids prev=0 bug
+  const diff  = parseFloat(Number(d.change || (prev > 0 ? price - prev : 0)).toFixed(2));
+  const pct   = parseFloat(Number(d.change_pct || d.changePct || (prev > 0 ? (diff / prev) * 100 : 0)).toFixed(2));
+  return { price, prev, diff, pct };
+}
+
 // RENDER WATCHLIST
 // ======================================
 // Helper: build one card's HTML from data object
 function _buildWLCard(s, d){
-  const _price = d.regularMarketPrice || d.ltp || 0;
-  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  const { price: _price, diff, pct } = _resolvePrice(d);
   return `
     <div class="wl-card-wrap" id="wrap-${s}">
       <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
@@ -1345,10 +1332,7 @@ function _buildWLCard(s, d){
 
 // Helper: patch a single card's price/change in DOM without full re-render
 function _patchWLCard(s, d){
-  const _price = d.regularMarketPrice || d.ltp || 0;
-  const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-  const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-  const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
+  const { price: _price, diff, pct } = _resolvePrice(d);
   const pe = document.getElementById('price-'+s);
   const ce = document.getElementById('change-'+s);
   const db = document.getElementById('daybar-'+s);
@@ -1623,10 +1607,10 @@ function renderGainersFromCache(){
   const _gainSrc=[...new Set([...(typeof wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
   const allStocks=_gainSrc;
   const results=allStocks.map(s=>{
-    const d=cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
-    return {sym:s,price:d.regularMarketPrice,diff,pct};
+    const d=cache[s]?.data; if(!d) return null;
+    const { price, diff, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    return {sym:s,price,diff,pct};
   }).filter(Boolean);
 
   const refreshBtn=`<button onclick="refreshGainers()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Refresh</button>`;
@@ -1682,8 +1666,7 @@ async function updateHeaderIndices(){
   for(let i of indicesList){
     let d=cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
+    const { diff, pct } = _resolvePrice(d);
     const key=i.sym.replace("^","");
     const pe=document.getElementById("hidx-"+key+"-p");
     const ce=document.getElementById("hidx-"+key+"-c");
@@ -1811,21 +1794,22 @@ function _patchVisibleWLPrices(){
 }
 
 // ======================================
-// UPDATE PRICES
+// UPDATE PRICES — THE FINAL ARCHITECT VERSION
 // ======================================
 async function updatePrices(){
+  const activeWl = getActiveWatchlistSymbols(); // 🟢 Current visible symbols list
+  if(activeWl.length === 0) return;
+
   // ── GAS Fallback mode — Python engine stale ──
   if(window._useGASPrices){
     try{
-      await batchFetchStocks(wl);
+      await batchFetchStocks(activeWl);
       _patchVisibleWLPrices();
       updateHeaderIndices();
       updatePriceTicker();
     }catch(e){}
     return;
   }
-  // Only runs during market hours (09:15–15:30) — caller (startRefresh) already checks market status
-  // Indices: use same CACHE_TIME as stocks — no extra force-clear needed
 
   // ── Task 3: If Python engine active, refresh cache from Firebase first ──
   if(window._pythonEngineActive){
@@ -1834,54 +1818,32 @@ async function updatePrices(){
       const doc = await db.collection('RealTradePro').doc('live_prices').get();
       if(doc.exists){
         const prices = doc.data().prices || {};
-        wl.forEach(s => {
-          // .NS first, .BO fallback (Bug Fix: BO stocks pan malse)
-          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
-          if(p){
+        activeWl.forEach(s => {
+          const p = prices[s + (s.includes('.') ? '' : '.NS')]; // 🟢 Smart Symbol Check
+          if(p){ 
             const existing = cache[s]?.data || {};
-            const price   = p.ltp || p.price || p.regularMarketPrice || 0;
-            const prevC   = p.prevClose || p.prev_close || p.chartPreviousClose || price;
-            const chg     = p.change    != null ? p.change    : parseFloat((price - prevC).toFixed(2));
-            const chgPct  = p.change_pct!= null ? p.change_pct: (prevC>0 ? parseFloat(((price-prevC)/prevC*100).toFixed(2)) : 0);
-            const normalized = Object.assign({}, existing, p, {
-              regularMarketPrice:         price,
-              chartPreviousClose:         prevC,
-              regularMarketChange:        chg,
-              regularMarketChangePercent: chgPct,
-              regularMarketOpen:          p.open  || existing.regularMarketOpen  || price,
-              regularMarketDayHigh:       p.high  || existing.regularMarketDayHigh || price,
-              regularMarketDayLow:        p.low   || existing.regularMarketDayLow  || price,
-              // 52W — Bug 2 Fix: banne key formats set karo
-              fiftyTwoWeekHigh: p.high52 || p.h52 || p.fiftyTwoWeekHigh || existing.fiftyTwoWeekHigh || 0,
-              fiftyTwoWeekLow:  p.low52  || p.l52 || p.fiftyTwoWeekLow  || existing.fiftyTwoWeekLow  || 0,
-              h52: p.h52 || p.high52 || p.fiftyTwoWeekHigh || existing.h52 || 0,
-              l52: p.l52 || p.low52  || p.fiftyTwoWeekLow  || existing.l52 || 0,
-              _source: 'firebase_live'
-            });
-            cache[s] = { data: normalized, time: Date.now() };
-            lastUpdatedMap[s] = Date.now();
+            cache[s] = { data: Object.assign({}, existing, p), time: Date.now() }; 
+            lastUpdatedMap[s] = Date.now(); 
           }
         });
       }
-    }catch(e){ /* silent — fall through to fetchFull below */ }
+    }catch(e){ /* silent */ }
   }
-  // ── END Task 3 ─────────────────────────────────────────────────────────────
-// 1. Market Status ane Batch Fetch
+
+  // 1. Market Status ane Batch Fetch
   const isMarketOpen = getMarketStatus().open;
   if (isMarketOpen && !window._pythonEngineActive) {
-    try { await batchFetchStocks(wl); } catch(e) {}
+    try { await batchFetchStocks(activeWl); } catch(e) {}
   }
 
   // 2. Main Watchlist Loop
-  for(let s of wl){
-    // Jo cache ma data j na hoy to aagad vadho
+  for(let s of activeWl){
     if(!cache[s]?.data) continue;
 
-    // 🔥 THE BRAHMASTRA FIX 🔥
     const fund = cache[s]?.fundamentals || {};
-    let d = { ...cache[s].data }; // Live price ni copy banavo jethi reference break thay
+    let d = { ...cache[s].data }; 
     
-    // Firebase na "doubleValue" wrapper ne todva mate no master-key
+    // 🔥 THE BRAHMASTRA FIX: Number Extraction
     const getRealVal = (val) => {
        if (val !== null && typeof val === 'object') {
            return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
@@ -1889,93 +1851,45 @@ async function updatePrices(){
        return Number(val || 0);
     };
 
-    // Fundamentals mathi sacho number kadho
-    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
-    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
-
-    // Live Prices par DADA-GIRI (Force overwrite): 
-    // Jo fundamentals ma sacho data hoy to live price na kachra ne hatavi do
+    // Fundamentals Force Sync
+    let fund_h52 = getRealVal(fund.h52 || fund.high52);
+    let fund_l52 = getRealVal(fund.l52 || fund.low52);
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
 
-    // ✅ Bracket ni andar j aa badhi calculation aavvi joiye
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || 0).toFixed(2));
-    let diff = price - prev;
-    let pct = prev ? (diff / prev * 100) : 0;
-
-    // ... (Ahiya tamaru aagad nu logic aavse jem ke document.getElementById('price-' + s) vagere)
+    // --- ASALI CALCULATION START ---
+    const { price, prev, diff, pct } = _resolvePrice(d);
     
-    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
+    let pe = document.getElementById(`price-${s}`), ce = document.getElementById(`change-${s}`);
     
     if(pe){
       let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
+      pe.innerText = "₹" + price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); // 🟢 Localized Currency Format
       
       const wrap = pe.closest('.card') || pe.parentElement;
       if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
       else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
-      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
+      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1000);
 
-      // ✅ FEATURE 1 & 2: Bars have 100% aavse karan ke 'd' pase have fundamentals chhe
+      // Bars & Banners
       const barContainer = document.getElementById(`bar-container-${s}`);
-      if(barContainer){
-        barContainer.innerHTML = buildDualBar(d);
-      }
+      if(barContainer) barContainer.innerHTML = buildDualBar(d);
 
-      // ✅ FEATURE 3: Banner have pachhu aavi jase
       const bannerElem = document.getElementById(`banner-${s}`);
-      if(bannerElem){
-        bannerElem.innerHTML = get52WLabel(d);
-      }
+      if(bannerElem) bannerElem.innerHTML = get52WLabel(d);
 
       checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
       lastUpdatedMap[s] = Date.now();
     }
 
     if(ce){
-      // Jo positive hoy to '+', negative hoy to '-', ane zero hoy to kai nai
       const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
       ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
     }
   }
 
-  // 3. Indices Logic
-  if(window._pythonEngineActive){
-    try {
-      const _lp = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
-      if(_lp.exists){
-        const _p = _lp.data().prices || {};
-        indicesList.forEach(i => {
-          if(i.sym === '__GIFT__') return;
-          if(_p[i.sym]) cache[i.sym] = { data: _p[i.sym], time: Date.now() };
-        });
-      }
-    } catch(e) {}
-  }
-
-  for(let i of indicesList){
-    if(i.sym === '__GIFT__') continue;
-    const d = cache[i.sym]?.data; if(!d) continue;
-    
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || 0).toFixed(2));
-    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
-    
-    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
-    if(pe){
-      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
-      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
-      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
-    }
-    if(ce){
-      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-    }
-  }
-
+  // Indices & Gift Nifty logic emne em rehva do (E barabar che)
   updateHeaderIndices();
   await updateGiftNifty();
   updatePriceTicker();
@@ -2470,19 +2384,19 @@ async function openDetail(sym,isIndex){
   document.getElementById("d-body").innerHTML=`
     <div style="display:flex;flex-direction:column;gap:3px;">
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketOpen&&d.regularMarketOpen>1?d.regularMarketOpen:(d.chartPreviousClose||0)).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${((d.regularMarketOpen||d.open)>1?(d.regularMarketOpen||d.open):(d.chartPreviousClose||d.prevClose||d.prev_close||0)).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.chartPreviousClose||d.prevClose||d.prev_close||0).toFixed(2)}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayHigh||d.high||0).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.regularMarketDayLow||d.low||0).toFixed(2)}</div></div>
       </div>
       <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekHigh||d.week52High||d.h52||d.high52||0).toFixed(2)}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||0).toFixed(2)}</div></div>
+        <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">\u20b9${(d.fiftyTwoWeekLow||d.week52Low||d.l52||d.low52||0).toFixed(2)}</div></div>
       </div>
     </div>`;
   const chartDiv = document.getElementById("d-chart");
@@ -2925,8 +2839,11 @@ function confirmTrade(){
 
 // -- DAY BAR (inline visual) --
 function buildDayBar(d){
-  if(!d||!d.regularMarketDayHigh||!d.regularMarketDayLow) return '';
-  const lo=d.regularMarketDayLow, hi=d.regularMarketDayHigh, cur=d.regularMarketPrice;
+  if(!d) return '';
+  const hi  = d.regularMarketDayHigh || d.high || 0;
+  const lo  = d.regularMarketDayLow  || d.low  || 0;
+  const cur = d.regularMarketPrice   || d.ltp  || d.price || 0;
+  if(!hi || !lo || !cur) return '';
   const range=hi-lo; if(range<=0) return '';
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
   return '<div style="margin:0;">'
@@ -2942,9 +2859,13 @@ function buildDayBar(d){
 
 // -- 52W BAR (inline visual) --
 function build52WBar(d){
-  if(!d||!d.fiftyTwoWeekHigh||!d.fiftyTwoWeekLow) return '';
-  const lo=d.fiftyTwoWeekLow, hi=d.fiftyTwoWeekHigh, cur=d.regularMarketPrice;
-  const range=hi-lo; if(range<=0) return '';
+  if(!d) return '';
+  const lo  = d.fiftyTwoWeekLow  || d.week52Low  || d.l52 || d.low52;
+  const hi  = d.fiftyTwoWeekHigh || d.week52High || d.h52 || d.high52;
+  if(!hi || !lo || hi <= lo) return '';
+  const cur = d.regularMarketPrice || d.ltp || d.price || 0;
+  if(!cur) return '';
+  const range = hi - lo;
   const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
   return '<div style="margin:0;margin-top:4px;">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:700;line-height:1;margin-bottom:2px;">'
@@ -2958,8 +2879,12 @@ function build52WBar(d){
 }
 
 function get52WLabel(d){
-  if(!d||!d.fiftyTwoWeekHigh||!d.fiftyTwoWeekLow) return '';
-  const p=d.regularMarketPrice, hi=d.fiftyTwoWeekHigh, lo=d.fiftyTwoWeekLow;
+  if(!d) return '';
+  const hi = d.fiftyTwoWeekHigh || d.week52High || d.h52 || d.high52;
+  const lo = d.fiftyTwoWeekLow  || d.week52Low  || d.l52 || d.low52;
+  if(!hi || !lo) return '';
+  const p  = d.regularMarketPrice || d.ltp || d.price || 0;
+  if(!p) return '';
   const fromHi=((hi-p)/hi*100).toFixed(1);
   if(p>=hi*0.97) return '<span style="color:#22c55e;font-weight:700;font-size:9px;">** Near 52W High</span>';
   if(p<=lo*1.03) return '<span style="color:#ef4444;font-weight:700;font-size:9px;">!! Near 52W Low</span>';
@@ -3024,9 +2949,9 @@ function openNews(sym){
 function renderTopMovers(){
   const stocks = wl.map(s=>{
     const d=cache[s]?.data; if(!d) return null;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
-    return {sym:s, pct, price:d.regularMarketPrice};
+    const { price, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    return {sym:s, pct, price};
   }).filter(Boolean);
 
   if(stocks.length===0) return '<div style="color:#4b6280;text-align:center;padding:10px;font-size:12px;">Data not loaded</div>';
@@ -3534,20 +3459,39 @@ function fetchWithTimeout(url, ms=8000){
 // Normalize GAS batch item -> app cache format
 function normalizeBatchItem(gasData){
   // GAS returns: {price, prevClose, open, high, low, week52High, week52Low, volume, pe, eps, mktCap}
-  // App expects: regularMarketPrice, chartPreviousClose, etc.
+  // Normalized to: all Yahoo + Engine + Firebase keys so _resolvePrice always works
   if(!gasData||!gasData.price) return null;
+  const _prev = gasData.prevClose || 0;
+  const _price = gasData.price || 0;
+  const _diff  = parseFloat((_price - _prev).toFixed(2));
+  const _pct   = _prev > 0 ? parseFloat((_diff / _prev * 100).toFixed(2)) : 0;
   return {
-    regularMarketPrice:       gasData.price,
-    chartPreviousClose:       gasData.prevClose,
-    regularMarketOpen:        (gasData.open != null ? gasData.open : gasData.price),
-    regularMarketDayHigh:     gasData.high,
-    regularMarketDayLow:      gasData.low,
-    fiftyTwoWeekHigh:         gasData.week52High,
-    fiftyTwoWeekLow:          gasData.week52Low,
-    regularMarketVolume:      gasData.volume,
-    trailingPE:               gasData.pe,
-    epsTrailingTwelveMonths:  gasData.eps,
-    marketCap:                gasData.mktCap
+    // Yahoo-style keys (for modal, chart, etc.)
+    regularMarketPrice:         _price,
+    chartPreviousClose:         _prev,
+    regularMarketPreviousClose: _prev,
+    regularMarketOpen:          (gasData.open != null ? gasData.open : _price),
+    regularMarketDayHigh:       gasData.high,
+    regularMarketDayLow:        gasData.low,
+    fiftyTwoWeekHigh:           gasData.week52High,
+    fiftyTwoWeekLow:            gasData.week52Low,
+    regularMarketVolume:        gasData.volume,
+    trailingPE:                 gasData.pe,
+    epsTrailingTwelveMonths:    gasData.eps,
+    marketCap:                  gasData.mktCap,
+    // Engine/Firebase-style keys (for _resolvePrice, bars)
+    ltp:        _price,
+    price:      _price,
+    prevClose:  _prev,
+    prev_close: _prev,
+    high:       gasData.high,
+    low:        gasData.low,
+    h52:        gasData.week52High,
+    l52:        gasData.week52Low,
+    high52:     gasData.week52High,
+    low52:      gasData.week52Low,
+    change:     _diff,
+    change_pct: _pct
   };
 }
 
@@ -3568,14 +3512,11 @@ async function batchFetchStocks(symbols, isIndex=false){
             const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
             if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
               const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
-              const prevP = p.prev_close || p.chartPreviousClose || price;
-              const chgP  = (price && prevP) ? parseFloat((price - prevP).toFixed(2)) : 0;
-              const pctP  = (price && prevP && prevP > 0) ? parseFloat(((price - prevP) / prevP * 100).toFixed(2)) : 0;
               cache[s] = { data: Object.assign({}, p, {
                 regularMarketPrice: price,
-                chartPreviousClose: prevP,
-                regularMarketChange: chgP,
-                regularMarketChangePercent: pctP,
+                chartPreviousClose: p.prev_close || p.chartPreviousClose || price,
+                regularMarketChange: 0,
+                regularMarketChangePercent: 0,
                 _source: 'firebase_lp_closed'
               }), time: Date.now() };
               lastUpdatedMap[s] = Date.now();
@@ -3593,21 +3534,17 @@ async function batchFetchStocks(symbols, isIndex=false){
             if(snap.exists){
               const p = snap.data();
               if(p && p.close && p.close > 0){
-                const _c2  = p.close;
-                const _prv2 = p.prev || p.close;
-                const _chg2 = (_c2 && _prv2) ? parseFloat((_c2 - _prv2).toFixed(2)) : 0;
-                const _pct2 = (_c2 && _prv2 && _prv2 > 0) ? parseFloat(((_c2 - _prv2) / _prv2 * 100).toFixed(2)) : 0;
                 cache[s] = { data: {
-                  regularMarketPrice: _c2,
-                  chartPreviousClose: _prv2,
-                  regularMarketOpen:  p.open || _c2,
-                  regularMarketDayHigh: p.high || _c2,
-                  regularMarketDayLow:  p.low  || _c2,
-                  fiftyTwoWeekHigh: p.week52High || p.high52 || p.high || _c2,
-                  fiftyTwoWeekLow:  p.week52Low  || p.low52  || p.low  || _c2,
+                  regularMarketPrice: p.close,
+                  chartPreviousClose: p.prev || p.close,
+                  regularMarketOpen:  p.open || p.close,
+                  regularMarketDayHigh: p.high || p.close,
+                  regularMarketDayLow:  p.low  || p.close,
+                  fiftyTwoWeekHigh: p.week52High || p.high || p.close,
+                  fiftyTwoWeekLow:  p.week52Low  || p.low  || p.close,
                   regularMarketVolume: p.volume || 0,
-                  regularMarketChange: _chg2,
-                  regularMarketChangePercent: _pct2,
+                  regularMarketChange: 0,
+                  regularMarketChangePercent: 0,
                   _source: 'firebase_olhcv_closed'
                 }, time: Date.now() };
                 lastUpdatedMap[s] = Date.now();
@@ -3637,28 +3574,10 @@ async function batchFetchStocks(symbols, isIndex=false){
         const prices = doc.data().prices || {};
         let stored = 0;
         symbols.forEach(s => {
-          // .NS first, .BO fallback + normalize — Bug Fix
-          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
-          if(p){
-            const existing = cache[s]?.data || {};
-            const price  = p.ltp || p.price || p.regularMarketPrice || 0;
-            const prevC  = p.prevClose || p.prev_close || p.chartPreviousClose || price;
-            const chg    = p.change    != null ? p.change    : parseFloat((price-prevC).toFixed(2));
-            const chgPct = p.change_pct!= null ? p.change_pct: (prevC>0?parseFloat(((price-prevC)/prevC*100).toFixed(2)):0);
-            cache[s] = { data: Object.assign({}, existing, p, {
-              regularMarketPrice:         price,
-              chartPreviousClose:         prevC,
-              regularMarketChange:        chg,
-              regularMarketChangePercent: chgPct,
-              regularMarketOpen:    p.open  || existing.regularMarketOpen  || price,
-              regularMarketDayHigh: p.high  || existing.regularMarketDayHigh || price,
-              regularMarketDayLow:  p.low   || existing.regularMarketDayLow  || price,
-              fiftyTwoWeekHigh: p.high52||p.h52||p.fiftyTwoWeekHigh||existing.fiftyTwoWeekHigh||0,
-              fiftyTwoWeekLow:  p.low52 ||p.l52||p.fiftyTwoWeekLow ||existing.fiftyTwoWeekLow ||0,
-              h52: p.h52||p.high52||p.fiftyTwoWeekHigh||existing.h52||0,
-              l52: p.l52||p.low52 ||p.fiftyTwoWeekLow ||existing.l52||0,
-              _source: 'firebase_live'
-            }), time: Date.now() };
+          const fbKey = s + '.NS';
+          if(prices[fbKey]){
+            const p = prices[fbKey];
+            cache[s] = { data: p, time: Date.now() };
             lastUpdatedMap[s] = Date.now();
             stored++;
           }
@@ -3717,11 +3636,6 @@ async function fetchFull(sym,isIndex=false){
   let key=sym, symbol=isIndex?sym:sym+".NS";
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
-  // .BO exchange cache check — jo NS failed hatu ane BO known che
-  if(!isIndex && window._exchangeHint && window._exchangeHint[sym] === 'BO'){
-    symbol = sym + '.BO';
-    encodedSymbol = symbol;
-  }
 
   // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
   if(!isIndex){
@@ -3736,21 +3650,17 @@ async function fetchFull(sym,isIndex=false){
             const mktStatus = getMarketStatus();
             if(!mktStatus.open){
               // ── Market CLOSED: Firebase close = last known price, skip GAS entirely ──
-              const _c   = p.close;
-              const _prv = p.prev || p.close;
-              const _chg  = (_c && _prv) ? parseFloat((_c - _prv).toFixed(2)) : 0;
-              const _pct  = (_c && _prv && _prv > 0) ? parseFloat(((_c - _prv) / _prv * 100).toFixed(2)) : 0;
               const closedData = {
-                regularMarketPrice:        _c,
-                chartPreviousClose:        _prv,
-                regularMarketOpen:         p.open  || _c,
-                regularMarketDayHigh:      p.high  || _c,
-                regularMarketDayLow:       p.low   || _c,
-                fiftyTwoWeekHigh:          p.week52High || p.high52 || p.high || _c,
-                fiftyTwoWeekLow:           p.week52Low  || p.low52  || p.low  || _c,
+                regularMarketPrice:        p.close,
+                chartPreviousClose:        p.prev  || p.close,
+                regularMarketOpen:         p.open  || p.close,
+                regularMarketDayHigh:      p.high  || p.close,
+                regularMarketDayLow:       p.low   || p.close,
+                fiftyTwoWeekHigh:          p.week52High || p.high || p.close,
+                fiftyTwoWeekLow:           p.week52Low  || p.low  || p.close,
                 regularMarketVolume:       p.volume || 0,
-                regularMarketChange:       _chg,
-                regularMarketChangePercent:_pct,
+                regularMarketChange:       0,
+                regularMarketChangePercent:0,
                 _source: 'firebase_closed'
               };
               cache[key] = {data: closedData, time: Date.now()};
@@ -4006,19 +3916,39 @@ function saveSetting(type){
     loadSettingsUI();
     showPopup(val?"API 5 saved!":"API 5 cleared");
   }
-  if(type==="refresh"){
-    const val=parseInt(document.getElementById("set-refresh").value);
-    if(val<10){ showPopup("Minimum 10 seconds"); return; }
-    localStorage.setItem("refreshSec",val);
-    if(refreshInterval) clearInterval(refreshInterval);
-    refreshInterval=setInterval(()=>{updatePrices();},val*1000);
-    showPopup(`Refresh set to ${val}s`);
+if (type === "refresh") {
+    const val = parseInt(document.getElementById("set-refresh").value);
+    
+    // 🛡️ FIX 1: isNaN check add karyo (Khali input app ne crash nahi kare)
+    if (isNaN(val) || val < 10) { 
+        showPopup("Minimum 10 seconds required"); 
+        return; 
+    }
+    
+    localStorage.setItem("refreshSec", val);
+    if (refreshInterval) clearInterval(refreshInterval);
+    
+    // 🛡️ FIX 2: Market chalu hoy to j refresh thase (API quota bachshe)
+    refreshInterval = setInterval(() => {
+        const m = getMarketStatus();
+        if (m.open) updatePrices();
+    }, val * 1000);
+    
+    showPopup(`Auto-Refresh set to ${val}s`);
   }
-  if(type==="cache"){
-    const val=parseInt(document.getElementById("set-cache").value);
-    if(val<1000){ showPopup("Minimum 1000ms"); return; }
-    CACHE_TIME=val;
-    localStorage.setItem("cacheSec",val);
+
+  if (type === "cache") {
+    const val = parseInt(document.getElementById("set-cache").value);
+    
+    // 🛡️ FIX 1: isNaN check ahiya pan jaruri chhe
+    if (isNaN(val) || val < 1000) { 
+        showPopup("Minimum 1000ms required"); 
+        return; 
+    }
+    
+    CACHE_TIME = val;
+    // Nodh: 'val' milliseconds ma chhe, pan juna code mujab key 'cacheSec' rakhi chhe
+    localStorage.setItem("cacheSec", val); 
     showPopup(`Cache set to ${val}ms`);
   }
 }
@@ -4360,7 +4290,7 @@ function sortPrice(){
   priceAsc=!priceAsc; saveWatchlists(); renderWL();
 }
 function sortPercent(){
-  watchlists[currentWL].stocks.sort((a,b)=>{let da=cache[a]?.data,db=cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return percentAsc?pa-pb:pb-pa;});
+  watchlists[currentWL].stocks.sort((a,b)=>{let da=cache[a]?.data,db=cache[b]?.data;let pa=da?_resolvePrice(da).pct:0;let pb=db?_resolvePrice(db).pct:0;return percentAsc?pa-pb:pb-pa;});
   percentAsc=!percentAsc; saveWatchlists(); renderWL();
 }
 
@@ -5241,10 +5171,7 @@ function updatePriceTicker() {
   Object.entries(idxMap).forEach(([sym,label]) => {
     const d = cache[sym]?.data;
     if(!d) return;
-    const price = d.regularMarketPrice;
-    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
-    const chg = prev ? price - prev : 0;
-    const pct = prev ? (chg/prev*100) : 0;
+    const { price, diff: chg, pct } = _resolvePrice(d);
     items.push({sym:label, price, chg, pct});
   });
 
@@ -5252,10 +5179,7 @@ function updatePriceTicker() {
   wl.forEach(sym => {
     const d = cache[sym]?.data;
     if(!d) return;
-    const price = d.regularMarketPrice;
-    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
-    const chg = prev ? price - prev : 0;
-    const pct = prev ? (chg/prev*100) : 0;
+    const { price, diff: chg, pct } = _resolvePrice(d);
     items.push({sym, price, chg, pct});
   });
 
@@ -5576,20 +5500,8 @@ function startRefresh(){
   if(refreshInterval) clearInterval(refreshInterval);
   refreshInterval = setInterval(()=>{
     const m = getMarketStatus();
-    if(m.open){
-      updatePrices();
-    } else {
-      // Market closed: GAS call nahi — bas cache time refresh karo jethike 0.00 na aave
-      // Firebase thi already loaded data correct j che — sirf expire thavu na joie
-      let anyStale = false;
-      for(let s of wl){
-        if(cache[s]?.data && (Date.now() - cache[s].time) > CACHE_TIME){
-          cache[s].time = Date.now(); // Extend — data same rehse, 0.00 nahi aavse
-          anyStale = true;
-        }
-      }
-      if(anyStale) _patchVisibleWLPrices(); // UI silently update
-    }
+    // ✅ Market open hoy to update chalu rakho
+    if(m.open) updatePrices(); 
   }, 5000);
 }
 
@@ -5597,15 +5509,22 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     if(refreshInterval) clearInterval(refreshInterval);
   } else {
-    // Android WebView: short delay to let network reconnect after resume
-    setTimeout(() => {
-      updatePrices();
-      startRefresh();
+    // Android/Mobile mate network re-connect thava mate delay jaruri chhe
+    setTimeout(async () => {
+      console.log("🔄 Resuming App: Fetching fresh ticks...");
+      
+      // ✅ Resume thava par sauthi pehla fresh data fetch karo
+      const wl = getActiveWatchlistSymbols(); 
+      if(wl.length > 0) {
+          try { await batchFetchStocks(wl); } catch(e) { console.error(e); }
+      }
+      
+      updatePrices(); // UI update karo
+      startRefresh(); // Timer pacho chalu karo
       startEngineStaleCheck();
-    }, 800);
+    }, 1000); // 800ms karta 1000ms vadhare safe chhe WebView mate
   }
 });
-
 setTimeout(() => startRefresh(), 5000);
     
 async function manualRefresh(){
@@ -5913,10 +5832,10 @@ function buildMoverChips() {
   if (!wl || wl.length === 0) return '';
   const stocks = wl.map(s => {
     const d = cache[s]?.data;
-    if (!d || !d.regularMarketPrice || !d.chartPreviousClose) return null;
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct = (diff / d.chartPreviousClose * 100) || 0;
-    return { sym: s, pct, price: d.regularMarketPrice };
+    if (!d) return null;
+    const { price, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    return { sym: s, pct, price };
   }).filter(Boolean);
   if (stocks.length === 0) return '';
   const sorted = [...stocks].sort((a, b) => b.pct - a.pct);
@@ -6182,14 +6101,9 @@ async function _tabLoadBrief() {
 const stockLines = wl.slice(0, 12).map(s => {
   const d = cache[s] && cache[s].data;
   if (!d) return null;
-
-  const price = d.regularMarketPrice || 0;
-  const prev  = d.chartPreviousClose || 0;
-  const diff  = price - prev;
-
-  const pct = prev ? ((diff / prev) * 100).toFixed(2) : '0.00';
-
-  return `${s}: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)`;
+  const { price, diff, pct } = _resolvePrice(d);
+  if (price <= 0) return null;
+  return `${s}: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
 }).filter(Boolean);
 
 
@@ -6288,9 +6202,9 @@ async function _tabAsk(question) {
   const wlCtx = wl.slice(0,12).map(s => {
     const d = cache[s] && cache[s].data;
     if (!d) return null;
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
-    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+    const { price, diff, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    return `${s}: ₹${price.toFixed(2)} (${diff>=0?'+':''}${pct.toFixed(2)}%)`;
   }).filter(Boolean).join(', ');
 
   const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
@@ -6680,13 +6594,12 @@ function renderScreener() {
   // Apply filters
   let results = sourceStocks.map(sym => {
     const d = cache[sym]&&cache[sym].data;
-    if (!d || !d.chartPreviousClose || !d.regularMarketPrice) return null;
-    const price = d.regularMarketPrice;
-    const prev = d.chartPreviousClose;
-    const pct = ((price - prev) / prev * 100) || 0;
-    const hi52 = d.fiftyTwoWeekHigh || 0;
-    const lo52 = d.fiftyTwoWeekLow || 0;
-    const vol = d.regularMarketVolume || 0;
+    if (!d) return null;
+    const { price, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    const hi52 = d.fiftyTwoWeekHigh || d.week52High || d.h52 || d.high52 || 0;
+    const lo52 = d.fiftyTwoWeekLow  || d.week52Low  || d.l52 || d.low52  || 0;
+    const vol = d.regularMarketVolume || d.volume || 0;
     const avgVol = d.averageDailyVolume3Month || d.averageDailyVolume10Day || 0;
     return {sym, price, pct, hi52, lo52, vol, avgVol};
   }).filter(Boolean);
@@ -6933,9 +6846,9 @@ function _niviWatchlistCtx() {
   return wl.slice(0, 12).map(s => {
     const d = cache[s] && cache[s].data;
     if (!d) return null;
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff / d.chartPreviousClose) * 100).toFixed(2);
-    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
+    const { price, diff, pct } = _resolvePrice(d);
+    if (price <= 0) return null;
+    return `${s}: ₹${price.toFixed(2)} (${diff>=0?'+':''}${pct.toFixed(2)}%)`;
   }).filter(Boolean).join(', ');
 }
 
@@ -7005,15 +6918,18 @@ async function openNivi(sym) {
   if (gemKey) {
     const cd = cache[sym] && cache[sym].data;
     if (cd) {
-      const diff = cd.regularMarketPrice - cd.chartPreviousClose;
-      const pct  = ((diff / cd.chartPreviousClose) * 100).toFixed(2);
+      const { price: cdPrice, diff, pct } = _resolvePrice(cd);
+      const cdH  = cd.regularMarketDayHigh || cd.high || 0;
+      const cdL  = cd.regularMarketDayLow  || cd.low  || 0;
+      const cdW52H = cd.fiftyTwoWeekHigh || cd.week52High || cd.h52 || cd.high52 || 0;
+      const cdW52L = cd.fiftyTwoWeekLow  || cd.week52Low  || cd.l52 || cd.low52  || 0;
       const prompt =
 `\u0906\u092a '\u0928\u093f\u0935\u0940' \u0939\u0948\u0902 \u2014 \u090f\u0915 \u0935\u093f\u0936\u0947\u0937\u091c\u094d\u091e \u092d\u093e\u0930\u0924\u0940\u092f \u0936\u0947\u092f\u0930 \u092c\u093e\u091c\u093c\u093e\u0930 \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0915\u0964
 \u0938\u094d\u091f\u0949\u0915: ${sym}
-CMP: \u20b9${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)
-\u0926\u093f\u0928 \u0915\u093e \u0909\u091a\u094d\u091a: \u20b9${cd.regularMarketDayHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.regularMarketDayLow?.toFixed(2)}
-52 \u0938\u092a\u094d\u0924\u093e\u0939 \u0909\u091a\u094d\u091a: \u20b9${cd.fiftyTwoWeekHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.fiftyTwoWeekLow?.toFixed(2)}
-Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
+CMP: \u20b9${cdPrice.toFixed(2)} (${diff>=0?'+':''}${pct.toFixed(2)}%)
+\u0926\u093f\u0928 \u0915\u093e \u0909\u091a\u094d\u091a: \u20b9${cdH.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cdL.toFixed(2)}
+52 \u0938\u092a\u094d\u0924\u093e\u0939 \u0909\u091a\u094d\u091a: \u20b9${cdW52H.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cdW52L.toFixed(2)}
+Volume: ${(cd.regularMarketVolume||cd.volume||0).toLocaleString('en-IN') || 'N/A'}
 \u0915\u0947\u0935\u0932 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f\u0964 Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
       const resp = await directSarvamCall(prompt);
       _niviShowLoading(false);
@@ -7093,17 +7009,20 @@ async function _niviAskQuestion(question) {
   const stockCtx = _niviCurrentSym ? (() => {
     const d = cache[_niviCurrentSym] && cache[_niviCurrentSym].data;
     if (!d) return '';
-    const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff / d.chartPreviousClose) * 100).toFixed(2);
+    const { price, diff, pct } = _resolvePrice(d);
     const f    = window._firebaseFundCache && window._firebaseFundCache[_niviCurrentSym];
     const pe   = f ? (f.pe || f.trailingPE || 'N/A') : 'N/A';
     const eps  = f ? (f.eps || f.epsTrailingTwelveMonths || 'N/A') : 'N/A';
+    const dH   = d.regularMarketDayHigh  || d.high || 0;
+    const dL   = d.regularMarketDayLow   || d.low  || 0;
+    const wH   = d.fiftyTwoWeekHigh || d.week52High || d.h52 || d.high52 || 0;
+    const wL   = d.fiftyTwoWeekLow  || d.week52Low  || d.l52 || d.low52  || 0;
     return `\nStock Context (${_niviCurrentSym}):` +
-      `\n  CMP: ₹${d.regularMarketPrice?.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)` +
-      `\n  Day H/L: ₹${d.regularMarketDayHigh?.toFixed(2)} / ₹${d.regularMarketDayLow?.toFixed(2)}` +
-      `\n  52W H/L: ₹${d.fiftyTwoWeekHigh?.toFixed(2)} / ₹${d.fiftyTwoWeekLow?.toFixed(2)}` +
+      `\n  CMP: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)` +
+      `\n  Day H/L: ₹${dH.toFixed(2)} / ₹${dL.toFixed(2)}` +
+      `\n  52W H/L: ₹${wH.toFixed(2)} / ₹${wL.toFixed(2)}` +
       `\n  P/E: ${pe} | EPS: ${eps}` +
-      `\n  Volume: ${d.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}`;
+      `\n  Volume: ${(d.regularMarketVolume||d.volume||0).toLocaleString('en-IN') || 'N/A'}`;
   })() : '';
 
   // ── Compose multi-turn prompt ──
