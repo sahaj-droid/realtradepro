@@ -18,19 +18,12 @@ window.startClock = function() {
 window.preloadAllFundamentalsFromFirebase = async function() {
     return Promise.resolve();
 };
-// ---------------------------
 
-window.preloadAllFundamentalsFromFirebase = async function() {
-    return Promise.resolve();
-};
-// ----------------------
 // Dummy or fallback for fundamentals if it got removed
 async function preloadAllFundamentalsFromFirebase() {
     console.log("[Fundamentals] Preload called (Fallback/Optimized)");
     return Promise.resolve();
 }
-
-// ---------------------------
 
 // ========================================
 // FIREBASE MULTI-USER SYSTEM
