@@ -1,7 +1,5 @@
 // --- Missing Globals Fix ---
 let refreshInterval = null;
-let symbols = typeof wl !== 'undefined' ? wl : [];
-
 function startClock() {
     const clockEl = document.getElementById('market-time') || document.getElementById('clock');
     if (!clockEl) return;
