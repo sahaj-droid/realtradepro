@@ -1,7 +1,8 @@
 // --- FINAL EMERGENCY FIX ---
 window.refreshInterval = null;
+window.isIndex = false; // <-- આ નવું ઉમેર્યું
+window.batchFetchStocks = async function() { return Promise.resolve(); }; // <-- આ નવું ઉમેર્યું
 
-// આખી ફાઈલ લોડ થઈ જાય પછી જ symbols સેટ થશે (No Initialization Error)
 setTimeout(() => {
     window.symbols = typeof wl !== 'undefined' ? wl : [];
 }, 500);
