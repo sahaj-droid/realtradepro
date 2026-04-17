@@ -7820,3 +7820,15 @@ function sToggle(bodyId, arrId){
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
 }
+
+
+// --- Missing Clock Function Fix ---
+function startClock() {
+    const clockEl = document.getElementById('market-time') || document.getElementById('clock');
+    if (!clockEl) return;
+    
+    setInterval(() => {
+        const now = new Date();
+        clockEl.innerText = now.toLocaleTimeString('en-IN');
+    }, 1000);
+}
