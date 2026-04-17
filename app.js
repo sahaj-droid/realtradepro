@@ -1,15 +1,22 @@
-// --- Critical Globals Fix ---
-let refreshInterval = null;
+// --- EMERGENCY FIX ---
+window.refreshInterval = null;
 
-function startClock() {
+if (typeof symbols === 'undefined') { 
+    window.symbols = typeof wl !== 'undefined' ? wl : []; 
+}
+
+window.startClock = function() {
     const clockEl = document.getElementById('market-time') || document.getElementById('clock');
     if (!clockEl) return;
     setInterval(() => {
-        const now = new Date();
-        if(clockEl) clockEl.innerText = now.toLocaleTimeString('en-IN');
+        if(clockEl) clockEl.innerText = new Date().toLocaleTimeString('en-IN');
     }, 1000);
-}
+};
 
+window.preloadAllFundamentalsFromFirebase = async function() {
+    return Promise.resolve();
+};
+// ----------------------
 // Dummy or fallback for fundamentals if it got removed
 async function preloadAllFundamentalsFromFirebase() {
     console.log("[Fundamentals] Preload called (Fallback/Optimized)");
