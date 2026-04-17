@@ -1879,7 +1879,7 @@ async function updatePrices(){
             }
           });
         }
-      }catch(e){}
+      
       // Remaining stocks — olhcv collection thi
       const remaining = symbols.filter(s => !cache[s]?.data?._source?.startsWith('firebase'));
       if(remaining.length > 0){
@@ -5594,7 +5594,8 @@ function _niviApplyPriceAndTech(data) {
     const cfg = {BUY:{bg:'#166534',color:'#86efac',text:'🟢 BUY'},HOLD:{bg:'#713f12',color:'#fde68a',text:'🟡 HOLD'},SELL:{bg:'#7f1d1d',color:'#fca5a5',text:'🔴 SELL'}}[rec.signal] || {bg:'#713f12',color:'#fde68a',text:'🟡 HOLD'};
     badgeEl.style.background = cfg.bg; badgeEl.style.color = cfg.color; badgeEl.innerText = cfg.text; badgeEl.style.display = 'block';
   }
-  const t = data.technical || {};
+  const t = da
+ta.technical || {};
   const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#22c55e' : '#ef4444') : '#94a3b8';
   const indicators = [
     {label:'RSI',   val: t.rsi14 != null ? t.rsi14.toFixed(1) : '--', color: t.rsi14 < 35 ? '#22c55e' : t.rsi14 > 70 ? '#ef4444' : '#f59e0b'},
