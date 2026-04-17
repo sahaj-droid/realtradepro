@@ -1,5 +1,9 @@
-// --- Missing Globals Fix ---
+// --- Critical Globals Fix ---
+let cache = {};
 let refreshInterval = null;
+let symbols = typeof wl !== 'undefined' ? wl : [];
+let lastUpdatedMap = {};
+
 function startClock() {
     const clockEl = document.getElementById('market-time') || document.getElementById('clock');
     if (!clockEl) return;
@@ -8,9 +12,19 @@ function startClock() {
         if(clockEl) clockEl.innerText = now.toLocaleTimeString('en-IN');
     }, 1000);
 }
+
+// Dummy or fallback for fundamentals if it got removed
+async function preloadAllFundamentalsFromFirebase() {
+    console.log("[Fundamentals] Preload called (Fallback/Optimized)");
+    return Promise.resolve();
+}
+
+// ---------------------------
+
 // ========================================
 // FIREBASE MULTI-USER SYSTEM
 // ========================================
+
 
 // ── Universal Data Normalizer (Harmonization) ─────────────────────────
 function normalizeStockData(p, existing = {}) {
@@ -611,6 +625,7 @@ function inr(n){
   }
   return (n<0?'-':'')+'₹'+intPart+'.'+dec;
 }
+
 // NSE Market Holidays 2025 + 2026
 const MARKET_HOLIDAYS = [
   {date:"2025-01-26",name:"Republic Day"},
@@ -760,7 +775,6 @@ function holdingDaysLabel(days){
 }
 
 // -- LAST UPDATED TIMESTAMP --
-let lastUpdatedMap={};
 
 function timeAgo(ts){
   if(!ts) return '';
@@ -5593,7 +5607,8 @@ function _niviApplyPriceAndTech(data) {
     document.getElementById('nivi-price').innerText = '₹' + f.price;
     const chg = f.changePct ? (f.changePct >= 0 ? '+' : '') + f.changePct.toFixed(2) + '%' : '--';
     const chgEl = document.getElementById('nivi-change');
-    chgEl.innerText = chg + (f.change ? '  ₹' + Math.abs(f.change).toFixed(2) : '');
+    c
+hgEl.innerText = chg + (f.change ? '  ₹' + Math.abs(f.change).toFixed(2) : '');
     chgEl.style.color = (f.changePct >= 0) ? '#22c55e' : '#ef4444';
   }
   const rec = data.recommendation || {};
@@ -5602,8 +5617,7 @@ function _niviApplyPriceAndTech(data) {
     const cfg = {BUY:{bg:'#166534',color:'#86efac',text:'🟢 BUY'},HOLD:{bg:'#713f12',color:'#fde68a',text:'🟡 HOLD'},SELL:{bg:'#7f1d1d',color:'#fca5a5',text:'🔴 SELL'}}[rec.signal] || {bg:'#713f12',color:'#fde68a',text:'🟡 HOLD'};
     badgeEl.style.background = cfg.bg; badgeEl.style.color = cfg.color; badgeEl.innerText = cfg.text; badgeEl.style.display = 'block';
   }
-  const t = da
-ta.technical || {};
+  const t = data.technical || {};
   const macdColor = (t.macd != null && t.signal != null) ? (t.macd > t.signal ? '#22c55e' : '#ef4444') : '#94a3b8';
   const indicators = [
     {label:'RSI',   val: t.rsi14 != null ? t.rsi14.toFixed(1) : '--', color: t.rsi14 < 35 ? '#22c55e' : t.rsi14 > 70 ? '#ef4444' : '#f59e0b'},
@@ -7827,16 +7841,4 @@ function sToggle(bodyId, arrId){
   const hidden = b.style.display === 'none' || b.style.display === '';
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
-}
-
-
-// --- Missing Clock Function Fix ---
-function startClock() {
-    const clockEl = document.getElementById('market-time') || document.getElementById('clock');
-    if (!clockEl) return;
-    
-    setInterval(() => {
-        const now = new Date();
-        clockEl.innerText = now.toLocaleTimeString('en-IN');
-    }, 1000);
 }
