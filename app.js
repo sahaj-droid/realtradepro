@@ -1,8 +1,5 @@
 // --- Critical Globals Fix ---
-let cache = {};
 let refreshInterval = null;
-let symbols = typeof wl !== 'undefined' ? wl : [];
-let lastUpdatedMap = {};
 
 function startClock() {
     const clockEl = document.getElementById('market-time') || document.getElementById('clock');
