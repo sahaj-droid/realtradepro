@@ -1873,31 +1873,13 @@ async function updatePrices(){
           if(p){
             const existing = cache[s]?.data || {};
             
-            const price  = p.ltp || p.price || p.regularMarketPrice || 0;
-            const prevC  = p.prev_close || p.prevClose || p.chartPreviousClose || existing.chartPreviousClose || 0;
-            const safePrev = (prevC > 0) ? prevC : price;
-            const chg    = (p.change    != null && p.change    !== 0) ? p.change    : parseFloat((price - safePrev).toFixed(2));
-            const chgPct = (p.pct       != null && p.pct       !== 0) ? p.pct       : (safePrev > 0 ? parseFloat(((price - safePrev) / safePrev * 100).toFixed(2)) : 0);
-            const h52val = p.high52 || p.h52 || p.fiftyTwoWeekHigh || existing.fiftyTwoWeekHigh || existing.h52 || 0;
-            const l52val = p.low52  || p.l52 || p.fiftyTwoWeekLow  || existing.fiftyTwoWeekLow  || existing.l52 || 0;
+            // Universal Normalizer for GAS Data
+            const standardizedData = normalizeStockData(p, existing);
             
-            cache[s] = { data: Object.assign({}, existing, p, {
-              ltp:                        price,
-              change:                     chg,
-              pct:                        chgPct,
-              ltp:                        price, regularMarketPrice: price,
-              chartPreviousClose:         safePrev,
-              change:                     chg, regularMarketChange: chg,
-              pct:                        chgPct, regularMarketChangePercent: chgPct,
-              regularMarketOpen:          p.open || existing.regularMarketOpen  || price,
-              regularMarketDayHigh:       p.high || existing.regularMarketDayHigh || price,
-              regularMarketDayLow:        p.low  || existing.regularMarketDayLow  || price,
-              fiftyTwoWeekHigh:           h52val,
-              fiftyTwoWeekLow:            l52val,
-              h52:                        h52val,
-              l52:                        l52val,
-              _source: 'firebase_live'
-            }), time: Date.now() };
+            cache[s] = { 
+              data: Object.assign(standardizedData, { _source: 'gas_poll' }), 
+              time: Date.now() 
+            };
             lastUpdatedMap[s] = Date.now();
           }
         });
@@ -3712,31 +3694,13 @@ async function batchFetchStocks(symbols, isIndex=false){
           if(p){
             const existing = cache[s]?.data || {};
             
-            const price  = p.ltp || p.price || p.regularMarketPrice || 0;
-            const prevC  = p.prev_close || p.prevClose || p.chartPreviousClose || existing.chartPreviousClose || 0;
-            const safePrev = (prevC > 0) ? prevC : price;
-            const chg    = (p.change    != null && p.change    !== 0) ? p.change    : parseFloat((price - safePrev).toFixed(2));
-            const chgPct = (p.pct       != null && p.pct       !== 0) ? p.pct       : (safePrev > 0 ? parseFloat(((price - safePrev) / safePrev * 100).toFixed(2)) : 0);
-            const h52val = p.high52 || p.h52 || p.fiftyTwoWeekHigh || existing.fiftyTwoWeekHigh || existing.h52 || 0;
-            const l52val = p.low52  || p.l52 || p.fiftyTwoWeekLow  || existing.fiftyTwoWeekLow  || existing.l52 || 0;
+            // Universal Normalizer for GAS Data
+            const standardizedData = normalizeStockData(p, existing);
             
-            cache[s] = { data: Object.assign({}, existing, p, {
-              ltp:                        price,
-              change:                     chg,
-              pct:                        chgPct,
-              ltp:                        price, regularMarketPrice: price,
-              chartPreviousClose:         safePrev,
-              change:                     chg, regularMarketChange: chg,
-              pct:                        chgPct, regularMarketChangePercent: chgPct,
-              regularMarketOpen:    p.open  || existing.regularMarketOpen  || price,
-              regularMarketDayHigh: p.high  || existing.regularMarketDayHigh || price,
-              regularMarketDayLow:  p.low   || existing.regularMarketDayLow  || price,
-              fiftyTwoWeekHigh: p.high52||p.h52||p.fiftyTwoWeekHigh||existing.fiftyTwoWeekHigh||0,
-              fiftyTwoWeekLow:  p.low52 ||p.l52||p.fiftyTwoWeekLow ||existing.fiftyTwoWeekLow ||0,
-              h52: p.h52||p.high52||p.fiftyTwoWeekHigh||existing.h52||0,
-              l52: p.l52||p.low52 ||p.fiftyTwoWeekLow ||existing.l52||0,
-              _source: 'firebase_live'
-            }), time: Date.now() };
+            cache[s] = { 
+              data: Object.assign(standardizedData, { _source: 'gas_poll' }), 
+              time: Date.now() 
+            };
             lastUpdatedMap[s] = Date.now();
             stored++;
           }
@@ -5388,7 +5352,8 @@ function updatePriceTicker() {
 // Accordion + PDF both auto-update
 // ======================================
 const FEATURE_DATA = [
-  {cat:"HEADER", color:"#38bdf8", items:[
+  {cat:"HEADER", col
+or:"#38bdf8", items:[
     {name:"NIFTY / SENSEX / BANKNIFTY", desc:"Live index prices + % change. Tap = detail modal. Indian format (24.5k). Auto-refresh."},
     {name:"Theme Button", desc:"Dark/Light mode toggle. Instantly applies across full app."},
     {name:"Refresh Button", desc:"Manual cache clear + fresh price fetch for all stocks."},
@@ -5613,6 +5578,43 @@ function downloadFeaturePDF(){
 
 
 // ── Real-time Firebase Listener ─────────────────────────────────────
+
+// ── Universal Data Normalizer (Harmonization) ─────────────────────────
+function normalizeStockData(p, existing = {}) {
+  // Python Engine Keys
+  const pyLtp = p.ltp || p.price || 0;
+  // GAS/Yahoo Keys
+  const gasLtp = p.regularMarketPrice || 0;
+  
+  const ltp = pyLtp || gasLtp || 0;
+  const prev_close = p.prev_close || p.chartPreviousClose || p.regularMarketPreviousClose || existing.prev_close || existing.chartPreviousClose || ltp;
+  
+  const change = p.change !== undefined ? p.change : (p.regularMarketChange !== undefined ? p.regularMarketChange : (ltp - prev_close));
+  const pct = p.pct !== undefined ? p.pct : (p.change_pct !== undefined ? p.change_pct : (p.regularMarketChangePercent !== undefined ? p.regularMarketChangePercent : (prev_close > 0 ? (change / prev_close * 100) : 0)));
+
+  return {
+    ...existing, // Keep old raw data just in case
+    ...p,        // Merge new raw data
+    // Standardized Keys
+    ltp: ltp,
+    change: change,
+    pct: pct,
+    prev_close: prev_close,
+    day_open: p.open || p.regularMarketOpen || existing.day_open || 0,
+    day_high: p.high || p.regularMarketDayHigh || existing.day_high || 0,
+    day_low: p.low || p.regularMarketDayLow || existing.day_low || 0,
+    high_52: p.high52 || p.fiftyTwoWeekHigh || existing.high_52 || 0,
+    low_52: p.low52 || p.fiftyTwoWeekLow || existing.low_52 || 0,
+    vol_today: p.today_volume || p.regularMarketVolume || existing.vol_today || 0,
+    
+    // Legacy support (to prevent old UI from breaking during transition)
+    regularMarketPrice: ltp,
+    chartPreviousClose: prev_close,
+    regularMarketChange: change,
+    regularMarketChangePercent: pct
+  };
+}
+
 let _livePricesUnsubscribe = null;
 
 function initRealtimeListener() {
@@ -5638,26 +5640,10 @@ function initRealtimeListener() {
         const p = prices[s];
         if (p) {
           const existing = cache[cleanSym]?.data || {};
+          const standardizedData = normalizeStockData(p, existing);
           
-          // Terminology Standardization: Map incoming keys to ltp, change, pct
-          const ltp    = p.ltp || p.price || p.regularMarketPrice || 0;
-          const prev   = p.prev_close || p.prevClose || p.chartPreviousClose || existing.chartPreviousClose || ltp;
-          const change = p.change !== undefined ? p.change : (ltp - prev);
-          const pct    = p.pct !== undefined ? p.pct : (p.change_pct !== undefined ? p.change_pct : (prev ? (change / prev * 100) : 0));
-
           cache[cleanSym] = {
-            data: {
-              ...existing,
-              ...p,
-              ltp: ltp,
-              change: change,
-              pct: pct,
-              // Legacy keys maintained for internal integrity
-              regularMarketPrice: ltp, 
-              chartPreviousClose: prev,
-              regularMarketChange: change,
-              regularMarketChangePercent: pct
-            },
+            data: Object.assign(standardizedData, { _source: 'firebase_realtime' }),
             time: Date.now()
           };
           lastUpdatedMap[cleanSym] = Date.now();
@@ -9687,8 +9673,6 @@ function sToggle(bodyId, arrId){
   const hidden = b.style.display === 'none' || b.style.display === '';
   b.style.display = hidden ? 'block' : 'none';
   a.textContent = hidden ? '▼' : '▶';
-}
-
 }
 // ── Smart Fallback Controller (0 Cost) ──
 window._pythonEngineActive = true; // ડિફોલ્ટ એક્ટિવ 
