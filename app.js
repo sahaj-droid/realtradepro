@@ -5352,8 +5352,7 @@ function updatePriceTicker() {
 // Accordion + PDF both auto-update
 // ======================================
 const FEATURE_DATA = [
-  {cat:"HEADER", col
-or:"#38bdf8", items:[
+  {cat:"HEADER", color:"#38bdf8", items:[
     {name:"NIFTY / SENSEX / BANKNIFTY", desc:"Live index prices + % change. Tap = detail modal. Indian format (24.5k). Auto-refresh."},
     {name:"Theme Button", desc:"Dark/Light mode toggle. Instantly applies across full app."},
     {name:"Refresh Button", desc:"Manual cache clear + fresh price fetch for all stocks."},
