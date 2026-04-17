@@ -1,9 +1,10 @@
-// --- EMERGENCY FIX ---
+// --- FINAL EMERGENCY FIX ---
 window.refreshInterval = null;
 
-if (typeof symbols === 'undefined') { 
-    window.symbols = typeof wl !== 'undefined' ? wl : []; 
-}
+// આખી ફાઈલ લોડ થઈ જાય પછી જ symbols સેટ થશે (No Initialization Error)
+setTimeout(() => {
+    window.symbols = typeof wl !== 'undefined' ? wl : [];
+}, 500);
 
 window.startClock = function() {
     const clockEl = document.getElementById('market-time') || document.getElementById('clock');
@@ -12,6 +13,11 @@ window.startClock = function() {
         if(clockEl) clockEl.innerText = new Date().toLocaleTimeString('en-IN');
     }, 1000);
 };
+
+window.preloadAllFundamentalsFromFirebase = async function() {
+    return Promise.resolve();
+};
+// ---------------------------
 
 window.preloadAllFundamentalsFromFirebase = async function() {
     return Promise.resolve();
