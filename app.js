@@ -5318,8 +5318,7 @@ function updatePriceTicker() {
   const items = [];
 
   // Indices first
-  const idxMap = {'^NSEI':'NIFTY 50','^BSESN':'SENSE
-X','^NSEBANK':'BANKNIFTY'};
+  const idxMap = {'^NSEI':'NIFTY 50','^BSESN':'SENSEX','^NSEBANK':'BANKNIFTY'};
   Object.entries(idxMap).forEach(([sym,label]) => {
     const d = cache[sym]?.data;
     if(!d) return;
