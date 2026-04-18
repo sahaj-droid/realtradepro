@@ -3245,15 +3245,13 @@ async function exportTechnicalExcel(){
     const fname = `RealTradePro_Technical_${ist}.xlsx`;
 
     // Mobile-compatible download: Blob + anchor click
-    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob  = new Blob([wbout], {type:'application/octet-stream'});
-    const url   = URL.createObjectURL(blob);
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
     const a     = document.createElement('a');
-    a.href      = url;
+    a.href      = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,' + wbout;
     a.download  = fname;
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    setTimeout(() => document.body.removeChild(a), 1000);
 
     showPopup(`Excel exported — ${rows.length} stocks`);
 
@@ -3854,8 +3852,6 @@ function loadSettingsUI(){
   // Alert engine toggle
   const aeChk = document.getElementById('alertEngineChk');
   if(aeChk) aeChk.checked = localStorage.getItem('alertEngineOn') !== 'false';
-  // Telegram alert toggles
-  loadTgToggles();
   // Notification toggle
   const ntChk = document.getElementById('notifToggleChk');
   const ntStat = document.getElementById('notifPermStatus');
@@ -4028,37 +4024,6 @@ function toggleAlertEngine(){
   const next=chk?chk.checked:true;
   localStorage.setItem('alertEngineOn', next?'true':'false');
   showPopup('Technical Alerts ' + (next?'ON ⚡':'OFF 🔕'));
-}
-
-function saveTgToggle(key, val){
-  localStorage.setItem(key, val?'true':'false');
-  // Save to Firebase so engine_v5 can read toggles
-  try{
-    const toggles = {
-      tgBB:  localStorage.getItem('tgBB')  !== 'false',
-      tgRSI: localStorage.getItem('tgRSI') !== 'false',
-      tgVOL: localStorage.getItem('tgVOL') !== 'false',
-      tgBRK: localStorage.getItem('tgBRK') !== 'false',
-      tgMKT: localStorage.getItem('tgMKT') !== 'false',
-    };
-    toggles[key] = val;
-    firebase.firestore().collection('RealTradePro').doc('tg_toggles').set(toggles);
-  }catch(e){}
-  showPopup((val?'✅':'🔕') + ' ' + key.replace('tg','') + ' alerts ' + (val?'ON':'OFF'));
-}
-
-function loadTgToggles(){
-  const toggles = {
-    'tgBB':  'tg-bb-chk',
-    'tgRSI': 'tg-rsi-chk',
-    'tgVOL': 'tg-vol-chk',
-    'tgBRK': 'tg-brk-chk',
-    'tgMKT': 'tg-mkt-chk',
-  };
-  Object.entries(toggles).forEach(([key, id]) => {
-    const el = document.getElementById(id);
-    if(el) el.checked = localStorage.getItem(key) !== 'false';
-  });
 }
 
 // Alert History — Firebase thi load karvo
@@ -9504,10 +9469,13 @@ async function _buildCorporateActionsTab(res, sym) {
 }
 
 // Settings collapsible toggle (used by settings tab sections)
-function sToggle(bodyId, arrId){
+function sToggle(bodyId, arrId) {
+  // Prevent any default navigation
+  event.preventDefault();
+  event.stopPropagation();
+  
   const b = document.getElementById(bodyId);
   const a = document.getElementById(arrId);
-
   if (!b || !a) return;
 
   const hidden = b.style.display === 'none' || b.style.display === '';

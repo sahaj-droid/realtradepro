@@ -256,7 +256,26 @@
 .form-group select:focus {
   border-color: #00d4aa;
 }
+html, body {
+  background: #071428 !important;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+}
 
+html {
+  height: -webkit-fill-available;
+}
+
+#settings {
+  background: #071428 !important;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+.tab {
+  background: #071428;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
 /* Light mode overrides */
 body.light-mode .profile-screen-bg { background:#faf8f5; }
 body.light-mode .profile-title { color:#1c1917; }
@@ -1112,86 +1131,7 @@ function fsVal(f){
       </label>
     </div>
 
-    <!-- Telegram Alert Toggles -->
-    <div class="s-collapse-hd" onclick="sToggle('tg-alerts-body','tg-alerts-arr')" style="padding:9px 14px;">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(56,189,248,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Telegram Alerts</div><div class="s-row-sub">Per category ON/OFF</div></div>
-      </div>
-      <span id="tg-alerts-arr" class="s-collapse-arr" style="color:#38bdf8;">▶</span>
-    </div>
-    <div id="tg-alerts-body" style="display:none;padding:4px 14px 10px;">
-      <div style="font-size:9px;color:#4b6280;margin-bottom:8px;">Individual alert categories — engine_v5 ma apply thashe</div>
-
-      <!-- BB Alerts -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">📈 BB Alerts</div>
-          <div style="font-size:9px;color:#64748b;">Upper · Lower · MACD Cross</div>
-        </div>
-        <label class="ios-tog-sm">
-          <input type="checkbox" id="tg-bb-chk" checked onchange="saveTgToggle('tgBB',this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-
-      <!-- RSI Alerts -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">📊 RSI Alerts</div>
-          <div style="font-size:9px;color:#64748b;">Overbought · Oversold</div>
-        </div>
-        <label class="ios-tog-sm">
-          <input type="checkbox" id="tg-rsi-chk" checked onchange="saveTgToggle('tgRSI',this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-
-      <!-- Volume Spike -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">🔥 Volume Spike</div>
-          <div style="font-size:9px;color:#64748b;">3x avg · High Volatility</div>
-        </div>
-        <label class="ios-tog-sm">
-          <input type="checkbox" id="tg-vol-chk" checked onchange="saveTgToggle('tgVOL',this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-
-      <!-- Breakout / 52W -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">🚀 Breakout / 52W</div>
-          <div style="font-size:9px;color:#64748b;">52W High/Low · Gap Up/Down · Golden/Death Cross</div>
-        </div>
-        <label class="ios-tog-sm">
-          <input type="checkbox" id="tg-brk-chk" checked onchange="saveTgToggle('tgBRK',this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-
-      <!-- Market Open/Close -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">🟢 Market Open/Close</div>
-          <div style="font-size:9px;color:#64748b;">9:15 AM open · 3:30 PM summary</div>
-        </div>
-        <label class="ios-tog-sm">
-          <input type="checkbox" id="tg-mkt-chk" checked onchange="saveTgToggle('tgMKT',this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-    </div>
-
-    <div class="s-row">
+<div class="s-row">
       <div class="s-row-left">
         <div class="s-row-icon" style="background:rgba(56,189,248,0.1);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
