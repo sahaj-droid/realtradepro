@@ -456,48 +456,34 @@ function monitorSystemHealth() {
 }
 // ── GAS Fallback State ──────────────────────────────────
 window._useGASPrices = false;
-window._lastPriceUpdateTime = 0; // 🔥 Firebase બિલ બચાવવા માટે નવો વેરીએબલ
 
 function startEngineStaleCheck() {
   setInterval(async () => {
-    const m = typeof getMarketStatus === 'function' ? getMarketStatus() : { open: false };
-    if (!m.open) {
-       hideGASFallbackBar(); 
-       return; 
-    }
-
     try {
-      let lastTime = window._lastPriceUpdateTime;
-      
-      if (!lastTime || window._useGASPrices) {
-        const snap = await firebase.firestore().collection('RealTradePro').doc('live_prices').get();
-        if (snap.exists && snap.data().updated_at) {
-          lastTime = new Date(snap.data().updated_at).getTime();
-          window._lastPriceUpdateTime = lastTime; 
-        }
-      }
-      
-      if (!lastTime) return;
-      const timeDiff = Date.now() - lastTime;
-
       if (window._useGASPrices) {
-        if (timeDiff < 30000) {
+        const snap = await firebase.firestore()
+          .collection('RealTradePro').doc('live_prices').get();
+        const updatedAt = snap.data()?.updated_at;
+        if (!updatedAt) return;
+        if (Date.now() - new Date(updatedAt).getTime() < 30000) {
           window._useGASPrices = false;
           hideGASFallbackBar();
           showPopup('✅ Python Engine recovered — live prices resumed', 3000);
         }
-        return; 
+        return;
       }
-      
-      // 🔥 અહીંથી !window._pythonEngineActive કાઢી નાખ્યું! ખાલી timeDiff જ ચેક થશે.
-      if (timeDiff > 120000) {
+      if (!window._pythonEngineActive) return;
+      const snap = await firebase.firestore()
+        .collection('RealTradePro').doc('live_prices').get();
+      const updatedAt = snap.data()?.updated_at;
+      if (!updatedAt) return;
+      if (Date.now() - new Date(updatedAt).getTime() > 120000) {
         showGASFallbackBar();
-      } else if (timeDiff < 30000) {
-        hideGASFallbackBar(); 
       }
     } catch(e) {}
   }, 30000);
 }
+
 function showGASFallbackBar() {
   if (document.getElementById('gas-fallback-bar')) return;
   const bar = document.createElement('div');
@@ -506,16 +492,17 @@ function showGASFallbackBar() {
   bar.innerHTML = `<span>⚠️ Python Engine stale — prices may be outdated</span><div style="display:flex;gap:8px;"><button onclick="userEnableGASPrices()" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Switch to GAS</button><button onclick="hideGASFallbackBar()" style="background:#374151;color:#d1d5db;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button></div>`;
   document.body.prepend(bar);
 }
+
 function hideGASFallbackBar() {
   document.getElementById('gas-fallback-bar')?.remove();
 }
+
 function userEnableGASPrices() {
   window._useGASPrices = true;
   const bar = document.getElementById('gas-fallback-bar');
   if (bar) {
     bar.style.background = '#14532d';
-    // 🔥 Dismiss માંથી false કાઢી લીધું, એટલે બેકગ્રાઉન્ડમાં GAS ચાલુ જ રહેશે
-    bar.innerHTML = `<span>🔄 GAS prices active — auto-switching back when engine recovers</span><button onclick="hideGASFallbackBar()" style="background:#22c55e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button>`;
+    bar.innerHTML = `<span>🔄 GAS prices active — auto-switching back when engine recovers</span><button onclick="hideGASFallbackBar();window._useGASPrices=false;" style="background:#22c55e;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Dismiss</button>`;
   }
   updatePrices();
 }
@@ -1074,53 +1061,29 @@ function showSuggestions(val) {
 }
 
 async function fetchYahooSuggestions(val, box) {
-  // Try all GAS URLs — search ke liye round-robin avoid karo (stale URL skip ho sakti hai)
-  const allUrls = [
-    localStorage.getItem('customAPI') ||API,
-    localStorage.getItem('customAPI2')||API2,
-    localStorage.getItem('customAPI3')||API3,
-    localStorage.getItem('customAPI4')||API4,
-    localStorage.getItem('customAPI5')||API5
-  ].filter(Boolean);
-
-  let j = null;
-  for(const api of allUrls){
-    try{
-      const r = await Promise.race([
-        fetch(`${api}?type=search&q=${encodeURIComponent(val)}`),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      const parsed = await r.json();
-      if(parsed.ok && parsed.results && parsed.results.length > 0){ j = parsed; break; }
-    }catch(e){ continue; }
-  }
-  if(!j) return;
-
-  const alreadyIn = new Set(wl);
-  const INDIAN_EXCHANGES = new Set(['NSI','BSE','NSE','NMS']);
-  const results = j.results
-    .filter(r => {
-      const sym = r.symbol || '';
-      const exch = (r.exchange || r.exchDisp || '').toUpperCase();
-      const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
-      const cleanSym = sym.replace('.NS','').replace('.BO','');
-      const notInWL = !alreadyIn.has(cleanSym);
-      return isIndian && notInWL;
-    })
-    .slice(0, 7);
-
-  // .BO stocks mate exchange hint save karo — fetchFull ma use thashe
-  results.forEach(r => {
-    const sym = r.symbol || '';
-    if(sym.endsWith('.BO')){
-      if(!window._exchangeHint) window._exchangeHint = {};
-      window._exchangeHint[sym.replace('.BO','')] = 'BO';
+  try {
+    const api = getActiveGASUrl();
+    const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
+    const j = await r.json();
+    if (!j.ok || !j.results || j.results.length === 0) return;
+    // STRICT: Only Indian NSE/BSE stocks (.NS or .BO exchange)
+    const alreadyIn = new Set(wl);
+    const INDIAN_EXCHANGES = new Set(['NSI','BSE','NSE','NMS']);
+    const results = j.results
+      .filter(r => {
+        const sym = r.symbol || '';
+        const exch = (r.exchange || r.exchDisp || '').toUpperCase();
+        // Must be .NS or .BO suffix, OR exchange is NSI/BSE
+        const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
+        const cleanSym = sym.replace('.NS','').replace('.BO','');
+        const notInWL = !alreadyIn.has(cleanSym);
+        return isIndian && notInWL;
+      })
+      .slice(0, 7);
+    if (results.length > 0 && _lastSearchVal === val) {
+      renderSuggestions(results, box, false);
     }
-  });
-
-  if (results.length > 0 && _lastSearchVal === val) {
-    renderSuggestions(results, box, false);
-  }
+  } catch(e) {}
 }
 
 function renderSuggestions(items, box, isLocal) {
@@ -1824,81 +1787,58 @@ function _patchVisibleWLPrices(){
 }
 
 // ======================================
-// UPDATE PRICES
+// UPDATE PRICES — THE FINAL ARCHITECT VERSION
 // ======================================
-// ── SECTION 08: updatePrices — Main Price Update Orchestrator ───────────────
-// Called every 5s by startRefresh (Section 04)
-// Routes: GAS Fallback mode → Firebase Live → GAS fallback → Render
 async function updatePrices(){
+  const activeWl = watchlists[currentWL]?.stocks
+    ? [...watchlists[currentWL].stocks]
+    : (window.currentWl || []);
+  if(activeWl.length === 0) return;
+
+  // ── GAS Fallback mode — Python engine stale ──
   if(window._useGASPrices){
     try{
-      await batchFetchStocks(wl);
-      if(typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
-      if(typeof updateHeaderIndices === 'function') updateHeaderIndices();
-      if(typeof updatePriceTicker === 'function') updatePriceTicker();
+      await batchFetchStocks(activeWl);
+      _patchVisibleWLPrices();
+      updateHeaderIndices();
+      updatePriceTicker();
     }catch(e){}
     return;
   }
 
-  // ── SECTION 02: Firebase Live Prices Fetch (Engine Active) ─────────────────
-  // Priority: Firebase live_prices → GAS (fallback)
-  // Engine chalu hoy to Firebase thi real-time data aave
-  // Engine bandh + Market chalu hoy to GAS thi aave (Section 03 handles)
-  try{
-    const db = firebase.firestore();
-    const doc = await db.collection('RealTradePro').doc('live_prices').get();
-    if(doc.exists){
-      const fbUpdatedAt = doc.data().updated_at;
-      if(fbUpdatedAt) window._lastPriceUpdateTime = new Date(fbUpdatedAt).getTime();
-
-      // Staleness: 20+ hours purano = engine bandh che, GAS par fall through
-      const fbAgeHours = fbUpdatedAt ? (Date.now() - new Date(fbUpdatedAt).getTime()) / 3600000 : 99;
-      window._firebaseIsStale = fbAgeHours > 20;
-
-      if(!window._firebaseIsStale){
+  // ── Task 3: If Python engine active, refresh cache from Firebase first ──
+  if(window._pythonEngineActive){
+    try{
+      const db = firebase.firestore();
+      const doc = await db.collection('RealTradePro').doc('live_prices').get();
+      if(doc.exists){
         const prices = doc.data().prices || {};
-        wl.forEach(s => {
-          const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
-          if(p){
-            // SECTION 00: normalizeStock() handles all terminology
-            const normalized = normalizeStock(p, cache[s]?.data);
-            normalized._source = 'firebase_live';
-            cache[s] = { data: normalized, time: Date.now() };
-            lastUpdatedMap[s] = Date.now();
+        activeWl.forEach(s => {
+          const p = prices[s + (s.includes('.') ? '' : '.NS')]; // 🟢 Smart Symbol Check
+          if(p){ 
+            const existing = cache[s]?.data || {};
+            cache[s] = { data: Object.assign({}, existing, p), time: Date.now() }; 
+            lastUpdatedMap[s] = Date.now(); 
           }
         });
-        // Indices from Firebase
-        indicesList.forEach(i => {
-          if(i.sym === '__GIFT__') return;
-          if(prices[i.sym]) cache[i.sym] = { data: normalizeStock(prices[i.sym], cache[i.sym]?.data), time: Date.now() };
-        });
-        console.log(`[Firebase] Live prices OK (age: ${fbAgeHours.toFixed(1)}h)`);
-      } else {
-        console.log(`[Firebase] Stale ${fbAgeHours.toFixed(1)}h — will use GAS`);
       }
-    }
-  }catch(e){ console.warn('[Firebase] updatePrices fetch failed:', e.message); }
-  // ── END SECTION 02 ────────────────────────────────────────────────────────
-
-  // ── SECTION 03: GAS Fallback (Engine bandh OR Firebase stale) ────────────
-  // Engine chalu + Market chalu  → Firebase (Section 02) handle kare
-  // Engine bandh + Market chalu  → GAS thi fetch (this section)
-  // Engine bandh + Market bandh  → batchFetchStocks market-closed block handle kare
-  const isMarketOpen = typeof getMarketStatus === 'function' ? getMarketStatus().open : false;
-  const needsGAS = isMarketOpen && (!window._pythonEngineActive || window._firebaseIsStale);
-  if(needsGAS){
-    console.log('[GAS] Fetching — engine inactive or Firebase stale');
-    try { await batchFetchStocks(wl); } catch(e) {}
+    }catch(e){ /* silent */ }
   }
-  // ── END SECTION 03 ────────────────────────────────────────────────────────
+
+  // 1. Market Status ane Batch Fetch
+  const isMarketOpen = getMarketStatus().open;
+  if (isMarketOpen && !window._pythonEngineActive) {
+    try { await batchFetchStocks(activeWl); } catch(e) {}
+  }
 
   // 2. Main Watchlist Loop
-  for(let s of wl){
+  for(let s of activeWl){
     if(!cache[s]?.data) continue;
 
     const fund = cache[s]?.fundamentals || {};
     let d = { ...cache[s].data }; 
     
+    // 🔥 THE BRAHMASTRA FIX: Number Extraction
     const getRealVal = (val) => {
        if (val !== null && typeof val === 'object') {
            return Number(val.doubleValue || val.integerValue || val.stringValue || 0);
@@ -1906,73 +1846,59 @@ async function updatePrices(){
        return Number(val || 0);
     };
 
-    let fund_h52 = getRealVal(fund.h52) || getRealVal(fund.high52);
-    let fund_l52 = getRealVal(fund.l52) || getRealVal(fund.low52);
-
+    // Fundamentals Force Sync
+    let fund_h52 = getRealVal(fund.h52 || fund.high52);
+    let fund_l52 = getRealVal(fund.l52 || fund.low52);
     if (fund_h52 > 0) d.h52 = fund_h52;
     if (fund_l52 > 0) d.l52 = fund_l52;
 
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    let prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || price).toFixed(2));
-    let diff = price - prev;
-    let pct = prev ? (diff / prev * 100) : 0;
-
-    let pe=document.getElementById(`price-${s}`), ce=document.getElementById(`change-${s}`);
+    // --- ASALI CALCULATION START ---
+    const mktOpen = getMarketStatus().open;
+    let price = parseFloat(Number(
+    mktOpen
+    ? (d.ltp || d.regularMarketPrice || d.price || d.close || 0)
+    : (d.regularMarketPrice || d.price || d.close || d.ltp || 0)
+    ).toFixed(2));
+    let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || d.prev || 0).toFixed(2));
+    let diff = parseFloat((price - prev).toFixed(2));
+    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;    
+    
+    let pe = document.getElementById(`price-${s}`), ce = document.getElementById(`change-${s}`);
     
     if(pe){
       let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
+      pe.innerText = "₹" + price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); // 🟢 Localized Currency Format
       
       const wrap = pe.closest('.card') || pe.parentElement;
       if(price > op){ pe.classList.add("flash-green"); if(wrap) wrap.classList.add("flash-green"); }
       else if(price < op){ pe.classList.add("flash-red"); if(wrap) wrap.classList.add("flash-red"); }
-      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1200);
+      setTimeout(() => { pe.classList.remove("flash-green","flash-red"); if(wrap) wrap.classList.remove("flash-green","flash-red"); }, 1000);
 
-      const barContainer = document.getElementById(`bar-container-${s}`);
-      if(barContainer){
-        barContainer.innerHTML = typeof buildDualBar === 'function' ? buildDualBar(d) : '';
-      }
+      // Bars & Banners
+      const bar52Elem = document.getElementById(`bar52-${s}`);
+      if(bar52Elem) bar52Elem.innerHTML = build52WBar(d);
+      
+      const label52Elem = document.getElementById(`label52-${s}`);
+      if(label52Elem) label52Elem.innerHTML = get52WLabel(d) + getTargetBadge(s, price);
+      
+      const dayBarElem = document.getElementById(`daybar-${s}`);
+      if(dayBarElem) dayBarElem.innerHTML = buildDayBar(d);
 
-      const bannerElem = document.getElementById(`banner-${s}`);
-      if(bannerElem){
-        bannerElem.innerHTML = typeof get52WLabel === 'function' ? get52WLabel(d) : '';
-      }
-
-      if(typeof checkAlerts === 'function') checkAlerts(s, price); 
-      if(typeof checkTargets === 'function') checkTargets(s, price); 
-      if(typeof checkVolumeSpike === 'function') checkVolumeSpike(s, d);
+      checkAlerts(s, price); checkTargets(s, price); checkVolumeSpike(s, d);
       lastUpdatedMap[s] = Date.now();
     }
 
     if(ce){
       const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
       ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
+      ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
     }
   }
 
-  // 3. Indices Render
-  for(let i of indicesList){
-    if(i.sym === '__GIFT__') continue;
-    const d = cache[i.sym]?.data; if(!d) continue;
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || price).toFixed(2));
-    const diff = price - prev, pct = prev ? (diff/prev*100) : 0;
-    let pe = document.getElementById(`idx-price-${i.sym}`), ce = document.getElementById(`idx-change-${i.sym}`);
-    if(pe){
-      let op = parseFloat(pe.innerText.replace(/[₹,]/g,"")) || 0;
-      pe.innerText = "₹" + price.toFixed(2);
-      if(price > op) pe.classList.add("flash-green"); else if(price < op) pe.classList.add("flash-red");
-      setTimeout(() => pe.classList.remove("flash-green","flash-red"), 1200);
-    }
-    if(ce){
-      ce.innerText = (diff >= 0 ? '+' : '-') + Math.abs(pct).toFixed(2) + '%';
-      ce.style.color = diff >= 0 ? "#22c55e" : "#ef4444";
-    }
-  }
-  if(typeof updateHeaderIndices === 'function') updateHeaderIndices();
-  if(typeof updateGiftNifty === 'function') await updateGiftNifty();
-  if(typeof updatePriceTicker === 'function') updatePriceTicker();
+  // Indices & Gift Nifty logic emne em rehva do (E barabar che)
+  updateHeaderIndices();
+  await updateGiftNifty();
+  updatePriceTicker();
 }
 // ======================================
 // PIE CHART (Portfolio Diversity)
@@ -2961,10 +2887,8 @@ function get52WLabel(d){
 }
 
 // ======================================
-// ── SECTION 05: Dual Bar Builder (Day H/L + 52W H/L) ───────────────────────
-// d.regularMarketDayHigh/Low → Day bar
-// d.h52 / d.l52 → 52W bar (banne alag hova joie!)
-// Bug 2 Fix: normalizeBatchItem ma h52/l52 set thai gaya, so hvu correct aavse
+// DUAL BAR — Day H/L top + 52W H/L bottom (FIXED VERSION)
+// ======================================
 function buildDualBar(d) {
   if (!d) return '';
 
@@ -3525,146 +3449,138 @@ function fetchWithTimeout(url, ms=8000){
 }
 
 // ======================================
-// BATCH FETCH (parallel, single API call)
+// UNIVERSAL NORMALIZER — _N(d)
 // ======================================
-// Normalize GAS batch item -> app cache format
-// ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  SECTION 00 — MASTER DATA NORMALIZER (Single Source of Truth)          ║
-// ║  Har source (Engine v6, GAS, Firebase, Yahoo) no data yahan aave        ║
-// ║  Output: hamesha same standard keys — app bhar same terminology         ║
-// ╚══════════════════════════════════════════════════════════════════════════╝
+// Koi pan source (GAS batch, GAS quote, Python Firebase, OLHCV Firebase) no raw object lo
+// ane HAMESHA ek j canonical shape return karo.
 //
-//  INPUT  (koi bhi source):          OUTPUT (standard — always):
-//  ─────────────────────────────      ────────────────────────────────────
-//  ltp / price / regularMarketPrice → regularMarketPrice
-//  prev_close / prevClose /           → chartPreviousClose
-//    chartPreviousClose
-//  change                           → regularMarketChange
-//  change_pct / changePct           → regularMarketChangePercent
-//  open / regularMarketOpen         → regularMarketOpen
-//  high / regularMarketDayHigh      → regularMarketDayHigh
-//  low  / regularMarketDayLow       → regularMarketDayLow
-//  high52 / h52 / week52High /      → fiftyTwoWeekHigh  +  h52
-//    fiftyTwoWeekHigh
-//  low52  / l52 / week52Low  /      → fiftyTwoWeekLow   +  l52
-//    fiftyTwoWeekLow
-//  today_volume / regularMarketVolume → regularMarketVolume
+// Source field name mapping:
+//  price/ltp/close             → regularMarketPrice
+//  prevClose/prev_close/prev   → chartPreviousClose
+//  high52/h52/week52High       → fiftyTwoWeekHigh
+//  low52/l52/week52Low         → fiftyTwoWeekLow
+//  today_volume/volume         → regularMarketVolume
+//  avg_vol_3m                  → averageDailyVolume3Month
+//  change                      → regularMarketChange
+//  change_pct/changePct        → regularMarketChangePercent
+//  pe/trailingPE               → trailingPE
+//  eps/epsTrailingTwelveMonths → epsTrailingTwelveMonths
+//  mktCap/marketCap            → marketCap
+//
+function _N(d){
+  if(!d) return null;
 
-function normalizeStock(raw, existing) {
-  if (!raw) return existing || null;
-  existing = existing || {};
+  // ── Price (LTP) ──────────────────────────────────────────
+  const price = d.regularMarketPrice
+    || d.ltp
+    || d.price
+    || d.close
+    || 0;
+  if(!price) return null;
 
-  // ── Price ────────────────────────────────────────────────────────────────
-  const price = parseFloat(Number(
-    raw.ltp || raw.price || raw.regularMarketPrice ||
-    raw.close || existing.regularMarketPrice || 0
-  ).toFixed(2));
+  // ── Prev Close ───────────────────────────────────────────
+  const prevClose = d.chartPreviousClose
+    || d.regularMarketPreviousClose
+    || d.prevClose
+    || d.prev_close
+    || d.prev
+    || price;
 
-  // ── Prev Close (Bug 1 fix: engine v6 uses prev_close) ───────────────────
-  const prevRaw =
-    raw.prev_close || raw.prevClose || raw.chartPreviousClose ||
-    raw.regularMarketPreviousClose || raw.prev ||
-    existing.chartPreviousClose || 0;
-  const prevC = parseFloat(Number(prevRaw).toFixed(2));
-  const safePrev = prevC > 0 ? prevC : price;
+  // ── Open ─────────────────────────────────────────────────
+  const open = (d.regularMarketOpen != null && d.regularMarketOpen > 0)
+    ? d.regularMarketOpen
+    : (d.open != null && d.open > 0 ? d.open : price);
 
-  // ── Change ───────────────────────────────────────────────────────────────
-  const chg = (raw.change != null && raw.change !== 0)
-    ? parseFloat(Number(raw.change).toFixed(2))
-    : parseFloat((price - safePrev).toFixed(2));
+  // ── Day High / Low ────────────────────────────────────────
+  const high = d.regularMarketDayHigh || d.high || price;
+  const low  = d.regularMarketDayLow  || d.low  || price;
 
-  const chgPct = (raw.change_pct != null && raw.change_pct !== 0)
-    ? parseFloat(Number(raw.change_pct).toFixed(2))
-    : (raw.changePct != null && raw.changePct !== 0)
-      ? parseFloat(Number(raw.changePct).toFixed(2))
-      : (raw.regularMarketChangePercent != null && raw.regularMarketChangePercent !== 0)
-        ? parseFloat(Number(raw.regularMarketChangePercent).toFixed(2))
-        : (safePrev > 0 ? parseFloat(((price - safePrev) / safePrev * 100).toFixed(2)) : 0);
+  // ── 52-Week High / Low ────────────────────────────────────
+  const h52 = d.fiftyTwoWeekHigh || d.week52High || d.high52 || d.h52 || high;
+  const l52 = d.fiftyTwoWeekLow  || d.week52Low  || d.low52  || d.l52 || low;
 
-  // ── OHLCV ────────────────────────────────────────────────────────────────
-  const open = parseFloat(Number(
-    raw.open || raw.regularMarketOpen ||
-    existing.regularMarketOpen || price
-  ).toFixed(2));
+  // ── Volume ────────────────────────────────────────────────
+  const volume = d.regularMarketVolume
+    || d.today_volume
+    || d.volume
+    || 0;
 
-  const high = parseFloat(Number(
-    raw.high || raw.regularMarketDayHigh ||
-    existing.regularMarketDayHigh || price
-  ).toFixed(2));
+  // ── Avg Volume (3M) ───────────────────────────────────────
+  const avgVol = d.averageDailyVolume3Month || d.avg_vol_3m || 0;
 
-  const low = parseFloat(Number(
-    raw.low || raw.regularMarketDayLow ||
-    existing.regularMarketDayLow || price
-  ).toFixed(2));
+  // ── Change ────────────────────────────────────────────────
+  const change    = d.regularMarketChange    ?? d.change    ?? (price - prevClose);
+  const changePct = d.regularMarketChangePercent
+    ?? d.change_pct
+    ?? d.changePct
+    ?? (prevClose > 0 ? ((price - prevClose) / prevClose * 100) : 0);
 
-  const vol = parseInt(
-    raw.today_volume || raw.regularMarketVolume ||
-    raw.volume || existing.regularMarketVolume || 0
-  );
+  // ── Fundamentals ─────────────────────────────────────────
+  const pe     = d.trailingPE  ?? d.pe    ?? null;
+  const eps    = d.epsTrailingTwelveMonths ?? d.eps ?? null;
+  const mktCap = d.marketCap   ?? d.mktCap ?? null;
+  const bv     = d.bookValue   ?? null;
+  const fwdPE  = d.forwardPE   ?? null;
+  const divYld = d.dividendYield ?? null;
 
-  // ── 52W High / Low (Bug 2 fix: banne formats set karo) ──────────────────
-  const h52val = parseFloat(Number(
-    raw.high52 || raw.h52 || raw.week52High || raw.fiftyTwoWeekHigh ||
-    existing.fiftyTwoWeekHigh || existing.h52 || 0
-  ).toFixed(2));
-
-  const l52val = parseFloat(Number(
-    raw.low52  || raw.l52 || raw.week52Low  || raw.fiftyTwoWeekLow  ||
-    existing.fiftyTwoWeekLow  || existing.l52 || 0
-  ).toFixed(2));
-
-  // ── Build normalized output ──────────────────────────────────────────────
-  return Object.assign({}, existing, raw, {
-    // Standard price keys
+  return {
+    // ── Canonical keys (app uses these everywhere) ────────
     regularMarketPrice:          price,
-    chartPreviousClose:          safePrev,
-    regularMarketChange:         chg,
-    regularMarketChangePercent:  chgPct,
+    chartPreviousClose:          prevClose,
     regularMarketOpen:           open,
     regularMarketDayHigh:        high,
     regularMarketDayLow:         low,
-    regularMarketVolume:         vol,
-    // 52W — dono formats (buildDualBar + build52WBar + get52WLabel)
-    fiftyTwoWeekHigh:            h52val,
-    fiftyTwoWeekLow:             l52val,
-    h52:                         h52val,
-    l52:                         l52val,
-    // Keep raw keys too for backward compat
-    ltp:                         price,
-    price:                       price,
-    prev_close:                  safePrev,
-    prevClose:                   safePrev,
-    change:                      chg,
-    change_pct:                  chgPct,
-    high52:                      h52val,
-    low52:                       l52val,
-  });
+    fiftyTwoWeekHigh:            h52,
+    fiftyTwoWeekLow:             l52,
+    regularMarketVolume:         volume,
+    averageDailyVolume3Month:    avgVol,
+    regularMarketChange:         parseFloat(change.toFixed(2)),
+    regularMarketChangePercent:  parseFloat(changePct.toFixed(2)),
+    trailingPE:                  pe,
+    epsTrailingTwelveMonths:     eps,
+    marketCap:                   mktCap,
+    bookValue:                   bv,
+    forwardPE:                   fwdPE,
+    dividendYield:               divYld,
+    // ── Convenience aliases (legacy code compatibility) ───
+    ltp:      price,
+    price:    price,
+    prevClose:prevClose,
+    prev_close:prevClose,
+    open:     open,
+    high:     high,
+    low:      low,
+    h52:      h52,
+    l52:      l52,
+    high52:   h52,
+    low52:    l52,
+    week52High: h52,
+    week52Low:  l52,
+    volume:   volume,
+    avg_vol_3m: avgVol,
+    change:   parseFloat(change.toFixed(2)),
+    change_pct: parseFloat(changePct.toFixed(2)),
+    changePct:  parseFloat(changePct.toFixed(2)),
+    pe:       pe,
+    eps:      eps,
+    mktCap:   mktCap,
+    // ── Pass-through (source tag + extras) ───────────────
+    _source:  d._source || 'normalized',
+    ...(d.symbol    ? {symbol:    d.symbol}    : {}),
+    ...(d.name      ? {name:      d.name}      : {}),
+    ...(d.exchange  ? {exchange:  d.exchange}  : {}),
+    ...(d.ts        ? {ts:        d.ts}        : {}),
+    ...(d.updated_at? {updated_at:d.updated_at}: {}),
+  };
 }
-// ── END SECTION 00 ────────────────────────────────────────────────────────
 
-// ── SECTION 01: GAS Batch Response Normalizer ──────────────────────────────
-// normalizeStock() (SECTION 00) use kare che — terminology auto-handled
-function normalizeBatchItem(gasData){
-  if(!gasData || !gasData.price) return null;
-  const n = normalizeStock(gasData);
-  // GAS-specific extra fields
-  n.trailingPE            = gasData.pe  || n.trailingPE;
-  n.epsTrailingTwelveMonths = gasData.eps || n.epsTrailingTwelveMonths;
-  n.marketCap             = gasData.mktCap || n.marketCap;
-  n._source               = 'gas_batch';
-  return n;
-}
-// ── END SECTION 01 ──────────────────────────────────────────────────────────
+// normalizeBatchItem — backward compat wrapper (hata nahi sakta kyunki cache code usey chhe)
+function normalizeBatchItem(gasData){ return _N(gasData); }
 
-// ── SECTION 06: Batch Stock Fetcher ─────────────────────────────────────────
-// Routing Logic:
-//   Market Closed → Firebase live_prices (staleness check) → olhcv fallback
-//   Market Open + Engine Active → Firebase live_prices
-//   Market Open + Engine Inactive → GAS batch API
 async function batchFetchStocks(symbols, isIndex=false){
   if(!symbols||symbols.length===0) return;
 
-  // ── SECTION 06A: Market CLOSED — Firebase thi load (zero GAS call) ──────────
+  // ── Market CLOSED: Firebase OLHCV thi load karo, zero GAS call ──────────────
   if(!isIndex && !getMarketStatus().open){
     try{
       const db = firebase.firestore();
@@ -3673,33 +3589,17 @@ async function batchFetchStocks(symbols, isIndex=false){
       try{
         const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
         if(lpDoc.exists){
-          // 🔴 STALENESS CHECK: 20+ kalaak purano data hoy to skip karo
-          const updatedAt = lpDoc.data()?.updated_at;
-          const ageHours = updatedAt ? (Date.now() - new Date(updatedAt).getTime()) / 3600000 : 99;
-          const isStale = ageHours > 20; // 20 hours — aajno market data nathi
-
-          if(!isStale){
-            const prices = lpDoc.data().prices || {};
-            symbols.forEach(s => {
-              const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
-              if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
-                const existing = cache[s]?.data || {};
-                const price = p.ltp || p.regularMarketPrice || p.close || p.prev_close || 0;
-                const prevP = p.prevClose || p.prev_close || p.chartPreviousClose || price;
-                const chgP  = p.change    != null ? p.change    : parseFloat((price-prevP).toFixed(2));
-                const pctP  = p.change_pct!= null ? p.change_pct: (prevP>0?parseFloat(((price-prevP)/prevP*100).toFixed(2)):0);
-                // SECTION 00: normalizeStock() — terminology auto-handled
-                const norm06a = normalizeStock(p, cache[s]?.data);
-                norm06a._source = 'firebase_lp_closed';
-                cache[s] = { data: norm06a, time: Date.now() };
-                lastUpdatedMap[s] = Date.now();
-                stored++;
-              }
-            });
-            console.log(`[Market Closed] Firebase age: ${ageHours.toFixed(1)}h — ${stored} stocks loaded`);
-          } else {
-            console.log(`[Market Closed] Firebase stale (${ageHours.toFixed(1)}h) — falling through to GAS`);
-          }
+          const prices = lpDoc.data().prices || {};
+          symbols.forEach(s => {
+            const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
+            if(p && (p.ltp||p.regularMarketPrice||p.close||p.prev_close)){
+              const normalized = _N(Object.assign({}, p, {_source:'firebase_lp_closed'}));
+              if(!normalized) return;
+              cache[s] = { data: normalized, time: Date.now() };
+              lastUpdatedMap[s] = Date.now();
+              stored++;
+            }
+          });
         }
       }catch(e){}
       // Remaining stocks — olhcv collection thi
@@ -3711,17 +3611,9 @@ async function batchFetchStocks(symbols, isIndex=false){
             if(snap.exists){
               const p = snap.data();
               if(p && p.close && p.close > 0){
-                const _c2  = p.close;
-                const _prv2 = p.prev || p.close;
-                const _chg2 = (_c2 && _prv2) ? parseFloat((_c2 - _prv2).toFixed(2)) : 0;
-                const _pct2 = (_c2 && _prv2 && _prv2 > 0) ? parseFloat(((_c2 - _prv2) / _prv2 * 100).toFixed(2)) : 0;
-                // SECTION 00: normalizeStock() — olhcv keys handle
-                const norm06olhcv = normalizeStock(
-                  Object.assign({}, p, { ltp: _c2, prev_close: _prv2 }),
-                  cache[s]?.data
-                );
-                norm06olhcv._source = 'firebase_olhcv_closed';
-                cache[s] = { data: norm06olhcv, time: Date.now() };
+                const normalized = _N(Object.assign({}, p, {_source:'firebase_olhcv_closed'}));
+                if(!normalized) return;
+                cache[s] = { data: normalized, time: Date.now() };
                 lastUpdatedMap[s] = Date.now();
                 stored++;
               }
@@ -3740,7 +3632,7 @@ async function batchFetchStocks(symbols, isIndex=false){
   }
   // ── END Market Closed block ─────────────────────────────────────────────────
 
-  // ── SECTION 06B: Firebase-first (Engine Active + Market Open) ──────────────
+  // ── Task 3: Firebase-first (Python engine active) ──────────────────────────
   if(window._pythonEngineActive && !isIndex){
     try{
       const db = firebase.firestore();
@@ -3749,18 +3641,11 @@ async function batchFetchStocks(symbols, isIndex=false){
         const prices = doc.data().prices || {};
         let stored = 0;
         symbols.forEach(s => {
-          // .NS first, .BO fallback + normalize — Bug Fix
-          const p = prices[s] || prices[s+'.NS'] || prices[s+'.BO'];
+          const p = prices[s+'.NS'] || prices[s+'.BO'] || prices[s];
           if(p){
-            const existing = cache[s]?.data || {};
-            const price  = p.ltp || p.price || p.regularMarketPrice || 0;
-            const prevC  = p.prevClose || p.prev_close || p.chartPreviousClose || price;
-            const chg    = p.change    != null ? p.change    : parseFloat((price-prevC).toFixed(2));
-            const chgPct = p.change_pct!= null ? p.change_pct: (prevC>0?parseFloat(((price-prevC)/prevC*100).toFixed(2)):0);
-            // SECTION 00: normalizeStock() — terminology auto-handled
-            const norm06b = normalizeStock(p, cache[s]?.data);
-            norm06b._source = 'firebase_live';
-            cache[s] = { data: norm06b, time: Date.now() };
+            const normalized = _N(Object.assign({}, p, {_source:'firebase_live'}));
+            if(!normalized) return;
+            cache[s] = { data: normalized, time: Date.now() };
             lastUpdatedMap[s] = Date.now();
             stored++;
           }
@@ -3776,7 +3661,6 @@ async function batchFetchStocks(symbols, isIndex=false){
   }
   // ── END Task 3 ─────────────────────────────────────────────────────────────
 
-  // ── SECTION 06C: GAS Batch API (Engine Inactive / Firebase failed) ──────────
   const syms=symbols.map(s=>isIndex?s:s+'.NS').join(',');
   const urls=[
     localStorage.getItem('customAPI')||API,
@@ -3815,18 +3699,11 @@ async function batchFetchStocks(symbols, isIndex=false){
   }
 }
 
-// ── SECTION 07: fetchFull — Single Stock Fetch (5-URL Fallback) ─────────────
-// Used for: individual stock detail, new stock add, index fetch
-// Flow: Cache check → Firebase OLHCV → GAS live → fallback URLs
+// -- FETCH WITH 5-URL FALLBACK --
 async function fetchFull(sym,isIndex=false){
   let key=sym, symbol=isIndex?sym:sym+".NS";
   let encodedSymbol=symbol.replace(/\^/g,"%5E");
   if(cache[key]&&(Date.now()-cache[key].time<CACHE_TIME)) return cache[key].data;
-  // .BO exchange cache check — jo NS failed hatu ane BO known che
-  if(!isIndex && window._exchangeHint && window._exchangeHint[sym] === 'BO'){
-    symbol = sym + '.BO';
-    encodedSymbol = symbol;
-  }
 
   // ── HYBRID: Firebase OLHCV (static) + 1 GAS call (live price+volume) ──
   if(!isIndex){
@@ -3841,17 +3718,9 @@ async function fetchFull(sym,isIndex=false){
             const mktStatus = getMarketStatus();
             if(!mktStatus.open){
               // ── Market CLOSED: Firebase close = last known price, skip GAS entirely ──
-              const _c   = p.close;
-              const _prv = p.prev || p.close;
-              const _chg  = (_c && _prv) ? parseFloat((_c - _prv).toFixed(2)) : 0;
-              const _pct  = (_c && _prv && _prv > 0) ? parseFloat(((_c - _prv) / _prv * 100).toFixed(2)) : 0;
-              // SECTION 00: normalizeStock()
-              const closedData = normalizeStock(
-                Object.assign({}, p, { ltp: _c, prev_close: _prv }),
-                cache[key]?.data
-              );
-              closedData._source = 'firebase_closed';
-              cache[key] = { data: closedData, time: Date.now() };
+              const closedData = _N(Object.assign({}, p, {_source:'firebase_closed'}));
+              if(!closedData) return null;
+              cache[key] = {data: closedData, time: Date.now()};
               lastUpdatedMap[key] = Date.now();
               return closedData;
             }
@@ -4104,19 +3973,39 @@ function saveSetting(type){
     loadSettingsUI();
     showPopup(val?"API 5 saved!":"API 5 cleared");
   }
-  if(type==="refresh"){
-    const val=parseInt(document.getElementById("set-refresh").value);
-    if(val<10){ showPopup("Minimum 10 seconds"); return; }
-    localStorage.setItem("refreshSec",val);
-    if(refreshInterval) clearInterval(refreshInterval);
-    refreshInterval=setInterval(()=>{updatePrices();},val*1000);
-    showPopup(`Refresh set to ${val}s`);
+if (type === "refresh") {
+    const val = parseInt(document.getElementById("set-refresh").value);
+    
+    // 🛡️ FIX 1: isNaN check add karyo (Khali input app ne crash nahi kare)
+    if (isNaN(val) || val < 10) { 
+        showPopup("Minimum 10 seconds required"); 
+        return; 
+    }
+    
+    localStorage.setItem("refreshSec", val);
+    if (refreshInterval) clearInterval(refreshInterval);
+    
+    // 🛡️ FIX 2: Market chalu hoy to j refresh thase (API quota bachshe)
+    refreshInterval = setInterval(() => {
+        const m = getMarketStatus();
+        if (m.open) updatePrices();
+    }, val * 1000);
+    
+    showPopup(`Auto-Refresh set to ${val}s`);
   }
-  if(type==="cache"){
-    const val=parseInt(document.getElementById("set-cache").value);
-    if(val<1000){ showPopup("Minimum 1000ms"); return; }
-    CACHE_TIME=val;
-    localStorage.setItem("cacheSec",val);
+
+  if (type === "cache") {
+    const val = parseInt(document.getElementById("set-cache").value);
+    
+    // 🛡️ FIX 1: isNaN check ahiya pan jaruri chhe
+    if (isNaN(val) || val < 1000) { 
+        showPopup("Minimum 1000ms required"); 
+        return; 
+    }
+    
+    CACHE_TIME = val;
+    // Nodh: 'val' milliseconds ma chhe, pan juna code mujab key 'cacheSec' rakhi chhe
+    localStorage.setItem("cacheSec", val); 
     showPopup(`Cache set to ${val}ms`);
   }
 }
@@ -5339,30 +5228,22 @@ function updatePriceTicker() {
   Object.entries(idxMap).forEach(([sym,label]) => {
     const d = cache[sym]?.data;
     if(!d) return;
-    
-    // 🔥 Universal Price Fetching Logic (For both Python & GAS)
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || price).toFixed(2));
-    
-    const chg = price - prev;
+    const price = d.regularMarketPrice;
+    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
+    const chg = prev ? price - prev : 0;
     const pct = prev ? (chg/prev*100) : 0;
-    if (price > 0) items.push({sym:label, price, chg, pct});
+    items.push({sym:label, price, chg, pct});
   });
 
   // Watchlist stocks
   wl.forEach(sym => {
     const d = cache[sym]?.data;
     if(!d) return;
-    
-    // 🔥 Universal Price Fetching Logic (For both Python & GAS)
-    const price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || d.close || 0).toFixed(2));
-    const prev = parseFloat(Number(d.chartPreviousClose || d.prev_close || d.prev || d.regularMarketPreviousClose || price).toFixed(2));
-    
-    const chg = price - prev;
+    const price = d.regularMarketPrice;
+    const prev = d.chartPreviousClose || d.regularMarketPreviousClose;
+    const chg = prev ? price - prev : 0;
     const pct = prev ? (chg/prev*100) : 0;
-    
-    // જો પ્રાઈઝ 0 ના હોય તો જ ટીકરમાં બતાવો
-    if (price > 0) items.push({sym, price, chg, pct});
+    items.push({sym, price, chg, pct});
   });
 
   if(items.length === 0) { bar.style.display='none'; return; }
@@ -5377,13 +5258,10 @@ function updatePriceTicker() {
       : '<svg viewBox="0 0 10 10" width="7" height="7" style="display:inline-block;vertical-align:middle;"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>';
     const cls = up ? 'ticker-up' : 'ticker-dn';
     const sign = up ? '+' : '';
-    // જો inr ફંક્શન ના હોય તો સાદું toFixed વાપરો, નહીતર 0.00 બતાવશે. (અહીં તમે inr વાપર્યું છે, તો હું એ જ રાખું છું)
-    const chgStr = (up?'+':'')+ (typeof inr === 'function' ? inr(Math.abs(item.chg)) : Math.abs(item.chg).toFixed(2));
-    const priceStr = typeof inr === 'function' ? inr(item.price) : item.price.toFixed(2);
-    
+    const chgStr = (up?'+':'')+inr(Math.abs(item.chg));
     return `<span class="ticker-item">
       <span class="ticker-sym">${item.sym}</span>
-      <span class="ticker-price">${priceStr}</span>
+      <span class="ticker-price">${inr(item.price)}</span>
       <span class="${cls}">${arrowSvg}${chgStr} (${sign}${item.pct.toFixed(2)}%)</span>
     </span>`;
   };
@@ -5681,46 +5559,41 @@ async function startApp(){
 // AUTO REFRESH & MANUAL
 // ======================================
   
-// ======================================
-// AUTO REFRESH & MANUAL
-// ======================================
-// ── SECTION 04: Auto Refresh Controller ─────────────────────────────────────
-// Market Open  → updatePrices() every 5s (Firebase or GAS)
-// Market Closed → cache.time silently extend — GAS call nahi, 0.00 nahi aavse
-function startRefresh() {
-  if (refreshInterval) clearInterval(refreshInterval);
-  refreshInterval = setInterval(() => {
-    const m = typeof getMarketStatus === 'function' ? getMarketStatus() : { open: false };
+function startRefresh(){
+  if(refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(()=>{
+    const m = getMarketStatus();
     if(m.open){
-      updatePrices(); // Market open: live fetch
-    } else {
-      // Market closed: cache expire thay to 0.00 aave — silently extend
-      let anyStale = false;
-      for(const s of wl){
-        if(cache[s]?.data && (Date.now() - cache[s].time) > (CACHE_TIME || 300000)){
-          cache[s].time = Date.now();
-          anyStale = true;
-        }
-      }
-      if(anyStale && typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
+      updatePrices();
+    } else if(window._pythonEngineActive){
+      // Market closed pan engine active — Firebase thi closing prices render karo
+      updatePrices();
     }
   }, 5000);
 }
-// ── END SECTION 04 ────────────────────────────────────────────────────────
 
 document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){
     if(refreshInterval) clearInterval(refreshInterval);
   } else {
-    // Android WebView: short delay to let network reconnect after resume
-    setTimeout(() => {
-      updatePrices();
-      startRefresh();
+    // Android/Mobile mate network re-connect thava mate delay jaruri chhe
+    setTimeout(async () => {
+      console.log("🔄 Resuming App: Fetching fresh ticks...");
+      
+      // ✅ Resume thava par sauthi pehla fresh data fetch karo
+const wl = watchlists[currentWL]?.stocks
+  ? [...watchlists[currentWL].stocks]
+  : (window.currentWl || []);
+if(wl.length > 0) {
+    try { await batchFetchStocks(wl); } catch(e) { console.error(e); }
+}
+      
+      updatePrices(); // UI update karo
+      startRefresh(); // Timer pacho chalu karo
       startEngineStaleCheck();
-    }, 800);
+    }, 1000); // 800ms karta 1000ms vadhare safe chhe WebView mate
   }
 });
-
 setTimeout(() => startRefresh(), 5000);
     
 async function manualRefresh(){
@@ -5734,8 +5607,11 @@ async function manualRefresh(){
   for(let k in cache) { cache[k].time = 0; }
   
   // Banne ne ek sathe fetch karo
+  const refreshWl = watchlists[currentWL]?.stocks
+    ? [...watchlists[currentWL].stocks]
+    : wl;
   await Promise.all([
-    batchFetchStocks(wl),
+    batchFetchStocks(refreshWl),
     Promise.all(indicesList.map(i=>fetchFull(i.sym,true)))
   ]);
   
