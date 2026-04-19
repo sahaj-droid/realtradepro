@@ -5157,22 +5157,22 @@ async function renderNews() {
 
       <div id="insights-loading" style="display:none;text-align:center;padding:20px 0;">
         <div style="font-size:20px;display:inline-block;animation:spin 1s linear infinite;">&#9881;</div>
-        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi analyze kar rahi hai...</div>
+        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi analyzing...</div>
       </div>
 
       <div id="insights-brief" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
         <div style="font-size:10px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#128200; MARKET BRIEF</div>
-        <div id="insights-brief-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
+        <div id="insights-brief-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Press Refresh...</div>
       </div>
 
       <div id="insights-digest" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
         <div style="font-size:10px;font-weight:700;color:#fb923c;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#128203; WATCHLIST DIGEST</div>
-        <div id="insights-digest-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
+        <div id="insights-digest-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Press Refresh...</div>
       </div>
 
       <div id="insights-sentiment" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
         <div style="font-size:10px;font-weight:700;color:#a78bfa;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#127919; SENTIMENT SCANNER</div>
-        <div id="insights-sentiment-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
+        <div id="insights-sentiment-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Press Refresh...</div>
       </div>
 
       <div id="insights-timestamp" style="font-size:9px;color:#4b6280;text-align:center;padding-bottom:8px;font-family:'Rajdhani',sans-serif;"></div>
