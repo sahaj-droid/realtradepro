@@ -2081,7 +2081,7 @@ const data={pe,eps,mktCap,volume,divYield,forwardPE,bookValue,forwardEps,earning
 }
 
 // Reusable fundamentals renderer
-function _renderFundamentalsHTML(fs, fund, isCached){
+function _renderFundamentalsHTML(fs, fund, isCached, sym){
   if(!fs||!fund) return;
   const fpe_v=fund.forwardPE||'--';
   const feps_v=fund.forwardEps||'--';
@@ -2124,7 +2124,8 @@ function _renderFundamentalsHTML(fs, fund, isCached){
         <div style="font-size:9px;color:#4b6280;">EX-DIV DATE</div>
         <div style="font-size:11px;font-weight:700;color:${exd_v!=='--'?'#22c55e':'#e2e8f0'};">${exd_v}</div>
       </div>
-    </div>`;
+    </div>
+    ${_buildSRBlock(sym)}`;
 }
 
 async function openDetail(sym,isIndex){
@@ -2180,7 +2181,7 @@ async function openDetail(sym,isIndex){
     const fs=document.getElementById("fundamentalsSection");
     if(_cachedFund && fs){
       // Render cached immediately — API refresh happens in background
-      _renderFundamentalsHTML(fs, _cachedFund, true);
+      _renderFundamentalsHTML(fs, _cachedFund, true, sym);
     }
     const fund=await fetchFundamentals(sym);
     if(fs && !fund && !_cachedFund){
@@ -2211,7 +2212,7 @@ async function openDetail(sym,isIndex){
       }
     }
     if(fs&&fund){
-      _renderFundamentalsHTML(fs, fund, false);
+      _renderFundamentalsHTML(fs, fund, false, sym);
     } else if(fs && !_cachedFund){
       fs.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Fundamentals unavailable — will retry on next open</div>';
     }
@@ -2234,6 +2235,14 @@ async function openDetail(sym,isIndex){
       const macd=calcMACD(closes);
       const ib=detectInsideBar(highs,lows);
       const nr=detectNarrowRange(highs,lows);
+      const atr=calcATR(highs,lows,closes);
+      const vols=(hist.volume||[]).filter(v=>v!=null);
+      const todayVol=vols[vols.length-1]||0;
+      const avgVol10=vols.length>=10?vols.slice(-10).reduce((a,b)=>a+b,0)/10:null;
+      const volRatio=avgVol10&&avgVol10>0?parseFloat((todayVol/avgVol10).toFixed(2)):null;
+      const volColor=volRatio?volRatio>=2?'#a78bfa':volRatio>=1.5?'#38bdf8':volRatio>=1?'#94a3b8':'#4b6280':'#4b6280';
+      const volLabel=volRatio?volRatio>=2?'Very High':volRatio>=1.5?'High':volRatio>=1?'Normal':'Low':'--';
+      const atrPct=atr&&price>0?parseFloat((atr/price*100).toFixed(2)):null;
       const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
 const price=cache[sym]?.data?.regularMarketPrice||0;
@@ -2259,6 +2268,17 @@ const price=cache[sym]?.data?.regularMarketPrice||0;
             ${maRow('DMA 20',ma20)}
             ${maRow('DMA 50',ma50)}
             ${maRow('DMA 200',ma200)}
+          </div>
+          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:9px;color:#4b6280;">ATR (14)</div>
+              <div style="font-size:13px;font-weight:700;color:#f59e0b;">${atr?'\u20b9'+atr:'--'} <span style="font-size:9px;color:#94a3b8;">${atrPct?'('+atrPct+'%)':''}</span></div>
+            </div>
+            <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;">
+              <div style="font-size:9px;color:#4b6280;">VOLUME</div>
+              <div style="font-size:13px;font-weight:700;color:${volColor};">${volLabel} <span style="font-size:9px;">${volRatio?volRatio+'x':''}</span></div>
+            </div>
           </div>
           <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">INSIDE BAR${iBtn('INSIDE')}</div><div style="font-size:12px;font-weight:700;color:${ib?'#f59e0b':'#4b6280'};">${ib?'Yes':'No'}</div></div>
@@ -4278,6 +4298,24 @@ function detectCandlePatterns(opens, highs, lows, closes) {
   return patterns;
 }
 
+// ATR (14-period Average True Range)
+function calcATR(highs, lows, closes, period=14) {
+  if (!highs || highs.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < highs.length; i++) {
+    const hl  = highs[i] - lows[i];
+    const hpc = Math.abs(highs[i] - closes[i-1]);
+    const lpc = Math.abs(lows[i]  - closes[i-1]);
+    trs.push(Math.max(hl, hpc, lpc));
+  }
+  // Wilder smoothing
+  let atr = trs.slice(0, period).reduce((a,b) => a+b, 0) / period;
+  for (let i = period; i < trs.length; i++) {
+    atr = (atr * (period - 1) + trs[i]) / period;
+  }
+  return parseFloat(atr.toFixed(2));
+}
+
 function detectInsideBar(highs, lows){
   if(!highs||highs.length<2) return false;
   const n=highs.length;
@@ -4315,6 +4353,106 @@ function calcBollingerSeries(closes, period=20, mult=2){
 }
 
 // Bollinger Bands (20, 2) — single point (last candle)
+// ======================================
+// SUPPORT & RESISTANCE BLOCK
+// Uses only cache[sym].data — zero extra fetch
+// Pivot Point method (Floor Trader Pivots)
+// ======================================
+function _buildSRBlock(sym) {
+  if (!sym) return '';
+  const d = cache[sym] && cache[sym].data;
+  if (!d) return '';
+
+  const cmp  = d.regularMarketPrice   || 0;
+  const high = d.regularMarketDayHigh || cmp;
+  const low  = d.regularMarketDayLow  || cmp;
+  const prev = d.chartPreviousClose   || cmp;
+  const h52  = d.fiftyTwoWeekHigh     || 0;
+  const l52  = d.fiftyTwoWeekLow      || 0;
+
+  if (!cmp || !high || !low || !prev) return '';
+
+  // Classic Floor Pivot formula
+  const P  = (high + low + prev) / 3;
+  const R1 = parseFloat((2 * P - low).toFixed(2));
+  const R2 = parseFloat((P + (high - low)).toFixed(2));
+  const S1 = parseFloat((2 * P - high).toFixed(2));
+  const S2 = parseFloat((P - (high - low)).toFixed(2));
+
+  const fmt = v => '\u20b9' + v.toFixed(2);
+  const pctFrom = (level, price) => {
+    if (!level || !price) return '';
+    const p = ((price - level) / level * 100);
+    const sign = p >= 0 ? '+' : '';
+    return sign + p.toFixed(1) + '%';
+  };
+
+  // Position of CMP in S2–R2 range for progress bar
+  const barMin = Math.min(S2, l52 || S2);
+  const barMax = Math.max(R2, h52 || R2);
+  const barRange = barMax - barMin || 1;
+  const cmpPct = Math.min(100, Math.max(0, ((cmp - barMin) / barRange) * 100));
+  const s1Pct  = Math.min(100, Math.max(0, ((S1 - barMin) / barRange) * 100));
+  const r1Pct  = Math.min(100, Math.max(0, ((R1 - barMin) / barRange) * 100));
+
+  // Signal
+  const nearS1 = cmp <= S1 * 1.015;
+  const nearR1 = cmp >= R1 * 0.985;
+  const aboveP = cmp > P;
+  let signal = '', sigColor = '#94a3b8', sigBg = 'rgba(148,163,184,0.08)';
+  if (nearS1)      { signal = 'Near Support \u2014 Watch for Bounce'; sigColor = '#22c55e'; sigBg = 'rgba(34,197,94,0.08)'; }
+  else if (nearR1) { signal = 'Near Resistance \u2014 Watch for Reversal'; sigColor = '#ef4444'; sigBg = 'rgba(239,68,68,0.08)'; }
+  else if (aboveP) { signal = 'Above Pivot \u2014 Bullish Bias'; sigColor = '#38bdf8'; sigBg = 'rgba(56,189,248,0.08)'; }
+  else             { signal = 'Below Pivot \u2014 Bearish Bias'; sigColor = '#f59e0b'; sigBg = 'rgba(245,158,11,0.08)'; }
+
+  const levelRow = (label, val, labelColor, pct, pctColor) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;">
+      <div style="font-size:9px;color:${labelColor};font-weight:700;font-family:'Rajdhani',sans-serif;min-width:26px;">${label}</div>
+      <div style="font-size:11px;font-weight:700;color:#e2e8f0;font-family:'Rajdhani',sans-serif;">${fmt(val)}</div>
+      <div style="font-size:9px;color:${pctColor};font-family:'Rajdhani',sans-serif;text-align:right;min-width:46px;">${pct}</div>
+    </div>`;
+
+  return `
+    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">SUPPORT &amp; RESISTANCE</div>
+    <div style="background:#0a1628;border-radius:8px;padding:8px 10px;margin-bottom:6px;">
+
+      <!-- Levels table -->
+      ${levelRow('R2', R2, '#ef4444', pctFrom(cmp, R2), '#ef4444')}
+      ${levelRow('R1', R1, '#f87171', pctFrom(cmp, R1), '#f87171')}
+      <div style="border-top:1px dashed #1e3a5f;margin:3px 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;font-family:'Rajdhani',sans-serif;min-width:26px;">P</div>
+        <div style="font-size:11px;font-weight:700;color:#94a3b8;font-family:'Rajdhani',sans-serif;">${fmt(P)}</div>
+        <div style="font-size:9px;color:#94a3b8;font-family:'Rajdhani',sans-serif;min-width:46px;text-align:right;">Pivot</div>
+      </div>
+      <div style="border-top:1px dashed #1e3a5f;margin:3px 0;"></div>
+      ${levelRow('S1', S1, '#4ade80', pctFrom(cmp, S1), '#4ade80')}
+      ${levelRow('S2', S2, '#22c55e', pctFrom(cmp, S2), '#22c55e')}
+
+      <!-- Visual bar -->
+      <div style="margin-top:8px;position:relative;height:6px;background:#1e2d3d;border-radius:3px;overflow:visible;">
+        <!-- S1 marker -->
+        <div style="position:absolute;left:${s1Pct}%;top:-2px;width:2px;height:10px;background:#4ade80;border-radius:1px;transform:translateX(-50%);"></div>
+        <!-- R1 marker -->
+        <div style="position:absolute;left:${r1Pct}%;top:-2px;width:2px;height:10px;background:#f87171;border-radius:1px;transform:translateX(-50%);"></div>
+        <!-- CMP dot -->
+        <div style="position:absolute;left:${cmpPct}%;top:50%;width:10px;height:10px;background:#38bdf8;border-radius:50%;border:2px solid #0a0f1a;transform:translate(-50%,-50%);z-index:2;"></div>
+        <!-- Fill left of CMP -->
+        <div style="position:absolute;left:0;top:0;width:${cmpPct}%;height:100%;background:linear-gradient(90deg,rgba(34,197,94,0.3),rgba(56,189,248,0.3));border-radius:3px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;">
+        <div style="font-size:8px;color:#22c55e;font-family:'Rajdhani',sans-serif;">${l52 ? fmt(l52) : fmt(S2)} 52W L</div>
+        <div style="font-size:8px;color:#38bdf8;font-family:'Rajdhani',sans-serif;">CMP ${fmt(cmp)}</div>
+        <div style="font-size:8px;color:#ef4444;font-family:'Rajdhani',sans-serif;">52W H ${h52 ? fmt(h52) : fmt(R2)}</div>
+      </div>
+    </div>
+
+    <!-- Signal badge -->
+    <div style="background:${sigBg};border:1px solid ${sigColor}44;border-radius:6px;padding:5px 10px;text-align:center;margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;color:${sigColor};font-family:'Rajdhani',sans-serif;">${signal}</div>
+    </div>`;
+}
+
 function calcBollinger(closes, period=20, mult=2){
   if(!closes||closes.length<period) return null;
   const slice=closes.slice(-period);
