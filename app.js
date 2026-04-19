@@ -639,7 +639,7 @@ try{wl=JSON.parse(localStorage.getItem("wl"))||wl;}catch(e){}
 try{h=JSON.parse(localStorage.getItem("h"))||[];}catch(e){}
 try{hist=JSON.parse(localStorage.getItem("hist"))||[];}catch(e){}
 try{alerts=JSON.parse(localStorage.getItem("alerts"))||[];}catch(e){}
-try{isDark=localStorage.getItem("theme")!=="light";}catch(e){}
+isDark=true; // Light mode removed
 // Font size init
 (function(){ const fs=localStorage.getItem('fontSize')||'medium'; document.documentElement.setAttribute('data-fsize',fs); })();
 try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
@@ -668,7 +668,7 @@ try{groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
   wl=watchlists[currentWL].stocks;
 })();
 
-if(!isDark){ document.body.classList.add("light"); }
+
 
 const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
 const INDICES_VERSION="v2";
@@ -900,15 +900,7 @@ async function handleWatchlistCSV(event){
   showPopup(`CSV: ${added} added, ${already} already exist, ${skipped} skipped`);
 }
 
-// ======================================
-// THEME
-// ======================================
-function toggleTheme(){
-  isDark=!isDark;
-  document.body.classList.toggle("light",!isDark);
 
-  localStorage.setItem("theme",isDark?"dark":"light");
-}
 
 // ======================================
 // SEARCH SUGGESTIONS
@@ -5047,13 +5039,11 @@ async function renderNews() {
   const el = document.getElementById('news');
   if (!el) return;
 
-  const _appHdr    = document.querySelector('.app-header');
+  const _appHdr    = document.getElementById('fixedHeader');
   const _statusBar = document.getElementById('marketStatus')?.parentElement;
   const _ticker    = document.getElementById('priceTicker');
   const _botNav    = document.querySelector('.fixed.bottom-0');
-  const _top = (_appHdr ? _appHdr.offsetHeight : 44)
-             + (_statusBar ? _statusBar.offsetHeight : 22)
-             + (_ticker && _ticker.style.display !== 'none' ? _ticker.offsetHeight : 0);
+  const _top = _appHdr ? _appHdr.offsetHeight : 102;
   const _bot = _botNav ? _botNav.offsetHeight : 56;
 
   const smartChips = _buildSmartChips();
@@ -5119,26 +5109,26 @@ async function renderNews() {
         </div>
 
         <!-- Main input row -->
-        <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div style="display:flex;gap:8px;align-items:center;">
           <div style="flex:1;position:relative;">
             <textarea id="tab-nivi-input"
               placeholder="Ask anything to Nivi in Hindi, Gujarati, English 🙂"
               rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_tabSend();}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px';"
-              style="width:100%;background:#0a1628;border:1px solid #1e3a5f;border-radius:12px;padding:10px 14px;font-size:13px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.5;box-sizing:border-box;min-height:42px;max-height:90px;overflow-y:auto;transition:border-color 0.2s;"
+              style="width:100%;background:#0a1628;border:1px solid #1e3a5f;border-radius:12px;padding:10px 14px;font-size:13px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.5;box-sizing:border-box;min-height:42px;max-height:90px;overflow-y:auto;transition:border-color 0.2s;display:block;vertical-align:middle;"
               onfocus="this.style.borderColor='rgba(52,211,153,0.5)'"
               onblur="this.style.borderColor='#1e3a5f'">
             </textarea>
           </div>
           <button onclick="_tabSend()"
-            style="background:#065f46;color:#34d399;border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;height:42px;display:flex;align-items:center;gap:5px;">
+            style="background:#065f46;color:#34d399;border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;min-height:42px;height:42px;display:flex;align-items:center;gap:5px;align-self:flex-end;">
             <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><path d="M2 10l16-8-6 8 6 8-16-8z" fill="#34d399"/></svg>
             Send
           </button>
         </div>
         <div style="font-size:9px;color:#2d4a3e;margin-top:5px;font-family:'Rajdhani',sans-serif;text-align:center;">
-          ⚠️ Nivi = AI assistant · Not SEBI registered advisor· Research your self
+          ⚠️ Nivi = AI assistant · Not SEBI registered advisor· Research yourself
         </div>
       </div>
 
@@ -5157,7 +5147,7 @@ async function renderNews() {
 
       <div id="insights-loading" style="display:none;text-align:center;padding:20px 0;">
         <div style="font-size:20px;display:inline-block;animation:spin 1s linear infinite;">&#9881;</div>
-        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi analyzing...</div>
+        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi is analyzing...</div>
       </div>
 
       <div id="insights-brief" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
@@ -7758,328 +7748,209 @@ function _buildShareholdingTab(d, sym) {
 
 // ── Full Report PDF Download (All 5 Tabs) ──────────────────
 async function downloadLearnPDF(sym) {
-  const d = _learnCache[sym];
-  if (!d) { showPopup('Data not loaded yet'); return; }
-
-  showPopup('⏳ Generating Full Report...');
+  // Fetch fresh from Firebase if not cached
+  let d = _learnCache[sym];
+  if (!d) {
+    showPopup('⏳ Firebase se data fetch ho raha hai...');
+    try {
+      const doc = await firebase.firestore().collection('fundlearn').doc(sym).get();
+      if (!doc.exists) { showPopup('❌ ' + sym + ' Firebase maa nathi'); return; }
+      const fd = doc.data();
+      const fv = f => { if(f===null||f===undefined) return 0; if(typeof f==='number') return f; if(typeof f==='string') return Number(f)||0; if(f.doubleValue!==undefined) return Number(f.doubleValue); if(f.integerValue!==undefined) return Number(f.integerValue); return 0; };
+      d = { sym, source:'firebase',
+        netProfit:fv(fd.netProfit), totalEquity:fv(fd.totalEquity), totalShares:fv(fd.totalShares),
+        ebit:fv(fd.ebit), capEmployed:fv(fd.capEmployed), roce:fv(fd.roce), ncf:fv(fd.ncf),
+        totalDebt:fv(fd.totalDebt), dividend:fv(fd.dividend), currAsset:fv(fd.currAsset),
+        currLiab:fv(fd.currLiab), promoter:fv(fd.promoter), fii:fv(fd.fii), dii:fv(fd.dii),
+        pubHolding:fv(fd.pubHolding), eps:fv(fd.eps), bookVal:fv(fd.bookVal), pe:fv(fd.pe),
+        sharePrice:fv(fd.sharePrice), roe:fv(fd.roe), roa:fv(fd.roa), ebitda:fv(fd.ebitda),
+        deRatio:fv(fd.de), fcf:fv(fd.fcf), opProfit:fv(fd.opProfit),
+        salesQ1:fv(Array.isArray(fd.sales_q)?fd.sales_q[0]:fd.salesQ1),
+        salesQ2:fv(Array.isArray(fd.sales_q)?fd.sales_q[1]:fd.salesQ2),
+        salesQ3:fv(Array.isArray(fd.sales_q)?fd.sales_q[2]:fd.salesQ3),
+        salesQ4:fv(Array.isArray(fd.sales_q)?fd.sales_q[3]:fd.salesQ4),
+        salesQ5:fv(Array.isArray(fd.sales_q)?fd.sales_q[4]:fd.salesQ5),
+        npQ1:fv(Array.isArray(fd.np_q)?fd.np_q[0]:fd.npQ1),
+        npQ2:fv(Array.isArray(fd.np_q)?fd.np_q[1]:fd.npQ2),
+        npQ3:fv(Array.isArray(fd.np_q)?fd.np_q[2]:fd.npQ3),
+        npQ4:fv(Array.isArray(fd.np_q)?fd.np_q[3]:fd.npQ4),
+        npQ5:fv(Array.isArray(fd.np_q)?fd.np_q[4]:fd.npQ5),
+        quarterlyHeaders: fd.quarterlyHeaders || [],
+        updatedAt: fd.updatedAt || ''
+      };
+      d.sharePrice = _getLivePrice(sym) || d.sharePrice;
+      _learnCache[sym] = d;
+    } catch(e) { showPopup('❌ Firebase error: ' + e.message); return; }
+  }
 
   const R = calcLearnRatios(d);
   const today = new Date();
-  const dateStr = today.getDate() + '/' + (today.getMonth()+1) + '/' + today.getFullYear();
-  const sp = d.sharePrice > 0 ? '₹' + d.sharePrice.toFixed(2) : 'N/A';
-  const srcLabel = d.source === 'firebase' ? 'Firebase' : d.source === 'ff2' ? 'FF2 Sheet' : 'GAS';
+  const dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
+  const sp = d.sharePrice > 0 ? 'Rs.' + d.sharePrice.toFixed(2) : 'N/A';
+  const ds = today.getDate()+'-'+(today.getMonth()+1)+'-'+today.getFullYear();
 
-  // ── Helper: dot color for print ──
-  const dotCol = (m, v) => {
-    const c = _learnDot(m, v);
-    return c === '#22c55e' ? '#16a34a' : c === '#f59e0b' ? '#b45309' : c === '#ef4444' ? '#b91c1c' : '#94a3b8';
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) { showPopup('\u26A0\uFE0F jsPDF not loaded'); return; }
+
+  showPopup('\u23F3 PDF banavi rahi che...');
+
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const PW = 210, PH = 297, ML = 14, MR = 14, TW = PW - ML - MR;
+  let y = 14;
+
+  // ── Helpers ──
+  const fmtCr = v => { const n = Number(v); if(!n || isNaN(n)) return '--'; if(Math.abs(n)>=10000) return 'Rs.'+(n/100).toFixed(0)+' Cr'; return 'Rs.'+n.toFixed(0)+' Cr'; };
+  const newPage = () => { doc.addPage(); y = 14; };
+  const checkY = (need=20) => { if(y + need > PH - 14) newPage(); };
+
+  // ── Header Box ──
+  doc.setFillColor(255, 248, 240);
+  doc.roundedRect(ML, y, TW, 28, 3, 3, 'F');
+  doc.setDrawColor(251, 146, 60);
+  doc.roundedRect(ML, y, TW, 28, 3, 3, 'S');
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(251,146,60);
+  doc.text(sym, ML+4, y+9);
+  doc.setFontSize(9); doc.setTextColor(100,116,139);
+  doc.text('RealTradePro \u00B7 Full Analysis Report', ML+4, y+15);
+  doc.text('CMP: ' + sp.replace('\u20B9','Rs.') + '   Date: ' + dateStr + '   Source: ' + (d.source||'Firebase'), ML+4, y+21);
+
+  // Grade
+  const scored = ['pe','eps','roe','roce','de','cr','roa','promoter','fii','dii'].map(k=>_learnDot(k,R[k]));
+  const green = scored.filter(c=>c==='#22c55e').length;
+  const grade = green>=7?'A':green>=5?'B':green>=3?'C':'D';
+  const gc = grade==='A'?[22,163,74]:grade==='B'?[2,132,199]:grade==='C'?[180,83,9]:[185,28,28];
+  doc.setFillColor(...gc); doc.circle(PW-MR-10, y+10, 8, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text(grade, PW-MR-10, y+13, {align:'center'});
+  doc.setFontSize(7); doc.text('Grade', PW-MR-10, y+21, {align:'center'});
+  y += 32;
+
+  // ── Section helper ──
+  const sectionHeader = (title) => {
+    checkY(12);
+    doc.setFillColor(241,245,249);
+    doc.roundedRect(ML, y, TW, 7, 1, 1, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(251,146,60);
+    doc.text(title, ML+2, y+5);
+    y += 9;
   };
 
-  // ── Nivi Insight ──
-  let niviText = 'Parameters are currently neutral (Stable).';
-  if (R.rsi !== null && R.rsi < 40 && R.roe !== null && R.roe > 15)
-    niviText = `🔥 Strong Buy Zone: ROE ${R.roe.toFixed(1)}% strong + RSI Oversold (${R.rsi.toFixed(1)}) — potential excellent entry.`;
-  else if (R.rsi !== null && R.rsi > 75)
-    niviText = '⚠️ Overbought: Technically overbought per RSI. Wait for correction before fresh buying.';
-  else if (R.de !== null && R.de > 1.5)
-    niviText = `⚠️ High Debt: D/E ratio is ${R.de.toFixed(2)} — elevated debt burden. Monitor carefully.`;
-  else if (R.cr !== null && R.cr < 1)
-    niviText = `🚨 Liquidity Risk: Current Ratio ${R.cr.toFixed(2)} < 1 — may struggle with short-term obligations.`;
+  // ── Fundamentals Table ──
+  sectionHeader('FUNDAMENTALS & VALUATION');
+  checkY(60);
+  doc.autoTable({
+    startY: y, margin:{left:ML,right:MR},
+    head:[['Metric','Value','Benchmark']],
+    body:[
+      ['P/E Ratio',       R.pe    ? R.pe.toFixed(2)    : '--', '< 15 Cheap \u00B7 15-30 Fair \u00B7 > 30 Expensive'],
+      ['EPS',             R.eps   ? 'Rs.'+R.eps.toFixed(2): '--', 'Higher = Better'],
+      ['Book Value',      R.bookVal?'Rs.'+R.bookVal.toFixed(2):'--','Growing = Healthy'],
+      ['ROE %',           R.roe   ? R.roe.toFixed(2)+'%':'--', '> 15% Good \u00B7 8-15% Fair \u00B7 < 8% Weak'],
+      ['ROCE %',          R.roce  ? R.roce.toFixed(2)+'%':'--', '> 15% Good \u00B7 8-15% Fair \u00B7 < 8% Weak'],
+      ['ROA %',           R.roa   ? R.roa.toFixed(2)+'%':'--', '> 5% Good \u00B7 < 5% Weak'],
+      ['D/E Ratio',       R.de    ? R.de.toFixed(2)+'x':'--',  '< 0.5 Low \u00B7 0.5-1 Fair \u00B7 > 1 High'],
+      ['Current Ratio',   R.cr    ? R.cr.toFixed(2)   :'--', '> 1.5 Safe \u00B7 1-1.5 Fair \u00B7 < 1 Risk'],
+      ['Div Yield %',     R.divYield?R.divYield.toFixed(2)+'%':'--','> 0% Fair'],
+      ['Free Cash Flow',  fmtCr(d.fcf),                        '> 0 Healthy \u00B7 5-10% of Rev Fair'],
+    ],
+    headStyles:{fillColor:[251,146,60],textColor:255,fontSize:9,fontStyle:'bold'},
+    bodyStyles:{fontSize:9,textColor:[30,30,30]},
+    columnStyles:{0:{cellWidth:40},1:{cellWidth:28,halign:'right'},2:{cellWidth:TW-68,fontSize:8,textColor:[100,116,139]}},
+    alternateRowStyles:{fillColor:[248,250,252]},
+    styles:{lineColor:[226,232,240],lineWidth:0.2},
+  });
+  y = doc.lastAutoTable.finalY + 6;
 
-  // ── Section 1: Fundamentals rows ──
-  const fundMetrics = [
-    { key:'pe',       label:'P/E Ratio',         fmt: v => v.toFixed(2),        bench:'< 15 Good · 15–30 Fair · > 30 Expensive' },
-    { key:'eps',      label:'EPS',                fmt: v => '₹'+v.toFixed(2),   bench:'> 0 Good · Growing = Healthy' },
-    { key:'roe',      label:'ROE %',              fmt: v => v.toFixed(2)+'%',    bench:'≥ 15% Good · 8–15% Fair · < 8% Weak' },
-    { key:'roce',     label:'ROCE %',             fmt: v => v.toFixed(2)+'%',    bench:'≥ 15% Good · 8–15% Fair · < 8% Weak' },
-    { key:'bookVal',  label:'Book Value',         fmt: v => '₹'+v.toFixed(2),   bench:'Price < BV = Undervalued' },
-    { key:'de',       label:'Debt-to-Equity',     fmt: v => v.toFixed(2),        bench:'< 0.5 Low · 0.5–1 Fair · > 1 High' },
-    { key:'cr',       label:'Current Ratio',      fmt: v => v.toFixed(2),        bench:'≥ 1.5 Safe · 1–1.5 Fair · < 1 Risk' },
-    { key:'divYield', label:'Dividend Yield %',   fmt: v => v.toFixed(2)+'%',    bench:'≥ 1% Good · > 0% Fair' },
-    { key:'roa',      label:'ROA %',              fmt: v => v.toFixed(2)+'%',    bench:'≥ 10% Good · 5–10% Fair' },
-    { key:'rsi',      label:'RSI (14D)',           fmt: v => v.toFixed(1),        bench:'< 30 Oversold · 30–70 Normal · > 70 Overbought' },
-  ];
+  // ── Shareholding Table ──
+  checkY(10);
+  sectionHeader('SHAREHOLDING PATTERN');
+  doc.autoTable({
+    startY: y, margin:{left:ML,right:MR},
+    head:[['Holder','%','Bar']],
+    body:[
+      ['Promoter', d.promoter ? d.promoter.toFixed(2)+'%':'--', d.promoter ? '[' + '|'.repeat(Math.round(d.promoter/5)) + ']  '+d.promoter.toFixed(1)+'%' : '--'],
+      ['FII',      d.fii      ? d.fii.toFixed(2)+'%'     :'--', d.fii      ? '[' + '|'.repeat(Math.round(d.fii/5)) + ']  '+d.fii.toFixed(1)+'%' : '--'],
+      ['DII',      d.dii      ? d.dii.toFixed(2)+'%'     :'--', d.dii      ? '[' + '|'.repeat(Math.round(d.dii/5)) + ']  '+d.dii.toFixed(1)+'%' : '--'],
+      ['Public',   d.pubHolding?d.pubHolding.toFixed(2)+'%':'--',d.pubHolding?'[' + '|'.repeat(Math.round(d.pubHolding/5)) + ']  '+d.pubHolding.toFixed(1)+'%' : '--'],
+    ],
+    headStyles:{fillColor:[56,189,248],textColor:255,fontSize:9,fontStyle:'bold'},
+    bodyStyles:{fontSize:9,textColor:[30,30,30]},
+    columnStyles:{0:{cellWidth:40},1:{cellWidth:28,halign:'right'},2:{cellWidth:TW-68,textColor:[22,163,74]}},
+    alternateRowStyles:{fillColor:[248,250,252]},
+    styles:{lineColor:[226,232,240],lineWidth:0.2},
+  });
+  y = doc.lastAutoTable.finalY + 6;
 
-  const fundRows = fundMetrics.map(m => {
-    const val = R[m.key];
-    const fv = val === null ? '--' : m.fmt(val);
-    const col = dotCol(m.key, val);
-    return `<tr>
-      <td class="td"><span class="dot" style="background:${col};"></span>${m.label}</td>
-      <td class="td-val" style="color:${col};">${fv}</td>
-      <td class="td-bench">${m.bench}</td>
-    </tr>`;
-  }).join('');
-
-  // ── Section 2: Shareholding rows ──
-  const holders = [
-    { label:'Promoter',       val: R.promoter,      color:'#7c3aed', bench: '≥ 50% Strong · 35–50% OK · < 35% Low' },
-    { label:'FII (Foreign)',  val: R.fii,            color:'#0284c7', bench: '≥ 10% High · 5–10% Moderate' },
-    { label:'DII (Domestic)', val: R.dii,            color:'#059669', bench: '≥ 5% Good · 2–5% Moderate' },
-    { label:'Public',         val: d.pubHolding||null, color:'#d97706', bench: '--' },
-  ];
-  const shareRows = holders.map(h => {
-    const fv = h.val !== null ? h.val.toFixed(2)+'%' : '--';
-    const barW = h.val !== null ? Math.min(100, h.val) : 0;
-    return `<tr>
-      <td class="td"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${h.color};margin-right:8px;vertical-align:middle;"></span>${h.label}</td>
-      <td class="td-val" style="color:${h.color};">${fv}</td>
-      <td class="td-bench">
-        <div style="background:#e2e8f0;border-radius:4px;height:6px;width:120px;overflow:hidden;">
-          <div style="height:100%;width:${barW}%;background:${h.color};border-radius:4px;"></div>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-
-  // ── Section 3: Raw data ──
-  const rawRows = [
-    ['Net Profit', d.netProfit ? '₹'+d.netProfit+' Cr' : '--'],
-    ['Total Equity', d.totalEquity ? '₹'+d.totalEquity+' Cr' : '--'],
-    ['Total Shares', d.totalShares ? d.totalShares+' Cr' : '--'],
-    ['EBIT', d.ebit ? '₹'+d.ebit+' Cr' : '--'],
-    ['Total Debt', d.totalDebt ? '₹'+d.totalDebt+' Cr' : '--'],
-    ['Current Assets', d.currAsset ? '₹'+d.currAsset+' Cr' : '--'],
-    ['Current Liabilities', d.currLiab ? '₹'+d.currLiab+' Cr' : '--'],
-    ['Operating Profit', d.opProfit ? '₹'+d.opProfit+' Cr' : '--'],
-    ['Free Cash Flow', d.fcf ? '₹'+d.fcf+' Cr' : '--'],
-    ['EBITDA', d.ebitda ? '₹'+d.ebitda+' Cr' : '--'],
-  ].map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
-
-// ── Section 4: Quarterly from Firebase cache ──
+  // ── Quarterly Table ──
   const qs = ['Q1','Q2','Q3','Q4','Q5'];
-  const qHeaders_fund = (d.quarterlyHeaders && d.quarterlyHeaders.length === 5)
-    ? d.quarterlyHeaders
-    : qs;
-  const qLabels = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
-  const qKeys   = ['sales','exp','op','otherInc','pbt','np'];
-  const fmtCr = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
-
-  let qRows = '';
-  const hasQ = d.salesQ1 && d.salesQ1 !== 0;
+  const qH = (d.quarterlyHeaders && d.quarterlyHeaders.length===5) ? d.quarterlyHeaders : qs;
+  const hasQ = d.salesQ1 || d.salesQ2 || d.salesQ3;
   if (hasQ) {
-    const hdrRow = `<tr><td class="td"><strong>Metric</strong></td>${qHeaders_fund.map(h=>`<td class="td-val" style="font-size:11px;">${h}</td>`).join('')}</tr>`;
-    qRows = hdrRow + qLabels.map((label, li) => {
-      const key = qKeys[li];
-      return `<tr><td class="td">${label}</td>${qs.map(q=>`<td class="td-val">${fmtCr(d[key+q])}</td>`).join('')}</tr>`;
-    }).join('');
-  } else {
-    qRows = `<tr><td colspan="6" style="padding:8px 10px;color:#94a3b8;font-size:11px;">Quarterly data not available</td></tr>`;
+    checkY(10);
+    sectionHeader('QUARTERLY RESULTS (Last 5 Quarters)');
+    const qBody = [
+      ['Sales (Cr)',    ...qs.map(q=>fmtCr(d['salesQ'+q.slice(1)]))],
+      ['Net Profit',   ...qs.map(q=>fmtCr(d['npQ'+q.slice(1)]))],
+      ['Expenses',     ...qs.map(q=>fmtCr(d['expQ'+q.slice(1)] || d['expensesQ'+q.slice(1)] || 0))],
+    ];
+    doc.autoTable({
+      startY: y, margin:{left:ML,right:MR},
+      head:[['Metric',...qH]],
+      body: qBody,
+      headStyles:{fillColor:[34,197,94],textColor:255,fontSize:8,fontStyle:'bold'},
+      bodyStyles:{fontSize:8,textColor:[30,30,30],halign:'right'},
+      columnStyles:{0:{halign:'left',cellWidth:32}},
+      alternateRowStyles:{fillColor:[248,250,252]},
+      styles:{lineColor:[226,232,240],lineWidth:0.2},
+    });
+    y = doc.lastAutoTable.finalY + 6;
   }
 
-  // ── Cash Flow from Firebase cache ──
-  const cfItems = [
-    ['Free Cash Flow', fmtCr(d.fcf)],
-    ['Total Debt',     fmtCr(d.totalDebt)],
-    ['Current Assets', fmtCr(d.currAsset)],
-    ['Current Liab',   fmtCr(d.currLiab)],
-    ['Debt/Equity',    d.deRatio ? Number(d.deRatio).toFixed(2)+'x' : '--'],
-    ['ROA %',          d.roa    ? Number(d.roa).toFixed(2)+'%'    : '--'],
-    ['EBITDA',         fmtCr(d.ebitda)],
-  ];
-  const cfRows = cfItems.map(([l,v]) => `<tr><td class="td">${l}</td><td class="td-val">${v}</td><td class="td-bench"></td></tr>`).join('');
+  // ── Cash Flow ──
+  checkY(10);
+  sectionHeader('CASH FLOW & LIQUIDITY');
+  doc.autoTable({
+    startY: y, margin:{left:ML,right:MR},
+    head:[['Parameter','Value']],
+    body:[
+      ['Free Cash Flow', fmtCr(d.fcf)],
+      ['Total Debt',     fmtCr(d.totalDebt)],
+      ['Current Assets', fmtCr(d.currAsset)],
+      ['Current Liab',   fmtCr(d.currLiab)],
+      ['Debt/Equity',    d.deRatio ? Number(d.deRatio).toFixed(2)+'x':'--'],
+      ['ROA %',          d.roa     ? Number(d.roa).toFixed(2)+'%'  :'--'],
+      ['EBITDA',         fmtCr(d.ebitda)],
+    ],
+    headStyles:{fillColor:[168,85,247],textColor:255,fontSize:9,fontStyle:'bold'},
+    bodyStyles:{fontSize:9,textColor:[30,30,30]},
+    columnStyles:{0:{cellWidth:60},1:{halign:'right'}},
+    alternateRowStyles:{fillColor:[248,250,252]},
+    styles:{lineColor:[226,232,240],lineWidth:0.2},
+  });
+  y = doc.lastAutoTable.finalY + 6;
 
-  // ── Score summary ──
-  const scored = ['pe','eps','roe','roce','de','cr','roa','promoter','fii','dii'].map(k => _learnDot(k, R[k]));
-  const green  = scored.filter(c => c === '#22c55e').length;
-  const yellow = scored.filter(c => c === '#f59e0b').length;
-  const red    = scored.filter(c => c === '#ef4444').length;
-  const grade  = green >= 7 ? 'A' : green >= 5 ? 'B' : green >= 3 ? 'C' : 'D';
-  const gradeColor = grade === 'A' ? '#16a34a' : grade === 'B' ? '#0284c7' : grade === 'C' ? '#b45309' : '#b91c1c';
+  // ── Score Summary ──
+  checkY(20);
+  sectionHeader('SCORE SUMMARY');
+  const yellow = scored.filter(c=>c==='#f59e0b').length;
+  const red    = scored.filter(c=>c==='#ef4444').length;
+  doc.setFontSize(10); doc.setTextColor(30,30,30); doc.setFont('helvetica','normal');
+  doc.text(`Good: ${green}   Average: ${yellow}   Weak: ${red}   Out of 10   Overall Grade: ${grade}`, ML+2, y+4);
+  y += 10;
 
-  // ── Build full HTML ──
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>${sym} — Full Analysis Report</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #060e1a; color: #e2e8f0; font-family: Arial, Helvetica, sans-serif; padding: 24px; font-size: 13px; }
-  h2 { font-size: 14px; font-weight: 700; color: #fb923c; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(251,146,60,0.25); }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
-  .td      { padding: 7px 10px; border-bottom: 1px solid #1e2d3d; color: #cbd5e1; font-size: 12px; }
-  .td-val  { padding: 7px 10px; border-bottom: 1px solid #1e2d3d; font-family: monospace; font-size: 13px; font-weight: bold; min-width: 80px; }
-  .td-bench{ padding: 7px 10px; border-bottom: 1px solid #1e2d3d; font-size: 10px; color: #64748b; }
-  .dot     { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-  .section { background: #0d1f35; border-radius: 12px; padding: 16px 18px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.07); }
-  .hdr-box { background: linear-gradient(135deg,#0d1f35,#1e3a5f); border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; border: 1px solid rgba(251,146,60,0.25); }
-  .badge   { display: inline-block; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: #94a3b8; margin-right: 6px; margin-top: 6px; }
-  .nivi-box { background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.25); border-left: 4px solid #fb923c; border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; }
-  .grade-box { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; font-size: 24px; font-weight: 700; border: 3px solid; }
-  .score-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-  .score-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 6px 12px; font-size: 12px; }
-  .footer { text-align: center; font-size: 10px; color: #4b6280; margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e2d3d; }
-
-  @media print {
-    body { background: #fff !important; color: #111 !important; padding: 16px; }
-    .hdr-box { background: #f0f4f8 !important; border-color: #ddd !important; }
-    .section { background: #f8fafc !important; border-color: #e2e8f0 !important; }
-    .nivi-box { background: #fff8f0 !important; border-color: #f59e0b !important; }
-    .td, .td-val, .td-bench { border-bottom-color: #e2e8f0 !important; color: #111 !important; }
-    h2 { color: #c2410c !important; border-bottom-color: #fdba74 !important; }
-    .badge { background: #f1f5f9 !important; color: #475569 !important; border-color: #cbd5e0 !important; }
-    .score-pill { background: #f1f5f9 !important; }
-    .footer { color: #94a3b8 !important; border-top-color: #e2e8f0 !important; }
-    table { page-break-inside: avoid; }
-    .section { page-break-inside: avoid; }
+  // ── Footer ──
+  const pages = doc.internal.getNumberOfPages();
+  for (let i=1; i<=pages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8); doc.setTextColor(148,163,184);
+    doc.text('RealTradePro \u00B7 ' + sym + ' Full Analysis \u00B7 ' + dateStr + ' \u00B7 Not SEBI registered advice', PW/2, PH-8, {align:'center'});
+    doc.text('Page '+i+' of '+pages, PW-MR, PH-8, {align:'right'});
   }
-</style>
-</head>
-<body>
 
-<!-- HEADER -->
-<div class="hdr-box">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-    <div>
-      <div style="font-size:26px;font-weight:700;color:#fb923c;font-family:monospace;">${sym}</div>
-      <div style="font-size:13px;color:#94a3b8;margin-top:4px;">RealTradePro · Full Analysis Report</div>
-      <div style="margin-top:10px;">
-        <span class="badge">📅 ${dateStr}</span>
-        <span class="badge">💰 CMP: ${sp}</span>
-        <span class="badge">🗄 Source: ${srcLabel}</span>
-      </div>
-    </div>
-    <div style="text-align:center;">
-      <div class="grade-box" style="color:${gradeColor};border-color:${gradeColor};">${grade}</div>
-      <div style="font-size:10px;color:#64748b;margin-top:4px;">Overall Grade</div>
-    </div>
-  </div>
-</div>
-
-<!-- NIVI INSIGHT -->
-<div class="nivi-box">
-  <div style="font-size:10px;color:#fb923c;font-weight:700;letter-spacing:1px;margin-bottom:6px;">🤖 NIVI'S INSIGHT</div>
-  <div style="font-size:13px;color:#e2e8f0;line-height:1.6;">${niviText}</div>
-</div>
-
-<!-- SCORE SUMMARY -->
-<div class="section" style="margin-bottom:20px;">
-  <h2>📊 SCORE SUMMARY</h2>
-  <div class="score-row">
-    <div class="score-pill"><span style="width:9px;height:9px;border-radius:50%;background:#16a34a;display:inline-block;"></span>Good: <strong>${green}</strong></div>
-    <div class="score-pill"><span style="width:9px;height:9px;border-radius:50%;background:#b45309;display:inline-block;"></span>Average: <strong>${yellow}</strong></div>
-    <div class="score-pill"><span style="width:9px;height:9px;border-radius:50%;background:#b91c1c;display:inline-block;"></span>Weak: <strong>${red}</strong></div>
-    <div class="score-pill">Out of <strong>10</strong> metrics</div>
-  </div>
-</div>
-
-<!-- SECTION 1: FUNDAMENTALS -->
-<div class="section">
-  <h2>📈 FUNDAMENTALS & VALUATION</h2>
-  <table>
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(251,146,60,0.3);">Metric</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(251,146,60,0.3);">Value</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(251,146,60,0.3);">Benchmark</th>
-    </tr></thead>
-    <tbody>${fundRows}</tbody>
-  </table>
-</div>
-
-<!-- SECTION 2: SHAREHOLDING -->
-<div class="section">
-  <h2>👥 SHAREHOLDING PATTERN</h2>
-  <table>
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(56,189,248,0.3);">Holder</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(56,189,248,0.3);">%</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(56,189,248,0.3);">Visual</th>
-    </tr></thead>
-    <tbody>${shareRows}</tbody>
-  </table>
-</div>
-
-<!-- SECTION 3: QUARTERLY FINANCIALS -->
-<div class="section">
-  <h2>QUARTERLY RESULTS (Last 5 Quarters)</h2>
-  <table>
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">Metric</th>
-        ${qHeaders_fund.map(h=>`<th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(34,197,94,0.3);">${h}</th>`).join('')}
-      </tr></thead>
-    <tbody>${qRows}</tbody>
-  </table>
-</div>
-
-<!-- SECTION 4: CASH FLOW -->
-<div class="section">
-  <h2>💰 CASH FLOW & LIQUIDITY</h2>
-  <table>
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(168,85,247,0.3);">Parameter</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(168,85,247,0.3);">Value</th>
-      <th style="padding:6px 10px;border-bottom:2px solid rgba(168,85,247,0.3);"></th>
-    </tr></thead>
-    <tbody>${cfRows}</tbody>
-  </table>
-</div>
-
-<!-- SECTION 5: RAW DATA -->
-<div class="section">
-  <h2>🗃 RAW FINANCIAL DATA (FF2 Sheet)</h2>
-  <table>
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(100,116,139,0.3);">Field</th>
-      <th style="text-align:left;padding:6px 10px;font-size:10px;color:#64748b;border-bottom:2px solid rgba(100,116,139,0.3);">Value</th>
-      <th style="padding:6px 10px;border-bottom:2px solid rgba(100,116,139,0.3);"></th>
-    </tr></thead>
-    <tbody>${rawRows}</tbody>
-  </table>
-</div>
-
-<div class="footer">
-  RealTradePro · ${sym} Full Analysis Report · ${dateStr} · For personal reference only · Not SEBI registered advice
-</div>
-
-</body>
-</html>`;
-
-  // ── Open & Print ──
-  try {
-    if (typeof html2pdf === 'undefined') throw new Error('html2pdf not loaded');
-
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;visibility:hidden;';
-    document.body.appendChild(container);
-
-    showPopup('⏳ PDF generating...');
-
-    const today2 = new Date();
-    const ds = today2.getDate()+'-'+(today2.getMonth()+1)+'-'+today2.getFullYear();
-    const opt = {
-      margin:      [8,8,8,8],
-      filename:    `${sym}_RTP_Report_${ds}.pdf`,
-      image:       { type:'jpeg', quality:0.95 },
-      html2canvas: { scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false },
-      jsPDF:       { unit:'mm', format:'a4', orientation:'portrait' },
-      pagebreak:   { mode:['avoid-all','css','legacy'] }
-    };
-
-    html2pdf().set(opt).from(container).save()
-      .then(() => {
-        document.body.removeChild(container);
-        showPopup('✅ '+sym+'_RTP_Report.pdf downloaded!');
-      })
-      .catch(err => {
-        document.body.removeChild(container);
-        // Fallback: blob open
-        const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.target = '_blank'; a.rel = 'noopener'; a.click();
-        showPopup('PDF fallback — browser mā print karo');
-      });
-  } catch(e) {
-    // html2pdf unavailable — direct blob fallback
-    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.target = '_blank'; a.rel = 'noopener'; a.click();
-    showPopup('⚠️ PDF lib does not exist — Print in HTML tab (Ctrl+P → Save as PDF)');
-  }
+  doc.save(sym + '_RTP_Report_' + ds + '.pdf');
+  showPopup('\u2705 ' + sym + '_RTP_Report.pdf downloaded!');
 }
+
 
 // ============================================================
 // TAB 4 — QUARTERLY RESULTS

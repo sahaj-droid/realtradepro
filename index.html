@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   /* ========== PROFILE SCREENS CSS ========== */
@@ -301,209 +303,34 @@ html[data-fsize='large'] { font-size: 128%; }
    LIGHT THEME — RealTradePro Premium Warm Ivory Palette
    Accent: Amber/Saffron  |  Base: Warm Ivory  |  Text: Charcoal
    ====================================================== */
-body.light { background:#faf8f5; color:#1c1917; }
 
-body.light .card { background:#ffffff; border:1px solid #e7e5e4; box-shadow:0 1px 6px rgba(0,0,0,0.07),0 3px 12px rgba(0,0,0,0.04); color:#1c1917; }
-body.light .app-header { background:linear-gradient(90deg,#ffffff,#fdf8f0); border-bottom:1px solid #e7e5e4; color:#1c1917; box-shadow:0 1px 8px rgba(0,0,0,0.06); }
-body.light .portfolio-card { background:linear-gradient(135deg,#fff8f0,#fef3e2); border:1px solid #fcd34d; color:#1c1917; }
-body.light .pcard-inner { background:#fef9ed !important; color:#1c1917; }
-body.light .pcard-inner div { color:#78350f; }
-body.light .bot-nav-btn { color:#78716c; }
-body.light .bot-nav-btn.active { color:#d97706; background:rgba(217,119,6,0.09); }
-body.light #nav-watchlist.active { color:#16a34a; }
-body.light #nav-indices.active   { color:#0891b2; }
-body.light #nav-holdings.active  { color:#7c3aed; }
-body.light #nav-history.active   { color:#d97706; }
-body.light #nav-news.active      { color:#db2777; }
-body.light #nav-settings.active  { color:#57534e; }
-body.light #nav-learn.active     { color:#ea580c; }
-body.light #searchBox { background:#ffffff; border:1px solid #d6d3d1; color:#1c1917; box-shadow:inset 0 1px 3px rgba(0,0,0,0.05); }
-body.light #searchBox:focus { border-color:#d97706; box-shadow:0 0 0 3px rgba(217,119,6,0.12); }
-body.light #searchBox::placeholder { color:#a8a29e; }
-body.light .sort-btn { background:#f5f5f4; border:1px solid #d6d3d1; color:#57534e; }
-body.light .sort-btn:hover { background:#e7e5e4; color:#1c1917; }
-body.light #suggestionBox { background:#ffffff; border:1px solid #d6d3d1; box-shadow:0 8px 24px rgba(0,0,0,0.1); }
-body.light .suggestion-item { color:#1c1917; border-bottom:1px solid #f5f5f4; }
-body.light .suggestion-item:hover { background:#fef9ed; color:#d97706; }
-body.light #alertPopup { background:#fef3c7; border:1px solid #d97706; color:#78350f; }
-body.light .group-btn { background:#f5f5f4; border:1px solid #d6d3d1; color:#57534e; }
-body.light .group-btn.active { background:#fef9ed; border-color:#d97706; color:#d97706; }
-body.light .wl-actions-panel { background:#fef9ed !important; border-top-color:#e7e5e4 !important; }
-body.light #loaderOverlay { background:rgba(250,248,245,0.92); }
-body.light .spinner { border-color:#e7e5e4; border-top-color:#d97706; }
 
 /* ---- SETTINGS: Class-based overrides ---- */
-body.light .s-card { background:#ffffff !important; border-color:#e7e5e4 !important; box-shadow:0 1px 4px rgba(0,0,0,0.05) !important; }
-body.light .s-row { border-bottom-color:#f5f5f4 !important; }
-body.light .s-row-title { color:#1c1917 !important; }
-body.light .s-row-sub { color:#78716c !important; }
-body.light .s-section-label { color:#a8a29e !important; }
-body.light .s-collapse-hd { background:#ffffff !important; }
-body.light #settings { background:#faf8f5 !important; }
-body.light .s-account-card { background:linear-gradient(135deg,#fff8f0,#fef3e2) !important; border-color:rgba(217,119,6,0.2) !important; }
-body.light .s-avatar { background:rgba(217,119,6,0.1) !important; border-color:rgba(217,119,6,0.25) !important; color:#d97706 !important; }
-body.light .s-key-input { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
-body.light .s-num-input { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
-body.light .s-pill-blue { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
-body.light .s-pill-green { background:#dcfce7 !important; color:#15803d !important; }
-body.light .s-pill-amber { background:#fef9c3 !important; color:#92400e !important; }
-body.light .s-pill-gray { background:#f5f5f4 !important; color:#57534e !important; }
-body.light .s-url-text { color:#78716c !important; }
-body.light .s-danger-btn { background:rgba(254,226,226,0.8) !important; color:#b91c1c !important; border-color:rgba(239,68,68,0.3) !important; }
-body.light .s-sync-btn[style*="background:#1e3a5f"] { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
-body.light .s-sync-btn[style*="background:#1a3320"] { background:#dcfce7 !important; color:#15803d !important; border-color:#86efac !important; }
-body.light .s-sync-btn[style*="background:#0f2a1e"] { background:#fef9ed !important; color:#d97706 !important; border-color:#fcd34d !important; }
-body.light #settings [style*="border-bottom:1px solid rgba(255,255,255,0.07)"] { border-bottom-color:#e7e5e4 !important; }
-body.light #settings [style*="background:rgba(255,255,255,0.05)"] { background:#f5f5f4 !important; color:#57534e !important; }
-body.light #settings [style*="border:1px solid rgba(255,255,255,0.07)"] { border-color:#e7e5e4 !important; }
-body.light #settings [style*="color:#64748b"] { color:#78716c !important; }
-body.light #settings [style*="color:#34d399"] { color:#16a34a !important; }
-body.light #settings [style*="background:rgba(148,163,184,0.08)"] { background:#f5f5f4 !important; }
-body.light #settings [style*="border-bottom:1px solid rgba(255,255,255,0.04)"] { border-bottom-color:#f5f5f4 !important; }
-body.light #settings [style*="border-bottom:1px solid rgba(255,255,255,0.05)"] { border-bottom-color:#f5f5f4 !important; }
 
 /* ---- BUY / SELL / EDIT Modal ---- */
-body.light #modal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light #modal #m-title { color:#1c1917 !important; }
-body.light #modal #m-price,
-body.light #modal #m-qty,
-body.light #modal #m-date { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
-body.light #modal #taxCalcBox { background:#fef9ed !important; border-color:#fcd34d !important; }
-body.light #modal #taxCalcBox [style*="color:#94a3b8"] { color:#78716c !important; }
-body.light #modal #taxCalcBox [style*="color:#e2e8f0"] { color:#1c1917 !important; }
-body.light #modal #taxCalcBox [style*="border-top:1px solid #1e3a5f"] { border-top-color:#fcd34d !important; }
 /* taxCalcBox charge values: yellow #fde68a unreadable on light - use dark amber */
-body.light #modal #taxCalcBox [style*="color:#fde68a"] { color:#92400e !important; }
-body.light #modal #taxCalcBox [style*="color:#f59e0b"] { color:#b45309 !important; }
-body.light #modal #taxCalcBox [style*="color:#22c55e"] { color:#15803d !important; }
-body.light #modal button[onclick*="closeModal"] { background:#f5f5f4 !important; color:#57534e !important; }
-body.light #modal #type-cnc { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
-body.light #modal #type-mis { background:#f5f5f4 !important; color:#57534e !important; border-color:#d6d3d1 !important; }
 
 /* ---- Stock Detail Modal ---- */
-body.light #detailModal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light #detailModal #d-title { color:#0891b2 !important; }
-body.light #detailModal button[onclick*="closeDetail"] { background:#f5f5f4 !important; color:#57534e !important; }
-body.light #detailModal [style*="border:1px solid #1e3a5f"] { border-color:#fcd34d !important; background:transparent !important; color:#78716c !important; }
-body.light #detailModal [style*="background:transparent"][style*="color:#4b6280"] { color:#a8a29e !important; }
-body.light #detailModal [style*="background:#0a1628"] { background:#f5f5f4 !important; }
-body.light #detailModal [style*="background:#0f1e33"] { background:#ffffff !important; }
-body.light #detailModal [style*="color:#e2e8f0"],
-body.light #detailModal [style*="color:#cbd5e1"] { color:#1c1917 !important; }
-body.light #detailModal [style*="color:#94a3b8"] { color:#78716c !important; }
-body.light #detailModal [style*="color:#4b6280"] { color:#a8a29e !important; }
-body.light #detailModal [style*="border:1px solid rgba(255,255,255"] { border-color:#e7e5e4 !important; }
-body.light #detailModal [style*="background:linear-gradient(145deg,#111827"] { background:#f5f5f4 !important; border-color:#e7e5e4 !important; }
-body.light #detailModal [style*="border-bottom:1px solid #1e2d3d"] { border-bottom-color:#e7e5e4 !important; }
 
 /* ---- Exit / Remove / Other Modals ---- */
-body.light #exitModal > div,
-body.light #removeModal > div,
-body.light #avgCalcModal > div { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light #exitModal [style*="color:#e2e8f0"],
-body.light #removeModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
-body.light #exitModal [style*="color:#94a3b8"],
-body.light #removeModal [style*="color:#94a3b8"] { color:#78716c !important; }
 
 /* ---- Averaging Calculator ---- */
-body.light #avgCalcModal [style*="background:#0a1628"] { background:#f5f5f4 !important; }
-body.light #avgCalcModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
-body.light #avgCalcModal [style*="color:#4b6280"] { color:#a8a29e !important; }
-body.light #avgCalcModal input { background:#f5f5f4 !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
 
 /* ---- LEARN tab ---- */
-body.light #learn { background:#faf8f5 !important; }
-body.light #learn [style*="background:#060e1a"] { background:#faf8f5 !important; }
-body.light #learn [style*="background:#0a0f1a"] { background:#f5f5f4 !important; }
-body.light #learn [style*="color:#e2e8f0"] { color:#1c1917 !important; }
-body.light #learn [style*="color:#94a3b8"] { color:#78716c !important; }
-body.light #learn [style*="border-bottom:1px solid rgba(255,255,255"] { border-bottom-color:#e7e5e4 !important; }
-body.light #learn [style*="background:#0f1e33"],
-body.light #learn [style*="background:#111827"],
-body.light #learn [style*="background:#0a1628"],
-body.light #learn [style*="background:#0d1f35"],
-body.light #learn [style*="background:linear-gradient(145deg,#0f1e33"],
-body.light #learn [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e7e5e4 !important; color:#1c1917 !important; }
-body.light #learn [style*="color:#4b6280"] { color:#a8a29e !important; }
 
 /* ---- ASK NIVI modal ---- */
-body.light #niviModal > div { background:linear-gradient(160deg,#fafff7,#f0fdf4) !important; border-color:#86efac !important; }
-body.light #nivi-chat-area { background:#fafff7 !important; }
-body.light #nivi-price-row { background:#f0fdf4 !important; border-color:#bbf7d0 !important; }
-body.light [style*="background:linear-gradient(160deg,#0a1a10"] { background:linear-gradient(160deg,#fafff7,#f0fdf4) !important; }
-body.light [style*="background:#0f2a1a"] { background:#f0fdf4 !important; }
-body.light [style*="border:1px solid #065f46"] { border-color:#86efac !important; }
-body.light #niviModal [style*="background:#0a1628"] { background:#f0fdf4 !important; }
-body.light #niviModal [style*="background:#1e2d3d"] { background:#e7f7f0 !important; }
-body.light #niviModal [style*="color:#e2e8f0"] { color:#1c1917 !important; }
-body.light #niviModal [style*="color:#94a3b8"] { color:#57534e !important; }
-body.light #niviModal [style*="color:#4b6280"] { color:#78716c !important; }
-body.light #niviModal [style*="border:1px solid #1e3a5f"] { border-color:#bbf7d0 !important; }
-body.light #niviModal input { background:#f0fdf4 !important; border-color:#bbf7d0 !important; color:#1c1917 !important; }
 
 /* ======================================================
    COMPREHENSIVE INLINE STYLE OVERRIDES (Global)
    ====================================================== */
-body.light [style*="background:#0a1628"]    { background:#f5f5f4 !important; }
-body.light [style*="background:#111827"]    { background:#f5f5f4 !important; }
-body.light [style*="background:#1e2d3d"]    { background:#ede9e6 !important; }
-body.light [style*="background:#0f1e33"]    { background:#ffffff !important; }
-body.light [style*="background:#0a0f1a"]    { background:#faf8f5 !important; }
-body.light [style*="background:#0f2a40"]    { background:#fef3c7 !important; }
-body.light [style*="background:#1e3a5f"]    { background:#fde68a !important; }
-body.light [style*="background:#060e1a"]    { background:#faf8f5 !important; }
-body.light [style*="background:#0d1f35"]    { background:#ffffff !important; }
-body.light [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; }
-body.light [style*="background:linear-gradient(145deg,#0f1e33"] { background:#fff8f0 !important; }
-body.light [style*="background:linear-gradient(145deg,#111827,#1a2332)"] { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light [style*="background:linear-gradient(135deg,#0d2a45"] { background:linear-gradient(135deg,#fff8f0,#fef3e2) !important; }
 
-body.light [style*="color:#e2e8f0"]  { color:#1c1917 !important; }
-body.light [style*="color:#f1f5f9"]  { color:#1c1917 !important; }
-body.light [style*="color:#cbd5e1"]  { color:#44403c !important; }
-body.light [style*="color:#94a3b8"]  { color:#78716c !important; }
-body.light [style*="color:#4b6280"]  { color:#a8a29e !important; }
-body.light [style*="color:#2d3f52"]  { color:#a8a29e !important; }
-body.light [style*="color:#38bdf8"]  { color:#0891b2 !important; }
 
-body.light [style*="border:1px solid #1e3a5f"]          { border-color:#fcd34d !important; }
-body.light [style*="border:1px solid #2d3f52"]          { border-color:#d6d3d1 !important; }
-body.light [style*="border-bottom:1px solid #1e2d3d"]   { border-bottom-color:#e7e5e4 !important; }
-body.light [style*="border:1px solid rgba(255,255,255,0.06)"] { border-color:#e7e5e4 !important; }
-body.light [style*="border:1px solid rgba(255,255,255,0.07)"] { border-color:#e7e5e4 !important; }
-body.light [style*="border:1px solid rgba(52,211,153,0.12)"]  { border-color:rgba(217,119,6,0.2) !important; }
 /* Gainers/Losers list - rgba border dividers invisible on light bg */
-body.light [style*="border-bottom:1px solid rgba(255,255,255,0.04)"] { border-bottom-color:#e7e5e4 !important; }
 /* Gainers/Losers list - stock symbol #e2e8f0 invisible on white */
-body.light #gmovers [style*="color:#e2e8f0"] { color:#1c1917 !important; }
 /* Refresh button in gainers - dark bg */
-body.light #gmovers [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
 
-body.light [style*="background:#1e2d3d"][style*="width:1px"] { background:#e7e5e4 !important; }
-body.light [style*="background:#1e3a5f"][style*="height:8px"] { background:#fde68a !important; }
 
-body.light [style*="background:#1e3a5f"][style*="color:#38bdf8"] { background:#e0f2fe !important; color:#0369a1 !important; border-color:#7dd3fc !important; }
-body.light [style*="background:#1e3a5f"][style*="color:#93c5fd"] { background:#e0f2fe !important; color:#0369a1 !important; }
-body.light [style*="background:#0a1628"][style*="color:#6ee7b7"] { background:#d1fae5 !important; color:#065f46 !important; }
-body.light [style*="background:#0a1628"][style*="color:#fde68a"] { background:#fef9c3 !important; color:#854d0e !important; }
-body.light [style*="background:#0a1628"][style*="color:#f9a8d4"] { background:#fce7f3 !important; color:#9d174d !important; }
-body.light [style*="background:#166534"] { background:#dcfce7 !important; color:#15803d !important; border-color:#86efac !important; }
-body.light [style*="background:#713f12"] { background:#fef9c3 !important; color:#92400e !important; border-color:#fde68a !important; }
-body.light [style*="background:#1a3320"] { background:#dcfce7 !important; color:#15803d !important; border-color:#86efac !important; }
-body.light [style*="background:#0f2a1e"] { background:#fef9ed !important; color:#d97706 !important; border-color:#fcd34d !important; }
 
-body.light #news [style*="color:#38bdf8"]      { color:#0369a1 !important; }
-body.light #news [style*="background:#0a1628"] { background:#fef9ed !important; }
-body.light #news [style*="background:linear-gradient(145deg,#111827"] { background:#ffffff !important; border-color:#e7e5e4 !important; }
-body.light #news [style*="color:#e2e8f0"]      { color:#1c1917 !important; }
-body.light #news [style*="color:#94a3b8"]      { color:#78716c !important; }
-body.light #news [style*="color:#4b6280"]      { color:#a8a29e !important; }
-body.light #news .group-btn                    { background:#f5f5f4 !important; color:#57534e !important; border-color:#d6d3d1 !important; }
-body.light #news .group-btn.active             { background:#fef9ed !important; color:#d97706 !important; border-color:#d97706 !important; }
-body.light #news [style*="background:linear-gradient(135deg,#0a1e14"] { background:#f0fdf4 !important; }
-body.light #news [style*="color:#34d399"]      { color:#15803d !important; }
-body.light #news [style*="background:#0a0f1a"] { background:#faf8f5 !important; }
-body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; }
 
 .tab { display:none }
 .tab.active { display:block }
@@ -580,53 +407,16 @@ body.light #news [style*="background:#0a1e14"] { background:#f0fdf4 !important; 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0f1a;} ::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px;}
 
 /* -- FLASH PRICE TICKER -- */
-body.light #priceTicker { background:#f5f5f4; border-bottom:1px solid #d6d3d1; }
-body.light .ticker-item { border-right-color:#d6d3d1; }
-body.light .ticker-sym  { color:#57534e; }
-body.light .ticker-price { color:#1c1917; }
 /* ---- Alert Modal ---- */
-body.light #alertModal > div { background:#ffffff !important; border-color:#fcd34d !important; }
-body.light #alert-title { color:#92400e !important; }
-body.light #alert-current-price { background:#fef9ed !important; border-color:#fcd34d !important; color:#1c1917 !important; }
-body.light #alert-price { background:#f5f5f4 !important; border-color:#fcd34d !important; color:#1c1917 !important; }
-body.light #alert-existing-list [style*="background:#0a1628"] { background:#f5f5f4 !important; border-color:#e7e5e4 !important; }
-body.light #alertModal [style*="color:#4b6280"] { color:#a8a29e !important; }
-body.light #alertModal button[onclick*="closeAlertModal"] { color:#78716c !important; }
-body.light #alertModal button[onclick*="confirmAlert"] { background:#fef9c3 !important; color:#92400e !important; }
-body.light #alertModal button[onclick*="closeAlertModal"][style*="background:#1e2d3d"] { background:#f5f5f4 !important; color:#57534e !important; }
 
 /* ---- Target Modal ---- */
-body.light #target-modal-box > div { background:#ffffff !important; border-color:#c4b5fd !important; }
-body.light #target-title { color:#6d28d9 !important; }
-body.light #target-price { background:#f5f5f4 !important; border-color:#c4b5fd !important; color:#1c1917 !important; }
-body.light #target-modal-box [style*="color:#4b6280"] { color:#a8a29e !important; }
-body.light #target-modal-box button[onclick*="confirmTarget"] { background:#ede9fe !important; color:#6d28d9 !important; }
-body.light #target-modal-box button[onclick*="closeTargetModal"] { background:#f5f5f4 !important; color:#57534e !important; }
 
 /* ---- Remove Modal ---- */
-body.light #remove-modal-box > div { background:#ffffff !important; border-color:#fca5a5 !important; }
-body.light #remove-title { color:#b91c1c !important; }
-body.light #remove-modal-box [style*="color:#94a3b8"] { color:#57534e !important; }
-body.light #remove-modal-box button[onclick*="confirmRemove"] { background:#fee2e2 !important; color:#b91c1c !important; }
-body.light #remove-modal-box button[onclick*="closeRemoveModal"] { background:#f5f5f4 !important; color:#57534e !important; }
 
 /* ---- Global Market Ticker (globalTicker bar) ---- */
-body.light #globalTicker { background:#f5f5f4 !important; border-bottom-color:#d6d3d1 !important; }
-body.light .gticker-label { color:#57534e !important; }
-body.light .gticker-val   { color:#1c1917 !important; }
-body.light .gticker-sep   { color:#a8a29e !important; }
 
 /* ---- Learn tab suggestion / search box ---- */
-body.light #learn input[type="text"],
-body.light #learn input[type="search"],
-body.light #lpanel-financial input { background:#ffffff !important; border-color:#d6d3d1 !important; color:#1c1917 !important; }
-body.light #learn [style*="background:#111827"][style*="border-radius:10px"] { background:#ffffff !important; border-color:#d6d3d1 !important; }
-body.light #learn .suggestion-item { color:#1c1917 !important; background:#ffffff !important; border-bottom-color:#f5f5f4 !important; }
-body.light #learn .suggestion-item:hover { background:#fef9ed !important; color:#d97706 !important; }
 /* learnSearchInput + learnSuggBox - dark hardcoded inline styles */
-body.light #learnSearchInput { background:#ffffff !important; border-color:rgba(217,119,6,0.4) !important; color:#1c1917 !important; }
-body.light #learnSearchInput::placeholder { color:#a8a29e !important; }
-body.light #learnSuggBox { background:#ffffff !important; border-color:rgba(217,119,6,0.3) !important; box-shadow:0 8px 20px rgba(0,0,0,0.1) !important; }
 
 /* ===== END LIGHT MODE ===== */
 #priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
@@ -868,6 +658,7 @@ function fsVal(f){
 <!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
+<div id="fixedHeader" style="position:sticky;top:0;z-index:99;width:100%;">
 <!-- HEADER -->
 <div class="app-header" style="padding:6px 10px;">
 <!-- Indices: scrollable strip + add button -->
@@ -903,6 +694,7 @@ function fsVal(f){
     <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
   </div>
 </div>
+</div><!-- end fixedHeader -->
 
 <!-- SEARCH + SUGGESTIONS -->
 <div id="searchSection" class="p-3 pb-1">
@@ -973,7 +765,7 @@ function fsVal(f){
 <div id="alerts"  class="tab p-3 space-y-[5px]"></div>
 
 <!-- SETTINGS TAB -->
-<div id="settings" class="tab" style="padding:0;overflow-y:auto;">
+<div id="settings" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
 
 <style>
 .s-section-label{font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;padding:12px 16px 5px;text-transform:uppercase;}
@@ -1040,15 +832,7 @@ function fsVal(f){
   <!-- APPEARANCE -->
   <div class="s-section-label">Appearance</div>
   <div class="s-card">
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(245,158,11,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Theme</div><div class="s-row-sub">Dark / Light toggle</div></div>
-      </div>
-      <button onclick="toggleTheme()" class="s-pill s-pill-amber">Toggle</button>
-    </div>
+
     <div class="s-row">
       <div class="s-row-left">
         <div class="s-row-icon" style="background:rgba(167,139,250,0.1);">
@@ -1354,26 +1138,6 @@ function fsVal(f){
     </div>
   </div>
 
-  <!-- FEATURE GUIDE -->
-  <div class="s-section-label">Feature Guide</div>
-  <div class="s-card" style="margin-bottom:6px;">
-    <div class="s-collapse-hd" onclick="sToggle('feat-s-body','feat-s-arr')">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(148,163,184,0.08);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">All Features</div><div class="s-row-sub">Complete feature reference</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;pointer-events:auto;" onclick="event.stopPropagation()">
-        <span id="feat-pdf-btn-wrap"></span>
-        <span id="feat-s-arr" class="s-collapse-arr" style="color:#4b6280;pointer-events:none;">▶</span>
-      </div>
-    </div>
-    <div id="feat-s-body" style="display:none;padding:0 14px 12px;">
-      <div id="featureGuideList"></div>
-    </div>
-  </div>
-
   <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
 </div>
 
@@ -1388,7 +1152,7 @@ function fsVal(f){
 <div id="news" class="tab" style="padding:0;"></div>
 
 <!-- SEARCH & LEARN TAB — TABBED VERSION -->
-<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:#060e1a;height:100%;">
+<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:#060e1a;height:calc(100vh - 102px - 64px);">
 
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#060e1a;z-index:10;">
@@ -1524,7 +1288,7 @@ function fsVal(f){
   </div>
 </div>
 
-<!-- TRADE MODAL -->
+  <!-- TRADE MODAL -->
 <div id="modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:200;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-height:90vh;overflow-y:auto;">
     <h2 id="m-title" style="font-size:16px;font-weight:700;margin-bottom:10px;color:#e2e8f0;"></h2>
@@ -1881,7 +1645,6 @@ function fsVal(f){
       <!-- Disclaimer -->
       <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ Only for information। Not SEBI registered advisor।</div>
     </div>
-
   </div>
 </div><!-- end mainApp -->
 
