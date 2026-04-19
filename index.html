@@ -1142,46 +1142,57 @@ function fsVal(f){
     </div>
   </div>
 
-  <!-- NIVI AI -->
-  <div class="s-section-label">Nivi AI</div>
-  <div class="s-card">
-    <div class="s-collapse-hd" onclick="sToggle('nivi-s-body','nivi-s-arr')">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(52,211,153,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Sarvam Configuration</div><div class="s-row-sub">API Keys · sarvam-105b · sarvam-30b</div></div>
+<!-- NIVI AI -->
+<div class="s-section-label">Nivi AI</div>
+<div class="s-card">
+  <div class="s-collapse-hd" onclick="sToggle('nivi-s-body','nivi-s-arr')">
+    <div class="s-row-left" style="pointer-events:none;">
+      <div class="s-row-icon" style="background:rgba(52,211,153,0.1);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
       </div>
-      <span id="nivi-s-arr" class="s-collapse-arr" style="color:#34d399;">▼</span>
+      <div class="s-row-info"><div class="s-row-title">Nivi AI Configuration</div><div class="s-row-sub">Gemini API Key · Tavily Search Key</div></div>
     </div>
-    <div id="nivi-s-body" style="padding:0 14px 12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-        <div>
-          <div style="font-size:11px;color:#e2e8f0;font-weight:600;">API Key 1</div>
-          <div id="gemini-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
-        </div>
-        <button onclick="document.getElementById('gemini-key-row').style.display=document.getElementById('gemini-key-row').style.display==='none'?'flex':'none'" class="s-pill s-pill-green" style="padding:3px 10px;font-size:10px;">Edit</button>
-      </div>
-      <div id="gemini-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
-        <input id="set-gemini-key" type="password" placeholder="AIza..." class="s-key-input">
-        <div style="display:flex;gap:5px;">
-          <button onclick="saveGeminiKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-          <button onclick="clearGeminiKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
-        </div>
-      </div>
-      <div style="font-size:11px;color:#e2e8f0;font-weight:600;margin-bottom:4px;">API Key 2 <span style="font-size:9px;color:#4b6280;">(optional)</span></div>
-      <div id="gemini-key2-row" style="gap:5px;margin-bottom:4px;align-items:center;flex-wrap:wrap;">
-        <input id="set-gemini-key2" type="password" placeholder="AIza... (Key 2 - optional)" class="s-key-input">
-        <div style="display:flex;gap:5px;">
-          <button onclick="saveGeminiKey2()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-          <button onclick="clearGeminiKey2()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
-        </div>
-      </div>
-      <div id="gemini-key2-status" style="font-size:9px;color:#4b6280;margin-bottom:8px;"></div>
-      <div style="font-size:9px;color:#4b6280;margin-bottom:10px;">Free key: <a href="https://dashboard.sarvam.ai" target="_blank" style="color:#38bdf8;">dashboard.sarvam.ai</a></div>
-    </div>
+    <span id="nivi-s-arr" class="s-collapse-arr" style="color:#34d399;">▼</span>
   </div>
+  <div id="nivi-s-body" style="padding:0 14px 12px;">
 
+    <!-- Gemini Key 1 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div>
+        <div style="font-size:11px;color:#e2e8f0;font-weight:600;">Gemini API Key</div>
+        <div id="gemini-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
+      </div>
+      <button onclick="document.getElementById('gemini-key-row').style.display=document.getElementById('gemini-key-row').style.display==='none'?'flex':'none'" class="s-pill s-pill-green" style="padding:3px 10px;font-size:10px;">Edit</button>
+    </div>
+    <div id="gemini-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+      <input id="set-gemini-key" type="password" placeholder="Gemini API Key" class="s-key-input">
+      <div style="display:flex;gap:5px;">
+        <button onclick="saveGeminiKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
+        <button onclick="clearGeminiKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#4b6280;margin-bottom:12px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com</a> · Model: gemini-3.1-flash-lite-preview</div>
+
+    <!-- Tavily Key -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div>
+        <div style="font-size:11px;color:#e2e8f0;font-weight:600;">Tavily Search Key</div>
+        <div id="tavily-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
+      </div>
+      <button onclick="document.getElementById('tavily-key-row').style.display=document.getElementById('tavily-key-row').style.display==='none'?'flex':'none'" class="s-pill s-pill-green" style="padding:3px 10px;font-size:10px;">Edit</button>
+    </div>
+    <div id="tavily-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
+      <input id="set-tavily-key" type="password" placeholder="tvly-..." class="s-key-input">
+      <div style="display:flex;gap:5px;">
+        <button onclick="saveTavilyKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
+        <button onclick="clearTavilyKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
+      </div>
+    </div>
+    <div id="tavily-key-status-2" style="font-size:9px;color:#4b6280;margin-bottom:8px;"></div>
+    <div style="font-size:9px;color:#4b6280;">Free key: <a href="https://tavily.com" target="_blank" style="color:#38bdf8;">tavily.com</a> · 1000 searches/month free</div>
+
+  </div>
+</div>
   <!-- API CONFIGURATION -->
   <div class="s-section-label">API Configuration</div>
   <div class="s-card">
@@ -1374,7 +1385,6 @@ function fsVal(f){
   </div>
 </div>
 
-<div id="holidays" class="tab p-3 space-y-[5px]"></div>
 <div id="news" class="tab" style="padding:0;"></div>
 
 <!-- SEARCH & LEARN TAB — TABBED VERSION -->
@@ -1500,24 +1510,6 @@ function fsVal(f){
   </div>
 </div>
 
-<!-- JOURNAL ADD MODAL -->
-<div id="journalModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-width:92vw;">
-    <div style="font-size:14px;font-weight:700;color:#38bdf8;margin-bottom:12px;">Add Journal Entry</div>
-    <select id="jn-type" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;margin-bottom:8px;">
-      <option value="NOTE">General Note</option>
-      <option value="BUY">Buy Reason</option>
-      <option value="SELL">Sell Reason</option>
-      <option value="WATCH">Watch Note</option>
-    </select>
-    <input id="jn-sym" placeholder="Stock symbol (optional)" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;margin-bottom:8px;box-sizing:border-box;">
-    <textarea id="jn-note" placeholder="Your note..." rows="3" style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;resize:none;box-sizing:border-box;"></textarea>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button onclick="saveJournal()" style="flex:1;background:#166534;color:#86efac;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Save</button>
-      <button onclick="document.getElementById('journalModal').style.display='none'" style="flex:1;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
@@ -1526,7 +1518,7 @@ function fsVal(f){
     <button class="bot-nav-btn" id="nav-indices" onclick="tab('indices')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Gainers</button>
     <button class="bot-nav-btn" id="nav-holdings" onclick="tab('holdings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Holdings</button>
     <button class="bot-nav-btn" id="nav-history" onclick="tab('history')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>History</button>
-    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2C12 2 13.2 9.5 18.5 12C13.2 14.5 12 22 12 22C12 22 10.8 14.5 5.5 12C10.8 9.5 12 2 12 2Z" fill="currentColor" stroke="none"/></svg></span>Ask Nivi</button>
+    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 28 28" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.2"/><circle cx="14" cy="14" r="11" fill="none" stroke="#4c1d95" stroke-width="0.6" opacity="0.5"/><rect x="6.5" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><rect x="18" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><polygon points="10,7.5 13,7.5 22,20.5 19,20.5" fill="#c4b5fd"/><line x1="14" y1="2" x2="14" y2="4.5" stroke="#c4b5fd" stroke-width="1.2" stroke-linecap="round"/><line x1="12.8" y1="2.6" x2="15.2" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/><line x1="15.2" y1="2.6" x2="12.8" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/></svg></span>Ask Nivi</button>
     <button class="bot-nav-btn" id="nav-learn" onclick="tab('learn')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></span>Learn</button>
     <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
   </div>

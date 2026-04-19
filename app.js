@@ -13,14 +13,6 @@ let currentPINEntry = '';
   }
 })();
 
-// ── Default Sarvam API Key pre-save (first time only) ──
-(function setDefaultSarvamKey() {
-  const DEFAULT_SARVAM_KEY = "YOUR_DEFAULT_SARVAM_KEY_HERE"; // <-- taro default key yaha nakh
-  if (!localStorage.getItem('geminiApiKey') && DEFAULT_SARVAM_KEY !== "YOUR_DEFAULT_SARVAM_KEY_HERE") {
-    localStorage.setItem('geminiApiKey', DEFAULT_SARVAM_KEY);
-  }
-})();
-
 // ---- PIN Hash (simple SHA-256) ----
 async function hashPIN(pin) {
   const msgBuffer = new TextEncoder().encode(pin);
@@ -418,9 +410,7 @@ const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQ
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
 const API4 = "https://script.google.com/macros/s/AKfycbwr9sKAbHjmVf48Ihp2PJq8xjNv-D6kglwFKqY8Uxwke99icv5JCNa6RiABdmm3G_lP/exec";
 const API5 = "https://script.google.com/macros/s/AKfycbzc6tzmWVfGbpMa7ocVxg2bYlutvTRbPRbEZrqz2WtLib2MAqUCzsUz-Q9XACXDz34O/exec";
-// REPLACE getActiveGASUrl() function (line 421-430):
 let _urlRotationIndex = 0;
-const _urlLastUsed = {}; // track last used time per URL
 
 function getActiveGASUrl() {
   const urls = [
@@ -448,7 +438,6 @@ function monitorSystemHealth() {
         if(!doc.exists) return;
         const status = doc.data().python_engine;
         window._pythonEngineActive = (status === 'running');
-        console.log('[Health] Python Engine:', status);
       });
   } catch(e) {
     window._pythonEngineActive = false;
@@ -506,31 +495,6 @@ function userEnableGASPrices() {
   }
   updatePrices();
 }
-function monitorFirebaseNews() {
-  if (typeof firebase === 'undefined') return;
-  try {
-    firebase.firestore()
-      .collection('RealTradePro')
-      .doc('latest_news')
-      .onSnapshot(doc => {
-        if (!doc.exists) return;
- 
-        // Cache invalidate karo — next _renderFirebaseNewsFeed call fresh data lavse
-        _fbNewsCache     = null;
-        _fbNewsCacheTime = 0;
- 
-        // Sirf tyare re-render karo jyare news tab visible hoy
-        const newsSection = document.getElementById('fb-news-feed');
-        if (newsSection) {
-          console.log('[Firebase News] onSnapshot — refreshing news feed');
-          _renderFirebaseNewsFeed();
-        }
-      });
-    console.log('[Firebase News] onSnapshot listener active');
-  } catch(e) {
-    console.warn('[Firebase News] onSnapshot failed:', e.message);
-  }
-}
 // ✨ Ask Nivi — merged GAS v2 URL
 // API_NIVI → same main GAS URL (askNivi + askMarket both in Code.gs)
 const API_NIVI = getActiveGASUrl();
@@ -571,87 +535,6 @@ function inr(n){
     intPart=rest+','+last3;
   }
   return (n<0?'-':'')+'₹'+intPart+'.'+dec;
-}
-
-// NSE Market Holidays 2025 + 2026
-const MARKET_HOLIDAYS = [
-  {date:"2025-01-26",name:"Republic Day"},
-  {date:"2025-02-26",name:"Mahashivratri"},
-  {date:"2025-03-14",name:"Holi"},
-  {date:"2025-03-31",name:"Id-Ul-Fitr (Ramzan Eid)"},
-  {date:"2025-04-10",name:"Shri Ram Navami"},
-  {date:"2025-04-14",name:"Dr. Ambedkar Jayanti"},
-  {date:"2025-04-18",name:"Good Friday"},
-  {date:"2025-05-01",name:"Maharashtra Day"},
-  {date:"2025-06-07",name:"Eid ul-Adha (Bakri Eid)"},
-  {date:"2025-08-15",name:"Independence Day"},
-  {date:"2025-08-27",name:"Ganesh Chaturthi"},
-  {date:"2025-10-02",name:"Gandhi Jayanti / Dussehra"},
-  {date:"2025-10-24",name:"Diwali (Laxmi Pujan)"},
-  {date:"2025-11-05",name:"Diwali (Balipratipada)"},
-  {date:"2025-11-15",name:"Gurunanak Jayanti"},
-  {date:"2025-12-25",name:"Christmas"},
-  {date:"2026-01-15",name:"Maharashtra Municipal Elections"},
-  {date:"2026-01-26",name:"Republic Day"},
-  {date:"2026-03-03",name:"Holi"},
-  {date:"2026-03-26",name:"Shri Ram Navami"},
-  {date:"2026-03-31",name:"Shri Mahavir Jayanti"},
-  {date:"2026-04-03",name:"Good Friday"},
-  {date:"2026-04-14",name:"Dr. Ambedkar Jayanti"},
-  {date:"2026-05-01",name:"Maharashtra Day"},
-  {date:"2026-05-28",name:"Bakri Id (Eid ul-Adha)"},
-  {date:"2026-06-26",name:"Muharram"},
-  {date:"2026-09-14",name:"Ganesh Chaturthi"},
-  {date:"2026-10-02",name:"Mahatma Gandhi Jayanti"},
-  {date:"2026-10-20",name:"Dussehra"},
-  {date:"2026-11-10",name:"Diwali (Balipratipada)"},
-  {date:"2026-11-24",name:"Prakash Gurpurb Sri Guru Nanak Dev"},
-  {date:"2026-12-25",name:"Christmas"}
-];
-
-function isMarketHoliday(dateStr){ return MARKET_HOLIDAYS.some(h=>h.date===dateStr); }
-
-function renderHolidays(){
-  const el=document.getElementById("holidays");
-  if(!el) return;
-  const today=new Date().toISOString().split("T")[0];
-  const upcoming=MARKET_HOLIDAYS.filter(h=>h.date>=today).slice(0,10);
-  const past=MARKET_HOLIDAYS.filter(h=>h.date<today).slice(-5).reverse();
-  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const fmt=ds=>{const[y,m,d]=ds.split("-");return d+" "+months[parseInt(m)-1]+" "+y;};
-  const dayName=ds=>days[new Date(ds).getDay()];
-  let html=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-    <button onclick="tab('settings')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>Back
-    </button>
-    <span style="font-size:12px;font-weight:700;color:#22c55e;letter-spacing:0.5px;">NSE MARKET HOLIDAYS</span>
-  </div>`;
-  if(upcoming.length===0){html+=`<div style="color:#4b6280;font-size:12px;padding:10px;text-align:center;">No upcoming holidays</div>`;}
-  upcoming.forEach(h=>{
-    const isToday=h.date===today;
-    html+=`<div class="card" style="margin-bottom:5px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:${isToday?"#f59e0b":"#e2e8f0"};">${fmt(h.date)}</div>
-          <div style="font-size:11px;font-weight:600;color:#38bdf8;margin-top:1px;">${h.name}</div>
-          <div style="font-size:9px;color:#4b6280;">${dayName(h.date)}${isToday?"  -  Today!":""}</div>
-        </div>
-        <div style="font-size:10px;padding:4px 8px;border-radius:6px;background:#7f1d1d;color:#fca5a5;font-weight:700;text-align:center;flex-shrink:0;">Market<br>Closed</div>
-      </div>
-    </div>`;
-  });
-  html+=`<div style="font-size:11px;font-weight:700;color:#4b6280;margin:10px 0 6px;">PAST HOLIDAYS</div>`;
-  past.forEach(h=>{
-    html+=`<div class="card" style="margin-bottom:4px;opacity:0.6;display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#94a3b8;">${fmt(h.date)}</div>
-        <div style="font-size:10px;color:#64748b;">${h.name}</div>
-      </div>
-      <div style="font-size:9px;color:#4b6280;">${dayName(h.date)}</div>
-    </div>`;
-  });
-  el.innerHTML=html;
 }
 
 // -- TRADE TYPE --
@@ -881,7 +764,7 @@ function _syncWatchlistToFirebase(){
     firebase.firestore()
       .collection('RealTradePro').doc('config')
       .set({ watchlist: allSyms, updated_at: new Date().toISOString() }, { merge: true })
-      .then(()=> console.log('[Watchlist] Synced to Firebase:', allSyms.length, 'stocks'))
+      .then(()=>{})
       .catch(e => console.warn('[Watchlist] Firebase sync failed:', e));
   }catch(e){ console.warn('[Watchlist] sync error:', e); }
 }
@@ -1023,8 +906,7 @@ async function handleWatchlistCSV(event){
 function toggleTheme(){
   isDark=!isDark;
   document.body.classList.toggle("light",!isDark);
-  const tb=document.getElementById("themeBtn");
-  tb.innerHTML=isDark?'<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+
   localStorage.setItem("theme",isDark?"dark":"light");
 }
 
@@ -1204,7 +1086,6 @@ function getTargetBadge(sym, price){
   return '<div style="font-size:9px;color:#f59e0b;font-weight:700;margin-top:1px;">T: ₹'+t+' ('+( pct>0?'+':'')+pct+'%)</div>';
 }
 
-// ======================================
 // ======================================
 // ADD / REMOVE STOCK
 // ======================================
@@ -1419,121 +1300,6 @@ async function renderWL(){
         }
       }catch(e){ /* silent */ }
     });
-  }
-
-  // ── Legacy loop removed — was the cause of sequential blocking ────────────
-  // OLD: for (let s of displayList) { let d = cache[s]?.data; if (!d) { d = await fetchFull(s)... }
-  // This caused sequential await per stock → whole list blocks until each fetch completes
-
-  // Keeping variable declarations to avoid any reference errors below
-  let html_legacy = ""; // unused, kept for safety
-  let s_unused, d_unused; // unused
-
-  // NOTE: The actual card HTML is already rendered above in Phase 1
-  // The block below (original renderWL card builder) is REPLACED by _buildWLCard helper
-  // DO NOT add another for-loop here
-
-  if(false){ // dead code guard — original loop disabled
-  for (let s of displayList) {
-    let d = cache[s]?.data;
-    if (!d) { d = await fetchFull(s); if (d) cache[s] = { data: d, time: Date.now() }; }
-    if (!d) continue;
-
-    const _price = d.regularMarketPrice || d.ltp || 0;
-    const _prev  = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
-    const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
-    const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
-
-    html += `
-    <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-          <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline; text-underline-offset:2px;">${s}</span>
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">₹${d.regularMarketPrice.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
-            ${get52WLabel(d)}${getTargetBadge(s, d.regularMarketPrice)}
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div style="width:100%; max-width:140px;">${build52WBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${diff >= 0 ? '+' : ''}₹${Math.abs(diff).toFixed(2)} (${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%)
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="wl-actions-panel" id="act-${s}">
-        <button class="act-btn" onclick="openModal('BUY','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
-        <button class="act-btn" onclick="openModal('SELL','${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
-        <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
-        <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
-        <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
-        <button class="act-btn" onclick="setTarget('${s}',${d.regularMarketPrice});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
-        <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#0f2a1a; color:#34d399; border:1px solid #065f46; grid-column:span 2; display:flex; align-items:center; justify-content:center; gap:5px; padding:10px 0;">
-          <svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M8 1C8 1 8.7 5.8 12.5 8C8.7 10.2 8 15 8 15C8 15 7.3 10.2 3.5 8C7.3 5.8 8 1 8 1Z" fill="#34d399"/><circle cx="8" cy="8" r="1.4" fill="white" opacity="0.9"/></svg>
-          <span style="font-size:13px;">Ask Nivi</span>
-        </button>
-      </div>
-    </div>`;
-  }
-  } // end if(false) — dead code guard
-  // Phase 1 DOM already set above — nothing to do here
-}
-
-
-// ======================================
-// SPARKLINE: 7-day price line for watchlist
-// ======================================
-async function renderSparkline(sym) {
-  const el = document.getElementById('spark-' + sym);
-  if (!el) return;
-  try {
-    const hist = await fetchHistory(sym, '10d', '1d');
-    if (!hist || !hist.close || hist.close.length < 2) return;
-    const closes = hist.close.filter(v => v != null);
-    if (closes.length < 2) return;
-    const minV = Math.min(...closes);
-    const maxV = Math.max(...closes);
-    const range = maxV - minV || 1;
-    const W = 100, H = 18, pad = 2;
-    const pts = closes.map((v, i) => {
-      const x = pad + (i / (closes.length - 1)) * (W - pad * 2);
-      const y = H - pad - ((v - minV) / range) * (H - pad * 2);
-      return x.toFixed(1) + ',' + y.toFixed(1);
-    });
-    const isUp = closes[closes.length - 1] >= closes[0];
-    const col = isUp ? '#22c55e' : '#ef4444';
-    const fillPts = pts[0].split(',')[0] + ',' + H + ' ' + pts.join(' ') + ' ' + pts[pts.length-1].split(',')[0] + ',' + H;
-    el.innerHTML = '<svg width="100%" height="18" viewBox="0 0 100 18" preserveAspectRatio="none">' +
-      '<polygon points="' + fillPts + '" fill="' + col + '" opacity="0.12"/>' +
-      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="' + col + '" stroke-width="1.5" stroke-linejoin="round"/>' +
-      '</svg>';
-  } catch(e) {}
-}
-
-async function renderAllSparklines() {
-  const showSpark = localStorage.getItem('showSparkline') !== 'false';
-  if (!showSpark) return;
-  let displayList = wl;
-  if (currentGroup !== 'ALL' && groups[currentGroup]) {
-    displayList = wl.filter(s => groups[currentGroup].includes(s));
-  }
-  for (const s of displayList) {
-    renderSparkline(s);
   }
 }
 
@@ -2180,7 +1946,6 @@ window._firebaseFundCache[sym] = {
   _source: 'firebase', _ts: Date.now()
 };
     });
-    console.log('✅ Firebase fundamentals preloaded:', Object.keys(window._firebaseFundCache).length, 'stocks');
   } catch(e) {
     console.warn('Firebase fundamentals preload failed:', e.message);
   }
@@ -2409,7 +2174,6 @@ async function openDetail(sym,isIndex){
   if(chartDiv) chartDiv.innerHTML='';
   document.getElementById("detailModal").classList.remove("hidden");
   document.body.style.overflow='hidden';
-  if(!isIndex) renderCircuit(sym, d);
   document.getElementById("bbSection").innerHTML='';
   if(!isIndex) renderSmartAlertSuggestions(sym, d);
   renderQuickLinks(sym, isIndex);
@@ -2659,97 +2423,8 @@ function renderIndexComposition(sym, el){
 }
 
 // ======================================
-// CIRCUIT LIMIT (from Yahoo Finance meta)
-// ======================================
-function renderCircuit(sym, d) {
-  return; // Removed by user request
-  const cs = document.getElementById("circuitSection");
-  if (!cs) return;
-  const pc = d.chartPreviousClose || 0;
-  if (!pc) { cs.innerHTML = ''; return; }
-  const cmp = d.regularMarketPrice || pc;
-  const pct = ((cmp - pc) / pc * 100);
-  // NSE circuit bands: 2%, 5%, 10%, 20%
-  // Default 20% for most NSE stocks. Narrower bands for specific categories.
-  const absPct = Math.abs(pct);
-  let band = 20;
-  if(absPct >= 19) band = 20;
-  else if(absPct >= 9) band = 10;
-  else if(absPct >= 4.5) band = 5;
-  else if(absPct >= 1.9) band = 2;
-  else band = 20;
-  const uch = parseFloat((pc * (1 + band/100)).toFixed(2));
-  const lcl = parseFloat((pc * (1 - band/100)).toFixed(2));
-  const nearUC = Math.abs((cmp - uch) / uch) < 0.01;
-  const nearLC = Math.abs((cmp - lcl) / lcl) < 0.01;
-  const ucColor = nearUC ? '#22c55e' : pct > 0 ? '#38bdf8' : '#4b6280';
-  const lcColor = nearLC ? '#ef4444' : pct < 0 ? '#f97316' : '#4b6280';
-  const ucBorder = nearUC ? 'border:1px solid rgba(34,197,94,0.4);' : '';
-  const lcBorder = nearLC ? 'border:1px solid rgba(239,68,68,0.4);' : '';
-  cs.innerHTML = `
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">CIRCUIT LIMITS (±${band}% of Prev Close ₹${pc.toFixed(2)})</div>
-    <div style="display:flex;gap:4px;">
-      <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;${ucBorder}">
-        <div style="font-size:9px;color:#4b6280;">UPPER CIRCUIT</div>
-        <div style="font-size:12px;font-weight:700;color:${ucColor};">₹${uch}</div>
-        ${nearUC ? '<div style="font-size:9px;color:#22c55e;font-weight:700;">!! Near UC</div>' : ''}
-      </div>
-      <div style="flex:1;background:#0a1628;border-radius:6px;padding:6px 8px;${lcBorder}">
-        <div style="font-size:9px;color:#4b6280;">LOWER CIRCUIT</div>
-        <div style="font-size:12px;font-weight:700;color:${lcColor};">₹${lcl}</div>
-        ${nearLC ? '<div style="font-size:9px;color:#ef4444;font-weight:700;">!! Near LC</div>' : ''}
-      </div>
-    </div>`;
-}
-
-// ======================================
 // BULK / BLOCK DEALS (NSE RSS)
 // ======================================
-let bulkCache = {};
-let bulkCacheTime = {};
-const BULK_CACHE_MS = 10 * 60 * 1000;
-
-async function fetchBulkDeals(sym) {
-  const cleanSym = sym.replace('.NS','').replace('.BO','');
-  const now = Date.now();
-  if (bulkCache[cleanSym] && (now - (bulkCacheTime[cleanSym]||0)) < BULK_CACHE_MS) {
-    return bulkCache[cleanSym];
-  }
-  try {
-    const apiUrl = getActiveGASUrl();
-    const r = await fetch(`${apiUrl}?type=bulk&s=${encodeURIComponent(cleanSym)}`);
-    if (!r.ok) return [];
-    const data = await r.json();
-    const items = data.items || [];
-    bulkCache[cleanSym] = items;
-    bulkCacheTime[cleanSym] = now;
-    return items;
-  } catch(e) { return []; }
-}
-
-async function renderBulkDeals(sym) {
-  const bs = document.getElementById("bulkSection");
-  if (!bs) return;
-  bs.innerHTML = `<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Loading bulk/block deals...</div>`;
-  const items = await fetchBulkDeals(sym);
-  if (!items || items.length === 0) {
-    bs.innerHTML = `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:4px;letter-spacing:0.5px;">BULK / BLOCK DEALS</div><div style="font-size:10px;color:#4b6280;padding:4px;">No recent bulk/block deals found.</div>`;
-    return;
-  }
-  const rows = items.map(function(it) {
-    const typeColor = (it.type||'').toLowerCase().includes('buy') ? '#22c55e' : '#ef4444';
-    return `<div style="background:#0a1628;border-radius:6px;padding:5px 8px;margin-bottom:3px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:10px;font-weight:700;color:${typeColor};">${it.type||'--'}</span>
-        <span style="font-size:9px;color:#4b6280;">${it.date||''}</span>
-      </div>
-      <div style="font-size:10px;color:#e2e8f0;">${it.client||'--'} &mdash; ${it.qty||'--'} @ \u20b9${it.price||'--'}</div>
-    </div>`;
-  }).join('');
-  bs.innerHTML = `
-    <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">BULK / BLOCK DEALS</div>
-    ${rows}`;
-}
 
 function switchDetailTab(tab){
   const tabs=['price','fund','tech','bb','links'];
@@ -2766,6 +2441,9 @@ function switchDetailTab(tab){
   if(tab==='bb' && _bbSym) renderBollinger(_bbSym);
 }
 function closeDetail(){document.getElementById("detailModal").classList.add("hidden");document.body.style.overflow='';}
+// Alias: openStockDetail → openDetail (used in buildMoverChips)
+function openStockDetail(sym) { openDetail(sym, false); }
+
 
 function openModal(type,sym,price){
   currentTrade={type,sym};
@@ -2887,94 +2565,11 @@ function get52WLabel(d){
 }
 
 // ======================================
-// DUAL BAR — Day H/L top + 52W H/L bottom (FIXED VERSION)
-// ======================================
-function buildDualBar(d) {
-  if (!d) return '';
-
-  // ✅ Universal Mapping: Juna (Yahoo), Nava (Standard), ane Firestore (Live) badhu handle thase
-  const cur = parseFloat(Number(d.price || d.ltp || d.regularMarketPrice || d.close || 0).toFixed(2));
-  const hi  = parseFloat(Number(d.high  || d.regularMarketDayHigh || cur).toFixed(2));
-  const lo  = parseFloat(Number(d.low   || d.regularMarketDayLow  || cur).toFixed(2));
-  
-  // 52W High/Low mate badhi possibility check karo
-  const h52 = parseFloat(Number(d.h52 || d.high52 || d.week52High || d.fiftyTwoWeekHigh || cur).toFixed(2));
-  const l52 = parseFloat(Number(d.l52 || d.low52  || d.week52Low  || d.fiftyTwoWeekLow  || cur).toFixed(2));
-
-  if (cur === 0 || hi === 0 || h52 === 0) return ''; // Jo data j na hoy to hide rahe
-
-  let dayHtml = '', w52Html = '';
-
-  // Day Bar
-  const pctDay = hi > lo ? (((cur - lo) / (hi - lo)) * 100).toFixed(0) : 50;
-  dayHtml = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">L:<span style="color:#ef4444;">${lo.toFixed(0)}</span></span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#64748b;">H:<span style="color:#22c55e;">${hi.toFixed(0)}</span></span>
-    </div>
-    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;margin-bottom:5px;">
-      <div style="position:absolute;left:0;width:${pctDay}%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>
-      <div style="position:absolute;left:calc(${pctDay}% - 2px);top:-1px;width:5px;height:5px;background:#fff;border-radius:50%;box-shadow:0 0 3px rgba(255,255,255,0.6);"></div>
-    </div>`;
-
-  // 52W Bar
-  const pct52 = h52 > l52 ? (((cur - l52) / (h52 - l52)) * 100).toFixed(0) : 50;
-  w52Html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1px;">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52L:<span style="color:#ef4444;">${l52.toFixed(0)}</span></span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;color:#64748b;">52H:<span style="color:#22c55e;">${h52.toFixed(0)}</span></span>
-    </div>
-    <div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">
-      <div style="position:absolute;left:0;width:${pct52}%;height:100%;background:linear-gradient(90deg,#4b6280,#38bdf8);border-radius:2px;"></div>
-      <div style="position:absolute;left:calc(${pct52}% - 2px);top:-1px;width:5px;height:5px;background:#38bdf8;border-radius:50%;box-shadow:0 0 3px rgba(56,189,248,0.5);"></div>
-    </div>`;
-
-  return '<div>' + dayHtml + w52Html + '</div>';
-}
-// ======================================
 // FEATURE 2: STOCK NEWS
 // ======================================
-function openNews(sym){
-  window.open(`https://news.google.com/search?q=${sym}+NSE+stock&hl=en-IN&gl=IN&ceid=IN:en`);
-}
-
-// ======================================
-// FEATURE 3: TOP GAINERS / LOSERS
-// ======================================
-function renderTopMovers(){
-  const stocks = wl.map(s=>{
-    const d=cache[s]?.data; if(!d) return null;
-    const diff=d.regularMarketPrice-d.chartPreviousClose;
-    const pct=(diff/d.chartPreviousClose*100)||0;
-    return {sym:s, pct, price:d.regularMarketPrice};
-  }).filter(Boolean);
-
-  if(stocks.length===0) return '<div style="color:#4b6280;text-align:center;padding:10px;font-size:12px;">Data not loaded</div>';
-
-  const sorted=[...stocks].sort((a,b)=>b.pct-a.pct);
-  const gainers=sorted.slice(0,3);
-  const losers=[...stocks].sort((a,b)=>a.pct-b.pct).slice(0,3);
-
-  let html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
-
-  html+=`<div><div style="font-size:11px;font-weight:700;color:#22c55e;margin-bottom:4px;">TOP GAINERS</div>`;
-  gainers.forEach(s=>{
-    html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;">${s.sym}</span>
-      <span style="color:#22c55e;font-weight:700;">+${s.pct.toFixed(2)}%</span>
-    </div>`;
-  });
-  html+=`</div>`;
-
-  html+=`<div><div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:4px;">TOP LOSERS</div>`;
-  losers.forEach(s=>{
-    html+=`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;">${s.sym}</span>
-      <span style="color:#ef4444;font-weight:700;">${s.pct.toFixed(2)}%</span>
-    </div>`;
-  });
-  html+=`</div></div>`;
-  return html;
+function openNews(sym) {
+  const query = encodeURIComponent(sym + ' stock NSE');
+  window.open(`https://economictimes.indiatimes.com/searchresult.cms?query=${query}`);
 }
 
 // ======================================
@@ -3081,27 +2676,6 @@ function handleRestore(event){
   };
   reader.readAsText(file);
 }
-
-// ======================================
-// FEATURE: PRICE RANGE BAR (Day High-Low)
-// ======================================
-function getPriceRangeBar(d){
-  if(!d||!d.regularMarketDayHigh||!d.regularMarketDayLow) return '';
-  const lo=d.regularMarketDayLow, hi=d.regularMarketDayHigh, cur=d.regularMarketPrice;
-  const range=hi-lo;
-  if(range<=0) return '';
-  const pct=Math.min(100,Math.max(0,((cur-lo)/range)*100)).toFixed(0);
-  return `<div style="margin-top:3px;">
-    <div style="display:flex;justify-content:space-between;font-size:9px;color:#4b6280;">
-      <span>L:₹${lo.toFixed(0)}</span><span>H:₹${hi.toFixed(0)}</span>
-    </div>
-    <div style="background:#1e2d3d;border-radius:4px;height:4px;position:relative;margin-top:2px;">
-      <div style="position:absolute;left:0;width:${pct}%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:4px;"></div>
-      <div style="position:absolute;left:calc(${pct}% - 3px);top:-2px;width:6px;height:8px;background:#fff;border-radius:2px;"></div>
-    </div>
-  </div>`;
-}
-
 // ======================================
 // FEATURE: AVG vs CMP BAR (Holdings)
 // ======================================
@@ -3127,8 +2701,6 @@ let refreshInterval = null;
 
 try{ dupWarnEnabled = localStorage.getItem("dupWarn") !== "false"; }catch(e){}
 
-
-// ======================================
 // ======================================
 // EXPORT TECHNICAL SNAPSHOT (Excel)
 // Symbol, CMP, BB Upper, BB Lower, RSI, Volume
@@ -3262,7 +2834,7 @@ async function exportTechnicalExcel(){
     if(btn){ btn.textContent='Export'; btn.style.opacity='1'; btn.style.pointerEvents='auto'; }
   }
 }
-
+// ======================================
 // EXPORT CSV (History)
 // ======================================
 function exportCSV(){
@@ -3296,7 +2868,6 @@ function exportCSV(){
 // ======================================
 // P&L CALENDAR (History)
 // ======================================
-// Calendar state
 let calYear=new Date().getFullYear(), calMonth=new Date().getMonth(), calSelDay=null;
 
 function calNav(dir){
@@ -3902,14 +3473,6 @@ function saveFF2Url(){
 }
 
 // જે ફંક્શનનું નામ ગાયબ હતું, તે મેં અહી ઉમેરી દીધું છે 👇
-function toggleSection(bodyId, arrId) {
-  const b=document.getElementById(bodyId);
-  const a=document.getElementById(arrId);
-  if(!b||!a) return;
-  const hidden=b.style.display==='none'||b.style.display==='';
-  b.style.display=hidden?'block':'none';
-  a.textContent=hidden?'▼':'▶';
-}
 function startAPIEdit(){
   const inp=document.getElementById("set-api-input");
   if(inp) inp.value=localStorage.getItem("customAPI")||API;
@@ -4122,8 +3685,6 @@ function _executeClearData(type){
 function clearAllData(){
   clearData('holdings'); clearData('history'); clearData('alerts');
 }
-
-
 // ======================================
 // TAP ACTION PANEL SYSTEM
 // ======================================
@@ -4149,7 +3710,6 @@ document.addEventListener('click',function(e){
 // ======================================
 // SORT
 // ======================================
-// -- CHART --
 function getTVSymbol(sym){
   if(sym==="^NSEI") return "NIFTY";
   if(sym==="^BSESN") return "SENSEX";
@@ -4246,7 +3806,6 @@ function checkAlerts(sym, currentPrice) {
     var hit = false;
     if (a.dir === 'above' && currentPrice >= parseFloat(a.price)) hit = true;
     if (a.dir === 'below' && currentPrice <= parseFloat(a.price)) hit = true;
-    if (!a.dir && Math.abs(currentPrice - parseFloat(a.price)) <= 1) hit = true; // legacy
     if (hit) {
       var msg = "🔔 " + sym + " " + (a.dir==='below'?'▼':'▲') + " ₹" + a.price + " — CMP ₹" + currentPrice.toFixed(2);
       showPopup(msg, 6000);
@@ -4512,15 +4071,13 @@ function _switchTab(t){
   `;
 }
   if(t==="learn"){ initLearnTab(); }
-  if(t==="settings"){loadSettingsUI();renderFeatureGuide();
+  if(t==="settings"){loadSettingsUI();
     const lsd=document.getElementById('lastSyncDisplay');
     const lts=localStorage.getItem('lastCloudSync');
     if(lsd&&lts){ const dt=new Date(parseInt(lts)); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
   }
-  if(t==="holidays")renderHolidays();
   if(t==="news")renderNews();
 }
-
 
 // ======================================
 // GAS HISTORY FETCH (RSI/MACD/Inside Bar)
@@ -4662,7 +4219,6 @@ function calcMACD(closes){
   };
 }
 
-// Inside Bar / Narrow Range
 // ======================================
 // CANDLESTICK PATTERN DETECTOR
 // ======================================
@@ -5096,13 +4652,6 @@ async function runAllTechnicalAlerts(){
 }
 
 // ======================================
-// APP START (after PIN)
-// ======================================
-
-// ======================================
-// FLASH PRICE TICKER (header scroll bar)
-// ======================================
-// ======================================
 // GLOBAL MARKETS TICKER
 // ======================================
 const GLOBAL_SYMS = {
@@ -5240,237 +4789,6 @@ function updatePriceTicker() {
   track.style.animation = `tickerScroll ${duration}s linear infinite`;
 }
 
-
-// ======================================
-// ======================================
-// FEATURE DATA (single source of truth)
-// To add/remove features: edit FEATURE_DATA only
-// Accordion + PDF both auto-update
-// ======================================
-const FEATURE_DATA = [
-  {cat:"HEADER", color:"#38bdf8", items:[
-    {name:"NIFTY / SENSEX / BANKNIFTY", desc:"Live index prices + % change. Tap = detail modal. Indian format (24.5k). Auto-refresh."},
-    {name:"Theme Button", desc:"Dark/Light mode toggle. Instantly applies across full app."},
-    {name:"Refresh Button", desc:"Manual cache clear + fresh price fetch for all stocks."},
-    {name:"Alert Button", desc:"Opens Alerts tab directly from header."},
-    {name:"Holiday Button", desc:"NSE market holidays 2025 + 2026 list."},
-    {name:"Flash Price Ticker", desc:"Scrolling bar: BANKNIFTY 53,427 - +155 (+0.12%) for all watchlist + indices. Hover = pause."}
-  ]},
-  {cat:"WATCHLIST", color:"#60a5fa", items:[
-    {name:"Search Box", desc:"334 preloaded NSE stocks with suggestions. Enter = add to watchlist."},
-    {name:"Sort: A-Z / Price / %", desc:"Toggle sort by name, price high-low, or % change."},
-    {name:"Groups", desc:"Create custom groups (PSU, IT, Green). Filter tabs auto-appear."},
-    {name:"ACT Button", desc:"Opens action panel: BUY / SELL / CHART / NEWS / ALERT / TARGET."},
-    {name:"Day Bar", desc:"Visual Day High-Low range bar with CMP position marker."},
-    {name:"52W Bar", desc:"52-week High-Low bar. Label: ** Near 52W High / !! Near 52W Low."},
-    {name:"Sparkline (7D)", desc:"Mini SVG line chart showing 7-day price trend. Green = up, Red = down. Loaded after watchlist render."},
-    {name:"CMP Flash", desc:"Live price with green/red flash animation on change."},
-    {name:"Remove (X)", desc:"Remove stock from watchlist with confirmation."}
-  ]},
-  {cat:"HOLDINGS", color:"#4ade80", items:[
-    {name:"Portfolio Summary", desc:"Investment, Current Value, Unrealized P&L, Return%, Realized P&L, Total P&L."},
-    {name:"Pie Chart", desc:"Donut chart for portfolio diversity - % allocation per stock."},
-    {name:"Card Layout", desc:"Row 1: Symbol + badge + CMP + P&L. Row 2: Qty + Avg + Holding days. Row 3: Avg bar + buttons."},
-    {name:"AVG Down Calc", desc:"Two modes: Add Qty (new avg preview) + Target Avg (exact qty needed)."},
-    {name:"Edit Holding", desc:"Change avg price, qty, buy date anytime."},
-    {name:"Holding Days", desc:"Auto-calculated: 45d / 2mo 3d format."}
-  ]},
-  {cat:"HISTORY", color:"#a78bfa", items:[
-    {name:"Trade List", desc:"BUY + SELL trades with symbol, type badge, prices, qty, date, P&L."},
-    {name:"CNC / MIS Badge", desc:"Trade type shown on every history card."},
-    {name:"Tax Calculator", desc:"Brokerage 0.15%, STT, Exchange charges, GST, break-even price."},
-    {name:"P&L Calendar", desc:"Monthly calendar view. Green/red days. Tap date = filter trades."},
-    {name:"Export CSV", desc:"Full trade history as CSV download."},
-    {name:"Backup JSON", desc:"Complete app data (watchlist, holdings, history, alerts) as JSON."},
-    {name:"Restore JSON", desc:"Restore from backup - works across devices via GitHub Pages."}
-  ]},
-  {cat:"LIVE PRICES", color:"#fb7185", items:[
-    {name:"GAS Proxy", desc:"Google Apps Script proxies Yahoo Finance API - bypasses CORS."},
-    {name:"NSE to BSE Fallback", desc:"If NSE (.NS) fails, auto-retry with BSE (.BO) symbol."},
-    {name:"3 URL Fallback", desc:"Primary > Secondary > Tertiary GAS URLs - zero downtime."},
-    {name:"Batch Fetch", desc:"All watchlist stocks in one GAS call (parallel processing)."},
-    {name:"Cache System", desc:"8s default. Prevents unnecessary API calls. Configurable in Settings."},
-    {name:"Auto Refresh", desc:"30s default interval. Configurable (min 10s)."},
-    {name:"Pull to Refresh", desc:"Mobile: swipe down to force refresh."}
-  ]},
-  {cat:"TECHNICAL ALERTS", color:"#f59e0b", items:[
-    {name:"RSI (14)", desc:"Oversold alert below 30. Overbought alert above 70. 30d OHLCV data."},
-    {name:"MACD (12,26,9)", desc:"Bullish cross (signal line crossover) and Bearish cross detection."},
-    {name:"Inside Bar", desc:"Current candle inside previous candle range - consolidation signal."},
-    {name:"Narrow Range", desc:"Smallest range in last 7 bars - breakout watch signal."},
-    {name:"Volume Breakout", desc:"Volume 1.5x above 20-day avg (cache-based, 0 extra API calls)."},
-    {name:"Day H/L Alert", desc:"Price within 0.5% of day High or Low - auto chime + popup."},
-    {name:"Auto Run", desc:"Runs for all watchlist stocks on app open + every manual refresh."}
-  ]},
-  {cat:"STOCK DETAIL", color:"#34d399", items:[
-    {name:"Price Data", desc:"Open, Prev Close, Day High, Day Low, 52W High, 52W Low."},
-    {name:"Fundamentals", desc:"P/E TTM, Forward P/E, EPS TTM, Forward EPS, Mkt Cap, Book Value, Volume, Div Yield."},
-    {name:"Technicals (30d)", desc:"RSI(14), MACD(12,26,9), Inside Bar, Narrow Range - live calculated."},
-    {name:"Bollinger Bands", desc:"BB(20/50/100,2) with period selector 1M/3M/6M/1Y. Upper, Lower, MA, %B, Band Width, Signal, Position bar."},
-    {name:"Circuit Limits", desc:"Auto-detects NSE band (2/5/10/20%). Upper + Lower circuit levels from Prev Close."},
-    {name:"Bulk/Block Deals", desc:"NSE RSS feed for bulk and block deals for the selected stock."},
-    {name:"Smart Alert Suggestions", desc:"Auto-suggests Breakout, Support, Round, StopLoss, Target levels. One-tap set alert."},
-    {name:"Earnings + Dividends", desc:"Next earnings date + Ex-dividend date (day-cached from Yahoo)."},
-    {name:"Quick Links", desc:"NSE, BSE Filings, Screener, Chartink, Tijori, MC, Tickertape, Trendlyne, TradingView."}
-  ]},
-  {cat:"Ask Nivi", color:"#38bdf8", items:[
-    {name:"Ask Nivi Brief", desc:"AI-powered daily market summary. Watchlist stocks pass karo, Sarvam AI analyze kare. 30-min cache."},
-    {name:"Stock Filter", desc:"Fetches top 5 watchlist stocks. 5 min cache to save GAS quota."},
-    {name:"Tabs", desc:"All / Corporate / Market filter tabs."},
-    {name:"Stock Chips", desc:"Filter by individual stock (watchlist-based chips)."},
-    {name:"Sentiment Engine", desc:"Keyword-based: Positive / Negative / Neutral badge per news."},
-    {name:"Smart Summary", desc:"Auto-generated one-line summary based on news keywords."},
-    {name:"Read Link", desc:"Opens original article in new tab."}
-  ]},
-  {cat:"ALERTS + TARGETS", color:"#fbbf24", items:[
-    {name:"Price Alerts", desc:"Set above/below trigger per stock. Chime sound when hit."},
-    {name:"Triggered Log", desc:"List of already-triggered alerts with time."},
-    {name:"Target Price", desc:"Set target per stock. Auto-removes from list when price reached."},
-    {name:"Day H/L Alert", desc:"Auto alert when price within 0.5% of day high or low (session)."}
-  ]},
-  {cat:"GAINERS / LOSERS", color:"#c4b5fd", items:[
-    {name:"Top Gainers", desc:"Top 10 gainers from 334 preloaded stocks. Symbol + Price + %."},
-    {name:"Top Losers", desc:"Top 10 losers same list."},
-    {name:"Screener", desc:"Filter tab: +3% Today, -3% Today, Near 52W High, Near 52W Low, Vol Breakout. Source: Watchlist / Popular / All Cached."},
-    {name:"Background Preload", desc:"Silently fetches 80 stocks 1.5s after app open."},
-    {name:"Manual Refresh", desc:"Force fresh batch fetch from Gainers tab."}
-  ]},
-  {cat:"CLOUD SYNC", color:"#f472b6", items:[
-    {name:"Auto Sync", desc:"Every watchlist/holdings change auto-saves to Google Sheet (2s debounce)."},
-    {name:"Upload to Cloud", desc:"Manual push — saves watchlist, holdings, history, groups in parallel."},
-    {name:"Download from Cloud", desc:"Manual pull — cloud always wins. Restores all 4 data keys."},
-    {name:"Sync on Start", desc:"pullFromCloud() runs on app open — latest data always loaded."},
-    {name:"Sync Status", desc:"Shows: Syncing... / Synced / Sync Error with last sync time."},
-    {name:"2-Device Sync", desc:"Same GitHub Pages URL = same localStorage. Cloud Sheet bridges laptop + mobile."}
-  ]},
-  {cat:"JOURNAL", color:"#94a3b8", items:[
-    {name:"Entry Types", desc:"NOTE / BUY / SELL / WATCH - four trade diary entry types."},
-    {name:"Stock Tag", desc:"Optional stock symbol linked to each journal entry."},
-    {name:"Timestamp", desc:"Auto date+time on every entry."},
-    {name:"History View", desc:"Chronological list of all past entries."}
-  ]},
-  {cat:"SETTINGS", color:"#60a5fa", items:[
-    {name:"3 API URLs", desc:"Primary + Secondary + Tertiary GAS endpoints for fallback."},
-    {name:"Auto Refresh", desc:"Configure interval in seconds (default 30s, min 10s)."},
-    {name:"Cache Time", desc:"Configure in ms (default 8000ms = 8s)."},
-    {name:"Duplicate Warning", desc:"Toggle warning when same stock added twice."},
-    {name:"Danger Zone", desc:"Clear Holdings / History / Alerts individually with confirmation."},
-    {name:"Import CSV", desc:"Bulk import holdings from CSV file."},
-    {name:"Backup + Restore", desc:"JSON export/import for cross-device data sync."},
-    {name:"Earnings Calendar", desc:"Header Calendar icon. Shows next earnings dates for all watchlist stocks. Week/Month view."}
-  ]},
-  {cat:"TECHNICAL DETAILS", color:"#4b6280", items:[
-    {name:"No Frameworks", desc:"Pure HTML + Tailwind CSS + Vanilla JS. Zero dependencies."},
-    {name:"Single File", desc:"Entire app in one RealTraderPro_Stable.html file."},
-    {name:"localStorage", desc:"All data stored locally. No server, no account, no cost."},
-    {name:"SVG Icons", desc:"All icons are inline SVG - no emoji, no fonts needed. Android Chrome safe."},
-    {name:"Indian Number Format", desc:"Rs 1,23,456.78 format via inr() function."},
-    {name:"charset=UTF-8", desc:"Meta tag ensures correct rendering on all devices."},
-    {name:"Market Status", desc:"Open / Pre-open / Closed / Weekend via IST time - zero API."},
-    {name:"Day-cached Data", desc:"Fundamentals + History cached daily in localStorage."}
-  ]}
-];
-
-// ======================================
-// FEATURE GUIDE ACCORDION + PDF
-// ======================================
-function renderFeatureGuide(){
-  const el = document.getElementById("featureGuideList");
-  if(!el) return;
-  const totalFeatures = FEATURE_DATA.reduce((s,f)=>s+f.items.length,0);
-  // PDF button outside collapsible body
-  const pdfWrap = document.getElementById("feat-pdf-btn-wrap");
-  if(pdfWrap) pdfWrap.innerHTML = '<button onclick="downloadFeaturePDF()" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;">PDF</button>';
-  let accordionHtml = "<div style=\"font-size:10px;color:#4b6280;margin-bottom:8px;\">" + FEATURE_DATA.length + " categories · " + totalFeatures + " features</div>";
-  FEATURE_DATA.forEach((f,i) => {
-    const id = "fg"+i;
-    accordionHtml +=
-      "<div style=\"border-bottom:1px solid #1e2d3d;margin-bottom:2px;\">" +
-      "<div onclick=\"var c=document.getElementById('" + id + "');var isOpen=c.style.display!=='none';c.style.display=isOpen?'none':'block';this.querySelector('.fga').style.transform=isOpen?'rotate(0deg)':'rotate(90deg)'\"" +
-      " style=\"display:flex;justify-content:space-between;align-items:center;padding:7px 0;cursor:pointer;\">" +
-      "<span style=\"font-size:11px;font-weight:700;color:" + f.color + ";\">" + f.cat + "</span>" +
-      "<svg class=\"fga\" viewBox=\"0 0 10 10\" width=\"8\" height=\"8\" fill=\"#4b6280\" style=\"transition:transform 0.2s;flex-shrink:0;\"><polygon points=\"3,2 7,5 3,8\"/></svg>" +
-      "</div>" +
-      "<div id=\"" + id + "\" style=\"display:none;padding:0 0 8px 8px;\">" +
-      f.items.map(it =>
-        "<div style=\"display:flex;gap:6px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03)\">" +
-        "<span style=\"font-size:10px;font-weight:700;color:" + f.color + ";min-width:100px;flex-shrink:0;\">" + it.name + "</span>" +
-        "<span style=\"font-size:10px;color:#94a3b8;line-height:1.4;\">" + it.desc + "</span>" +
-        "</div>"
-      ).join("") +
-      "</div></div>";
-  });
-  el.innerHTML = accordionHtml;
-}
-
-function downloadFeaturePDF(){
-  const totalFeatures = FEATURE_DATA.reduce((s,f)=>s+f.items.length,0);
-  const today = new Date();
-  const dateStr = today.getDate()+"/"+(today.getMonth()+1)+"/"+today.getFullYear();
-
-  let tableRows = "";
-  FEATURE_DATA.forEach(f => {
-    // Category header row
-    tableRows += "<tr><td colspan=\"3\" style=\"background:#1e3a5f;color:#60a5fa;font-weight:700;font-size:12px;padding:6px 8px;letter-spacing:0.5px;\">" + f.cat + "</td></tr>";
-    // Feature rows
-    f.items.forEach((it,i) => {
-      const bg = i%2===0 ? "#0f1e33" : "#111827";
-      tableRows += "<tr style=\"background:" + bg + ";\">" +
-        "<td style=\"width:8px;background:" + f.color + ";\"></td>" +
-        "<td style=\"padding:5px 8px;color:#e2e8f0;font-weight:700;font-size:11px;white-space:nowrap;\">" + it.name + "</td>" +
-        "<td style=\"padding:5px 8px;color:#94a3b8;font-size:11px;line-height:1.4;\">" + it.desc + "</td>" +
-        "</tr>";
-    });
-  });
-
-  const html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\">" +
-    "<title>Real Trader Pro - Feature Guide</title>" +
-    "<style>" +
-    "body{background:#0a0f1a;color:#e2e8f0;font-family:Arial,sans-serif;margin:0;padding:20px;}" +
-    "table{width:100%;border-collapse:collapse;margin-top:12px;}" +
-    "td{vertical-align:top;border-bottom:1px solid #1e2d3d;}" +
-    ".header{background:linear-gradient(90deg,#0f1e33,#1e3a5f);padding:16px 20px;border-radius:10px;margin-bottom:16px;}" +
-    ".header h1{margin:0;font-size:20px;color:#38bdf8;letter-spacing:1px;}" +
-    ".header p{margin:4px 0 0;font-size:11px;color:#4b6280;}" +
-    ".stats{display:flex;gap:16px;margin-top:8px;}" +
-    ".stat{background:#0a1628;padding:6px 12px;border-radius:6px;font-size:11px;color:#60a5fa;font-weight:700;}" +
-    "@media print{body{background:#fff;color:#000;} td{color:#000 !important;border-bottom:1px solid #ccc;} .header{background:#f0f4f8;} .header h1{color:#1e3a8a;} .header p{color:#475569;} .stat{background:#e2e8f0;color:#1e3a8a;} tr[style*=\"background:#0f1e33\"]{background:#f8fafc !important;} tr[style*=\"background:#111827\"]{background:#ffffff !important;} td[style*=\"color:#e2e8f0\"]{color:#1a202c !important;} td[style*=\"color:#94a3b8\"]{color:#475569 !important;} tr td:first-child{display:none;} td[style*=\"background:#1e3a5f\"]{background:#dbeafe !important;color:#1e3a8a !important;}}" +
-    "</style></head><body>" +
-    "<div class=\"header\">" +
-    "<h1>REAL TRADER PRO - Feature Reference Guide</h1>" +
-    "<p>Version 2.1  |  " + dateStr + "  |  Sahaj Personal Trading App</p>" +
-    "<div class=\"stats\">" +
-    "<span class=\"stat\">" + totalFeatures + "+ Features</span>" +
-    "<span class=\"stat\">0 Frameworks</span>" +
-    "<span class=\"stat\">1 HTML File</span>" +
-    "<span class=\"stat\">0 Monthly Cost</span>" +
-    "</div></div>" +
-    "<table>" + tableRows + "</table>" +
-    "<div style=\"text-align:center;font-size:10px;color:#4b6280;margin-top:16px;padding:10px;border-top:1px solid #1e2d3d;\">" +
-    "Real Trader Pro  |  Pure HTML + Tailwind CSS + Vanilla JS  |  GAS + Yahoo Finance" +
-    "</div></body></html>";
-
-  // Mobile-compatible: Blob download instead of window.open (popup blocked on mobile)
-  try {
-    const blob = new Blob([html], {type: 'text/html;charset=utf-8'});
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = 'RealTradePro_FeatureGuide.html';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-    showPopup('Downloaded! Open file in browser → Print → Save as PDF');
-  } catch(e) {
-    // Fallback: window.open for desktop
-    const w = window.open("","_blank","width=900,height=700");
-    if(!w){ showPopup("Popup blocked! Allow popups for this site."); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>{ w.focus(); w.print(); }, 500);
-  }
-}
-
 async function startApp(){
   monitorSystemHealth();
   updateMarketStatus();
@@ -5543,9 +4861,7 @@ document.addEventListener('visibilitychange', ()=>{
   } else {
     // Android/Mobile mate network re-connect thava mate delay jaruri chhe
     setTimeout(async () => {
-      console.log("🔄 Resuming App: Fetching fresh ticks...");
-      
-      // ✅ Resume thava par sauthi pehla fresh data fetch karo
+        // ✅ Resume thava par sauthi pehla fresh data fetch karo
 const wl = watchlists[currentWL]?.stocks
   ? [...watchlists[currentWL].stocks]
   : (window.currentWl || []);
@@ -5658,200 +4974,11 @@ const NEWS_CACHE_MS = 5 * 60 * 1000; // 5 min cache
 let newsCacheDate = '';
 
 // Keyword sentiment engine
-const NEWS_KEYWORDS = {
-  positive: ['dividend','buyback','bonus','acquisition','profit','growth','order','deal','partnership','expansion','record','strong','beat','upgrade','target raised','buy','positive','surplus','win','award','allot'],
-  negative: ['penalty','fine','fraud','loss','decline','default','sebi order','closure','suspend','downgrade','sell','negative','deficit','debt','restructur','probe','investigation','lawsuit','write-off'],
-  corporate: ['board meeting','results','agm','egm','record date','rights issue','split','merger','demerger','insider','shareholding','disclosure','outcome','intimation','postal ballot']
-};
-
-function getNewsSentiment(text) {
-  const t = text.toLowerCase();
-  let pos = 0, neg = 0;
-  NEWS_KEYWORDS.positive.forEach(k => { if(t.includes(k)) pos++; });
-  NEWS_KEYWORDS.negative.forEach(k => { if(t.includes(k)) neg++; });
-  if(neg > pos) return 'negative';
-  if(pos > neg) return 'positive';
-  return 'neutral';
-}
-
-function getNewsTag(text) {
-  const t = text.toLowerCase();
-  if(t.includes('dividend')) return {label:'Dividend', cls:'tag-dividend'};
-  if(t.includes('buyback')) return {label:'Buyback', cls:'tag-buyback'};
-  if(t.includes('result') || t.includes('profit') || t.includes('revenue')) return {label:'Results', cls:'tag-results'};
-  if(t.includes('penalty') || t.includes('fine') || t.includes('sebi')) return {label:'Penalty', cls:'tag-penalty'};
-  if(t.includes('board')) return {label:'Board Meeting', cls:'tag-board'};
-  if(t.includes('merger') || t.includes('acqui') || t.includes('demerger')) return {label:'M&A', cls:'tag-merger'};
-  if(t.includes('insider') || t.includes('disclosure')) return {label:'Insider', cls:'tag-insider'};
-  if(t.includes('block deal') || t.includes('bulk deal')) return {label:'Block Deal', cls:'tag-block'};
-  if(t.includes('order') || t.includes('contract') || t.includes('deal')) return {label:'Order Win', cls:'tag-results'};
-  return null;
-}
-
-function smartSummaryTemplate(text, sym, sentiment) {
-  const t = text.toLowerCase();
-  if(t.includes('dividend')) return sym + ' declared dividend. Check record date & ex-date for eligibility.';
-  if(t.includes('buyback')) return sym + ' buyback  -  potential upside for shareholders. Watch buyback price vs CMP.';
-  if(t.includes('result') || t.includes('q3') || t.includes('q4') || t.includes('q1') || t.includes('q2')) return sym + ' quarterly results announced. Compare with estimates for direction.';
-  if(t.includes('penalty') || t.includes('fine')) return sym + ' faces regulatory action. Monitor for management response & impact.';
-  if(t.includes('board meeting')) return sym + ' board meeting scheduled. Watch for corporate action announcements.';
-  if(t.includes('order') || t.includes('contract')) return sym + ' new order/contract win. Positive for revenue visibility.';
-  if(t.includes('merger') || t.includes('acqui')) return sym + ' M&A activity. Assess synergies & valuation impact.';
-  if(sentiment === 'positive') return sym + '  -  Positive development. Monitor price action for confirmation.';
-  if(sentiment === 'negative') return sym + '  -  Negative development. Watch support levels closely.';
-  return sym + '  -  Track this announcement for portfolio impact.';
-}
-
-// -- LIVE NEWS FETCH via GAS --
-async function fetchLiveNews(sym) {
-  const apiUrl = localStorage.getItem("customAPI") || API;
-  const cleanSym = sym.replace(".NS","").replace(".BO","");
-  try {
-    const r = await fetch(`${apiUrl}?type=newsSearch&s=${encodeURIComponent(cleanSym)}`);
-    if(!r.ok) return [];
-    const j = await r.json();
-    if(j.news && j.news.length > 0) return j.news;
-  } catch(e) {
-    console.warn("News fetch failed for "+sym+":", e.message);
-  }
-  return [];
-}
-
-function timeAgoDate(dateStr) {
-  try {
-    const d = new Date(dateStr);
-    const diff = Date.now() - d.getTime();
-    const mins = Math.floor(diff/60000);
-    if(mins < 60) return mins + 'm ago';
-    const hrs = Math.floor(mins/60);
-    if(hrs < 24) return hrs + 'h ago';
-    return Math.floor(hrs/24) + 'd ago';
-  } catch(e) { return ''; }
-}
-
-// Firebase latest_news cache
-let _fbNewsCache = null;
-let _fbNewsCacheTime = 0;
-const FB_NEWS_CACHE_MS = 2 * 60 * 1000; // 2 min cache (Python Thread B interval sathe match)
- 
-async function loadFirebaseNews() {
-  // Cache check — 2 min fresh hoy to re-fetch nahi
-  if (_fbNewsCache && (Date.now() - _fbNewsCacheTime < FB_NEWS_CACHE_MS)) {
-    return _fbNewsCache;
-  }
- 
-  try {
-    if (typeof firebase === 'undefined') return [];
- 
-    const db  = firebase.firestore();
-    const doc = await db.collection('RealTradePro').doc('latest_news').get();
-    if (!doc.exists) return [];
- 
-    const data     = doc.data();
-    const rawNews  = data.news || [];
-    const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000);
-    const updatedAt = data.updated_at || '';
- 
-    // Python format → app format convert karo
-    // Python: { title, link, date, source }
-    // App:    { sym, source, type, time, _rawDate, title, link }
-const items = rawNews
-  .filter(item => {
-    if (!item.date) return true;
-    const d = new Date(item.date).getTime();
-    return isNaN(d) || d > cutoff;
-  })
-  .map(item => ({
-    sym:      'MARKET',
-    source:   item.source || 'Firebase',
-    type:     detectNewsType(item.title || ''),
-    time:     timeAgoDate(item.date || ''),
-    _rawDate: item.date || '',
-    title:    item.title || '',
-    link:     item.link  || '',
-  }));
- 
-    // Most recent first
-    items.sort((a, b) => {
-      try {
-        return new Date(b._rawDate || 0) - new Date(a._rawDate || 0);
-      } catch(e) { return 0; }
-    });
- 
-    _fbNewsCache     = items;
-    _fbNewsCacheTime = Date.now();
- 
-    console.log(`[Firebase News] ${items.length} items loaded | updated: ${updatedAt}`);
-    return items;
- 
-  } catch(e) {
-    console.warn('[Firebase News] fetch failed:', e.message);
-    return [];
-  }
-}
-
-async function loadAllNews() {
-  // Use cache if fresh
-  if(newsCache && (Date.now() - newsCacheTime < NEWS_CACHE_MS)) return newsCache;
-  
-  // Fetch for top watchlist stocks (max 5 to avoid GAS quota)
-  const symsToFetch = wl.slice(0,5);
-  if(symsToFetch.length === 0) { newsCache=[]; newsCacheTime=Date.now(); return []; }
-  
-  const results = await Promise.all(symsToFetch.map(s => fetchLiveNews(s)));
-  const allItems = [];
-  
-  symsToFetch.forEach((sym, i) => {
-    (results[i]||[]).forEach(item => {
-      allItems.push({
-        sym: sym,
-        source: 'LIVE',
-        type: detectNewsType(item.title),
-        time: timeAgo(item.date),
-        _rawDate: item.date,
-        title: item.title,
-        link: item.link
-      });
-    });
-  });
-  
-  // Sort by date: most recent first
-  allItems.sort((a, b) => {
-    try {
-      const da = new Date(a._rawDate || 0).getTime();
-      const db = new Date(b._rawDate || 0).getTime();
-      return db - da;
-    } catch(e) { return 0; }
-  });
-  newsCache = allItems.length > 0 ? allItems : getFallbackNews();
-  newsCacheTime = Date.now();
-  return newsCache;
-}
-
-function detectNewsType(title) {
-  const t = title.toLowerCase();
-  if(t.includes('board')||t.includes('agm')||t.includes('result')||t.includes('dividend')||
-     t.includes('buyback')||t.includes('record date')||t.includes('split')||
-     t.includes('merger')||t.includes('disclosure')||t.includes('intimation')) return 'corporate';
-  return 'market';
-}
-
-function getFallbackNews() {
-  const isLocal = location.protocol === 'file:';
-  const msg = isLocal
-    ? 'Open via GitHub Pages to load live news. Local file cannot call GAS API.'
-    : 'No news found. Check API connection or try refreshing.';
-  return [
-    {sym:'INFO', source:'APP', type:'market', time:'', title: msg, link:''},
-  ];
-}
-
 let newsActiveFilter = 'ALL';
 let newsActiveTab = 'all';
 
 // =============================================
-// ASK NIVI TAB — Chat UI v3
-// Market Brief (top) + Chat + Mic + Chips
+// ASK NIVI TAB — Universal Chat v4
 // =============================================
 function _niviSubTab(tab) {
   const isChat = tab === 'chat';
@@ -5863,7 +4990,6 @@ function _niviSubTab(tab) {
   document.getElementById('nivi-subtab-news').style.cssText = isChat ? inactive : active;
 }
 let _tabChatHistory = [];
-
 
 function buildMoverChips() {
   if (!wl || wl.length === 0) return '';
@@ -5881,11 +5007,40 @@ function buildMoverChips() {
     const isGainer = s.pct >= 0;
     const color = isGainer ? '#22c55e' : '#ef4444';
     const bg    = isGainer ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)';
-    const border= isGainer ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
-    const sign  = isGainer ? '+' : '';
+    const border = isGainer ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)';
+    const sign   = isGainer ? '+' : '';
     html += `<span onclick="openStockDetail('${s.sym}')" style="flex-shrink:0;cursor:pointer;background:${bg};border:1px solid ${border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;color:${color};font-family:'Rajdhani',sans-serif;white-space:nowrap;">${s.sym} ${sign}${s.pct.toFixed(2)}%</span>`;
   });
   return html;
+}
+
+// ── Dynamic contextual chips — multilingual, open-ended ──
+function _buildSmartChips() {
+  // Top movers from watchlist for stock-specific chips
+  const topStocks = wl.slice(0, 3).map(s => {
+    const d = cache[s]?.data;
+    if (!d) return null;
+    return s;
+  }).filter(Boolean);
+
+  const chips = [];
+
+  // Stock-specific chips (if data loaded)
+  if (topStocks.length > 0) {
+    chips.push({ label: `${topStocks[0]} analysis`,  q: `${topStocks[0]} stock nu full analysis karo — buy, sell ke hold?` });
+    if (topStocks[1]) chips.push({ label: `${topStocks[1]} target`,  q: `${topStocks[1]} no price target shu che? RSI ane technical shun kahe che?` });
+  }
+
+  // Universal open-ended chips
+  chips.push(
+    { label: '📊 Market mood',   q: 'आज बाज़ार कैसा है? निफ्टी का ट्रेंड क्या है?' },
+    { label: '🔥 Watchlist best', q: 'मेरी watchlist में आज सबसे श्रेष्ठ opportunity कौन सी है?' },
+    { label: '📉 Portfolio risk', q: 'मेरे Portfolio में कोई risk है? कोई स्टॉक exit करना चाहता है?' },
+    { label: '💡 Sector trend',  q: 'अभी कौन से सेक्टर में मज़बूती है और क्यों?' },
+    { label: '📅 Today plan',    q: 'आज के लिए शॉर्ट-टर्म ट्रेडिंग प्लान क्या होना चाहिए?' },
+  );
+
+  return chips.slice(0, 6); // max 6 chips
 }
 
 async function renderNews() {
@@ -5901,20 +5056,26 @@ async function renderNews() {
              + (_ticker && _ticker.style.display !== 'none' ? _ticker.offsetHeight : 0);
   const _bot = _botNav ? _botNav.offsetHeight : 56;
 
+  const smartChips = _buildSmartChips();
+  const chipsHtml = smartChips.map(c =>
+    `<button onclick="_tabChip('${c.q.replace(/'/g, "\\'")}')"
+      style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid rgba(52,211,153,0.3);border-radius:16px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
+  ).join('');
+
   el.innerHTML = `
   <div style="display:flex;flex-direction:column;position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:448px;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
-    <!-- Sub-tab buttons -->
+    <!-- Sub-tab switcher -->
     <div style="flex-shrink:0;padding-bottom:6px;">
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
         <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
           style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">
-          💬 Chat
+          💬 Nivi Chat
         </button>
         <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
           style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">
-          📰 News
-</button>
+          📰 AI Insights
+        </button>
         <button onclick="_tabClearHistory()" title="Chat clear karo"
           style="flex-shrink:0;background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:5px 9px;cursor:pointer;line-height:1;">
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4H5z" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -5923,9 +5084,9 @@ async function renderNews() {
     </div>
 
     <!-- ===== CHAT SECTION ===== -->
-<div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
+    <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
-<!-- Collapsible Market Brief -->
+      <!-- Market Brief (collapsible) -->
       <div style="flex-shrink:0;">
         <div id="tab-brief-card" style="display:none;background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
           <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
@@ -5934,89 +5095,92 @@ async function renderNews() {
           <div id="tab-brief-body" style="font-size:12px;color:#e2e8f0;line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
             <div style="text-align:center;padding:8px 0;">
               <div class="spinner" style="margin:0 auto 5px;"></div>
-              <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">निवी सोच रही है...</div>
+              <div style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
             </div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-            <div id="tab-brief-time" style="font-size:9px;color:#4b6280;"></div>
-          </div>
+          <div id="tab-brief-time" style="font-size:9px;color:#4b6280;margin-top:4px;"></div>
         </div>
       </div>
 
-      <!-- Chat bubbles -->
+      <!-- Chat bubbles area -->
       <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
-        <!-- messages render here -->
       </div>
 
-      <!-- Bottom: chips + input -->
-      <div style="flex-shrink:0;padding:6px 0 10px 0;border-top:1px solid rgba(6,95,70,0.3);background:#0a0f1a;position:sticky;bottom:0;z-index:2;">
-        <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
-          <button id="tab-mood-toggle-btn" onclick="_tabToggleMood()" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">📊 बाज़ार मूड</button>
-          <<button onclick="_tabChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
-          <button onclick="_tabChip('मेरी वॉचलिस्ट का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
-          <button onclick="_tabChip('आज का बाज़ार कैसा है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📈 Market?</button>
-          <button onclick="_tabChip('मेरे सबसे ज़्यादा घाटे वाले स्टॉक कौन से हैं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📉 Losers</button>
-          <button onclick="_tabChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
-          <button onclick="_tabChip('अभी कौन से स्टॉक में सबसे ज़्यादा volume है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🔥 Volume</button>
+      <!-- Input area — HERO section -->
+      <div style="flex-shrink:0;padding:8px 0 10px 0;border-top:1px solid rgba(52,211,153,0.15);background:#0a0f1a;">
+
+        <!-- Smart chips — contextual quick-starters -->
+        <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px;scrollbar-width:none;">
+          <button onclick="_tabToggleMood()"
+            style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.25);border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+            📊 Market Mood
+          </button>
+          ${chipsHtml}
         </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input id="tab-nivi-input" type="text" placeholder="Ask anything to Nivi..."
-            onkeydown="if(event.key==='Enter')_tabSend()"
-            style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;"/>
+
+        <!-- Main input row -->
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div style="flex:1;position:relative;">
+            <textarea id="tab-nivi-input"
+              placeholder="Ask anything to Nivi in Hindi, Gujarati, English 🙂"
+              rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_tabSend();}"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px';"
+              style="width:100%;background:#0a1628;border:1px solid #1e3a5f;border-radius:12px;padding:10px 14px;font-size:13px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.5;box-sizing:border-box;min-height:42px;max-height:90px;overflow-y:auto;transition:border-color 0.2s;"
+              onfocus="this.style.borderColor='rgba(52,211,153,0.5)'"
+              onblur="this.style.borderColor='#1e3a5f'">
+            </textarea>
+          </div>
           <button onclick="_tabSend()"
-            style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">भेजो</button>
+            style="background:#065f46;color:#34d399;border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;height:42px;display:flex;align-items:center;gap:5px;">
+            <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><path d="M2 10l16-8-6 8 6 8-16-8z" fill="#34d399"/></svg>
+            Send
+          </button>
+        </div>
+        <div style="font-size:9px;color:#2d4a3e;margin-top:5px;font-family:'Rajdhani',sans-serif;text-align:center;">
+          ⚠️ Nivi = AI assistant · Not SEBI registered advisor· Research your self
         </div>
       </div>
 
     </div><!-- end nivi-section-chat -->
 
-    <!-- ===== NEWS SECTION ===== -->
+    <!-- ===== AI INSIGHTS SECTION ===== -->
     <div id="nivi-section-news" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:0 4px 8px 4px;">
 
-      <!-- Search Bar -->
-      <div style="display:flex;gap:6px;margin-bottom:10px;width:100%;max-width:100%;align-items:center;">
-        <input id="niviNewsInput" type="text" placeholder="Search Symbol"
-          onkeydown="if(event.key==='Enter')niviNewsSearch()"
-            style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;min-width:0;max-width:calc(100% - 50px);"/>
-        <button onclick="niviNewsSearch()"
-          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 14px;font-size:13px;cursor:pointer;flex-shrink:0;">🔍</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:12px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">AI INSIGHTS</div>
+        <button onclick="_loadAIInsights(true)" id="insights-refresh-btn"
+          style="background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:8px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+          &#8635; Refresh
+        </button>
       </div>
 
-      <!-- Loading -->
-      <div id="niviNewsLoading" style="display:none;text-align:center;padding:20px 0;">
-        <div style="font-size:22px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
-        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">News fetch ho rahi hai...</div>
+      <div id="insights-loading" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:20px;display:inline-block;animation:spin 1s linear infinite;">&#9881;</div>
+        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Nivi analyze kar rahi hai...</div>
       </div>
 
-      <!-- Error -->
-      <div id="niviNewsError" style="display:none;font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);padding:10px;border-radius:10px;font-family:'Rajdhani',sans-serif;margin-bottom:8px;"></div>
-
-      <!-- Result Card -->
-      <div id="niviNewsSummaryCard" style="display:none;background:#0d1f35;border:1px solid #1e3a5f;border-radius:14px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:18px;">📰</span>
-          <div>
-            <div id="niviNewsSymLabel" style="font-weight:700;font-size:13px;color:#34d399;font-family:'Rajdhani',sans-serif;"></div>
-            <div id="niviNewsMetaLabel" style="font-size:10px;color:#4b6280;margin-top:1px;font-family:'Rajdhani',sans-serif;"></div>
-          </div>
-        </div>
-        <div id="niviNewsBullets" style="font-size:12.5px;line-height:1.85;color:#cbd5e1;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;"></div>
-        <div style="margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px;">
-<div style="display:flex;justify-content:space-between;align-items:center;">
-            <button onclick="(function(){var el=document.getElementById('niviRawHeadlines');el.style.display=el.style.display==='none'?'block':'none';})()"
-              style="font-size:10px;color:#38bdf8;background:none;border:none;cursor:pointer;padding:0;font-family:'Rajdhani',sans-serif;">
-              📋 Source headlines
-            </button>
-          </div>
-          <div id="niviRawHeadlines" style="display:none;margin-top:8px;"></div>
-        </div>
+      <div id="insights-brief" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#128200; MARKET BRIEF</div>
+        <div id="insights-brief-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
       </div>
+
+      <div id="insights-digest" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:#fb923c;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#128203; WATCHLIST DIGEST</div>
+        <div id="insights-digest-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
+      </div>
+
+      <div id="insights-sentiment" style="background:#0d1f35;border:1px solid #1e3a5f;border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;color:#a78bfa;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">&#127919; SENTIMENT SCANNER</div>
+        <div id="insights-sentiment-body" style="font-size:12px;color:#94a3b8;font-family:'Rajdhani',sans-serif;">Refresh dabao...</div>
+      </div>
+
+      <div id="insights-timestamp" style="font-size:9px;color:#4b6280;text-align:center;padding-bottom:8px;font-family:'Rajdhani',sans-serif;"></div>
 
     </div><!-- end nivi-section-news -->
 
   </div>`;
 
-  // Load market brief
   _tabLoadBrief();
   _niviSubTab('chat');
   if (_tabChatHistory.length === 0) {
@@ -6025,104 +5189,10 @@ async function renderNews() {
       if (saved && saved.length > 0) _tabChatHistory = saved;
     } catch(e) {}
   }
-  _initFirebaseNewsFeed();
+  _loadAIInsights(false);
   _tabRenderChat();
 }
-async function _initFirebaseNewsFeed() {
-  // nivi-section-news div hase tya j render karo
-  const newsSection = document.getElementById('nivi-section-news');
-  if (!newsSection) return;
- 
-  // Jova ke existing search bar ane cards upar j hase
-  // Niche Firebase feed div inject karo (first time only)
-  if (document.getElementById('fb-news-feed')) {
-    // Already injected — sirf refresh karo
-    await _renderFirebaseNewsFeed();
-    return;
-  }
- 
-  // Feed container inject karo — search bar ane result card ni NICHE
-  const feedEl = document.createElement('div');
-  feedEl.id = 'fb-news-feed';
-  feedEl.style.cssText = 'margin-top:8px;';
-  newsSection.appendChild(feedEl);
- 
-  await _renderFirebaseNewsFeed();
-}
- 
-async function _renderFirebaseNewsFeed() {
-  const feedEl = document.getElementById('fb-news-feed');
-  if (!feedEl) return;
- 
-  feedEl.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-      <div style="font-size:11px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">
-        📡 LIVE MARKET NEWS
-      </div>
-      <span id="fb-news-badge" style="font-size:9px;background:rgba(52,211,153,0.15);color:#34d399;border-radius:4px;padding:2px 6px;font-family:'Rajdhani',sans-serif;">
-        Loading...
-      </span>
-    </div>
-    <div id="fb-news-list" style="display:flex;flex-direction:column;gap:6px;">
-      <div style="text-align:center;padding:16px 0;">
-        <div style="font-size:20px;display:inline-block;animation:spin 1s linear infinite;">⚙️</div>
-        <div style="font-size:11px;color:#4b6280;margin-top:6px;font-family:'Rajdhani',sans-serif;">Firebase thi news la raha hai...</div>
-      </div>
-    </div>`;
- 
-  const items = await loadFirebaseNews();
-  const listEl = document.getElementById('fb-news-list');
-  const badge  = document.getElementById('fb-news-badge');
- 
-  if (!listEl) return;
- 
-  if (!items || items.length === 0) {
-    listEl.innerHTML = `<div style="text-align:center;color:#4b6280;font-size:11px;padding:12px 0;font-family:'Rajdhani',sans-serif;">
-      ⚠️ Firebase news nahi mili.<br>
-      <span style="font-size:10px;">Python Thread B chal raha hai? Check engine logs.</span>
-    </div>`;
-    if (badge) badge.textContent = 'No data';
-    return;
-  }
- 
-  if (badge) badge.textContent = `${items.length} items`;
- 
-  // Render cards — top 30 show karo
-  listEl.innerHTML = items.slice(0, 30).map(item => {
-    const sentiment = getNewsSentiment(item.title);
-    const tag       = getNewsTag(item.title);
-    const sentColor = sentiment === 'positive' ? '#34d399'
-                    : sentiment === 'negative' ? '#ef4444'
-                    : '#94a3b8';
-    const sentBg    = sentiment === 'positive' ? 'rgba(52,211,153,0.08)'
-                    : sentiment === 'negative' ? 'rgba(239,68,68,0.08)'
-                    : 'rgba(148,163,184,0.05)';
-    const srcColor  = item.source === 'Google News'   ? '#4ade80'
-                    : item.source === 'MoneyControl'  ? '#fb923c'
-                    : item.source === 'ET Markets'    ? '#38bdf8'
-                    : item.source === 'Business Line' ? '#a78bfa'
-                    : '#94a3b8';
-    const tagHtml = tag
-      ? `<span style="font-size:9px;background:rgba(56,189,248,0.12);color:#38bdf8;border-radius:3px;padding:1px 5px;font-weight:700;">${tag.label}</span>`
-      : '';
-    const linkHtml = item.link
-      ? `onclick="window.open('${item.link}','_blank')" style="cursor:pointer;"`
-      : `style="cursor:default;"`;
- 
-    return `
-      <div ${linkHtml}
-        style="background:${sentBg};border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 12px;border-left:3px solid ${sentColor};">
-        <div style="font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4;font-family:'Rajdhani',sans-serif;margin-bottom:5px;">
-          ${item.title}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:9px;color:${srcColor};font-weight:700;font-family:'Rajdhani',sans-serif;">${item.source}</span>
-          ${tagHtml}
-          <span style="font-size:9px;color:#4b6280;margin-left:auto;">${item.time || ''}</span>
-        </div>
-      </div>`;
-  }).join('');
-}
+
 // --- MARKET BRIEF LOADER ---
 async function _tabLoadBrief() {
   const AI_NEWS_CACHE_KEY = 'aiNewsCache_v2';
@@ -6135,30 +5205,19 @@ async function _tabLoadBrief() {
     }
   } catch(e) {}
 
-const stockLines = wl.slice(0, 12).map(s => {
-  const d = cache[s] && cache[s].data;
-  if (!d) return null;
+  const stockLines = wl.slice(0, 12).map(s => {
+    const d = cache[s]?.data;
+    if (!d) return null;
+    const price = d.regularMarketPrice || 0;
+    const prev  = d.chartPreviousClose || 0;
+    const diff  = price - prev;
+    const pct   = prev ? ((diff / prev) * 100).toFixed(2) : '0.00';
+    return `${s}: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)`;
+  }).filter(Boolean);
 
-  const price = d.regularMarketPrice || 0;
-  const prev  = d.chartPreviousClose || 0;
-  const diff  = price - prev;
+  const today = new Date().toLocaleDateString('hi-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-  const pct = prev ? ((diff / prev) * 100).toFixed(2) : '0.00';
-
-  return `${s}: ₹${price.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)`;
-}).filter(Boolean);
-
-
-const today = new Date().toLocaleDateString('hi-IN', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-});
-
-
-const prompt = `
-You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
+  const prompt = `You are Nivi, an expert Indian stock market analyst. Reply ONLY in pure Hindi Devanagari script. No English, no Hinglish, no Roman script.
 
 Aaj ki tarikh: ${today}
 Watchlist: ${stockLines.join(', ') || "data nahi"}
@@ -6177,24 +5236,23 @@ Bilkul shuddh Hindi Devanagari mein jawab do:
 **निवी की सलाह**
 [2 lines max]
 
-Max 180 words. Sirf Hindi Devanagari.
-`;
+Max 180 words. Sirf Hindi Devanagari.`;
+
   try {
     const gemKey = localStorage.getItem('geminiApiKey');
     let rawText = null;
     if (gemKey) {
-      const r = await directSarvamCall(prompt);
+      const r = await directGeminiCall(prompt);
       if (r && r.ok) rawText = r.answer;
     }
     if (!rawText) {
-      const _mUrl = API_NIVI;
-      const r    = await fetch(`${_mUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
+      const r    = await fetch(`${API_NIVI}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       rawText = data.answer || data.text || data.summary || null;
       if (!rawText) throw new Error(data.error || 'No response');
     }
     const htmlOut = formatAINewsText(rawText);
-    try { localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({ts:Date.now(), syms:wl.slice(0,12).join(','), html:htmlOut})); } catch(e){}
+    try { localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({ ts:Date.now(), syms:wl.slice(0,12).join(','), html:htmlOut })); } catch(e) {}
     _tabSetBriefHtml(htmlOut, Date.now());
   } catch(err) {
     const briefBody = document.getElementById('tab-brief-body');
@@ -6205,116 +5263,181 @@ Max 180 words. Sirf Hindi Devanagari.
 function _tabSetBriefHtml(html, ts) {
   const briefBody = document.getElementById('tab-brief-body');
   const briefTime = document.getElementById('tab-brief-time');
-  if (briefBody) {
-    briefBody.innerHTML = `<div style="font-size:12px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">${html}</div>`;
-  }
+  if (briefBody) briefBody.innerHTML = `<div style="font-size:12px;color:#e2e8f0;line-height:1.9;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">${html}</div>`;
   if (briefTime && ts) {
     const mins = Math.round((Date.now()-ts)/60000);
     briefTime.innerText = mins < 1 ? '🟢 अभी' : '🕐 ' + mins + ' मिनट पहले';
   }
 }
 
-let _tabBriefExpanded = false;
-function _tabBriefToggle() {}
 function _tabToggleMood() {
   const card = document.getElementById('tab-brief-card');
-  const btn  = document.getElementById('tab-mood-toggle-btn');
+  const btn  = document.getElementById('tab-mood-toggle-btn') || document.querySelector('[onclick="_tabToggleMood()"]');
   if (!card) return;
   const open = card.style.display !== 'none';
   card.style.display = open ? 'none' : 'block';
-  if (btn) btn.style.background = open ? '#0f2a1a' : '#065f46';
+  if (btn) btn.style.background = open ? 'rgba(52,211,153,0.08)' : '#065f46';
 }
 
 async function _tabSend() {
   const inp = document.getElementById('tab-nivi-input');
   const q   = inp ? inp.value.trim() : '';
   if (!q) return;
-  if (inp) inp.value = '';
+  if (inp) { inp.value = ''; inp.style.height = '42px'; }
   await _tabAsk(q);
 }
 
 async function _tabChip(question) {
+  // Put chip question into input briefly then send — shows user what was asked
+  const inp = document.getElementById('tab-nivi-input');
+  if (inp) { inp.value = question; inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 90) + 'px'; }
+  await new Promise(r => setTimeout(r, 120)); // brief visual flash
+  if (inp) { inp.value = ''; inp.style.height = '42px'; }
   await _tabAsk(question);
 }
 
 async function _tabAsk(question) {
-  _tabChatHistory.push({role:'user', text:question, ts:Date.now()});
+  _tabChatHistory.push({ role:'user', text:question, ts:Date.now() });
   _tabRenderChat();
 
+  // Build watchlist context
   const wlCtx = wl.slice(0,12).map(s => {
-    const d = cache[s] && cache[s].data;
+    const d = cache[s]?.data;
     if (!d) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
-    const pct  = ((diff/d.chartPreviousClose)*100).toFixed(2);
+    const pct  = ((diff / d.chartPreviousClose) * 100).toFixed(2);
     return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff>=0?'+':''}${pct}%)`;
   }).filter(Boolean).join(', ');
 
-  const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const today = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-const prompt =
-`[SYSTEM: You are Nivi. OUTPUT LANGUAGE = HINDI DEVANAGARI ONLY. Any English/Roman output = FAILURE.]
-
-तुम 'निवी' हो — एक तेज़ और भरोसेमंद भारतीय शेयर बाज़ार विश्लेषक।
-आज की तारीख: ${today}
-यूज़र की वॉचलिस्ट: ${wlCtx || 'डेटा उपलब्ध नहीं'}
-यूज़र का सवाल: ${question}
-
-निर्देश:
-- केवल शुद्ध हिंदी देवनागरी में उत्तर दो
-- अधिकतम 8 पंक्तियाँ
-- कोई English नहीं, कोई Roman नहीं, कोई disclaimer नहीं
-- डेटा के नंबर सीधे use करो (जैसे "RSI 67 है")
-- आत्मविश्वास से बोलो — निवी कभी hesitate नहीं करती`;
   _tabShowLoading(true);
   let answer = null;
 
+  // Tavily search (optional enrichment)
+  let searchContext = '';
+  const tavilyKey = localStorage.getItem('tavilyApiKey');
+  if (tavilyKey) {
+    try {
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      const sr = await fetch(`${gasUrl}?type=tavilySearch&q=${encodeURIComponent(question)}&key=${encodeURIComponent(tavilyKey)}`);
+      const sd = await sr.json();
+      if (sd.ok && sd.results?.length > 0) {
+        searchContext = '\n\nWeb search results:\n' + sd.results.map((r,i) => `${i+1}. ${r.title}: ${r.content}`).join('\n');
+      }
+    } catch(e) {}
+  }
+
+  // ── PROMPT — language-adaptive, open-ended ──
+  // Detect if user wrote in Gujarati, Hindi or English and respond accordingly
+  const hasGujarati = /[\u0A80-\u0AFF]/.test(question);
+  const hasHindi    = /[\u0900-\u097F]/.test(question);
+  const langInstruction = hasGujarati
+    ? 'User Gujarati ma lakhyo chhe. Tmare Gujarati ma j jawab apvo. Roman script nahi.'
+    : hasHindi
+    ? 'User Hindi mein likha hai. Reply sirf Hindi Devanagari mein do.'
+    : 'User wrote in English. Reply in simple conversational English.';
+
+  const prompt =
+`You are Nivi — a sharp, friendly Indian stock market expert. ${langInstruction}
+
+Today: ${today}
+User's watchlist live data: ${wlCtx || 'not available'}${searchContext}
+
+User question: ${question}
+
+Rules:
+- Answer in the SAME language as the user's question (auto-detect)
+- Max 8 lines, direct and confident
+- Use bullet points for lists
+- No disclaimers, no "I'm just an AI", no SEBI disclaimers in every message
+- If asked about a specific stock, give concrete analysis with numbers from watchlist data
+- If market data not available, say so briefly and answer based on general knowledge`;
+
+  // Gemini direct call
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
-    const r = await directSarvamCall(prompt);
+    const r = await directGeminiCall(prompt);
     if (r && r.ok) answer = r.answer;
   }
+
+  // GAS fallback
   if (!answer) {
     try {
-      const _nu  = API_NIVI;
-      const r    = await fetch(`${_nu}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      const r = await fetch(`${gasUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
       const data = await r.json();
       answer = data.answer || data.text || data.summary || null;
     } catch(e) {}
   }
 
   _tabShowLoading(false);
-  _tabChatHistory.push({role:'nivi', text: answer || '⚠️ Nivi jawab nahi de payi. Settings ma Sarvam API key daalo.', ts:Date.now()});
-  try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e){}
+
+  const fallback = hasGujarati
+    ? '⚠️ નિવી એ જવાબ નહીં આપ્યો. સેટિંગ્સમાં Gemini API key ચેક કરો.'
+    : hasHindi
+    ? '⚠️ नीवी जवाब नहीं दे पाई। सेटिंग्स में Gemini API key चेक करो।'
+    : '⚠️ Nivi could not respond. Check your Gemini API key in Settings.';
+
+  _tabChatHistory.push({ role:'nivi', text: answer || fallback, ts:Date.now() });
+  try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e) {}
   _tabRenderChat();
 }
 
 function _tabRenderChat() {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
+
   if (_tabChatHistory.length === 0) {
-    area.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#1e3a2e;">
-      <svg viewBox="0 0 28 28" width="32" height="32" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#1e3a2e"/></svg>
-      <div style="font-size:12px;font-family:'Noto Sans Devanagari','Mangal',sans-serif;text-align:center;line-height:1.6;">Ask anything to Nivi ⬇️<br><span style="font-size:10px;color:#1a3020;">or tap on below chips</span></div>
-    </div>`;
+    area.innerHTML = `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 10px;text-align:center;">
+        <svg viewBox="0 0 680 580" width="190" height="190" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="340" cy="250" r="190" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.25"/>
+          <circle cx="340" cy="62" r="5" fill="#a78bfa"/><circle cx="527" cy="157" r="4" fill="#7c3aed"/><circle cx="527" cy="343" r="4" fill="#c4b5fd"/><circle cx="340" cy="438" r="5" fill="#a78bfa"/><circle cx="153" cy="343" r="4" fill="#7c3aed"/><circle cx="153" cy="157" r="4" fill="#c4b5fd"/>
+          <line x1="340" y1="67" x2="522" y2="162" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/><line x1="522" y1="162" x2="522" y2="338" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/><line x1="522" y1="338" x2="340" y2="433" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/><line x1="340" y1="433" x2="158" y2="338" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/><line x1="158" y1="338" x2="158" y2="162" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/><line x1="158" y1="162" x2="340" y2="67" stroke="#7c3aed" stroke-width="0.5" opacity="0.2"/>
+          <circle cx="340" cy="250" r="155" fill="#0f0a1e"/><circle cx="340" cy="250" r="155" fill="none" stroke="#7c3aed" stroke-width="2"/><circle cx="340" cy="250" r="135" fill="none" stroke="#4c1d95" stroke-width="0.8" opacity="0.5"/>
+          <rect x="252" y="158" width="34" height="184" rx="6" fill="#7c3aed"/><rect x="394" y="158" width="34" height="184" rx="6" fill="#7c3aed"/>
+          <polygon points="286,158 326,158 428,342 388,342" fill="#a78bfa"/><polygon points="292,158 310,158 412,342 394,342" fill="#c4b5fd" opacity="0.22"/>
+          <circle cx="269" cy="158" r="5" fill="#c4b5fd"/><circle cx="411" cy="158" r="5" fill="#c4b5fd"/><circle cx="269" cy="342" r="5" fill="#c4b5fd"/><circle cx="411" cy="342" r="5" fill="#c4b5fd"/>
+          <circle cx="269" cy="210" r="3" fill="#a78bfa"/><circle cx="269" cy="262" r="3" fill="#a78bfa"/><circle cx="269" cy="314" r="3" fill="#a78bfa"/><circle cx="411" cy="210" r="3" fill="#a78bfa"/><circle cx="411" cy="262" r="3" fill="#a78bfa"/><circle cx="411" cy="314" r="3" fill="#a78bfa"/>
+          <line x1="340" y1="118" x2="340" y2="134" stroke="#c4b5fd" stroke-width="2.5" stroke-linecap="round"/><line x1="332" y1="122" x2="348" y2="130" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/><line x1="348" y1="122" x2="332" y2="130" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/><circle cx="340" cy="126" r="3.5" fill="#7c3aed"/>
+          <text x="340" y="510" text-anchor="middle" font-family="Georgia,serif" font-size="52" font-weight="700" letter-spacing="12" fill="#c084fc">NIVI</text>
+          <text x="340" y="545" text-anchor="middle" font-family="Arial,sans-serif" font-size="15" letter-spacing="6" fill="#818cf8" opacity="0.8">A I  A S S I S T A N T</text>
+          <path d="M240 562 Q340 578 440 562" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.5" stroke-linecap="round"/>
+        </svg>
+        <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;letter-spacing:1px;margin-top:4px;">Stock analysis · Portfolio review · Market mood</div>
+        <div style="font-size:10px;color:#2d4a3e;font-family:'Rajdhani',sans-serif;">Hindi · Gujarati · English — ask anything</div>
+      </div>`;
     return;
   }
+
   area.innerHTML = _tabChatHistory.map(msg => {
     if (msg.role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;">
-        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
+        <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;line-height:1.6;font-family:'Rajdhani',sans-serif;word-break:break-word;">${msg.text}</div>
       </div>`;
     } else {
-      const formatted = msg.text.split('\n').filter(l=>l.trim()).map(l=>
-        `<div style="margin-bottom:4px;">${l.replace(/^[•\-\*]\s*/,'• ')}</div>`
-      ).join('');
-      return `<div style="display:flex;gap:7px;align-items:flex-start;">
-        <div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
-          <svg viewBox="0 0 28 28" width="13" height="13" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
+      // Format response: bold headers, bullet points
+      const formatted = msg.text
+        .split('\n')
+        .filter(l => l.trim())
+        .map(l => {
+          l = l.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+          if (/^[•\-\*]\s/.test(l.trim())) {
+            return `<div style="display:flex;gap:6px;margin-bottom:3px;"><span style="color:#34d399;flex-shrink:0;">•</span><span>${l.replace(/^[•\-\*]\s*/,'')}</span></div>`;
+          }
+          return `<div style="margin-bottom:4px;">${l}</div>`;
+        }).join('');
+
+      return `<div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+          <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
         </div>
-        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.85;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${formatted}</div>
+        <div style="background:linear-gradient(135deg,#0a2218,#0f2a1a);border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:13px;line-height:1.7;font-family:'Rajdhani',sans-serif;word-break:break-word;">${formatted}</div>
       </div>`;
     }
   }).join('');
+
   area.scrollTop = area.scrollHeight;
 }
 
@@ -6326,8 +5449,16 @@ function _tabShowLoading(show) {
     if (!existing) {
       const el = document.createElement('div');
       el.id = 'tab-loading-indicator';
-      el.style.cssText = 'text-align:center;padding:12px 0;';
-      el.innerHTML = '<div class="spinner" style="margin:0 auto 5px;width:20px;height:20px;"></div><div style="font-size:10px;color:#4b6280;font-family:\'Rajdhani\',sans-serif;">Nivi सोच रही है...</div>';
+      el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 4px;';
+      el.innerHTML = `
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #34d399;background:#0a1628;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 28 28" width="14" height="14" fill="none"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z" fill="#34d399"/></svg>
+        </div>
+        <div style="background:#0f2a1a;border:1px solid rgba(52,211,153,0.2);border-radius:2px 14px 14px 14px;padding:8px 12px;">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#34d399;margin-right:3px;animation:blink 1s infinite;"></span>
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#34d399;margin-right:3px;animation:blink 1s 0.2s infinite;"></span>
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#34d399;animation:blink 1s 0.4s infinite;"></span>
+        </div>`;
       area.appendChild(el);
       area.scrollTop = area.scrollHeight;
     }
@@ -6336,19 +5467,11 @@ function _tabShowLoading(show) {
   }
 }
 
-
-
-
-
-function aiNewsCacheClear() {
-  localStorage.removeItem('aiNewsCache_v2');
-}
-
 function _tabClearHistory() {
   _tabChatHistory = [];
   localStorage.removeItem('niviTabChat');
   _tabRenderChat();
-  showPopup('Chat history clear!');
+  showPopup('Chat cleared!');
 }
 
 function formatAINewsText(raw) {
@@ -6363,65 +5486,9 @@ function setNewsFilter(sym) {
   renderNews();
 }
 
-// ======================================
-// NSE CORPORATE ANNOUNCEMENTS
-// ======================================
-let nseNewsCache = null;
-let nseNewsCacheTime = 0;
-const NSE_CACHE_MS = 5 * 60 * 1000; // 5 min cache
-
-async function fetchNSEAnnouncements() {
-  try {
-    if (nseNewsCache && (Date.now() - nseNewsCacheTime) < NSE_CACHE_MS) {
-      return nseNewsCache;
-    }
-    const apiUrl = localStorage.getItem("customAPI") || API;
-    const r = await fetch(apiUrl + "?type=nse");
-    if (!r.ok) return [];
-    const data = await r.json();
-    if (data.ok && data.items && data.items.length > 0) {
-      nseNewsCache = data.items;
-      nseNewsCacheTime = Date.now();
-      return data.items;
-    }
-    return [];
-  } catch(e) {
-    return [];
-  }
+function aiNewsCacheClear() {
+  localStorage.removeItem('aiNewsCache_v2');
 }
-
-async function renderNSENews() {
-  const el = document.getElementById("nseAnnouncementsBox");
-  if (!el) return;
-  el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">Loading NSE announcements...</div>';
-  const items = await fetchNSEAnnouncements();
-  if (!items || items.length === 0) {
-    el.innerHTML = '<div style="text-align:center;color:#4b6280;padding:12px;font-size:11px;">NSE feed not available.<br><span style="font-size:10px;">NSE may be blocking requests. Try Refresh.</span></div>';
-    return;
-  }
-  // Sort: high priority first
-  const sorted = [...items].sort(function(a, b) {
-    const p = { high: 0, medium: 1, low: 2 };
-    return (p[a.priority] || 2) - (p[b.priority] || 2);
-  });
-  el.innerHTML = sorted.map(function(item) {
-    const timeStr = item.time ? item.time.replace(/ \+\d{4}/, "").trim() : "";
-    const linkHtml = item.link
-      ? '<a href="' + item.link + '" target="_blank" style="font-size:9px;color:#38bdf8;text-decoration:none;margin-left:auto;white-space:nowrap;">View &gt;&gt;</a>'
-      : '';
-    return '<div style="display:flex;align-items:stretch;gap:0;border-bottom:1px solid rgba(255,255,255,0.05);padding:8px 4px;">' +
-      '<div style="width:3px;min-width:3px;border-radius:2px;background:' + (item.color || "#9e9e9e") + ';margin-right:10px;"></div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.4;">' + item.news + '</div>' +
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">' +
-          '<span style="font-size:10px;color:#4b6280;">' + timeStr + '</span>' +
-          linkHtml +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join("");
-}
-
 // ======================================
 // AVERAGING CALCULATOR
 // ======================================
@@ -6561,7 +5628,6 @@ function calcTargetQty(){
     </div>`;
 }
 
-
 // ======================================
 // STOCK SCREENER
 // ======================================
@@ -6697,7 +5763,6 @@ function renderScreener() {
   el.innerHTML = html;
 }
 
-
 // ======================================
 // SMART ALERT SUGGESTIONS
 // ======================================
@@ -6756,7 +5821,6 @@ function setSmartAlert(sym, price, btn) {
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
-
 
 // ======================================
 // FIREBASE SYNC (replaces GAS cloud sync)
@@ -6853,7 +5917,6 @@ async function pullFromCloud(showMsg = false) {
   }
 }
 
-
 // ======================================
 // FONT SIZE CONTROL
 // ======================================
@@ -6870,10 +5933,6 @@ function setFontSize(size) {
     }
   });
 }
-
-// ======================================
-// INIT
-// ======================================
 
 // ======================================
 // 🤖 Ask Nivi — Chat UI v3
@@ -6956,7 +6015,7 @@ async function openNivi(sym) {
 
   _niviShowLoading(true);
 
-  // ── PRIMARY: Direct Sarvam (browser → Sarvam AI, no GAS cold start) ──
+  // ── PRIMARY: Direct Gemini (browser → Gemini API) ──
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     const cd = cache[sym] && cache[sym].data;
@@ -6971,7 +6030,7 @@ CMP: \u20b9${cd.regularMarketPrice?.toFixed(2)} (${diff>=0?'+':''}${pct}%)
 52 \u0938\u092a\u094d\u0924\u093e\u0939 \u0909\u091a\u094d\u091a: \u20b9${cd.fiftyTwoWeekHigh?.toFixed(2)} | \u0928\u093f\u092e\u094d\u0928: \u20b9${cd.fiftyTwoWeekLow?.toFixed(2)}
 Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
 \u0915\u0947\u0935\u0932 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f\u0964 Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
-      const resp = await directSarvamCall(prompt);
+      const resp = await directGeminiCall(prompt);
       _niviShowLoading(false);
       if (resp && resp.ok) {
         // Cache to localStorage + Firebase
@@ -7078,7 +6137,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
 
   let answer = null;
 
-  // 1. Direct Sarvam — multi-turn contents array
+  // 1. Direct Gemini — multi-turn contents array
   const gemKey = localStorage.getItem('geminiApiKey');
   if (gemKey) {
     const resp = await directSarvamCallMultiTurn(historyWindow.slice(0, -1), prompt);
@@ -7097,7 +6156,7 @@ Max 4 lines. Data-backed. Seedha jawab.`;
 
   _niviShowLoading(false);
 
-  const finalAnswer = answer || '⚠️ Nivi jawab nahi de payi. Settings → Sarvam API key check karo.';
+  const finalAnswer = answer || '⚠️ नीवी जवाब नहीं दे पाई। सेटिंग्स में Gemini API key चेक करो।';
   _niviAddBubble('nivi', finalAnswer);
 
   // ── Persist chat to Firebase (debounced, non-blocking) ──
@@ -7111,37 +6170,36 @@ async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
   const keys = [key1, key2].filter(Boolean);
   if (keys.length === 0) return { ok: false, error: 'No API key' };
 
-  const models = ['sarvam-105b', 'sarvam-30b'];
-
-  const messages = [
-    { role: 'system', content: 'Aap Nivi hain — Indian stock market expert. Sirf shuddh Hindi Devanagari mein jawab dijiye.' }
-  ];
+  const MODEL = 'gemini-3.1-flash-lite-preview';
+  // Build contents array for Gemini multi-turn
+  const contents = [];
   for (const msg of priorHistory) {
     if (!msg.text || !msg.text.trim()) continue;
-    messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
+    contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] });
   }
-  messages.push({ role: 'user', content: currentPrompt });
+  contents.push({ role: 'user', parts: [{ text: currentPrompt }] });
 
   for (const k of keys) {
-    for (const model of models) {
-      try {
-        const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${k}`,
+        {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'api-subscription-key': k },
-          body: JSON.stringify({ model, messages })
-        });
-        const j = await r.json();
-        if (j.choices && j.choices[0]) {
-          return { ok: true, answer: j.choices[0].message.content, model };
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents })
         }
-        if (j.error) {
-          console.warn(`Sarvam multi-turn error (${model}):`, j.error);
-          if (r.status === 400 || r.status === 429) break;
-        }
-      } catch(e) { console.warn('Sarvam multi-turn network error:', e.message); }
-    }
+      );
+      const j = await r.json();
+      if (j.candidates && j.candidates[0]?.content?.parts[0]?.text) {
+        return { ok: true, answer: j.candidates[0].content.parts[0].text, model: MODEL };
+      }
+      if (j.error) {
+        console.warn('Gemini multi-turn error:', j.error.message);
+        if (r.status === 429) continue;
+      }
+    } catch(e) { console.warn('Gemini multi-turn network error:', e.message); }
   }
-  return { ok: false, error: 'All Sarvam models failed' };
+  return { ok: false, error: 'Gemini multi-turn failed' };
 }
 
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
@@ -7183,9 +6241,6 @@ async function _niviLoadPersistedChat(sym) {
   } catch(e) { /* silent */ }
   return false;
 }
-
-// --- MIC TOGGLE ---
-
 
 // --- CHAT HELPERS ---
 function _niviAddBubble(role, text, ts) {
@@ -7292,8 +6347,6 @@ function closeNivi() {
   document.getElementById('niviModal').style.display = 'none';
 }
 
-// ============================================================
-// SARVAM KEY MANAGEMENT
 // ============================================================
 // GOOGLE SHEETS INTEGRATION — Settings + fetchFundamentals/fetchHistory override
 // ============================================================
@@ -7426,65 +6479,74 @@ function saveGeminiKey(){
   if(!val){ showPopup('Key daalo pehle'); return; }
   localStorage.setItem('geminiApiKey',val);
   if (currentUser) saveUserData('settings');
-  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key saved — Active</span>';
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Gemini Key saved — Active</span>';
   document.getElementById('set-gemini-key').value='';
-  showPopup('Sarvam key saved ✓');
+  showPopup('Gemini key saved ✓');
 }
-function saveGeminiKey2(){
-  const val=document.getElementById('set-gemini-key2').value.trim();
+function clearGeminiKey(){
+  localStorage.removeItem('geminiApiKey');
+  document.getElementById('set-gemini-key').value='';
+  document.getElementById('gemini-key-status').innerHTML='<span style="color:#4b6280;">No key saved</span>';
+  showPopup('Gemini key cleared');
+}
+function saveTavilyKey(){
+  const val=document.getElementById('set-tavily-key').value.trim();
   if(!val){ showPopup('Key daalo pehle'); return; }
-  localStorage.setItem('geminiApiKey2',val);
-  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#34d399;">✓ Sarvam Key 2 saved — Fallback active</span>';
-  document.getElementById('set-gemini-key2').value='';
-  showPopup('Sarvam Key 2 saved ✓');
+  localStorage.setItem('tavilyApiKey',val);
+  document.getElementById('tavily-key-status').innerHTML='<span style="color:#34d399;">✓ Tavily Key saved — Active</span>';
+  document.getElementById('set-tavily-key').value='';
+  showPopup('Tavily key saved ✓');
 }
-function clearGeminiKey2(){
-  localStorage.removeItem('geminiApiKey2');
-  document.getElementById('set-gemini-key2').value='';
-  document.getElementById('gemini-key2-status').innerHTML='<span style="color:#4b6280;">Key 2 cleared</span>';
-  showPopup('Sarvam Key 2 cleared');
+function clearTavilyKey(){
+  localStorage.removeItem('tavilyApiKey');
+  document.getElementById('set-tavily-key').value='';
+  document.getElementById('tavily-key-status').innerHTML='<span style="color:#4b6280;">No key saved</span>';
+  showPopup('Tavily key cleared');
 }
 function initGeminiKeyDisplay(){
   const k=localStorage.getItem('geminiApiKey');
   const el=document.getElementById('gemini-key-status');
   if(el) el.innerHTML=k
-    ?'<span style="color:#34d399;">✓ Sarvam Key saved ('+k.slice(0,8)+'...) — Active</span>'
+    ?'<span style="color:#34d399;">✓ Gemini Key ('+k.slice(0,8)+'...) — Active</span>'
+    :'<span style="color:#4b6280;">No key saved</span>';
+  const tk=localStorage.getItem('tavilyApiKey');
+  const tel=document.getElementById('tavily-key-status');
+  if(tel) tel.innerHTML=tk
+    ?'<span style="color:#34d399;">✓ Tavily Key saved — Active</span>'
     :'<span style="color:#4b6280;">No key saved</span>';
 }
-
-// Smart Direct Gemini API call (Browser → Gemini)
-async function directSarvamCall(prompt) {
+async function directGeminiCall(prompt) {
   const key1 = localStorage.getItem('geminiApiKey');
   const key2 = localStorage.getItem('geminiApiKey2');
   const keys = [key1, key2].filter(Boolean);
+  if (keys.length === 0) return { ok: false, error: 'Gemini API Key nathi! Settings ma nakhao.' };
 
-  if (keys.length === 0) return { ok: false, error: 'API Key નથી! Settings માં નાખો.' };
-
-  const models = ['sarvam-105b', 'sarvam-30b'];
-
+  const MODEL = 'gemini-3.1-flash-lite-preview';
   for (const k of keys) {
-    for (const model of models) {
-      try {
-        const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${k}`,
+        {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'api-subscription-key': k },
-          body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
-        });
-        const j = await r.json();
-        if (j.choices && j.choices[0]) {
-          return { ok: true, answer: j.choices[0].message.content, model };
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         }
-        if (j.error) {
-          console.warn(`Sarvam Error (${model}):`, j.error);
-          if (r.status === 400) break;
-          if (r.status === 429) continue;
-        }
-      } catch (e) { console.warn('Sarvam Network Error:', e.message); }
-    }
+      );
+      const j = await r.json();
+      if (j.candidates && j.candidates[0]?.content?.parts[0]?.text) {
+        return { ok: true, answer: j.candidates[0].content.parts[0].text, model: MODEL };
+      }
+      if (j.error) {
+        console.warn('Gemini Error:', j.error.message);
+        if (r.status === 429) continue;
+      }
+    } catch(e) { console.warn('Gemini Network Error:', e.message); }
   }
-  return { ok: false, error: 'બધા પ્રયત્નો નિષ્ફળ! Quota પૂરો અથવા Key ખોટી.' };
+  return { ok: false, error: 'Gemini call failed. Key check karo.' };
 }
 
+// Keep backward compat — old code still calls directSarvamCall
+const directSarvamCall = directGeminiCall;
 
 
 function niviCopy() {
@@ -7530,7 +6592,6 @@ function mpMarketOpen(){
   const day = ist.getUTCDay();
   if(day===0||day===6) return false;
   const ds = ist.toISOString().split('T')[0];
-  if(typeof isMarketHoliday==='function' && isMarketHoliday(ds)) return false;
   const mins = ist.getUTCHours()*60 + ist.getUTCMinutes();
   return mins >= 555 && mins <= 930;
 }
@@ -7587,105 +6648,121 @@ function mpClean(){
 setTimeout(()=>{ mpClean(); mpCheck(); setInterval(mpCheck, MP_INTERVAL); }, 90000);
 
 // ============================================================
-// NIVI NEWS SEARCH
+// AI INSIGHTS — Market Brief + Watchlist Digest + Sentiment
+// Tavily search + Gemini 3.1 Flash-Lite
 // ============================================================
-// ============================================================
-// NIVI NEWS SEARCH & VOICE (UPDATED)
-// ============================================================
+const _INSIGHTS_CACHE_KEY = 'aiInsights_v1';
+const _INSIGHTS_CACHE_MS  = 15 * 60 * 1000;
 
-// 2. niviNewsSpeak — removed (TTS not used)
+async function _loadAIInsights(forceRefresh) {
+  if (!forceRefresh) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(_INSIGHTS_CACHE_KEY));
+      if (cached && (Date.now() - cached.ts) < _INSIGHTS_CACHE_MS) {
+        _renderAIInsights(cached.data);
+        return;
+      }
+    } catch(e) {}
+  }
 
-async function niviNewsSearch() {
-  var sym = (document.getElementById('niviNewsInput').value || '').trim().toUpperCase();
-  if (!sym) { showPopup('Symbol daalo pehle! e.g. RELIANCE'); return; }
+  const loadEl = document.getElementById('insights-loading');
+  const btn    = document.getElementById('insights-refresh-btn');
+  if (loadEl) loadEl.style.display = 'block';
+  if (btn)    btn.disabled = true;
 
-  document.getElementById('niviNewsLoading').style.display    = 'block';
-  document.getElementById('niviNewsSummaryCard').style.display = 'none';
-  document.getElementById('niviNewsError').style.display      = 'none';
+  const wlCtx = wl.slice(0, 15).map(s => {
+    const d = cache[s] && cache[s].data;
+    if (!d) return null;
+    const diff = d.regularMarketPrice - d.chartPreviousClose;
+    const pct  = ((diff / d.chartPreviousClose) * 100).toFixed(2);
+    return `${s}: ₹${d.regularMarketPrice.toFixed(2)} (${diff >= 0 ? '+' : ''}${pct}%)`;
+  }).filter(Boolean).join(', ');
 
-  // ── STEP 1: GAS → fetch headlines only (CORS-safe) ──
-  var headlines = [];
+  const today = new Date().toLocaleDateString('hi-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  let searchContext = '';
+  const tavilyKey = localStorage.getItem('tavilyApiKey');
+  if (tavilyKey) {
+    try {
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      const sr = await fetch(`${gasUrl}?type=tavilySearch&q=${encodeURIComponent('India stock market NSE Nifty today ' + new Date().toLocaleDateString('en-IN'))}&key=${encodeURIComponent(tavilyKey)}`);
+      const sd = await sr.json();
+      if (sd.ok && sd.results && sd.results.length > 0) {
+        searchContext = '\n\nLatest market news:\n' + sd.results.map((r, i) => `${i+1}. ${r.title}: ${r.content}`).join('\n');
+      }
+    } catch(e) { console.warn('Tavily insights search failed:', e.message); }
+  }
+
+  const prompt =
+`[SYSTEM: Reply ONLY in pure Hindi Devanagari. No English. No Roman script.]
+
+Tum 'Nivi' ho — expert Indian stock market analyst.
+Aaj ki tarikh: ${today}
+Watchlist data: ${wlCtx || 'data nahi'}${searchContext}
+
+Neeche TEEN sections mein jawab do. Har section ka heading EXACTLY yahi rakho:
+
+**MARKET BRIEF**
+[Aaj ke bazaar ka 3-4 line summary. Nifty/Sensex trend, global cues.]
+
+**WATCHLIST DIGEST**
+[Watchlist ke top 3 gainers aur top 3 losers — ek ek line. Format: SYMBOL: kya hua]
+
+**SENTIMENT SCANNER**
+[Watchlist ke har stock ke liye: SYMBOL — Bullish/Bearish/Neutral — ek karan]
+
+Rules: Sirf shuddh Hindi Devanagari. Koi disclaimer nahi. Max 200 words total.`;
+
+  let result = { brief: null, digest: null, sentiment: null };
   try {
-    var gasUrl = API_NIVI + '?type=newsSearch&s=' + encodeURIComponent(sym);
-    var gasResp = await fetch(gasUrl);
-    var gasData = await gasResp.json();
-    if (!gasData.ok) throw new Error(gasData.error || 'GAS news fetch failed');
-    headlines = gasData.headlines || gasData.items || [];
-    _niviNewsHeadlines = headlines;
-  } catch(err) {
-    document.getElementById('niviNewsLoading').style.display = 'none';
-    document.getElementById('niviNewsError').textContent = '\u274c News fetch failed: ' + err.toString();
-    document.getElementById('niviNewsError').style.display = 'block';
-    return;
-  }
-
-  if (!headlines.length) {
-    document.getElementById('niviNewsLoading').style.display = 'none';
-    document.getElementById('niviNewsError').textContent = '\u274c ' + sym + ' ke liye koi news nahi mili.';
-    document.getElementById('niviNewsError').style.display = 'block';
-    return;
-  }
-
-  // Show raw headlines immediately
-  var hHtml = headlines.map(function(h, i) {
-    return '<div style="padding:5px 0;border-bottom:1px solid #1e3a5f;">'
-      + '<div style="font-weight:600;color:#94a3b8;font-size:11px;">'
-      + (i+1) + '. ' + (h.title || h) + '</div>'
-      + (h.date ? '<div style="color:#4b6280;font-size:10px;margin-top:2px;">' + h.date + '</div>' : '')
-      + '</div>';
-  }).join('') || '<div style="color:#4b6280;font-size:11px;">No headlines.</div>';
-  document.getElementById('niviRawHeadlines').innerHTML = hHtml;
-  document.getElementById('niviRawHeadlines').style.display = 'none';
-
-  // Header
-  document.getElementById('niviNewsSymLabel').textContent = '\ud83d\udcc8 ' + sym + ' \u2014 News Summary';
-  document.getElementById('niviNewsMetaLabel').textContent =
-    headlines.length + ' headlines analysed \u2022 ' +
-    new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
-
-  // ── STEP 2: Browser → Sarvam for Hindi AI sentiment ──
-  var summaryHtml = '';
-  const gemKey = localStorage.getItem('geminiApiKey');
-  if (gemKey) {
-    var headlineText = headlines.slice(0, 8).map(function(h,i){
-      return (i+1) + '. ' + (h.title || h);
-    }).join('\n');
-    var sentimentPrompt =
-`\u0906\u092a '\u0928\u093f\u0935\u0940' \u0939\u0948\u0902 \u2014 \u092d\u093e\u0930\u0924\u0940\u092f \u0936\u0947\u092f\u0930 \u092c\u093e\u091c\u093c\u093e\u0930 \u0935\u093f\u0936\u094d\u0932\u0947\u0937\u0915\u0964
-\u0938\u094d\u091f\u0949\u0915: ${sym}
-\u0928\u0940\u091a\u0947 \u0928\u094d\u092f\u0942\u091c \u0939\u0947\u0921\u0932\u093e\u0907\u0928 \u0939\u0948\u0902:
-${headlineText}
-
-\u0907\u0928 \u0916\u092c\u0930\u094b\u0902 \u0915\u0947 \u0906\u0927\u093e\u0930 \u092a\u0930 \u0936\u0941\u0926\u094d\u0927 \u0939\u093f\u0902\u0926\u0940 \u0926\u0947\u0935\u0928\u093e\u0917\u0930\u0940 \u092e\u0947\u0902 4 bullet points \u0926\u0940\u091c\u093f\u090f:
-1. \u0938\u092e\u0917\u094d\u0930 \u092d\u093e\u0935\u0928\u093e (\u0924\u0947\u091c\u0940/\u092e\u0902\u0926\u0940/\u0928\u093f\u0930\u092a\u0947\u0915\u094d\u0937)
-2. \u092e\u0941\u0916\u094d\u092f \u0915\u093e\u0930\u0923
-3. \u0928\u093f\u0935\u0947\u0936\u0915 \u0915\u094b \u0938\u0932\u093e\u0939
-4. \u091c\u094b\u0916\u093f\u092e \u092f\u093e \u0905\u0935\u0938\u0930
-Roman script \u092c\u093f\u0932\u0915\u0941\u0932 \u0928\u0939\u0940\u0902\u0964 Bullet format: \u2022 [\u0935\u093e\u0915\u094d\u092f]`;
-
-    var resp = await directSarvamCall(sentimentPrompt);
-    if (resp && resp.ok) {
-      var lines = resp.answer.split('\n').filter(function(l){ return l.trim(); });
-      summaryHtml = lines.map(function(line) {
-        var clean = line.replace(/^[\u2022\-\*]\s*/, '').trim();
-        if (!clean) return '';
-        return '<div style="display:flex;gap:8px;margin-bottom:8px;">'
-          + '<span style="color:#34d399;font-size:14px;flex-shrink:0;margin-top:1px;">\u2022</span>'
-          + '<span style="font-family:\'Noto Sans Devanagari\',\'Mangal\',sans-serif;">' + clean + '</span></div>';
-      }).join('');
+    const gemKey = localStorage.getItem('geminiApiKey');
+    let rawText = null;
+    if (gemKey) {
+      const r = await directGeminiCall(prompt);
+      if (r && r.ok) rawText = r.answer;
     }
-  }
+    if (!rawText) {
+      const gasUrl = localStorage.getItem('customAPI') || API;
+      const r = await fetch(`${gasUrl}?type=askMarket&prompt=${encodeURIComponent(prompt)}`);
+      const data = await r.json();
+      rawText = data.answer || data.text || null;
+    }
+    if (rawText) result = _parseInsights(rawText);
+  } catch(e) { console.warn('AI Insights failed:', e.message); }
 
-  // Fallback: no Gemini key or call failed
-  if (!summaryHtml) {
-    summaryHtml = '<div style="color:#4b6280;font-size:12px;">'
-      + (gemKey ? '\u26a0\ufe0f Sarvam summary failed.' : '\u26a0\ufe0f Sarvam key nahi — Settings mein add karo AI summary ke liye.')
-      + '</div>';
-  }
+  if (loadEl) loadEl.style.display = 'none';
+  if (btn)    btn.disabled = false;
 
-  document.getElementById('niviNewsBullets').innerHTML = summaryHtml;
-  document.getElementById('niviNewsLoading').style.display = 'none';
-  document.getElementById('niviNewsSummaryCard').style.display = 'block';
+  try { localStorage.setItem(_INSIGHTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: result })); } catch(e) {}
+  _renderAIInsights(result);
+}
+
+function _parseInsights(raw) {
+  const result = { brief: '', digest: '', sentiment: '' };
+  const briefMatch     = raw.match(/\*\*MARKET BRIEF\*\*([\s\S]*?)(?=\*\*WATCHLIST DIGEST\*\*|$)/);
+  const digestMatch    = raw.match(/\*\*WATCHLIST DIGEST\*\*([\s\S]*?)(?=\*\*SENTIMENT SCANNER\*\*|$)/);
+  const sentimentMatch = raw.match(/\*\*SENTIMENT SCANNER\*\*([\s\S]*?)$/);
+  result.brief     = briefMatch     ? briefMatch[1].trim()     : raw;
+  result.digest    = digestMatch    ? digestMatch[1].trim()    : '';
+  result.sentiment = sentimentMatch ? sentimentMatch[1].trim() : '';
+  return result;
+}
+
+function _renderAIInsights(data) {
+  const fmt = (text) => {
+    if (!text) return '<span style="color:#4b6280;font-size:11px;">No data found, please refresh.</span>';
+    return text.split('\n').filter(l => l.trim()).map(l =>
+      `<div style="margin-bottom:6px;line-height:1.7;font-family:'Noto Sans Devanagari','Mangal',sans-serif;font-size:12px;color:#e2e8f0;">${l.replace(/^[•\-\*]\s*/, '• ')}</div>`
+    ).join('');
+  };
+  const briefEl     = document.getElementById('insights-brief-body');
+  const digestEl    = document.getElementById('insights-digest-body');
+  const sentimentEl = document.getElementById('insights-sentiment-body');
+  const tsEl        = document.getElementById('insights-timestamp');
+  if (briefEl)     briefEl.innerHTML     = fmt(data.brief);
+  if (digestEl)    digestEl.innerHTML    = fmt(data.digest);
+  if (sentimentEl) sentimentEl.innerHTML = fmt(data.sentiment);
+  if (tsEl)        tsEl.textContent      = 'Last updated: ' + new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
 }
 
 // ============================================================
@@ -7720,7 +6797,6 @@ function setLearnLang(lang) {
     renderLearnReport(_learnCache[sym.toUpperCase().trim()], sym.toUpperCase().trim());
   }
 }
-
 
 // ── Main Learn Tab switcher (Financial vs School) ────────────
 let _learnMainTab = 'financial';
@@ -8455,7 +7531,6 @@ function showLearnInfo(metric, val, symRaw) {
   document.getElementById('learnInfoModal').style.display = 'flex';
 }
 
-// ── Render report ─────────────────────────────────────────
 // ── Active Learn Sub-Tab tracker ─────────────────────────────
 let _learnActiveTab = 'fundamentals';
 
@@ -8595,7 +7670,6 @@ function _buildFundamentalsTab(d, sym) {
 
   return html;
 }
-
 // ============================================================
 // TAB 2 — TECHNICALS
 // ============================================================
@@ -8970,7 +8044,7 @@ async function downloadLearnPDF(sym) {
     container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;background:#ffffff;color:#111111;visibility:hidden;';
     document.body.appendChild(container);
 
-    showPopup('⏳ PDF generate thaī rahyu che...');
+    showPopup('⏳ PDF generating...');
 
     const today2 = new Date();
     const ds = today2.getDate()+'-'+(today2.getMonth()+1)+'-'+today2.getFullYear();
@@ -9003,7 +8077,7 @@ async function downloadLearnPDF(sym) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.target = '_blank'; a.rel = 'noopener'; a.click();
-    showPopup('⚠️ PDF lib nathi — HTML tab mā print karo (Ctrl+P → Save as PDF)');
+    showPopup('⚠️ PDF lib does not exist — Print in HTML tab (Ctrl+P → Save as PDF)');
   }
 }
 
@@ -9211,135 +8285,6 @@ function _learnNoData(sym, label) {
   </div>`;
 }
 
-// ── PDF Download (old duplicate removed — async version above is active) ──
-function _downloadLearnPDF_DEPRECATED(sym) {
-  const d = _learnCache[sym];
-  if (!d) { showPopup('Data not loaded yet'); return; }
-  const R = calcLearnRatios(d);
-  const today = new Date();
-  const dateStr = today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
-
-  const metrics = [
-    {key:'pe',      label:'P/E Ratio',          unit:''},
-    {key:'eps',     label:'EPS',                unit:'₹'},
-    {key:'roe',     label:'ROE %',              unit:'%'},
-    {key:'roce',    label:'ROCE %',             unit:'%'},
-    {key:'bookVal', label:'Book Value',         unit:'₹'},
-    {key:'de',      label:'Debt-to-Equity',     unit:''},
-    {key:'cr',      label:'Current Ratio',      unit:''},
-    {key:'divYield',label:'Dividend Yield %',   unit:'%'},
-    {key:'promoter',label:'Promoter Holding %', unit:'%'},
-    {key:'fii',     label:'FII Holding %',      unit:'%'},
-    {key:'dii',     label:'DII Holding %',      unit:'%'},
-    {key:'roa',     label:'ROA %',              unit:'%'},
-    {key:'rsi',     label:'RSI (14D)',          unit:''}
-  ];
-
-  const dotColor = (m, v) => {
-    const c = _learnDot(m, v);
-    return c === '#22c55e' ? '#16a34a' : c === '#f59e0b' ? '#b45309' : c === '#ef4444' ? '#b91c1c' : '#94a3b8';
-  };
-
-  const rows = metrics.map(m => {
-    const val = R[m.key];
-    const fv = val === null ? '--' : (m.unit === '₹' ? '₹'+val.toFixed(2) : val.toFixed(2)+m.unit);
-    const col = dotColor(m.key, val);
-    const info = LEARN_INFO[m.key]?.en;
-    return `<tr>
-      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:8px;vertical-align:middle;"></span>
-        <strong style="color:#e2e8f0;font-size:12px;">${m.label}</strong>
-      </td>
-      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;font-family:monospace;font-size:13px;font-weight:bold;color:${col};">${fv}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #1e2d3d;font-size:10px;color:#64748b;">${info?.good||''}</td>
-    </tr>`;
-  }).join('');
-// Quarterly for simple HTML
-  const qs2 = ['Q1','Q2','Q3','Q4','Q5'];
-  const qHeaders2 = (d.quarterlyHeaders && d.quarterlyHeaders.length === 5)
-    ? d.quarterlyHeaders
-    : qs2;
-  const qKeys2 = ['sales','exp','op','otherInc','pbt','np'];
-  const qLabels2 = ['Sales','Expenses','Op Profit','Other Inc','PBT','Net Profit'];
-  const fmtCr2 = v => (v && v !== 0) ? '\u20B9'+Number(v).toFixed(0)+' Cr' : '--';
-  let qRows = '';
-  const hasQ2 = d.salesQ1 && d.salesQ1 !== 0;
-  if (hasQ2) {
-    qRows = qLabels2.map((label, li) => {
-      const key = qKeys2[li];
-      return `<tr><td style="padding:4px 8px;color:#cbd5e1;">${label}</td>${qs2.map(q=>`<td style="padding:4px 6px;text-align:right;color:#e2e8f0;">${fmtCr2(d[key+q])}</td>`).join('')}</tr>`;
-    }).join('');
-  } else {
-    qRows = `<tr><td colspan="6" style="padding:8px;color:#94a3b8;">Quarterly data not available</td></tr>`;
-  }
-  const cfRows = [
-    ['Free Cash Flow', fmtCr2(d.fcf)],
-    ['Total Debt', fmtCr2(d.totalDebt)],
-    ['Current Assets', fmtCr2(d.currAsset)],
-    ['Current Liab', fmtCr2(d.currLiab)],
-    ['Debt/Equity', d.deRatio ? Number(d.deRatio).toFixed(2)+'x' : '--'],
-    ['ROA %', d.roa ? Number(d.roa).toFixed(2)+'%' : '--'],
-    ['EBITDA', fmtCr2(d.ebitda)],
-  ].map(([l,v]) => `<tr><td style="padding:4px 8px;color:#cbd5e1;">${l}</td><td style="padding:4px 8px;color:#e2e8f0;">${v}</td></tr>`).join('');
-  const sp = d.sharePrice > 0 ? '₹'+d.sharePrice.toFixed(2) : 'N/A';
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${sym} — Fundamental Report</title>
-  <style>body{background:#060e1a;color:#e2e8f0;font-family:Arial,sans-serif;margin:0;padding:20px;}
-  table{width:100%;border-collapse:collapse;}
-  .hdr{background:linear-gradient(90deg,#0d1f35,#1e3a5f);padding:18px 22px;border-radius:12px;margin-bottom:18px;border:1px solid rgba(251,146,60,0.2);}
-  .hdr h1{margin:0;font-size:22px;color:#fb923c;} .hdr p{margin:4px 0 0;font-size:11px;color:#64748b;}
-  .badge{display:inline-block;background:#0a1628;padding:5px 12px;border-radius:6px;font-size:11px;color:#38bdf8;font-weight:bold;margin-right:8px;margin-top:8px;}
-  @media print{body{background:#fff;color:#000;} .hdr{background:#f0f4f8;border:1px solid #ddd;} .hdr h1{color:#c2410c;} .hdr p{color:#475569;} td{color:#000!important;border-bottom:1px solid #ddd!important;} strong{color:#1a202c!important;}}</style>
-  </head><body>
-  <div class="hdr">
-    <h1>${sym} — Fundamental Analysis</h1>
-    <p>RealTradePro · ${dateStr} · Search & Learn</p>
-    <div style="margin-top:8px;">
-      <span class="badge">Price: ${sp}</span>
-      <span class="badge">Source: ${d.source==='firebase'?'Firebase':'GAS Sheet'}</span>
-    </div>
-  </div>
-  <table><thead><tr style="background:#0d1f35;">
-    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Metric</th>
-    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Value</th>
-    <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748b;border-bottom:2px solid #1e3a5f;">Benchmark</th>
-  </tr></thead><tbody>${rows}</tbody></table>
-  <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;">
-<h2 style="font-size:12px;color:#34d399;margin-bottom:8px;">QUARTERLY RESULTS</h2>
-<table style="width:100%;border-collapse:collapse;font-size:11px;">
-<thead><tr><th style="text-align:left;color:#64748b;padding:4px 8px;">Metric</th>${qHeaders2.map(h=>`<th style="text-align:right;color:#64748b;padding:4px 6px;">${h}</th>`).join('')}</tr></thead>
-<tbody>${qRows}</tbody>
-</table></div>
-<div style="margin-top:12px;padding:12px;background:#0d1f35;border-radius:8px;">
-<h2 style="font-size:12px;color:#fb923c;margin-bottom:8px;">CASH FLOW & LIQUIDITY</h2>
-<table style="width:100%;border-collapse:collapse;font-size:11px;">
-<tbody>${cfRows}</tbody>
-</table></div>
-  <div style="margin-top:18px;padding:12px;background:#0d1f35;border-radius:8px;font-size:10px;color:#4b6280;border:1px solid #1e2d3d;">
-    Raw data: Net Profit ${d.netProfit}Cr · Total Equity ${d.totalEquity}Cr · Shares ${d.totalShares}Cr · EBIT ${d.ebit}Cr · ROCE ${d.capEmployed}% · Total Debt ${d.totalDebt}Cr · Promoter ${d.promoter}%
-  </div>
-  <div style="text-align:center;font-size:10px;color:#4b6280;margin-top:14px;">RealTradePro · Search & Learn · For personal reference only</div>
-  </body></html>`;
-
-  // Blob URL approach — works on mobile without popup blockers
-  try {
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = sym + '_FundamentalReport.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-  } catch(e) {
-    // Fallback to window.open
-    const w = window.open('', '_blank', 'width=820,height=680');
-    if (!w) { showPopup('Popup blocked! Allow popups for PDF.'); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 500);
-  }
-}
 // ============================================================
 // TAB 6 — CORPORATE ACTIONS
 // ============================================================
