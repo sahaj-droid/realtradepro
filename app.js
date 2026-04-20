@@ -2223,7 +2223,7 @@ async function openDetail(sym,isIndex){
       const ts=document.getElementById('techSection');
       if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable. <a onclick="fetchHistory(\''+sym+'\').then(h=>{if(h)location.reload();})" style="color:#38bdf8;cursor:pointer;">Retry</a></div>';
     }, 12000);
-    fetchHistory(sym).then(hist=>{
+    fetchHistory(sym, '60d', '1d').then(hist=>{
       clearTimeout(_techTimeout);
       const ts=document.getElementById("techSection");
       if(!ts) return;
@@ -2242,10 +2242,10 @@ async function openDetail(sym,isIndex){
       const volRatio=avgVol10&&avgVol10>0?parseFloat((todayVol/avgVol10).toFixed(2)):null;
       const volColor=volRatio?volRatio>=2?'#a78bfa':volRatio>=1.5?'#38bdf8':volRatio>=1?'#94a3b8':'#4b6280':'#4b6280';
       const volLabel=volRatio?volRatio>=2?'Very High':volRatio>=1.5?'High':volRatio>=1?'Normal':'Low':'--';
+      const price=cache[sym]?.data?.regularMarketPrice||0;
       const atrPct=atr&&price>0?parseFloat((atr/price*100).toFixed(2)):null;
       const rsiColor=rsi?rsi<30?'#22c55e':rsi>70?'#ef4444':'#38bdf8':'#94a3b8';
       const macdColor=macd?(macd.trend==='bullish'?'#22c55e':'#ef4444'):'#94a3b8';
-const price=cache[sym]?.data?.regularMarketPrice||0;
       const dot=(c)=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
       const dmaKey=(l)=>l.includes('20')?'DMA20':l.includes('50')?'DMA50':'DMA200';
       const maRow=(label,val)=>val?`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
