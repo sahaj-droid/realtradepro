@@ -3070,7 +3070,6 @@ Promise.all(AppState.indicesList.map(i=>fetchFull(i.sym,true)))
       });
     }
   },1500);
-}
 
 // ======================================
 // AUTO REFRESH & MANUAL
