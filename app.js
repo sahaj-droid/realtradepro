@@ -461,13 +461,15 @@ const POPULAR_STOCKS=[
 // LOADER
 // ======================================
 function showLoader(msg="Loading..."){
-  document.getElementById("loaderMsg").innerText=msg;
-  document.getElementById("loaderOverlay").style.display="flex";
+  const lm = document.getElementById("loaderMsg");
+  const lo = document.getElementById("loaderOverlay");
+  if(lm) lm.innerText=msg;
+  if(lo) lo.style.display="flex";
 }
 function hideLoader(){
-  document.getElementById("loaderOverlay").style.display="none";
+  const lo = document.getElementById("loaderOverlay");
+  if(lo) lo.style.display="none";
 }
-
 // ======================================
 // WATCHLIST GROUPS
 // ======================================
