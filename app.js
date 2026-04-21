@@ -293,7 +293,7 @@ try{AppState.groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
     AppState.watchlists=[{name:"Watchlist 1",stocks:[...AppState.wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
   }
   try{AppState.currentWL=parseInt(localStorage.getItem("currentWL"))||0;}catch(e){}
-  if(AppState.AppState.currentWL>=AppState.watchlists.length) AppState.currentWL=0;
+  if(AppState.currentWL>=AppState.watchlists.length) AppState.currentWL=0;
   // keep global AppState.wl in sync with active watchlist for legacy code compatibility
   AppState.wl=AppState.watchlists[AppState.currentWL].stocks;
 })();
