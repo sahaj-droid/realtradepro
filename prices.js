@@ -791,3 +791,4 @@ function sortPercent(){
   AppState.watchlists[AppState.currentWL].stocks.sort((a,b)=>{let da=AppState.cache[a]?.data,db=AppState.cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return AppState.percentAsc?pa-pb:pb-pa;});
   AppState.percentAsc=!AppState.percentAsc; saveWatchlists(); renderWL();
 }
+}
