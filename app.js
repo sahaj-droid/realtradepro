@@ -2890,13 +2890,13 @@ async function renderBollinger(sym){
     ctx.strokeStyle='rgba(56,189,248,0.7)'; ctx.lineWidth=1; ctx.setLineDash([3,2]); ctx.stroke(); ctx.setLineDash([]);
     // Candlesticks
     cSlice.forEach((c,i)=>{
-      const o=oSlice[i]||c, AppState.h=hSlice[i]||c, l=lSlice[i]||c;
+      const o=oSlice[i]||c, h=hSlice[i]||c, l=lSlice[i]||c;
       const x=xScale(i);
       const isBull=c>=o;
       const color=isBull?'#22c55e':'#ef4444';
       // Wick
       ctx.beginPath();
-      ctx.moveTo(x, yScale(AppState.h));
+      ctx.moveTo(x, yScale(h));
       ctx.lineTo(x, yScale(l));
       ctx.strokeStyle=color; ctx.lineWidth=1; ctx.stroke();
       // Body
