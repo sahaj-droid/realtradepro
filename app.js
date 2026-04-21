@@ -960,8 +960,10 @@ async function renderWL(){
     displayList = displayList.filter(s => groups[currentGroup].includes(s));
   }
   const watchlistDiv = document.getElementById("watchlist");
+  if(!watchlistDiv) return;
   if(!displayList.length){
-    watchlistDiv.innerHTML=`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
+    watchlistDiv.innerHTML=
+    `<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">${watchlists[currentWL]&&watchlists[currentWL].stocks.length===0?'Search stock above to add to '+watchlists[currentWL].name:'Type stock name in search box (Press Enter)'}</div>`;
     return;
   }
 
