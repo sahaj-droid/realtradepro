@@ -3044,8 +3044,10 @@ async function startApp(){
     updateHeaderIndices();
     updatePriceTicker();
   });
-Promise.all(AppState.indicesList.map(i=>fetchFull(i.sym,true)))
+Promise.all(AppState.indicesList.map(i => fetchFull(i.sym, true)))
+  .then(() => {
     updateHeaderIndices();
+  });
   };
   renderHeaderStrip();
   updateHeaderIndices();
@@ -3096,10 +3098,10 @@ document.addEventListener('visibilitychange', ()=>{
     setTimeout(async () => {
         // ✅ Resume thava par sauthi pehla fresh data fetch karo
 const wl = AppState.watchlists[AppState.currentWL]?.stocks
-  ? [...watchlists[AppState.currentWL].stocks]
+  ? [...AppState.watchlists[AppState.currentWL].stocks]
   : (window.currentWl || []);
 if(wl.length > 0) {
-    try { await batchFetchStocks(AppState.wl); } catch(e) { console.error(e); }
+    try { await batchFetchStocks(wl); } catch(e) { console.error(e); }
 }
       
       updatePrices(); // UI update karo
