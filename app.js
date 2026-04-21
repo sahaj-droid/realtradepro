@@ -385,7 +385,7 @@ function saveWatchlists(){
   localStorage.setItem("currentWL",currentWL);
   wl = watchlists[currentWL].stocks;
   localStorage.setItem("wl",JSON.stringify(wl));
-  if (currentUser) saveUserData('watchlists');
+  if (AppState.currentUser) saveUserData('watchlists');
   // ── Sync all watchlist stocks to Firebase for Python engine ──────────────
   _syncWatchlistToFirebase();
 }
@@ -1521,7 +1521,7 @@ function deleteHistEntry(idx) {
   if (!confirm(`Delete this entry?\n${label}`)) return;
   hist.splice(idx, 1);
   localStorage.setItem('hist', JSON.stringify(hist));
-  if (currentUser) saveUserData('history');
+  if (AppState.currentUser) saveUserData('history');
   renderHist();
   showPopup('Entry deleted');
 }
@@ -1535,7 +1535,7 @@ window._firebaseHistCache = window._firebaseHistCache || {}; // histcache collec
 
 // ── Firebase helper: silent set (never throws, ideal for best-effort writes) ──
 function _fbSet(path, data) {
-  if (!currentUser) return;
+  if (!AppState.currentUser) return;
   try {
     // path: 'collection/docId' or 'collection/docId/sub/subId'
     const parts = path.split('/');
@@ -1967,7 +1967,7 @@ function confirmTrade(){
     let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
     localStorage.setItem("h",JSON.stringify(h));
-    if (currentUser) saveUserData('holdings');
+    if (AppState.currentUser) saveUserData('holdings');
     triggerAutoSync('holdings');
     closeModal(); renderHold(); return;
   }
@@ -1978,7 +1978,7 @@ function confirmTrade(){
     hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:currentTradeType});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
-    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
+    if (AppState.currentUser) { saveUserData('holdings'); saveUserData('history'); }
     triggerAutoSync('history');
     closeModal(); renderHold(); return;
   }
@@ -1991,7 +1991,7 @@ function confirmTrade(){
     hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:currentTradeType,buyDate});
     localStorage.setItem("h",JSON.stringify(h));
     localStorage.setItem("hist",JSON.stringify(hist));
-    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
+    if (AppState.currentUser) { saveUserData('holdings'); saveUserData('history'); }
     closeModal(); renderHold(); renderHist(); tab("history");
   }
 }
@@ -2088,7 +2088,7 @@ function handleCSVImport(event){
       imported++;
     }
     localStorage.setItem("h",JSON.stringify(h));
-    if (currentUser) saveUserData('holdings');
+    if (AppState.currentUser) saveUserData('holdings');
     event.target.value="";
     showPopup(`Import: ${imported} stocks, ${skipped} skipped`);
     tab("holdings");
@@ -2533,10 +2533,10 @@ function loadSettingsUI(){
     else if(perm==='denied') { ntStat.textContent='Permission: Blocked ✗ (Enable in browser)'; ntStat.style.color='#f87171'; }
     else { ntStat.textContent='Not yet requested'; ntStat.style.color='#64748b'; }
   }
-  // Avatar initial letter from currentUser
+  // Avatar initial letter from AppState.currentUser
   const avEl = document.getElementById('settingsAvatarLetter');
-  if(avEl && currentUser) {
-  const uname = typeof currentUser === 'string' ? currentUser : (currentUser.name || '?');
+  if(avEl && AppState.currentUser) {
+  const uname = typeof AppState.currentUser === 'string' ? AppState.currentUser : (AppState.currentUser.name || '?');
   avEl.textContent = uname.charAt(0).toUpperCase();
 }
   // FF2 URL display
@@ -2599,7 +2599,7 @@ function saveSetting(type){
     const val=document.getElementById("set-api-input").value.trim();
     if(!val){ showPopup("URL cannot be empty"); return; }
     localStorage.setItem("customAPI",val);
-    if (currentUser) saveUserData('settings');
+    if (AppState.currentUser) saveUserData('settings');
     cancelAPIEdit();
     loadSettingsUI();
     showPopup("Primary API saved! Refresh to apply.");
@@ -2776,9 +2776,9 @@ function confirmDangerClear(){
   if(_dangerPendingType) _executeClearData(_dangerPendingType);
 }
 function _executeClearData(type){
-  if(type==='holdings'){ h=[]; localStorage.setItem('h',JSON.stringify(h)); if(currentUser) saveUserData('holdings'); renderHold(); }
-  if(type==='history'){ hist=[]; localStorage.setItem('hist',JSON.stringify(hist)); if(currentUser) saveUserData('history'); renderHist(); }
-  if(type==='alerts'){ alerts=[]; localStorage.setItem('alerts',JSON.stringify(alerts)); if(currentUser) saveUserData('alerts'); }
+  if(type==='holdings'){ h=[]; localStorage.setItem('h',JSON.stringify(h)); if(AppState.currentUser) saveUserData('holdings'); renderHold(); }
+  if(type==='history'){ hist=[]; localStorage.setItem('hist',JSON.stringify(hist)); if(AppState.currentUser) saveUserData('history'); renderHist(); }
+  if(type==='alerts'){ alerts=[]; localStorage.setItem('alerts',JSON.stringify(alerts)); if(AppState.currentUser) saveUserData('alerts'); }
   const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
   showPopup((labels[type]||type)+' cleared!');
 }
@@ -2985,7 +2985,7 @@ function _openSettingsWithPIN() {
   // Already unlocked this session
   if (_settingsPINUnlocked) { _switchTab('settings'); return; }
   // No user logged in — open directly
-  if (!currentUser) { _switchTab('settings'); return; }
+  if (!AppState.currentUser) { _switchTab('settings'); return; }
 
   // Show PIN dialog
   const overlay = document.createElement('div');
@@ -3027,7 +3027,7 @@ function _spinPIN(val) {
   if (window._spinEntry.length === 4) {
     setTimeout(async () => {
       try {
-        const doc = await db.collection('users').doc(currentUser.userId).get();
+        const doc = await db.collection('users').doc(AppState.currentUser.userId).get();
         const pinHash = await hashPIN(window._spinEntry);
         window._spinEntry = '';
         if (doc.data().profile.pinHash === pinHash) {
@@ -4940,7 +4940,7 @@ function renderSmartAlertSuggestions(sym, d) {
 function setSmartAlert(sym, price, btn) {
   alerts.push({sym: sym, price: price, triggered: false});
   localStorage.setItem('alerts', JSON.stringify(alerts));
-  if (currentUser) saveUserData('alerts');
+  if (AppState.currentUser) saveUserData('alerts');
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
@@ -4984,11 +4984,11 @@ async function pushToCloud(showMsg = true) {
 
 // Manual "Download from Cloud" button → Firebase load
 async function pullFromCloud(showMsg = false) {
-  if (!currentUser) { if (showMsg) showPopup('Login required'); return; }
+  if (!AppState.currentUser) { if (showMsg) showPopup('Login required'); return; }
   const syncBtn = document.getElementById('syncStatusBtn');
   if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
   try {
-    const doc = await db.collection('users').doc(currentUser.userId).get();
+    const doc = await db.collection('users').doc(AppState.currentUser.userId).get();
     const data = doc.data();
     if (!data) { if (showMsg) showPopup('No data in Firebase'); return; }
 
@@ -5117,7 +5117,7 @@ async function openNivi(sym) {
     }
   };
   // 1. Firebase cache (cross-device, survives WebView clear)
-  if (currentUser) {
+  if (AppState.currentUser) {
     try {
       const fbDoc = await db.collection('niviCache').doc(sym).get();
       if (fbDoc.exists) {
@@ -5159,7 +5159,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
         // Cache to localStorage + Firebase
         const _cacheObj = { ts: Date.now(), direct: true, answer: resp.answer };
         localStorage.setItem(cacheKey, JSON.stringify(_cacheObj));
-        if (currentUser) db.collection('niviCache').doc(sym).set(_cacheObj).catch(()=>{});
+        if (AppState.currentUser) db.collection('niviCache').doc(sym).set(_cacheObj).catch(()=>{});
         _niviAddBubble('nivi', _niviFormatBullets(resp.answer));
         return;
       }
@@ -5194,7 +5194,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   if (_niviData) {
     const _gasCacheObj = { ts: Date.now(), direct: false, data: _niviData };
     localStorage.setItem(cacheKey, JSON.stringify(_gasCacheObj));
-    if (currentUser) db.collection('niviCache').doc(sym).set(_gasCacheObj).catch(()=>{});
+    if (AppState.currentUser) db.collection('niviCache').doc(sym).set(_gasCacheObj).catch(()=>{});
     _niviApplyPriceAndTech(_niviData);
     _niviAddBubble('nivi', _niviFormatBullets(_niviData.niviAdvice?.answer || ''));
   } else {
@@ -5328,7 +5328,7 @@ async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
 let _niviPersistTimer = null;
 function _niviPersistChat() {
-  if (!currentUser || !_niviCurrentSym) return;
+  if (!AppState.currentUser || !_niviCurrentSym) return;
   if (_niviPersistTimer) clearTimeout(_niviPersistTimer);
   _niviPersistTimer = setTimeout(async () => {
     try {
@@ -5336,7 +5336,7 @@ function _niviPersistChat() {
       const toSave = _niviChatHistory.slice(-20).map(m => ({
         role: m.role, text: m.text, ts: m.ts
       }));
-      await db.collection('users').doc(currentUser.userId)
+      await db.collection('users').doc(AppState.currentUser.userId)
         .collection('niviChats').doc(_niviCurrentSym)
         .set({ messages: toSave, updatedAt: Date.now() });
     } catch(e) { /* silent — chat persist is best-effort */ }
@@ -5345,9 +5345,9 @@ function _niviPersistChat() {
 
 // ── Load persisted Nivi chat from Firebase ──
 async function _niviLoadPersistedChat(sym) {
-  if (!currentUser) return false;
+  if (!AppState.currentUser) return false;
   try {
-    const doc = await db.collection('users').doc(currentUser.userId)
+    const doc = await db.collection('users').doc(AppState.currentUser.userId)
       .collection('niviChats').doc(sym).get();
     if (doc.exists) {
       const data = doc.data();
@@ -5457,8 +5457,8 @@ function niviClearChat() {
   const area = document.getElementById('nivi-chat-area');
   if (area) area.innerHTML = '<div id="nivi-loading" style="text-align:center;padding:16px 0;display:none;"></div>';
   // Clear Firebase persisted chat too
-  if (currentUser && _niviCurrentSym) {
-    db.collection('users').doc(currentUser.userId)
+  if (AppState.currentUser && _niviCurrentSym) {
+    db.collection('users').doc(AppState.currentUser.userId)
       .collection('niviChats').doc(_niviCurrentSym)
       .delete().catch(() => {});
   }
@@ -5492,7 +5492,7 @@ function saveSheetId(){
   const val = document.getElementById('sheet-id-input').value.trim();
   if(!val){ showPopup('Sheet ID cannot be empty'); return; }
   localStorage.setItem('sheetId', val);
-  if (currentUser) saveUserData('settings');
+  if (AppState.currentUser) saveUserData('settings');
   document.getElementById('sheet-id-display').innerText = val;
   cancelSheetEdit();
   showPopup('Sheet ID saved!');
@@ -5522,7 +5522,7 @@ function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
   if(!val){ showPopup('Key daalo pehle'); return; }
   localStorage.setItem('geminiApiKey',val);
-  if (currentUser) saveUserData('settings');
+  if (AppState.currentUser) saveUserData('settings');
   document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Gemini Key saved — Active</span>';
   document.getElementById('set-gemini-key').value='';
   showPopup('Gemini key saved ✓');
@@ -6386,7 +6386,7 @@ async function _addToWaitlist(sym, msg) {
     await firebase.firestore().collection('new_requests').doc(sym).set({
       symbol: sym,
       requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      requestedBy: (typeof currentUser !== 'undefined' && currentUser?.userId) ? currentUser.userId : 'anonymous'
+      requestedBy: (typeof AppState.currentUser !== 'undefined' && AppState.currentUser?.userId) ? AppState.currentUser.userId : 'anonymous'
     });
     if (msg) {
       msg.textContent = `✅ "${sym}" waitlist ma add thayo! Python run thase tyare automatically sheet + Firebase ma aavse.`;
