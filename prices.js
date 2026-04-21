@@ -413,24 +413,32 @@ function _renderGiftNifty(d,pe,ce){
 // HEADER INDICES STRIP RENDERER
 // ======================================
 function renderHeaderStrip(){
-  const strip=document.getElementById('indicesStrip');
+  const strip = document.getElementById('indicesStrip');
   if(!strip) return;
-  strip.innerHTML=indicesList.map((idx,i)=>{
-    const key=idx.sym.replace('^','');
-    const sep=i<indicesList.length-1?`<div style="width:1px;background:#1e3a5f;height:32px;flex-shrink:0;"></div>`:'';
+
+  strip.innerHTML = AppState.indicesList.map((idx,i)=>{
+    const key = idx.sym.replace('^','');
+    const sep = i < AppState.indicesList.length-1
+      ? `<div style="width:1px;background:#1e3a5f;height:32px;flex-shrink:0;"></div>`
+      : '';
+
     return `
       <div style="text-align:center;cursor:pointer;padding:2px 10px;scroll-snap-align:start;flex-shrink:0;position:relative;" onclick="openDetail('${idx.sym}',true)">
         <div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;white-space:nowrap;">${idx.name}</div>
-        <div id="hidx-${key}-p" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e2e8f0;white-space:nowrap;">--</div>
-        <div id="hidx-${key}-c" style="font-size:10px;font-weight:700;color:#94a3b8;line-height:1.3;white-space:nowrap;">--</div>
-        ${i>=3?`<span onclick="event.stopPropagation();removeIndex(${i})" style="position:absolute;top:0;right:2px;font-size:9px;color:#4b6280;cursor:pointer;line-height:1;">✕</span>`:''}
+        <div id="hidx-${key}-p" style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#e2e8f0;">--</div>
+        <div id="hidx-${key}-c" style="font-size:10px;font-weight:700;color:#94a3b8;">--</div>
+        ${i>=3?`<span onclick="event.stopPropagation();removeIndex(${i})" style="position:absolute;top:0;right:2px;font-size:9px;color:#4b6280;cursor:pointer;">✕</span>`:''}
       </div>${sep}`;
   }).join('');
 }
 
 function removeIndex(i){
-  if(i<3){showPopup('Default indices cannot be removed.');return;}
-  indicesList.splice(i,1);
+  if(i < 3){
+    showPopup('Default indices cannot be removed.');
+    return;
+  }
+
+  AppState.indicesList.splice(i,1);
   saveIndicesList();
   renderHeaderStrip();
   updateHeaderIndices();
@@ -463,11 +471,15 @@ async function searchIndexSuggestions(){
   }catch(e){document.getElementById('addIdxResults').innerHTML='<div style="padding:8px 12px;font-size:12px;color:#ef4444;">Search failed</div>';}
 }
 function confirmAddIndex(sym,name){
-  if(indicesList.find(x=>x.sym===sym)){showPopup('Already added');closeAddIndexModal();return;}
-  indicesList.push({sym,name});
+function confirmAddIndex(sym,name){
+  if(AppState.indicesList.find(x=>x.sym===sym)){
+    showPopup('Already added');
+    closeAddIndexModal();
+    return;
+  }
+  AppState.indicesList.push({sym,name});
   saveIndicesList();
   renderHeaderStrip();
-  // Fetch and update the new index
   fetchFull(sym,true).then(()=>updateHeaderIndices());
   closeAddIndexModal();
   showPopup(name+' added');
