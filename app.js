@@ -3565,7 +3565,7 @@ function checkAlerts(sym, currentPrice) {
 // Triggered on every price refresh (market hours only)
 // 1.5x avg volume = alert + tone. Once per stock per day.
 // ======================================
-const _volSpikeAlerted = {}; // { SYM: 'YYYY-MM-DD' } — din ma ek j vaar
+let _volSpikeAlerted = {};
 
 function checkVolumeSpike(sym, data) {
   if (!data) return;
@@ -6415,7 +6415,8 @@ function niviRefresh() {
 }
 
 // Close modal on backdrop tap
-document.getElementById('niviModal').addEventListener('click', function(e) {
+const _niviModal = document.getElementById('niviModal');
+if (_niviModal) _niviModal.addEventListener('click', function(e) {
   if (e.target === this) closeNivi();
 });
 
