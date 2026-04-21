@@ -265,19 +265,19 @@ function playAlertSound(){
 }
 
 // -- LOCAL STORAGE LOAD --
-try{AppState.wl=JSON.parse(localStorage.getItem("AppState.wl"))||AppState.wl;}catch(e){}
-try{AppState.h=JSON.parse(localStorage.getItem("AppState.h"))||[];}catch(e){}
-try{AppState.hist=JSON.parse(localStorage.getItem("AppState.hist"))||[];}catch(e){}
-try{AppState.alerts=JSON.parse(localStorage.getItem("AppState.alerts"))||[];}catch(e){}
+try{AppState.wl=JSON.parse(localStorage.getItem("wl"))||AppState.wl;}catch(e){}
+try{AppState.h=JSON.parse(localStorage.getItem("h"))||[];}catch(e){}
+try{AppState.hist=JSON.parse(localStorage.getItem("hist"))||[];}catch(e){}
+try{AppState.alerts=JSON.parse(localStorage.getItem("alerts"))||[];}catch(e){}
 AppState.isDark=true; // Light mode removed
 // Font size init
 (function(){ const fs=localStorage.getItem('fontSize')||'medium'; document.documentElement.setAttribute('data-fsize',fs); })();
-try{AppState.groups=JSON.parse(localStorage.getItem("AppState.groups"))||{};}catch(e){}
+try{AppState.groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
 
 // MULTI-WATCHLIST: load from localStorage, migrate old AppState.wl[] into WL1 if needed
 (function(){
   try{
-    const saved=JSON.parse(localStorage.getItem("AppState.watchlists"));
+    const saved=JSON.parse(localStorage.getItem("watchlists"));
     if(saved&&Array.isArray(saved)&&saved.length>0){
       AppState.watchlists=saved;
     } else {
@@ -292,7 +292,7 @@ try{AppState.groups=JSON.parse(localStorage.getItem("AppState.groups"))||{};}cat
   }catch(e){
     AppState.watchlists=[{name:"Watchlist 1",stocks:[...AppState.wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
   }
-  try{AppState.currentWL=parseInt(localStorage.getItem("AppState.currentWL"))||0;}catch(e){}
+  try{AppState.currentWL=parseInt(localStorage.getItem("currentWL"))||0;}catch(e){}
   if(AppState.currentWL>=watchlists.length) AppState.currentWL=0;
   // keep global AppState.wl in sync with active watchlist for legacy code compatibility
   AppState.wl=AppState.watchlists[AppState.currentWL].stocks;
@@ -302,7 +302,7 @@ try{AppState.groups=JSON.parse(localStorage.getItem("AppState.groups"))||{};}cat
 
 const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
 const INDICES_VERSION="v2";
-function saveIndicesList(){try{localStorage.setItem('AppState.indicesList',JSON.stringify(AppState.indicesList));}catch(e){}}
+function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(AppState.indicesList));}catch(e){}}
 
   const NIFTY50_STOCKS=[
   'RELIANCE','TCS','HDFCBANK','BHARTIARTL','ICICIBANK',
@@ -378,10 +378,10 @@ function hideLoader(){
 // WATCHLIST GROUPS
 // ======================================
 function saveWatchlists(){
-  localStorage.setItem("AppState.watchlists",JSON.stringify(AppState.watchlists));
-  localStorage.setItem("AppState.currentWL",AppState.currentWL);
+  localStorage.setItem("watchlists",JSON.stringify(AppState.watchlists));
+  localStorage.setItem("currentWL",AppState.currentWL);
   AppState.wl = AppState.watchlists[AppState.currentWL].stocks;
-  localStorage.setItem("AppState.wl",JSON.stringify(AppState.wl));
+  localStorage.setItem("wl",JSON.stringify(AppState.wl));
   if (currentUser) saveUserData('AppState.watchlists');
   // ── Sync all watchlist stocks to Firebase for Python engine ──────────────
   _syncWatchlistToFirebase();
@@ -438,7 +438,7 @@ function switchWL(idx){
   AppState.currentWL=idx;
   AppState.currentGroup='ALL'; // reset group filter on WL switch
   AppState.wl=AppState.watchlists[AppState.currentWL].stocks;
-  localStorage.setItem("AppState.currentWL",AppState.currentWL);
+  localStorage.setItem("currentWL",AppState.currentWL);
   renderWLTabs();
   renderWL();
 }
@@ -851,7 +851,7 @@ function deleteHistEntry(idx) {
   const label = `${entry.sym} ${entry.type} × ${entry.qty} @ ₹${entry.buy}`;
   if (!confirm(`Delete this entry?\n${label}`)) return;
   hist.splice(idx, 1);
-  localStorage.setItem('AppState.hist', JSON.stringify(AppState.hist));
+  localStorage.setItem('hist', JSON.stringify(AppState.hist));
   if (currentUser) saveUserData('history');
   renderHist();
   showPopup('Entry deleted');
@@ -1297,7 +1297,7 @@ function confirmTrade(){
   if(currentTrade.type==="EDIT"){
     let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
-    localStorage.setItem("AppState.h",JSON.stringify(AppState.h));
+    localStorage.setItem("h",JSON.stringify(AppState.h));
     if (currentUser) saveUserData('holdings');
     triggerAutoSync('holdings');
     closeModal(); renderHold(); return;
@@ -1307,8 +1307,8 @@ function confirmTrade(){
     if(ex){let tq=ex.qty+q;ex.price=((ex.price*ex.qty)+(p*q))/tq;ex.qty=tq;if(!ex.buyDate)ex.buyDate=d;}
     else{h.push({sym:currentTrade.sym,qty:q,price:p,buyDate:d,tradeType:AppState.currentTradeType});}
     hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:AppState.currentTradeType});
-    localStorage.setItem("AppState.h",JSON.stringify(AppState.h));
-    localStorage.setItem("AppState.hist",JSON.stringify(AppState.hist));
+    localStorage.setItem("h",JSON.stringify(AppState.h));
+    localStorage.setItem("hist",JSON.stringify(AppState.hist));
     if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
     triggerAutoSync('history');
     closeModal(); renderHold(); return;
@@ -1320,8 +1320,8 @@ function confirmTrade(){
     const buyDate=ex.buyDate;
     if(q===ex.qty){AppState.h=h.filter(x=>x.sym!==ex.sym);}else{ex.qty-=q;}
     hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:AppState.currentTradeType,buyDate});
-    localStorage.setItem("AppState.h",JSON.stringify(AppState.h));
-    localStorage.setItem("AppState.hist",JSON.stringify(AppState.hist));
+    localStorage.setItem("h",JSON.stringify(AppState.h));
+    localStorage.setItem("hist",JSON.stringify(AppState.hist));
     if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
     closeModal(); renderHold(); renderHist(); tab("history");
   }
@@ -1371,7 +1371,7 @@ function handleCSVImport(event){
       }
       imported++;
     }
-    localStorage.setItem("AppState.h",JSON.stringify(AppState.h));
+    localStorage.setItem("h",JSON.stringify(AppState.h));
     if (currentUser) saveUserData('holdings');
     event.target.value="";
     showPopup(`Import: ${imported} stocks, ${skipped} skipped`);
@@ -1422,13 +1422,13 @@ function handleRestore(event){
   reader.onload=function(e){
     try{
       const data=JSON.parse(e.target.result);
-      if(data.AppState.wl)    { AppState.wl=data.AppState.wl;       localStorage.setItem("AppState.wl",JSON.stringify(AppState.wl)); }
-      if(data.h)     { AppState.h=data.h;         localStorage.setItem("AppState.h",JSON.stringify(AppState.h)); }
-      if(data.hist)  { AppState.hist=data.hist;   localStorage.setItem("AppState.hist",JSON.stringify(AppState.hist)); }
-      if(data.alerts){ AppState.alerts=data.alerts; localStorage.setItem("AppState.alerts",JSON.stringify(AppState.alerts)); }
-      if(data.groups){ AppState.groups=data.groups; localStorage.setItem("AppState.groups",JSON.stringify(AppState.groups)); }
+      if(data.AppState.wl)    { AppState.wl=data.AppState.wl;       localStorage.setItem("wl",JSON.stringify(AppState.wl)); }
+      if(data.h)     { AppState.h=data.h;         localStorage.setItem("h",JSON.stringify(AppState.h)); }
+      if(data.hist)  { AppState.hist=data.hist;   localStorage.setItem("hist",JSON.stringify(AppState.hist)); }
+      if(data.alerts){ AppState.alerts=data.alerts; localStorage.setItem("alerts",JSON.stringify(AppState.alerts)); }
+      if(data.groups){ AppState.groups=data.groups; localStorage.setItem("groups",JSON.stringify(AppState.groups)); }
       if(data.journal){ journal=data.journal; localStorage.setItem("journal",JSON.stringify(journal)); }
-      if(data.targets){ AppState.targets=data.targets; localStorage.setItem("AppState.targets",JSON.stringify(AppState.targets)); }
+      if(data.targets){ AppState.targets=data.targets; localStorage.setItem("targets",JSON.stringify(AppState.targets)); }
       event.target.remove();
       showPopup("Data restored! Reloading...");
       setTimeout(()=>location.reload(),1500);
@@ -2060,9 +2060,9 @@ function confirmDangerClear(){
   if(AppState._dangerPendingType) _executeClearData(AppState._dangerPendingType);
 }
 function _executeClearData(type){
-  if(type==='holdings'){ AppState.h=[]; localStorage.setItem('AppState.h',JSON.stringify(AppState.h)); if(currentUser) saveUserData('holdings'); renderHold(); }
-  if(type==='history'){ AppState.hist=[]; localStorage.setItem('AppState.hist',JSON.stringify(AppState.hist)); if(currentUser) saveUserData('history'); renderHist(); }
-  if(type==='AppState.alerts'){ AppState.alerts=[]; localStorage.setItem('AppState.alerts',JSON.stringify(AppState.alerts)); if(currentUser) saveUserData('AppState.alerts'); }
+  if(type==='holdings'){ AppState.h=[]; localStorage.setItem('h',JSON.stringify(AppState.h)); if(currentUser) saveUserData('holdings'); renderHold(); }
+  if(type==='history'){ AppState.hist=[]; localStorage.setItem('hist',JSON.stringify(AppState.hist)); if(currentUser) saveUserData('history'); renderHist(); }
+  if(type==='AppState.alerts'){ AppState.alerts=[]; localStorage.setItem('alerts',JSON.stringify(AppState.alerts)); if(currentUser) saveUserData('AppState.alerts'); }
   const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
   showPopup((labels[type]||type)+' cleared!');
 }
@@ -2161,7 +2161,7 @@ function setAlert(sym) {
 
 function removeAlert(sym, price) {
   AppState.alerts = alerts.filter(a => !(a.sym===sym && a.price===price));
-  localStorage.setItem("AppState.alerts", JSON.stringify(AppState.alerts));
+  localStorage.setItem("alerts", JSON.stringify(AppState.alerts));
   setAlert(sym); // refresh modal
 }
 
@@ -2175,7 +2175,7 @@ function confirmAlert() {
   // Remove duplicate
   AppState.alerts = alerts.filter(a => !(a.sym===AppState.currentAlertSym && a.price===price));
   alerts.push({ sym:AppState.currentAlertSym, price:price, dir:AppState._alertDir, triggered:false });
-  localStorage.setItem("AppState.alerts", JSON.stringify(AppState.alerts));
+  localStorage.setItem("alerts", JSON.stringify(AppState.alerts));
   closeAlertModal();
   showPopup("🔔 Alert set: " + AppState.currentAlertSym + " " + (AppState._alertDir==='above'?'▲':'▼') + " ₹" + price);
   // Request browser notification permission
@@ -4158,7 +4158,7 @@ function renderSmartAlertSuggestions(sym, d) {
 
 function setSmartAlert(sym, price, btn) {
   alerts.push({sym: sym, price: price, triggered: false});
-  localStorage.setItem('AppState.alerts', JSON.stringify(AppState.alerts));
+  localStorage.setItem('alerts', JSON.stringify(AppState.alerts));
   if (currentUser) saveUserData('AppState.alerts');
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
@@ -4215,24 +4215,24 @@ async function pullFromCloud(showMsg = false) {
 
     if (data.watchlists?.length) {
       AppState.watchlists = data.watchlists;
-      localStorage.setItem('AppState.watchlists', JSON.stringify(AppState.watchlists));
+      localStorage.setItem('watchlists', JSON.stringify(AppState.watchlists));
       AppState.wl = AppState.watchlists[AppState.currentWL]?.stocks || [];
-      localStorage.setItem('AppState.wl', JSON.stringify(AppState.wl));
+      localStorage.setItem('wl', JSON.stringify(AppState.wl));
       changed = true;
     }
     if (data.holdings?.length) {
       AppState.h = data.holdings;
-      localStorage.setItem('AppState.h', JSON.stringify(AppState.h));
+      localStorage.setItem('h', JSON.stringify(AppState.h));
       changed = true;
     }
     if (data.history?.length) {
       AppState.hist = data.history;
-      localStorage.setItem('AppState.hist', JSON.stringify(AppState.hist));
+      localStorage.setItem('hist', JSON.stringify(AppState.hist));
       changed = true;
     }
     if (data.alerts?.length) {
       AppState.alerts = data.alerts;
-      localStorage.setItem('AppState.alerts', JSON.stringify(AppState.alerts));
+      localStorage.setItem('alerts', JSON.stringify(AppState.alerts));
       changed = true;
     }
 
