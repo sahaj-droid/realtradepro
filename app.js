@@ -1,4 +1,135 @@
 // ========================================
+// APP STATE — Single source of truth
+// ========================================
+const AppState = {
+
+  // -- User --
+  currentUser: null,          // { userId, name }
+  currentPINEntry: '',
+
+  // -- Watchlist & Cache --
+  wl: ["SBIN","RELIANCE","TCS"],
+  cache: {},
+  CACHE_TIME: 300000,
+  watchlists: [{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}],
+  currentWL: 0,
+  lastUpdatedMap: {},
+
+  // -- Holdings & History --
+  h: [],
+  hist: [],
+  histView: 'list',
+
+  // -- Alerts --
+  alerts: [],
+  currentAlertSym: '',
+  _alertDir: 'above',
+  _dangerPendingType: null,
+
+  // -- Trade --
+  currentTrade: {},
+  currentTradeType: 'CNC',
+
+  // -- UI / Sort --
+  isDark: true,
+  azAsc: true,
+  priceAsc: false,
+  percentAsc: false,
+  groups: {},
+  currentGroup: 'ALL',
+  _wlModalMode: 'add',
+  _wlModalIdx: -1,
+  errorShownThisSession: false,
+  dupWarnEnabled: true,
+  refreshInterval: null,
+
+  // -- Search --
+  _searchTimer: null,
+  _lastSearchVal: '',
+
+  // -- Targets --
+  targets: {},
+
+  // -- Indices --
+  indicesList: [],
+
+  // -- Movers --
+  _moversTab: 'gainers',
+
+  // -- Gift Nifty --
+  _giftNiftyCache: null,
+  _giftNiftyCacheTime: 0,
+
+  // -- Calendar --
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(),
+  calSelDay: null,
+
+  // -- Settings --
+  _settingsPINUnlocked: false,
+
+  // -- BB Chart --
+  _bbSym: '',
+  _bbPeriod: '6M',
+  _bbRange: 'daily',
+
+  // -- Global Markets --
+  _globalCache: {},
+  _globalCacheTime: 0,
+
+  // -- Tab --
+  _curTab: 'watchlist',
+  _txStart: 0,
+  _tyStart: 0,
+  _swipeLocked: false,
+
+  // -- News --
+  newsCache: null,
+  newsCacheTime: 0,
+  newsCacheDate: '',
+  newsActiveFilter: 'ALL',
+  newsActiveTab: 'all',
+  _tabChatHistory: [],
+
+  // -- Avg Calculator --
+  _acSym: '',
+  _acAvg: 0,
+  _acQty: 0,
+  _acCmp: 0,
+  _acMode: 'buy',
+
+  // -- Screener --
+  screenerSource: 'watchlist',
+  screenerFilters: new Set(),
+
+  // -- Sync --
+  _syncInProgress: false,
+  _syncDebounceTimer: null,
+  _lastSyncTime: 0,
+
+  // -- Nivi AI --
+  _niviCurrentSym: '',
+  _niviChatHistory: [],
+  _niviMicActive: false,
+  _niviRecognition: null,
+  _niviPersistTimer: null,
+
+  // -- Firebase preload --
+  _fbPreloadController: null,
+  _sheetFund: null,
+
+  // -- Learn Tab --
+  _learnLang: localStorage.getItem('learnLang') || 'hi',
+  _learnCache: {},
+  _learnMainTab: 'financial',
+  _learnActiveTab: 'fundamentals',
+  _msCategory: null,
+  _msTopic: null,
+
+  // -- URL Rotation --
+  _urlRotationIndex: 0,
+};
+// ========================================
 // FIREBASE MULTI-USER SYSTEM
 // ========================================
 
