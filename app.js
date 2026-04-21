@@ -3155,9 +3155,14 @@ const TAB_ORDER = ['watchlist','indices','holdings','history','news','learn'];
 
 // Patch tab() to track current tab
 const _origTab = window.tab;
+
 window.tab = function(t) {
-  _origTab(t);
-  if (TAB_ORDER.includes(t)) AppState._curTab = t;
+  if (typeof _origTab === "function") {
+    _origTab(t);
+  }
+  if (TAB_ORDER.includes(t)) {
+    AppState._curTab = t;
+  }
 };
 
 document.addEventListener('touchstart', e => {
