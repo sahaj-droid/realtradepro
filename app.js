@@ -8,7 +8,7 @@ const AppState = {
   currentPINEntry: '',
 
   // -- Watchlist & Cache --
-  AppState.wl: ["SBIN","RELIANCE","TCS"],
+  wl: ["SBIN","RELIANCE","TCS"],
   cache: {},
   CACHE_TIME: 300000,
   watchlists: [{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}],
