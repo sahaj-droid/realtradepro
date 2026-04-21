@@ -3046,7 +3046,7 @@ async function startApp(){
   });
 Promise.all(AppState.indicesList.map(i=>fetchFull(i.sym,true)))
     updateHeaderIndices();
-  });
+  };
   renderHeaderStrip();
   updateHeaderIndices();
   updatePriceTicker();
