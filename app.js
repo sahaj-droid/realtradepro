@@ -293,7 +293,7 @@ try{AppState.groups=JSON.parse(localStorage.getItem("groups"))||{};}catch(e){}
     AppState.watchlists=[{name:"Watchlist 1",stocks:[...AppState.wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
   }
   try{AppState.currentWL=parseInt(localStorage.getItem("currentWL"))||0;}catch(e){}
-  if(AppState.currentWL>=watchlists.length) AppState.currentWL=0;
+  if(AppState.AppState.currentWL>=AppState.watchlists.length) AppState.currentWL=0;
   // keep global AppState.wl in sync with active watchlist for legacy code compatibility
   AppState.wl=AppState.watchlists[AppState.currentWL].stocks;
 })();
@@ -1417,7 +1417,7 @@ function handleRestore(event){
   reader.onload=function(e){
     try{
       const data=JSON.parse(e.target.result);
-      if(data.AppState.wl)    { AppState.wl=data.AppState.wl;       localStorage.setItem("wl",JSON.stringify(AppState.wl)); }
+      if(data.wl)    { AppState.wl=data.wl;       localStorage.setItem("wl",JSON.stringify(AppState.wl)); }
       if(data.h)     { AppState.h=data.h;         localStorage.setItem("h",JSON.stringify(AppState.h)); }
       if(data.hist)  { AppState.hist=data.hist;   localStorage.setItem("hist",JSON.stringify(AppState.hist)); }
       if(data.alerts){ AppState.alerts=data.alerts; localStorage.setItem("alerts",JSON.stringify(AppState.alerts)); }
