@@ -789,11 +789,6 @@ function startClock(){
   tick(); setInterval(tick,1000);
 }
 
-// ======================================
-// HISTORY  -  LIST + CALENDAR
-// ======================================
-
-
 function setHistView(v){
   AppState.histView=v;
   ['list','calendar'].forEach(x=>{
@@ -5886,7 +5881,7 @@ function _buildShareholdingTab(d, sym) {
 
   html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);padding:14px;">`;
 
-  holders.forEach(AppState.h => {
+  holders.forEach(h => {
     if (!h.val) return;
     const barW = Math.min(h.val, 100).toFixed(1);
     html += `<div style="margin-bottom:10px;">
