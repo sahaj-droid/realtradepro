@@ -491,7 +491,7 @@ function _patchVisibleWLPrices(){
 // ======================================
 async function updatePrices(){
   const activeWl = AppState.watchlists[AppState.currentWL]?.stocks
-    ? [...watchlists[AppState.currentWL].stocks]
+    ? [...AppState.watchlists[AppState.currentWL].stocks]
     : (window.currentWl || []);
   if(activeWl.length === 0) return;
 
