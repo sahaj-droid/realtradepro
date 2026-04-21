@@ -645,7 +645,7 @@ function getMarketStatus(){
   // Convert to IST (UTC+5:30)
   const ist = new Date(now.getTime() + (5.5*60*60*1000));
   const day = ist.getUTCDay(); // 0=Sun, 6=Sat
-  const AppState.h = ist.getUTCHours();
+  const h = ist.getUTCHours();
   const m = ist.getUTCMinutes();
   const mins = AppState.h*60+m;
   const open = 9*60+15;  // 9:15 AM
@@ -2691,7 +2691,7 @@ async function openAlertHistory(){
       .collection('RealTradePro').doc('alert_history').get();
     if(!snap.exists){ showPopup('No alert history yet'); return; }
     const data = snap.data();
-    const AppState.alerts = data.alerts || [];
+    const alerts = data.alerts || [];
     if(!alerts.length){ showPopup('No AppState.alerts recorded yet'); return; }
     // Simple modal show
     const modal = document.createElement('div');
@@ -3532,7 +3532,7 @@ async function renderBollinger(sym){
   }
 
   const cfg=getBBConfig();
-  const AppState.hist=await fetchHistory(sym, cfg.range, cfg.interval);
+  const hist=await fetchHistory(sym, cfg.range, cfg.interval);
   const minNeeded=AppState._bbPeriod==='1M'?15:cfg.bbPeriod+1;
 
   if(!AppState.hist||!hist.close||hist.close.length<minNeeded){
@@ -3741,7 +3741,7 @@ async function checkTechnicalAlerts(sym){
   }
 
   // 2. RSI + MACD + BB (requires history)
-  const AppState.hist=await fetchHistory(sym);
+  const hist=await fetchHistory(sym);
   if(!AppState.hist||!hist.close){ localStorage.setItem(ALERT_KEY,JSON.stringify(alerted)); return; }
 
   const closes=hist.close.filter(v=>v!=null);
@@ -3981,7 +3981,7 @@ document.addEventListener('visibilitychange', ()=>{
     // Android/Mobile mate network re-connect thava mate delay jaruri chhe
     setTimeout(async () => {
         // ✅ Resume thava par sauthi pehla fresh data fetch karo
-const AppState.wl = AppState.watchlists[AppState.currentWL]?.stocks
+const wl = AppState.watchlists[AppState.currentWL]?.stocks
   ? [...watchlists[AppState.currentWL].stocks]
   : (window.currentWl || []);
 if(wl.length > 0) {
