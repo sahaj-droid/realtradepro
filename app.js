@@ -5988,7 +5988,7 @@ function _buildShareholdingTab(d, sym) {
     { label:'Public',         val: d.pubHolding||null,  color:'#d97706', info:null },
   ];
 
-  const total = holders.reduce((s,AppState.h) => s + (h.val||0), 0);
+  const total = holders.reduce((s,h) => s + (h.val||0), 0);
 
   html += `<div style="background:#0d1f35;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);padding:14px;">`;
 
