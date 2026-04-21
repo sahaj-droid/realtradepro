@@ -474,7 +474,7 @@ function confirmAddIndex(sym,name){
 }
 // Patch visible WL cards from AppState.cache — no full re-render, no GAS call
 function _patchVisibleWLPrices(){
-  let displayList = AppState.watchlists[AppState.currentWL] ? [...watchlists[AppState.currentWL].stocks] : [];
+  let displayList = AppState.watchlists[AppState.currentWL] ? [...AppState.watchlists[AppState.currentWL].stocks] : [];
   if(AppState.currentGroup !== 'ALL' && AppState.groups[AppState.currentGroup]){
     displayList = displayList.filter(s => AppState.groups[AppState.currentGroup].includes(s));
   }
