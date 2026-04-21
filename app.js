@@ -1380,7 +1380,7 @@ function handleCSVImport(event){
 // ======================================
 function backupData(){
   const data={
-    wl, h, hist, alerts, groups,
+    wl: AppState.wl, h: AppState.h, hist: AppState.hist, alerts: AppState.alerts, groups: AppState.groups,
     exportedAt: new Date().toLocaleString('en-IN'),
     version:"1.3"
   };
