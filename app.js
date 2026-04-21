@@ -3044,7 +3044,7 @@ async function startApp(){
     updateHeaderIndices();
     updatePriceTicker();
   });
-  Promise.all(indicesList.map(i=>fetchFull(i.sym,true))).then(()=>{
+Promise.all(AppState.indicesList.map(i=>fetchFull(i.sym,true)))
     updateHeaderIndices();
   });
   renderHeaderStrip();
@@ -4750,8 +4750,8 @@ function mpMarketOpen(){
 
 async function mpCheck(){
   if(!mpMarketOpen()) return;
-  const syms = (typeof AppState.wl!=='undefined' && wl.length>0)
-    ? wl.map(s => s.includes('.')?s:s+'.NS') : ['SBIN.NS','RELIANCE.NS','TCS.NS'];
+  const syms = (typeof AppState.wl!=='undefined' && AppState.wl.length>0)
+    ? AppState.wl.map(s => s.includes('.')?s:s+'.NS') : ['SBIN.NS','RELIANCE.NS','TCS.NS'];
   const sigCache = mpLoadCache();
   const now = Date.now();
   const apiUrl = localStorage.getItem('customAPI') || (typeof API!=='undefined' ? API : '');
