@@ -169,7 +169,7 @@ function _patchWLCard(s, d){
 
 async function renderWL(){
   // ── Phase 1: Instant render from AppState.cache (no waiting) ──────────────────────
-  let displayList = AppState.watchlists[AppState.currentWL] ? [...watchlists[AppState.currentWL].stocks] : [];
+  let displayList = AppState.watchlists[AppState.currentWL] ? [...AppState.watchlists[AppState.currentWL].stocks] : [];
   // Apply group filter
   if(AppState.currentGroup !== 'ALL' && AppState.groups[AppState.currentGroup]){
     displayList = displayList.filter(s => AppState.groups[AppState.currentGroup].includes(s));
