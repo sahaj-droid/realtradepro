@@ -369,42 +369,7 @@ function logoutUser() {
   currentUser = null;
   showProfileScreen();
 }
-(function(){
-  const PASS = "2512";
-  const key = "rtp_auth";
-  const _saved = localStorage.getItem(key);
-  const _ts = localStorage.getItem(key+'_ts');
-  const _expired = !_ts || (Date.now() - parseInt(_ts)) > 86400000;
-  if(_saved !== PASS || _expired){
-    document.body.style.overflow = 'hidden';
-    const overlay = document.createElement('div');
-    overlay.id = 'auth-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = `
-      <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:24px 20px;width:min(300px,90vw);text-align:center;">
-        <div style="font-size:28px;margin-bottom:8px;">🔐</div>
-        <div style="font-size:16px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;margin-bottom:4px;">RealTradePro</div>
-        <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;margin-bottom:16px;">Password દાખલ કરો</div>
-        <input id="auth-input" type="password" placeholder="••••••" maxlength="10"
-          style="width:100%;background:#0a1628;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:10px;padding:10px;font-size:20px;text-align:center;outline:none;letter-spacing:6px;box-sizing:border-box;font-family:'JetBrains Mono',monospace;"/>
-        <div id="auth-error" style="font-size:11px;color:#ef4444;margin-top:8px;display:none;">❌ ખોટો Password</div>
-        <button id="auth-btn" onclick="(function(){
-          const v=document.getElementById('auth-input').value;
-          const p='2512';
-          if(v===p){localStorage.setItem('rtp_auth',p);localStorage.setItem('rtp_auth_ts',Date.now());document.getElementById('auth-overlay').remove();document.body.style.overflow='';}
-          else{const e=document.getElementById('auth-error');e.style.display='block';document.getElementById('auth-input').value='';document.getElementById('auth-input').focus();}
-        })()"
-          style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:10px;width:100%;margin-top:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
-          Unlock 🔓
-        </button>
-      </div>`;
-    document.body.appendChild(overlay);
-    setTimeout(()=>{
-      const inp=document.getElementById('auth-input');
-      if(inp){inp.focus();inp.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('auth-btn').click();});}
-    },100);
-  }
-})();
+
 const API="https://script.google.com/macros/s/AKfycbxW8rj5alGlk3JckSK0_NRGjOpqFhGaC7ifEfa1VnLEtnBYvwO2jZ2nu_0BkH-X7wSF/exec";
 const API2 = "https://script.google.com/macros/s/AKfycbwEltygGQ4C2LIfYSAJcKu_gFQF1iNciZkZytG020yDoyktpbz4aNKsEqSj1wKXm7kUAQ/exec";
 const API3 = "https://script.google.com/macros/s/AKfycbycNOhJtgcjt4RTMSag5ruZvPhcNaKAlXwAdiQvoBDGfvmDIEKKHDQiMIAIpmJq2kwXTA/exec";
