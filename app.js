@@ -2487,10 +2487,10 @@ function detectCandlePatterns(opens, highs, lows, closes) {
   if (!opens || opens.length < 3) return [];
   const patterns = [];
   const n = closes.length;
-  const o = opens, AppState.h = highs, l = lows, c = closes;
+  const o = opens, h = highs, l = lows, c = closes;
 
   const bodySize  = (i) => Math.abs(c[i] - o[i]);
-  const range     = (i) => AppState.h[i] - l[i];
+  const range     = (i) => h[i] - l[i];
   const isGreen   = (i) => c[i] > o[i];
   const isRed     = (i) => c[i] < o[i];
   const midpoint  = (i) => (o[i] + c[i]) / 2;
@@ -2507,7 +2507,7 @@ function detectCandlePatterns(opens, highs, lows, closes) {
   // 2. HAMMER
   if (i >= 1) {
     const lowerWick = Math.min(o[i], c[i]) - l[i];
-    const upperWick = AppState.h[i] - Math.max(o[i], c[i]);
+    const upperWick = h[i] - Math.max(o[i], c[i]);
     const body = bodySize(i);
     if (body > 0 && lowerWick >= 2 * body && upperWick <= 0.3 * body && c[p] < o[p]) {
       patterns.push({ name:'Hammer', signal:'bullish', desc:'Bullish reversal — buyers pushed back from lows', color:'#22c55e' });
@@ -2516,7 +2516,7 @@ function detectCandlePatterns(opens, highs, lows, closes) {
 
   // 3. SHOOTING STAR
   if (i >= 1) {
-    const upperWick = AppState.h[i] - Math.max(o[i], c[i]);
+    const upperWick = h[i] - Math.max(o[i], c[i]);
     const lowerWick = Math.min(o[i], c[i]) - l[i];
     const body = bodySize(i);
     if (body > 0 && upperWick >= 2 * body && lowerWick <= 0.3 * body && c[p] > o[p]) {
