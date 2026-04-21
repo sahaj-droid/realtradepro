@@ -783,3 +783,11 @@ function sortAZ(){
   AppState.watchlists[AppState.currentWL].stocks.sort((a,b)=>AppState.azAsc?a.localeCompare(b):b.localeCompare(a));
   AppState.azAsc=!AppState.azAsc; saveWatchlists(); renderWL();
 }
+function sortPrice(){
+  AppState.watchlists[AppState.currentWL].stocks.sort((a,b)=>{let pa=AppState.cache[a]?.data?.regularMarketPrice||0,pb=AppState.cache[b]?.data?.regularMarketPrice||0;return AppState.priceAsc?pa-pb:pb-pa;});
+  AppState.priceAsc=!AppState.priceAsc; saveWatchlists(); renderWL();
+}
+function sortPercent(){
+  AppState.watchlists[AppState.currentWL].stocks.sort((a,b)=>{let da=AppState.cache[a]?.data,db=AppState.cache[b]?.data;let pa=da?(da.regularMarketPrice-da.chartPreviousClose)/da.chartPreviousClose:0;let pb=db?(db.regularMarketPrice-db.chartPreviousClose)/db.chartPreviousClose:0;return AppState.percentAsc?pa-pb:pb-pa;});
+  AppState.percentAsc=!AppState.percentAsc; saveWatchlists(); renderWL();
+}
