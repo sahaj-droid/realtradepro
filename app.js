@@ -1019,9 +1019,9 @@ async function openDetail(sym,isIndex){
     // Safety: clear loading after 10s if still stuck
     const _techTimeout = setTimeout(()=>{
       const ts=document.getElementById('techSection');
-      if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable. <a onclick="fetchHistory(\''+sym+'\').then(AppState.h=>{if(AppState.h)location.reload();})" style="color:#38bdf8;cursor:pointer;">Retry</a></div>';
+      if(ts&&ts.innerText.includes('Loading')) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable. <a onclick="fetchHistory(\''+sym+'\').then(h=>{if(h)location.reload();})" style="color:#38bdf8;cursor:pointer;">Retry</a></div>';
     }, 12000);
-    fetchHistory(sym, '60d', '1d').then(AppState.hist=>{
+    fetchHistory(sym, '60d', '1d').then(hist=>{
       clearTimeout(_techTimeout);
       const ts=document.getElementById("techSection");
       if(!ts) return;
@@ -1104,7 +1104,7 @@ async function openDetail(sym,isIndex){
     // INDEX: Load technical indicators (RSI/MACD/MA) from history
     const ts=document.getElementById("techSection");
     if(ts) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading index technicals...</div>';
-    fetchHistory(sym+'', '30d','1d').then(AppState.hist=>{
+    fetchHistory(sym+'', '30d','1d').then(hist=>{
       if(!ts) return;
       if(!AppState.hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Technical data unavailable for this index.</div>'; return; }
       const closes=hist.close.filter(v=>v!=null);
