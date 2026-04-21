@@ -8,7 +8,7 @@ const AppState = {
   currentPINEntry: '',
 
   // -- Watchlist & Cache --
-  wl: ["SBIN","RELIANCE","TCS"],
+  AppState.wl: ["SBIN","RELIANCE","TCS"],
   cache: {},
   CACHE_TIME: 300000,
   watchlists: [{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}],
@@ -130,14 +130,12 @@ const AppState = {
   _urlRotationIndex: 0,
 };
 
-let AppState.wl=["SBIN","RELIANCE","TCS"],AppState.cache={},AppState.CACHE_TIME=300000,AppState.h=[],AppState.hist=[],AppState.alerts=[],AppState.currentTrade={},AppState.isDark=true;
-let AppState.azAsc=true,AppState.priceAsc=false,AppState.percentAsc=false;
-let AppState.groups={},AppState.currentGroup="ALL";
+
+
+
 // MULTI-WATCHLIST SYSTEM
 // watchlists: [{name:"My WL", stocks:["SBIN","TCS"]}, ...]
-let AppState.watchlists=[{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
-let AppState.currentWL=0; // index of active watchlist
-let AppState.currentTradeType="CNC"; // CNC or MIS
+
 // -- FONT SIZE TOGGLE --
 const FONT_SIZES = {S:'100%', M:'112%', L:'125%'};
 function cycleFontSize(){
@@ -237,7 +235,7 @@ function holdingDaysLabel(days){
 }
 
 // -- LAST UPDATED TIMESTAMP --
-let AppState.lastUpdatedMap={};
+
 
 function timeAgo(ts){
   if(!ts) return '';
@@ -285,14 +283,14 @@ try{AppState.groups=JSON.parse(localStorage.getItem("AppState.groups"))||{};}cat
     } else {
       // Migrate: put existing AppState.wl[] into Watchlist 1
       AppState.watchlists=[
-        {name:"Watchlist 1",stocks:[...wl]},
+        {name:"Watchlist 1",stocks:[...AppState.wl]},
         {name:"Watchlist 2",stocks:[]},
         {name:"Watchlist 3",stocks:[]}
       ];
       saveWatchlists();
     }
   }catch(e){
-    AppState.watchlists=[{name:"Watchlist 1",stocks:[...wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
+    AppState.watchlists=[{name:"Watchlist 1",stocks:[...AppState.wl]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}];
   }
   try{AppState.currentWL=parseInt(localStorage.getItem("AppState.currentWL"))||0;}catch(e){}
   if(AppState.currentWL>=watchlists.length) AppState.currentWL=0;
@@ -304,8 +302,7 @@ try{AppState.groups=JSON.parse(localStorage.getItem("AppState.groups"))||{};}cat
 
 const INDICES_DEFAULT=[{name:"NIFTY 50",sym:"^NSEI"},{name:"SENSEX",sym:"^BSESN"},{name:"GIFT NIFTY",sym:"__GIFT__"},{name:"BANK NIFTY",sym:"^NSEBANK"}];
 const INDICES_VERSION="v2";
-let indicesList=(()=>{try{const v=localStorage.getItem('indicesVersion');if(v!==INDICES_VERSION){localStorage.removeItem('indicesList');localStorage.setItem('indicesVersion',INDICES_VERSION);return INDICES_DEFAULT;}const s=JSON.parse(localStorage.getItem('indicesList')||'null');return Array.isArray(s)&&s.length?s:INDICES_DEFAULT;}catch(e){return INDICES_DEFAULT;}})();
-function saveIndicesList(){try{localStorage.setItem('indicesList',JSON.stringify(indicesList));}catch(e){}}
+function saveIndicesList(){try{localStorage.setItem('AppState.indicesList',JSON.stringify(AppState.indicesList));}catch(e){}}
 
   const NIFTY50_STOCKS=[
   'RELIANCE','TCS','HDFCBANK','BHARTIARTL','ICICIBANK',
@@ -447,7 +444,7 @@ function switchWL(idx){
 }
 
 // WL Name Modal state
-let AppState._wlModalMode='add', AppState._wlModalIdx=-1;
+
 
 function addWL(){
   AppState._wlModalMode='add';
@@ -540,8 +537,8 @@ async function handleWatchlistCSV(event){
 // SEARCH SUGGESTIONS
 // ======================================
 // Search debounce timer
-let AppState._searchTimer = null;
-let AppState._lastSearchVal = "";
+
+
 
 function showSuggestions(val) {
   val = val.trim();
@@ -624,7 +621,7 @@ document.addEventListener("click", e => { if (!e.target.closest("#searchSection"
 // ======================================
 // POPUP & ERROR (once per session)
 // ======================================
-let AppState.errorShownThisSession = false;
+
 
 function showPopup(msg,duration=3000){
   const el=document.getElementById("alertPopup");
@@ -670,7 +667,7 @@ function updateMarketStatus(){
 // ======================================
 // TARGET PRICE PER STOCK
 // ======================================
-let AppState.targets = {};
+
 try{ AppState.targets=JSON.parse(localStorage.getItem("AppState.targets"))||{}; }catch(e){}
 
 function setTarget(sym, currentPrice){
@@ -783,7 +780,7 @@ function _buildWLCard(s, d){
   const diff   = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
   const pct    = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
   return `
-    <div class="AppState.wl-card-wrap" id="wrap-${s}">
+    <div class="wl-card-wrap" id="wrap-${s}">
       <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
         <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
@@ -811,7 +808,7 @@ function _buildWLCard(s, d){
           </div>
         </div>
       </div>
-      <div class="AppState.wl-actions-panel" id="act-${s}">
+      <div class="wl-actions-panel" id="act-${s}">
         <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
         <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
         <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
@@ -885,7 +882,7 @@ async function renderWL(){
       // Placeholder card — instant skeleton, fetch baad ma
       needFetch.push(s);
       html += `
-        <div class="AppState.wl-card-wrap" id="wrap-${s}">
+        <div class="wl-card-wrap" id="wrap-${s}">
           <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
             <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">&#x2715;</button>
             <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
@@ -905,14 +902,14 @@ async function renderWL(){
               </div>
             </div>
           </div>
-          <div class="AppState.wl-actions-panel" id="act-${s}" style="display:none;"></div>
+          <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
         </div>`;
     }
   }
   // DOM instant update — user immediately sees cards
   watchlistDiv.innerHTML = html;
 
-  // ── Phase 2: Background fetch for AppState.cache-miss stocks, patch DOM individually ─
+  // ── Phase 2: Background fetch for cache-miss stocks, patch DOM individually ─
   if(needFetch.length > 0){
     needFetch.forEach(async s => {
       try{
@@ -964,7 +961,7 @@ async function renderIndices(){
 async function refreshGainers(){
   const gm=document.getElementById('gmov-gainers-list');
   if(gm) gm.innerHTML=`<div style="text-align:center;color:#4b6280;padding:20px;font-size:13px;">Fetching fresh data...</div>`;
-  const _rSrc=[...new Set([...(typeof AppState.wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
+  const _rSrc=[...new Set([...(typeof AppState.wl!=='undefined'?AppState.wl:[]),...NIFTY50_STOCKS])];
   if(!window._pythonEngineActive){
     _rSrc.forEach(s=>{if(AppState.cache[s]) AppState.cache[s].time=0;});
   }
@@ -975,7 +972,6 @@ async function refreshGainers(){
 // ======================================
 // RENDER GAINERS/LOSERS (Indices tab)
 // ======================================
-let AppState._moversTab = 'gainers';
 
 function moversSubTab(t) {
   AppState._moversTab = t;
@@ -990,7 +986,7 @@ function moversSubTab(t) {
 }
 
 function renderGainersFromCache(){
-  const _gainSrc=[...new Set([...(typeof AppState.wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
+  const _gainSrc=[...new Set([...(typeof AppState.wl!=='undefined'?AppState.wl:[]),...NIFTY50_STOCKS])];
   const allStocks=_gainSrc;
   const results=allStocks.map(s=>{
     const d=AppState.cache[s]?.data; if(!d||!d.chartPreviousClose) return null;
@@ -1049,7 +1045,7 @@ function renderGainersFromCache(){
 // ======================================
 async function updateHeaderIndices(){
   if(!document.getElementById('indicesStrip')?.children.length) renderHeaderStrip();
-  for(let i of indicesList){
+  for(let i of AppState.indicesList){
     let d=AppState.cache[i.sym]?.data||await fetchFull(i.sym,true);
     if(!d) continue;
     const diff=d.regularMarketPrice-d.chartPreviousClose;
@@ -1075,7 +1071,6 @@ if(pe){
   }
   await updateGiftNifty();
 }
-let AppState._giftNiftyCache=null,AppState._giftNiftyCacheTime=0;
 const GIFT_CACHE_MS=60000;
 
 async function updateGiftNifty(){
@@ -1230,7 +1225,7 @@ async function updatePrices(){
     if(!AppState.cache[s]?.data) continue;
 
     const fund = AppState.cache[s]?.fundamentals || {};
-    let d = { ...cache[s].data }; 
+    let d = { ...AppState.cache[s].data }; 
     
     // 🔥 THE BRAHMASTRA FIX: Number Extraction
     const getRealVal = (val) => {
@@ -1461,7 +1456,7 @@ function startClock(){
 // ======================================
 // HISTORY  -  LIST + CALENDAR
 // ======================================
-let AppState.histView='list';
+
 
 function setHistView(v){
   AppState.histView=v;
@@ -2138,7 +2133,7 @@ function handleRestore(event){
   reader.onload=function(e){
     try{
       const data=JSON.parse(e.target.result);
-      if(data.wl)    { AppState.wl=data.wl;       localStorage.setItem("AppState.wl",JSON.stringify(AppState.wl)); }
+      if(data.AppState.wl)    { AppState.wl=data.AppState.wl;       localStorage.setItem("AppState.wl",JSON.stringify(AppState.wl)); }
       if(data.h)     { AppState.h=data.h;         localStorage.setItem("AppState.h",JSON.stringify(AppState.h)); }
       if(data.hist)  { AppState.hist=data.hist;   localStorage.setItem("AppState.hist",JSON.stringify(AppState.hist)); }
       if(data.alerts){ AppState.alerts=data.alerts; localStorage.setItem("AppState.alerts",JSON.stringify(AppState.alerts)); }
@@ -2175,8 +2170,8 @@ function getAvgVsCMPBar(avg, cmp){
 // ======================================
 // FEATURE: SETTINGS
 // ======================================
-let AppState.dupWarnEnabled = true;
-let AppState.refreshInterval = null;
+
+
 
 try{ AppState.dupWarnEnabled = localStorage.getItem("dupWarn") !== "false"; }catch(e){}
 
@@ -2347,7 +2342,7 @@ function exportCSV(){
 // ======================================
 // P&L CALENDAR (History)
 // ======================================
-let AppState.calYear=new Date().getFullYear(), AppState.calMonth=new Date().getMonth(), AppState.calSelDay=null;
+
 
 function calNav(dir){
   AppState.calMonth+=dir;
@@ -2747,7 +2742,7 @@ function toggleNotifications(){
 }
 
 // Fix 4: Separate clear with confirmation
-let AppState._dangerPendingType = null;
+
 function clearData(type){
   const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
   const descs={
@@ -2792,7 +2787,7 @@ function toggleActions(sym){
   var panel=document.getElementById('act-'+sym);
   if(!panel) return;
   // Close all others first
-  document.querySelectorAll('.wl-actions-panel.open').forEach(function(el){
+  document.querySelectorAll('.AppState.wl-actions-panel.open').forEach(function(el){
     if(el.id!=='act-'+sym) el.classList.remove('open');
   });
   panel.classList.toggle('open');
@@ -2800,8 +2795,8 @@ function toggleActions(sym){
 
 // Tap anywhere else closes action panels
 document.addEventListener('click',function(e){
-  if(!e.target.closest('.wl-card-wrap')){
-    document.querySelectorAll('.wl-actions-panel.open').forEach(function(el){
+  if(!e.target.closest('.AppState.wl-card-wrap')){
+    document.querySelectorAll('.AppState.wl-actions-panel.open').forEach(function(el){
       el.classList.remove('open');
     });
   }
@@ -2835,8 +2830,7 @@ function chart(sym,isIndex){
 }
 
 // -- ALERT MODAL — Upgraded --
-var AppState.currentAlertSym = "";
-var AppState._alertDir = "above"; // "above" | "below"
+
 
 function setAlertDir(dir) {
   AppState._alertDir = dir;
@@ -2979,7 +2973,7 @@ function sortPercent(){
 // TAB
 // ======================================
 // ── Settings PIN Lock ──────────────────────────────────────
-let AppState._settingsPINUnlocked = false;
+
 
 function _openSettingsWithPIN() {
   // Already unlocked this session
@@ -3162,7 +3156,7 @@ function _switchTab(t){
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">🔔 PRICE ALERTS</div>
-      <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.wl-card-wrap')?.click(),100);"
+      <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.AppState.wl-card-wrap')?.click(),100);"
         style="font-size:10px;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:3px 10px;cursor:pointer;">+ New Alert</button>
     </div>
     ${priceHTML}
@@ -3504,7 +3498,7 @@ function calcBollinger(closes, period=20, mult=2){
 }
 
 // Render Bollinger Band section in Stock Detail Modal
-let AppState._bbSym='', AppState._bbPeriod='6M', AppState._bbRange='daily';
+
 
 // BB_CONFIG — Period x Range matrix (like Chartink)
 // AppState._bbPeriod = chart period (1M/3M/6M/1Y/2Y)
@@ -3953,7 +3947,7 @@ async function startApp(){
   // No GAS fundBatch call needed — all stocks instantly available via window._firebaseFundCache
   // Background: preload POPULAR_STOCKS for Gainers tab — only missing stocks (no duplicate calls)
   setTimeout(()=>{
-    const _startSrc=[...new Set([...(typeof AppState.wl!=='undefined'?wl:[]),...NIFTY50_STOCKS])];
+    const _startSrc=[...new Set([...(typeof AppState.wl!=='undefined'?AppState.wl:[]),...NIFTY50_STOCKS])];
     const needFetch = _startSrc.filter(s=>!AppState.cache[s]||!AppState.cache[s].data);
     if(needFetch.length > 0) {
       batchFetchStocks(needFetch).then(()=>{
@@ -4040,8 +4034,8 @@ async function manualRefresh(){
 
 // ── TAB SWIPE NAVIGATION ─────────────────────────────────────
 const TAB_ORDER = ['watchlist','indices','holdings','history','news','learn'];
-let AppState._curTab = 'watchlist';
-let AppState._txStart = 0, AppState._tyStart = 0, AppState._swipeLocked = false;
+
+
 
 // Patch tab() to track current tab
 const _origTab = window.tab;
@@ -4093,14 +4087,14 @@ window.addEventListener('popstate', () => {
 // ======================================
 // SMART NEWS ENGINE
 // ======================================
-let AppState.newsCache = null;
-let AppState.newsCacheTime = 0;
+
+
 const NEWS_CACHE_MS = 5 * 60 * 1000; // 5 min AppState.cache
-let AppState.newsCacheDate = '';
+
 
 // Keyword sentiment engine
-let AppState.newsActiveFilter = 'ALL';
-let AppState.newsActiveTab = 'all';
+
+
 
 // =============================================
 // ASK NIVI TAB — Universal Chat v4
@@ -4114,7 +4108,7 @@ function _niviSubTab(tab) {
   document.getElementById('nivi-subtab-chat').style.cssText = isChat ? active : inactive;
   document.getElementById('nivi-subtab-news').style.cssText = isChat ? inactive : active;
 }
-let AppState._tabChatHistory = [];
+
 
 function buildMoverChips() {
   if (!AppState.wl || wl.length === 0) return '';
@@ -4615,7 +4609,7 @@ function aiNewsCacheClear() {
 // ======================================
 // AVERAGING CALCULATOR
 // ======================================
-let AppState._acSym='', AppState._acAvg=0, AppState._acQty=0, AppState._acCmp=0, AppState._acMode='buy';
+
 
 function openAvgCalc(sym, avgPrice, qty, cmp){
   AppState._acSym=sym; AppState._acAvg=avgPrice; AppState._acQty=qty; AppState._acCmp=cmp;
@@ -4754,8 +4748,7 @@ function calcTargetQty(){
 // ======================================
 // STOCK SCREENER
 // ======================================
-let AppState.screenerSource = 'watchlist'; // 'watchlist' | 'popular' | 'cached'
-let AppState.screenerFilters = new Set();
+
 
 function gainersSubTab(tab) {
   document.getElementById('gmovers').style.display = tab === 'movers' ? 'block' : 'none';
@@ -4791,7 +4784,7 @@ function renderScreener() {
 
   // Source stocks
   let sourceStocks = [];
-  if (AppState.screenerSource === 'watchlist') sourceStocks = [...wl];
+  if (AppState.screenerSource === 'watchlist') sourceStocks = [...AppState.wl];
   else if (AppState.screenerSource === 'popular') sourceStocks = [...NIFTY50_STOCKS];
   else sourceStocks = Object.keys(AppState.cache).filter(k => AppState.cache[k]&&AppState.cache[k].data);
 
@@ -4949,9 +4942,9 @@ function setSmartAlert(sym, price, btn) {
 // FIREBASE SYNC (replaces GAS cloud sync)
 // All data saved to Firestore via saveUserData()
 // ======================================
-var AppState._syncInProgress = false;
-var AppState._syncDebounceTimer = null;
-var AppState._lastSyncTime = 0;
+
+
+
 
 // Debounced auto-save — waits 2s after last change, field-aware
 function triggerAutoSync(field) {
@@ -5060,10 +5053,9 @@ function setFontSize(size) {
 // ======================================
 // 🤖 Ask Nivi — Chat UI v3
 // ======================================
-let AppState._niviCurrentSym = '';
-let AppState._niviChatHistory = [];   // [{role:'user'|'nivi', text, ts}]
-let AppState._niviMicActive  = false;
-let AppState._niviRecognition = null;
+
+
+
 const NIVI_CACHE_MS = 30 * 60 * 1000;
 
 // --- BUILD WATCHLIST CONTEXT STRING ---
@@ -5326,7 +5318,7 @@ async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
 }
 
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
-let AppState._niviPersistTimer = null;
+
 function _niviPersistChat() {
   if (!currentUser || !AppState._niviCurrentSym) return;
   if (AppState._niviPersistTimer) clearTimeout(AppState._niviPersistTimer);
@@ -5816,8 +5808,6 @@ function _renderAIInsights(data) {
 // Fallback: GAS type=fundlearn direct fetch
 // ============================================================
 
-let AppState._learnLang = localStorage.getItem('learnLang') || 'hi';
-let AppState._learnCache = {}; // sym -> raw data
 
 // ── Language selector ─────────────────────────────────────
 function setLearnLang(lang) {
@@ -5844,7 +5834,7 @@ function setLearnLang(lang) {
 }
 
 // ── Main Learn Tab switcher (Financial vs School) ────────────
-let AppState._learnMainTab = 'financial';
+
 
 function switchLearnMain(tab) {
   AppState._learnMainTab = tab;
@@ -6031,8 +6021,6 @@ const MARKET_SCHOOL = {
 };
 
 // ── Market School State ───────────────────────────────────
-let AppState._msCategory = null; // null = home, 'technical' etc = category
-let AppState._msTopic    = null; // null = category list, 'rsi' etc = topic detail
 
 function renderMarketSchool() {
   const el = document.getElementById('marketSchoolContent');
@@ -6157,7 +6145,7 @@ function learnSearchSuggest(val) {
   if (!box) return;
   const v = val.trim().toUpperCase();
   if (v.length < 1) { box.style.display = 'none'; return; }
-  const allSyms = [...new Set([...(typeof AppState.wl!=='undefined'?wl:[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
+  const allSyms = [...new Set([...(typeof AppState.wl!=='undefined'?AppState.wl:[]), ...(typeof POPULAR_STOCKS!=='undefined'?POPULAR_STOCKS:[])])];
   const matches = allSyms.filter(s => s.toUpperCase().startsWith(v)).slice(0, 8);
   if (matches.length === 0) { box.style.display = 'none'; return; }
   box.innerHTML = matches.map(s =>
@@ -6577,7 +6565,7 @@ function showLearnInfo(metric, val, symRaw) {
 }
 
 // ── Active Learn Sub-Tab tracker ─────────────────────────────
-let AppState._learnActiveTab = 'fundamentals';
+
 
 function switchLearnTab(tabName) {
   AppState._learnActiveTab = tabName;
