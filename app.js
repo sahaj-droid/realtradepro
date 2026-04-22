@@ -186,7 +186,7 @@ function updateTaxCalc(){
   const p=parseFloat(document.getElementById("m-price")?.value)||0;
   const q=parseInt(document.getElementById("m-qty")?.value)||0;
   const box=document.getElementById("taxCalcBox");
-  const type=currentTrade.type||'BUY';
+  const type=AppState.currentTrade.type||'BUY';
   if(!box) return;
   if(!p||!q){ box.style.display="none"; return; }
   box.style.display="block";
@@ -242,7 +242,7 @@ function timeAgo(ts){
   const diff=Math.floor((Date.now()-ts)/1000);
   if(diff<60) return `${diff}s ago`;
   if(diff<3600) return `${Math.floor(diff/60)}m ago`;
-  return `${Math.floor(diff/3600)}AppState.h ago`;
+  return `${Math.floor(diff/3600)}h ago`;
 }
 
 // -- PRICE ALERT SOUND --
@@ -382,7 +382,7 @@ function saveWatchlists(){
   localStorage.setItem("currentWL",AppState.currentWL);
   AppState.wl = AppState.watchlists[AppState.currentWL].stocks;
   localStorage.setItem("wl",JSON.stringify(AppState.wl));
-  if (currentUser) saveUserData('AppState.watchlists');
+  if (AppState.currentUser) saveUserData('watchlists');
   // ── Sync all watchlist stocks to Firebase for Python engine ──────────────
   _syncWatchlistToFirebase();
 }
@@ -391,7 +391,7 @@ function saveWatchlists(){
 function _syncWatchlistToFirebase(){
   if(typeof firebase === 'undefined') return;
   try{
-    const allSyms = [...new Set(watchlists.flatMap(w => w.stocks || []))];
+    const allSyms = [...new Set(AppState.watchlists.flatMap(w => w.stocks || []))];
     firebase.firestore()
       .collection('RealTradePro').doc('config')
       .set({ watchlist: allSyms, updated_at: new Date().toISOString() }, { merge: true })
@@ -404,7 +404,7 @@ function renderWLTabs(){
   const bar=document.getElementById("wlTabsBar");
   if(!bar) return;
   let html="";
-  watchlists.forEach((w,i)=>{
+  AppState.watchlists.forEach((w,i)=>{
     const isActive=(i===AppState.currentWL);
     html+=`<button class="group-btn${isActive?' active':''}"
       onclick="switchWL(${i})"
@@ -415,7 +415,7 @@ function renderWLTabs(){
       data-wlidx="${i}"
     >${w.name} ${isActive?'&#9660;':''}</button>`;
   });
-  if(watchlists.length<6){
+  if(AppState.watchlists.length<6){
     html+=`<button onclick="addWL()" style="background:#0a1628;border:1px dashed #2d3f52;color:#4b6280;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">+ Add</button>`;
   }
   // Group filter tabs (Portfolio, Defense, etc.) — separator + amber highlight
@@ -450,7 +450,7 @@ function addWL(){
   AppState._wlModalMode='add';
   AppState._wlModalIdx=-1;
   document.getElementById('wlNameModalTitle').innerText='+ New Watchlist';
-  document.getElementById('wlNameInput').value='Watchlist '+(watchlists.length+1);
+  document.getElementById('wlNameInput').value='Watchlist '+(AppState.watchlists.length+1);
   const m=document.getElementById('wlNameModal');
   m.style.display='flex';
   setTimeout(()=>{ const inp=document.getElementById('wlNameInput'); inp.focus(); inp.select(); },100);
@@ -471,9 +471,9 @@ function confirmWLName(){
   if(!val){ showPopup('Name required'); return; }
   closeWLNameModal();
   if(AppState._wlModalMode==='add'){
-    watchlists.push({name:val,stocks:[]});
+    AppState.watchlists.push({name:val,stocks:[]});
     saveWatchlists();
-    switchWL(watchlists.length-1);
+    switchWL(AppState.watchlists.length-1);
     showPopup("'"+val+"' banayo!");
   } else {
     AppState.watchlists[AppState._wlModalIdx].name=val;
@@ -757,9 +757,9 @@ async function renderHold(){
 // ======================================
 function updatePortfolioDashboard(){
   let ti=0,cv=0;
-  h.forEach(s=>{ti+=s.price*s.qty;cv+=s.ltp?s.ltp*s.qty:s.price*s.qty;});
+  AppState.h.forEach(s=>{ti+=s.price*s.qty;cv+=s.ltp?s.ltp*s.qty:s.price*s.qty;});
   const uPL=cv-ti,rp=ti?((uPL/ti)*100).toFixed(2):0;
-  const realPL=hist.filter(x=>x.type!=='BUY'&&x.pnl!=null).reduce((s,x)=>s+x.pnl,0);
+  const realPL=AppState.hist.filter(x=>x.type!=='BUY'&&x.pnl!=null).reduce((s,x)=>s+x.pnl,0);
   const totPL=uPL+realPL;
   document.getElementById("totalInvestment").innerText=inr(ti);
   document.getElementById("currentValue").innerText=inr(cv);
@@ -792,7 +792,7 @@ function startClock(){
 function setHistView(v){
   AppState.histView=v;
   ['list','calendar'].forEach(x=>{
-    const btn=document.getElementById('AppState.histView'+x.charAt(0).toUpperCase()+x.slice(1));
+    const btn=document.getElementById('histView'+x.charAt(0).toUpperCase()+x.slice(1));
     if(!btn) return;
     const active=x===v;
     btn.style.background=active?'#1e3a5f':'#1e2d3d';
@@ -808,7 +808,7 @@ function setHistView(v){
 
 function renderHist(){
   let html="";
-  hist.forEach((x, idx)=>{
+  AppState.hist.forEach((x, idx)=>{
     const isBuy=x.type==='BUY';
     const typeTag=x.tradeType?`<span style="font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;background:${x.tradeType==='MIS'?'#4a1d96':'#1e3a5f'};color:${x.tradeType==='MIS'?'#c4b5fd':'#93c5fd'};margin-left:4px;">${x.tradeType}</span>`:'';
     let daysStr='';
@@ -838,16 +838,16 @@ function renderHist(){
     </div>`;
   });
   const el=document.getElementById("historyList");
-  if(el) el.innerHTML=html||(hist.length===0?`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No history yet</div>`:"");
+  if(el) el.innerHTML=html||(AppState.hist.length===0?`<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">No history yet</div>`:"");
 }
 function deleteHistEntry(idx) {
-  if (idx < 0 || idx >= hist.length) return;
+  if (idx < 0 || idx >= AppState.hist.length) return;
   const entry = AppState.hist[idx];
   const label = `${entry.sym} ${entry.type} × ${entry.qty} @ ₹${entry.buy}`;
   if (!confirm(`Delete this entry?\n${label}`)) return;
-  hist.splice(idx, 1);
+  AppState.hist.splice(idx, 1);
   localStorage.setItem('hist', JSON.stringify(AppState.hist));
-  if (currentUser) saveUserData('history');
+  if (AppState.currentUser) saveUserData('history');
   renderHist();
   showPopup('Entry deleted');
 }
@@ -861,7 +861,7 @@ window._firebaseHistCache = window._firebaseHistCache || {}; // histcache collec
 
 // ── Firebase helper: silent set (never throws, ideal for best-effort writes) ──
 function _fbSet(path, data) {
-  if (!currentUser) return;
+  if (!AppState.currentUser) return;
   try {
     // path: 'collection/docId' or 'collection/docId/sub/subId'
     const parts = path.split('/');
@@ -1020,7 +1020,7 @@ async function openDetail(sym,isIndex){
       clearTimeout(_techTimeout);
       const ts=document.getElementById("techSection");
       if(!ts) return;
-      if(!AppState.hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>'; return; }
+      if(!hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:4px;">Technical data unavailable</div>'; return; }
       const closes=hist.close.filter(v=>v!=null);
       const highs=hist.high.filter(v=>v!=null);
       const lows=hist.low.filter(v=>v!=null);
@@ -1101,7 +1101,7 @@ async function openDetail(sym,isIndex){
     if(ts) ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading index technicals...</div>';
     fetchHistory(sym+'', '30d','1d').then(hist=>{
       if(!ts) return;
-      if(!AppState.hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Technical data unavailable for this index.</div>'; return; }
+      if(!hist||!hist.close){ ts.innerHTML='<div style="font-size:10px;color:#4b6280;text-align:center;padding:6px;">Technical data unavailable for this index.</div>'; return; }
       const closes=hist.close.filter(v=>v!=null);
       const highs=hist.high?hist.high.filter(v=>v!=null):closes;
       const lows=hist.low?hist.low.filter(v=>v!=null):closes;
@@ -1266,7 +1266,7 @@ function openModal(type,sym,price){
 }
 
 function openEdit(sym){
-  let stock=h.find(x=>x.sym===sym);if(!stock)return;
+  let stock=AppState.h.find(x=>x.sym===sym);if(!stock)return;
   AppState.currentTrade={type:"EDIT",sym};
   document.getElementById("m-title").innerText="EDIT  -  "+sym;
   document.getElementById("m-price").value=stock.price;
@@ -1287,37 +1287,37 @@ function confirmTrade(){
   let q=parseInt(document.getElementById("m-qty").value);
   let d=document.getElementById("m-date").value;
   if(!p||!q)return;
-  let ex=h.find(x=>x.sym===currentTrade.sym);
+  let ex=AppState.h.find(x=>x.sym===AppState.currentTrade.sym);
 
-  if(currentTrade.type==="EDIT"){
-    let s=h.find(x=>x.sym===currentTrade.sym);if(!s)return;
+  if(AppState.currentTrade.type==="EDIT"){
+    let s=AppState.h.find(x=>x.sym===AppState.currentTrade.sym);if(!s)return;
     s.price=p; s.qty=q; s.buyDate=d;
     localStorage.setItem("h",JSON.stringify(AppState.h));
-    if (currentUser) saveUserData('holdings');
+    if (AppState.currentUser) saveUserData('holdings');
     triggerAutoSync('holdings');
     closeModal(); renderHold(); return;
   }
 
-  if(currentTrade.type==="BUY"){
+  if(AppState.currentTrade.type==="BUY"){
     if(ex){let tq=ex.qty+q;ex.price=((ex.price*ex.qty)+(p*q))/tq;ex.qty=tq;if(!ex.buyDate)ex.buyDate=d;}
-    else{h.push({sym:currentTrade.sym,qty:q,price:p,buyDate:d,tradeType:AppState.currentTradeType});}
-    hist.unshift({sym:currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:AppState.currentTradeType});
+    else{AppState.h.push({sym:AppState.currentTrade.sym,qty:q,price:p,buyDate:d,tradeType:AppState.currentTradeType});}
+    AppState.hist.unshift({sym:AppState.currentTrade.sym,qty:q,buy:p,sell:null,date:d,pnl:null,type:'BUY',tradeType:AppState.currentTradeType});
     localStorage.setItem("h",JSON.stringify(AppState.h));
     localStorage.setItem("hist",JSON.stringify(AppState.hist));
-    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
+    if (AppState.currentUser) { saveUserData('holdings'); saveUserData('history'); }
     triggerAutoSync('history');
     closeModal(); renderHold(); return;
   }
 
-  if(currentTrade.type==="SELL"){
+  if(AppState.currentTrade.type==="SELL"){
     if(!ex||q>ex.qty){showPopup("Invalid Quantity");return;}
     let pnl=(p-ex.price)*q;
     const buyDate=ex.buyDate;
     if(q===ex.qty){AppState.h=h.filter(x=>x.sym!==ex.sym);}else{ex.qty-=q;}
-    hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:AppState.currentTradeType,buyDate});
+    AppState.hist.unshift({sym:ex.sym,qty:q,buy:ex.price,sell:p,date:d,pnl,type:'SELL',tradeType:AppState.currentTradeType,buyDate});
     localStorage.setItem("h",JSON.stringify(AppState.h));
     localStorage.setItem("hist",JSON.stringify(AppState.hist));
-    if (currentUser) { saveUserData('holdings'); saveUserData('history'); }
+    if (AppState.currentUser) { saveUserData('holdings'); saveUserData('history'); }
     closeModal(); renderHold(); renderHist(); tab("history");
   }
 }
@@ -1356,18 +1356,18 @@ function handleCSVImport(event){
       const price=parseFloat(cols[2]);
       const date=cols[3]||new Date().toISOString().split('T')[0];
       if(!sym||isNaN(qty)||isNaN(price)||qty<=0||price<=0){ skipped++; continue; }
-      const ex=h.find(x=>x.sym===sym);
+      const ex=AppState.h.find(x=>x.sym===sym);
       if(ex){
         const tq=ex.qty+qty;
         ex.price=((ex.price*ex.qty)+(price*qty))/tq;
         ex.qty=tq;
       } else {
-        h.push({sym,qty,price});
+        AppState.h.push({sym,qty,price});
       }
       imported++;
     }
     localStorage.setItem("h",JSON.stringify(AppState.h));
-    if (currentUser) saveUserData('holdings');
+    if (AppState.currentUser) saveUserData('holdings');
     event.target.value="";
     showPopup(`Import: ${imported} stocks, ${skipped} skipped`);
     tab("holdings");
@@ -1596,9 +1596,9 @@ async function exportTechnicalExcel(){
 // EXPORT CSV (History)
 // ======================================
 function exportCSV(){
-  if(!AppState.hist||hist.length===0){ showPopup('No history to export'); return; }
+  if(!AppState.hist||AppState.hist.length===0){ showPopup('No history to export'); return; }
   const rows=['Type,Symbol,TradeType,BuyPrice,SellPrice,Qty,PnL,Date,BuyDate'];
-  hist.forEach(x=>{
+  AppState.hist.forEach(x=>{
     const row=[
       x.type||'',
       x.sym||'',
@@ -1652,7 +1652,7 @@ function renderCalendar(){
 
   // Build day->{pnl, trades[]} map for ALL trades (BUY+SELL)
   const dayData={};
-  hist.forEach(x=>{
+  AppState.hist.forEach(x=>{
     if(!x.date) return;
     const xDate=new Date(x.date);
     if(isNaN(xDate)) return;
@@ -1778,7 +1778,7 @@ function loadSettingsUI(){
   const d4=document.getElementById("set-api4-display");
   const d5=document.getElementById("set-api5-display");
   const refEl=document.getElementById("set-refresh");
-  const cacheEl=document.getElementById("set-AppState.cache");
+  const cacheEl=document.getElementById("set-cache");
   if(d1) d1.innerText=localStorage.getItem("customAPI")||API;
   if(d2) d2.innerText=localStorage.getItem("customAPI2")||API2;
   if(d3) d3.innerText=localStorage.getItem("customAPI3")||API3;
@@ -1814,8 +1814,8 @@ function loadSettingsUI(){
   }
   // Avatar initial letter from currentUser
   const avEl = document.getElementById('settingsAvatarLetter');
-  if(avEl && currentUser) {
-  const uname = typeof currentUser === 'string' ? currentUser : (currentUser.name || '?');
+  if(avEl && AppState.currentUser) {
+  const uname = typeof currentUser === 'string' ? AppState.currentUser : (AppState.currentUser.name || '?');
   avEl.textContent = uname.charAt(0).toUpperCase();
 }
   // FF2 URL display
@@ -1878,7 +1878,7 @@ function saveSetting(type){
     const val=document.getElementById("set-api-input").value.trim();
     if(!val){ showPopup("URL cannot be empty"); return; }
     localStorage.setItem("customAPI",val);
-    if (currentUser) saveUserData('settings');
+    if (AppState.currentUser) saveUserData('settings');
     cancelAPIEdit();
     loadSettingsUI();
     showPopup("Primary API saved! Refresh to apply.");
@@ -1932,8 +1932,8 @@ if (type === "refresh") {
     showPopup(`Auto-Refresh set to ${val}s`);
   }
 
-  if (type === "AppState.cache") {
-    const val = parseInt(document.getElementById("set-AppState.cache").value);
+  if (type === "cache") {
+    const val = parseInt(document.getElementById("set-cache").value);
     
     // 🛡️ FIX 1: isNaN check ahiya pan jaruri chhe
     if (isNaN(val) || val < 1000) { 
@@ -1976,7 +1976,7 @@ async function openAlertHistory(){
     if(!snap.exists){ showPopup('No alert history yet'); return; }
     const data = snap.data();
     const alerts = data.alerts || [];
-    if(!alerts.length){ showPopup('No AppState.alerts recorded yet'); return; }
+    if(!alerts.length){ showPopup('No alerts recorded yet'); return; }
     // Simple modal show
     const modal = document.createElement('div');
     modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);overflow-y:auto;padding:16px;';
@@ -2055,14 +2055,14 @@ function confirmDangerClear(){
   if(AppState._dangerPendingType) _executeClearData(AppState._dangerPendingType);
 }
 function _executeClearData(type){
-  if(type==='holdings'){ AppState.h=[]; localStorage.setItem('h',JSON.stringify(AppState.h)); if(currentUser) saveUserData('holdings'); renderHold(); }
-  if(type==='history'){ AppState.hist=[]; localStorage.setItem('hist',JSON.stringify(AppState.hist)); if(currentUser) saveUserData('history'); renderHist(); }
-  if(type==='AppState.alerts'){ AppState.alerts=[]; localStorage.setItem('alerts',JSON.stringify(AppState.alerts)); if(currentUser) saveUserData('AppState.alerts'); }
+  if(type==='holdings'){ AppState.h=[]; localStorage.setItem('h',JSON.stringify(AppState.h)); if(AppState.currentUser) saveUserData('holdings'); renderHold(); }
+  if(type==='history'){ AppState.hist=[]; localStorage.setItem('hist',JSON.stringify(AppState.hist)); if(AppState.currentUser) saveUserData('history'); renderHist(); }
+  if(type==='alerts'){ AppState.alerts=[]; localStorage.setItem('alerts',JSON.stringify(AppState.alerts)); if(AppState.currentUser) saveUserData('alerts'); }
   const labels={holdings:'Holdings',history:'Trade History',alerts:'All Alerts'};
   showPopup((labels[type]||type)+' cleared!');
 }
 function clearAllData(){
-  clearData('holdings'); clearData('history'); clearData('AppState.alerts');
+  clearData('holdings'); clearData('history'); clearData('alerts');
 }
 // ======================================
 // TAP ACTION PANEL SYSTEM
@@ -2071,7 +2071,7 @@ function toggleActions(sym){
   var panel=document.getElementById('act-'+sym);
   if(!panel) return;
   // Close all others first
-  document.querySelectorAll('.AppState.wl-actions-panel.open').forEach(function(el){
+  document.querySelectorAll('.wl-actions-panel.open').forEach(function(el){
     if(el.id!=='act-'+sym) el.classList.remove('open');
   });
   panel.classList.toggle('open');
@@ -2079,8 +2079,8 @@ function toggleActions(sym){
 
 // Tap anywhere else closes action panels
 document.addEventListener('click',function(e){
-  if(!e.target.closest('.AppState.wl-card-wrap')){
-    document.querySelectorAll('.AppState.wl-actions-panel.open').forEach(function(el){
+  if(!e.target.closest('.wl-card-wrap')){
+    document.querySelectorAll('.wl-actions-panel.open').forEach(function(el){
       el.classList.remove('open');
     });
   }
@@ -2138,7 +2138,7 @@ function setAlert(sym) {
     "CMP: ₹" + (price ? price.toFixed(2) : "--");
   document.getElementById("alert-price").placeholder = "e.g. " + (price ? (price*1.05).toFixed(0) : "500");
   // Show existing AppState.alerts for this sym
-  var existing = alerts.filter(a => a.sym===sym && !a.triggered);
+  var existing = AppState.alerts.filter(a => a.sym===sym && !a.triggered);
   var listEl = document.getElementById("alert-existing-list");
   if (existing.length > 0) {
     listEl.innerHTML = '<div style="font-size:9px;color:#4b6280;margin-bottom:4px;font-weight:700;">EXISTING ALERTS</div>' +
@@ -2155,7 +2155,7 @@ function setAlert(sym) {
 }
 
 function removeAlert(sym, price) {
-  AppState.alerts = alerts.filter(a => !(a.sym===sym && a.price===price));
+  AppState.alerts = AppState.alerts.filter(a => !(a.sym===sym && a.price===price));
   localStorage.setItem("alerts", JSON.stringify(AppState.alerts));
   setAlert(sym); // refresh modal
 }
@@ -2168,8 +2168,8 @@ function confirmAlert() {
   var price = parseFloat(document.getElementById("alert-price").value);
   if (!price || isNaN(price)) { showPopup("Valid price daakho"); return; }
   // Remove duplicate
-  AppState.alerts = alerts.filter(a => !(a.sym===AppState.currentAlertSym && a.price===price));
-  alerts.push({ sym:AppState.currentAlertSym, price:price, dir:AppState._alertDir, triggered:false });
+  AppState.alerts = AppState.alerts.filter(a => !(a.sym===AppState.currentAlertSym && a.price===price));
+  AppState.alerts.push({ sym:AppState.currentAlertSym, price:price, dir:AppState._alertDir, triggered:false });
   localStorage.setItem("alerts", JSON.stringify(AppState.alerts));
   closeAlertModal();
   showPopup("🔔 Alert set: " + AppState.currentAlertSym + " " + (AppState._alertDir==='above'?'▲':'▼') + " ₹" + price);
@@ -2190,15 +2190,15 @@ function _switchTab(t){
   if(t==="holdings")renderHold();
   if(t==="history")renderHist();
   if(t==="indices")renderIndices();
-  if(t==="AppState.alerts")renderAlerts();
+  if(t==="alerts")renderAlerts();
   function renderAlerts(){
-  const el = document.getElementById('AppState.alerts');
+  const el = document.getElementById('alerts');
   if(!el) return;
 
   // === SECTION 1: Price Alerts ===
   let priceHTML = '';
-  if(AppState.alerts && alerts.length > 0){
-    priceHTML = alerts.map(a => {
+  if(AppState.alerts && AppState.alerts.length > 0){
+    priceHTML = AppState.alerts.map(a => {
       const col = a.triggered ? '#22c55e' : '#f59e0b';
       const status = a.triggered
         ? `✅ Triggered @ ₹${a.triggeredPrice?.toFixed(2)||''} — ${a.triggeredAt||''}`
@@ -2212,7 +2212,7 @@ function _switchTab(t){
       </div>`;
     }).join('');
   } else {
-    priceHTML = `<div style="font-size:11px;color:#4b6280;text-align:center;padding:8px;">No price AppState.alerts set</div>`;
+    priceHTML = `<div style="font-size:11px;color:#4b6280;text-align:center;padding:8px;">No price alerts set</div>`;
   }
 
   // === SECTION 2: Technical Alert Log (date-wise) ===
@@ -2271,7 +2271,7 @@ function _switchTab(t){
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:0.5px;">🔔 PRICE ALERTS</div>
-      <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.AppState.wl-card-wrap')?.click(),100);"
+      <button onclick="tab('watchlist');setTimeout(()=>document.querySelector('.wl-card-wrap')?.click(),100);"
         style="font-size:10px;background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;border-radius:6px;padding:3px 10px;cursor:pointer;">+ New Alert</button>
     </div>
     ${priceHTML}
@@ -2650,7 +2650,7 @@ async function renderBollinger(sym){
   const hist=await fetchHistory(sym, cfg.range, cfg.interval);
   const minNeeded=AppState._bbPeriod==='1M'?15:cfg.bbPeriod+1;
 
-  if(!AppState.hist||!hist.close||hist.close.length<minNeeded){
+  if(!hist||!hist.close||hist.close.length<minNeeded){
     const got=AppState.hist?.close?.length||0;
     bs.innerHTML=`<div style="font-size:10px;text-align:center;padding:10px;">
       <div style="color:#f59e0b;font-weight:700;margin-bottom:4px;">&#9888; BB Data Unavailable</div>
@@ -2857,7 +2857,7 @@ async function checkTechnicalAlerts(sym){
 
   // 2. RSI + MACD + BB (requires history)
   const hist=await fetchHistory(sym);
-  if(!AppState.hist||!hist.close){ localStorage.setItem(ALERT_KEY,JSON.stringify(alerted)); return; }
+  if(!hist||!hist.close){ localStorage.setItem(ALERT_KEY,JSON.stringify(alerted)); return; }
 
   const closes=hist.close.filter(v=>v!=null);
   const highs=hist.high?hist.high.filter(v=>v!=null):closes;
@@ -2984,7 +2984,7 @@ function updatePriceTicker() {
   });
 
   // Watchlist stocks
-  wl.forEach(sym => {
+  AppState.wl.forEach(sym => {
     const d = AppState.cache[sym]?.data;
     if(!d) return;
     const price = d.regularMarketPrice;
@@ -3100,7 +3100,7 @@ document.addEventListener('visibilitychange', ()=>{
 const wl = AppState.watchlists[AppState.currentWL]?.stocks
   ? [...AppState.watchlists[AppState.currentWL].stocks]
   : (window.currentWl || []);
-if(wl.length > 0) {
+if(AppState.wl.length > 0) {
     try { await batchFetchStocks(wl); } catch(e) { console.error(e); }
 }
       
@@ -3124,11 +3124,11 @@ async function manualRefresh(){
   
   // Banne ne ek sathe fetch karo
   const refreshWl = AppState.watchlists[AppState.currentWL]?.stocks
-    ? [...watchlists[AppState.currentWL].stocks]
+    ? [...AppState.watchlists[AppState.currentWL].stocks]
     : AppState.wl;
   await Promise.all([
     batchFetchStocks(refreshWl),
-    Promise.all(indicesList.map(i=>fetchFull(i.sym,true)))
+    Promise.all(AppState.indicesList.map(i=>fetchFull(i.sym,true)))
   ]);
   
   // Data avi gaya pachhi j render karo — renderWL already has fresh AppState.cache data
@@ -3233,7 +3233,7 @@ function _niviSubTab(tab) {
 
 function buildMoverChips() {
   if (!AppState.wl || wl.length === 0) return '';
-  const stocks = wl.map(s => {
+  const stocks = AppState.wl.map(s => {
     const d = AppState.cache[s]?.data;
     if (!d || !d.regularMarketPrice || !d.chartPreviousClose) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
@@ -3257,7 +3257,7 @@ function buildMoverChips() {
 // ── Dynamic contextual chips — multilingual, open-ended ──
 function _buildSmartChips() {
   // Top movers from watchlist for stock-specific chips
-  const topStocks = wl.slice(0, 3).map(s => {
+  const topStocks = AppState.wl.slice(0, 3).map(s => {
     const d = AppState.cache[s]?.data;
     if (!d) return null;
     return s;
@@ -3421,7 +3421,7 @@ async function renderNews() {
 
   _tabLoadBrief();
   _niviSubTab('chat');
-  if (_tabChatHistory.length === 0) {
+  if (AppState._tabChatHistory.length === 0) {
     try {
       const saved = JSON.parse(localStorage.getItem('niviTabChat'));
       if (saved && saved.length > 0) AppState._tabChatHistory = saved;
@@ -3437,13 +3437,13 @@ async function _tabLoadBrief() {
   const AI_NEWS_CACHE_MS  = 30 * 60 * 1000;
   try {
     const cached = JSON.parse(localStorage.getItem(AI_NEWS_CACHE_KEY));
-    if (cached && cached.syms === wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
+    if (cached && cached.syms === AppState.wl.slice(0,12).join(',') && (Date.now()-cached.ts) < AI_NEWS_CACHE_MS) {
       _tabSetBriefHtml(cached.html, cached.ts);
       return;
     }
   } catch(e) {}
 
-  const stockLines = wl.slice(0, 12).map(s => {
+  const stockLines = AppState.wl.slice(0, 12).map(s => {
     const d = AppState.cache[s]?.data;
     if (!d) return null;
     const price = d.regularMarketPrice || 0;
@@ -3490,7 +3490,7 @@ Max 180 words. Sirf Hindi Devanagari.`;
       if (!rawText) throw new Error(data.error || 'No response');
     }
     const htmlOut = formatAINewsText(rawText);
-    try { localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({ ts:Date.now(), syms:wl.slice(0,12).join(','), html:htmlOut })); } catch(e) {}
+    try { localStorage.setItem(AI_NEWS_CACHE_KEY, JSON.stringify({ ts:Date.now(), syms:AppState.wl.slice(0,12).join(','), html:htmlOut })); } catch(e) {}
     _tabSetBriefHtml(htmlOut, Date.now());
   } catch(err) {
     const briefBody = document.getElementById('tab-brief-body');
@@ -3535,11 +3535,11 @@ async function _tabChip(question) {
 }
 
 async function _tabAsk(question) {
-  _tabChatHistory.push({ role:'user', text:question, ts:Date.now() });
+  AppState._tabChatHistory.push({ role:'user', text:question, ts:Date.now() });
   _tabRenderChat();
 
   // Build watchlist context
-  const wlCtx = wl.slice(0,12).map(s => {
+  const wlCtx = AppState.wl.slice(0,12).map(s => {
     const d = AppState.cache[s]?.data;
     if (!d) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
@@ -3617,8 +3617,8 @@ Rules:
     ? '⚠️ नीवी जवाब नहीं दे पाई। सेटिंग्स में Gemini API key चेक करो।'
     : '⚠️ Nivi could not respond. Check your Gemini API key in Settings.';
 
-  _tabChatHistory.push({ role:'nivi', text: answer || fallback, ts:Date.now() });
-  try { localStorage.setItem('niviTabChat', JSON.stringify(_tabChatHistory.slice(-30))); } catch(e) {}
+  AppState._tabChatHistory.push({ role:'nivi', text: answer || fallback, ts:Date.now() });
+  try { localStorage.setItem('niviTabChat', JSON.stringify(AppState._tabChatHistory.slice(-30))); } catch(e) {}
   _tabRenderChat();
 }
 
@@ -3626,7 +3626,7 @@ function _tabRenderChat() {
   const area = document.getElementById('tab-chat-area');
   if (!area) return;
 
-  if (_tabChatHistory.length === 0) {
+  if (AppState._tabChatHistory.length === 0) {
     area.innerHTML = `
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 10px;text-align:center;">
         <svg viewBox="0 0 680 580" width="190" height="190" xmlns="http://www.w3.org/2000/svg">
@@ -3649,7 +3649,7 @@ function _tabRenderChat() {
     return;
   }
 
-  area.innerHTML = _tabChatHistory.map(msg => {
+  area.innerHTML = AppState._tabChatHistory.map(msg => {
     if (msg.role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;">
         <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;line-height:1.6;font-family:'Rajdhani',sans-serif;word-break:break-word;">${msg.text}</div>
@@ -3892,10 +3892,10 @@ async function screenerSetSource(s) {
   renderScreener();
 }
 function screenerToggleFilter(id) {
-  if (screenerFilters.has(id)) {
-    screenerFilters.delete(id);
+  if (AppState.screenerFilters.has(id)) {
+    AppState.screenerFilters.delete(id);
   } else {
-    screenerFilters.add(id);
+    AppState.screenerFilters.add(id);
    }
   renderScreener();
 }
@@ -3931,7 +3931,7 @@ function renderScreener() {
   // Filter chips
   html += `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">`;
   filters.forEach(f => {
-    const active = screenerFilters.has(f.id);
+    const active = AppState.screenerFilters.has(f.id);
     html += `<button onclick="screenerToggleFilter('${f.id}')" style="padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid ${active?f.color:'#1e2d3d'};background:${active?f.color+'22':'#0f172a'};color:${active?f.color:'#4b6280'};">${f.label}</button>`;
   });
   html += `</div>`;
@@ -3950,14 +3950,14 @@ function renderScreener() {
     return {sym, price, pct, hi52, lo52, vol, avgVol};
   }).filter(Boolean);
 
-  if (screenerFilters.size > 0) {
+  if (AppState.screenerFilters.size > 0) {
     results = results.filter(r => {
       let pass = true;
-      if (screenerFilters.has('pct3up') && r.pct < 3) pass = false;
-      if (screenerFilters.has('pct3dn') && r.pct > -3) pass = false;
-      if (screenerFilters.has('near52h') && r.hi52 > 0 && (r.hi52 - r.price) / r.hi52 * 100 > 3) pass = false;
-      if (screenerFilters.has('near52l') && r.lo52 > 0 && (r.price - r.lo52) / r.lo52 * 100 > 3) pass = false;
-      if (screenerFilters.has('volbkout') && (!r.avgVol || r.vol < r.avgVol * 1.5)) pass = false;
+      if (AppState.screenerFilters.has('pct3up') && r.pct < 3) pass = false;
+      if (AppState.screenerFilters.has('pct3dn') && r.pct > -3) pass = false;
+      if (AppState.screenerFilters.has('near52h') && r.hi52 > 0 && (r.hi52 - r.price) / r.hi52 * 100 > 3) pass = false;
+      if (AppState.screenerFilters.has('near52l') && r.lo52 > 0 && (r.price - r.lo52) / r.lo52 * 100 > 3) pass = false;
+      if (AppState.screenerFilters.has('volbkout') && (!r.avgVol || r.vol < r.avgVol * 1.5)) pass = false;
       return pass;
     });
   }
@@ -3965,7 +3965,7 @@ function renderScreener() {
   // Sort by abs pct change
   results.sort((a,b) => Math.abs(b.pct) - Math.abs(a.pct));
 
-  const noFilter = screenerFilters.size === 0;
+  const noFilter = AppState.screenerFilters.size === 0;
   if (results.length === 0 || (noFilter && results.length === 0)) {
     html += `<div style="text-align:center;color:#4b6280;font-size:12px;padding:20px;">`;
     html += noFilter ? 'Select filters above to screen stocks' : 'No stocks match selected filters';
@@ -4038,7 +4038,7 @@ function renderSmartAlertSuggestions(sym, d) {
   if (suggestions.length === 0) { el.innerHTML = ''; return; }
 
   // Filter already-set AppState.alerts
-  const existingPrices = new Set(alerts.filter(a => a.sym === sym && !a.triggered).map(a => a.price));
+  const existingPrices = new Set(AppState.alerts.filter(a => a.sym === sym && !a.triggered).map(a => a.price));
 
   let html = '<div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">SMART ALERT SUGGESTIONS</div>';
   html += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px;">';
@@ -4052,9 +4052,9 @@ function renderSmartAlertSuggestions(sym, d) {
 }
 
 function setSmartAlert(sym, price, btn) {
-  alerts.push({sym: sym, price: price, triggered: false});
+  AppState.alerts.push({sym: sym, price: price, triggered: false});
   localStorage.setItem('alerts', JSON.stringify(AppState.alerts));
-  if (currentUser) saveUserData('AppState.alerts');
+  if (AppState.currentUser) saveUserData('alerts');
   if (btn) { btn.style.opacity='0.4'; btn.innerText = '✓ ' + btn.innerText; btn.disabled = true; }
   showPopup('Alert set: ' + sym + ' @ ₹' + price);
 }
@@ -4082,7 +4082,7 @@ async function pushToCloud(showMsg = true) {
   try {
     await saveUserData();
     AppState._lastSyncTime = Date.now();
-    localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
+    localStorage.setItem('lastCloudSync', AppState._lastSyncTime.toString());
     const lsd = document.getElementById('lastSyncDisplay');
     if (lsd) { const dt=new Date(AppState._lastSyncTime); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
     if (syncBtn) { syncBtn.innerText = 'Saved ✓'; syncBtn.style.color = '#22c55e'; }
@@ -4098,11 +4098,11 @@ async function pushToCloud(showMsg = true) {
 
 // Manual "Download from Cloud" button → Firebase load
 async function pullFromCloud(showMsg = false) {
-  if (!currentUser) { if (showMsg) showPopup('Login required'); return; }
+  if (!AppState.currentUser) { if (showMsg) showPopup('Login required'); return; }
   const syncBtn = document.getElementById('syncStatusBtn');
   if (syncBtn) { syncBtn.innerText = 'Loading...'; syncBtn.style.color = '#f59e0b'; }
   try {
-    const doc = await db.collection('users').doc(currentUser.userId).get();
+    const doc = await db.collection('users').doc(AppState.currentUser.userId).get();
     const data = doc.data();
     if (!data) { if (showMsg) showPopup('No data in Firebase'); return; }
 
@@ -4132,7 +4132,7 @@ async function pullFromCloud(showMsg = false) {
     }
 
     AppState._lastSyncTime = Date.now();
-    localStorage.setItem('lastCloudSync', _lastSyncTime.toString());
+    localStorage.setItem('lastCloudSync', AppState._lastSyncTime.toString());
     const lsd = document.getElementById('lastSyncDisplay');
     if (lsd) { const dt=new Date(AppState._lastSyncTime); lsd.innerText=dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' '+dt.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}); }
     if (syncBtn) { syncBtn.innerText = 'Loaded ✓'; syncBtn.style.color = '#22c55e'; }
@@ -4181,7 +4181,7 @@ const NIVI_CACHE_MS = 30 * 60 * 1000;
 
 // --- BUILD WATCHLIST CONTEXT STRING ---
 function _niviWatchlistCtx() {
-  return wl.slice(0, 12).map(s => {
+  return AppState.wl.slice(0, 12).map(s => {
     const d = AppState.cache[s] && AppState.cache[s].data;
     if (!d) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
@@ -4199,7 +4199,7 @@ async function openNivi(sym) {
   document.getElementById('nivi-tech-row').style.display  = 'none';
 
   // If same stock already open with chat history — just re-render, don't refetch
-  if (AppState._niviCurrentSym === sym && _niviChatHistory.length > 0) {
+  if (AppState._niviCurrentSym === sym && AppState._niviChatHistory.length > 0) {
     _niviRenderChat();
     return;
   }
@@ -4230,7 +4230,7 @@ async function openNivi(sym) {
     }
   };
   // 1. Firebase AppState.cache (cross-device, survives WebView clear)
-  if (currentUser) {
+  if (AppState.currentUser) {
     try {
       const fbDoc = await db.collection('niviCache').doc(sym).get();
       if (fbDoc.exists) {
@@ -4272,7 +4272,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
         // Cache to localStorage + Firebase
         const _cacheObj = { ts: Date.now(), direct: true, answer: resp.answer };
         localStorage.setItem(cacheKey, JSON.stringify(_cacheObj));
-        if (currentUser) db.collection('niviCache').doc(sym).set(_cacheObj).catch(()=>{});
+        if (AppState.currentUser) db.collection('niviCache').doc(sym).set(_cacheObj).catch(()=>{});
         _niviAddBubble('nivi', _niviFormatBullets(resp.answer));
         return;
       }
@@ -4307,7 +4307,7 @@ Volume: ${cd.regularMarketVolume?.toLocaleString('en-IN') || 'N/A'}
   if (_niviData) {
     const _gasCacheObj = { ts: Date.now(), direct: false, data: _niviData };
     localStorage.setItem(cacheKey, JSON.stringify(_gasCacheObj));
-    if (currentUser) db.collection('niviCache').doc(sym).set(_gasCacheObj).catch(()=>{});
+    if (AppState.currentUser) db.collection('niviCache').doc(sym).set(_gasCacheObj).catch(()=>{});
     _niviApplyPriceAndTech(_niviData);
     _niviAddBubble('nivi', _niviFormatBullets(_niviData.niviAdvice?.answer || ''));
   } else {
@@ -4333,7 +4333,7 @@ async function _niviAskQuestion(question) {
   _niviAddBubble('user', question);
 
   // ── Build multi-turn context (last 6 messages = 3 exchanges) ──
-  const historyWindow = _niviChatHistory.slice(-6);  // last 6 entries incl. current user msg
+  const historyWindow = AppState._niviChatHistory.slice(-6);  // last 6 entries incl. current user msg
   const conversationCtx = historyWindow.slice(0, -1)  // exclude the message we just added
     .map(m => `${m.role === 'user' ? 'User' : 'Nivi'}: ${m.text}`)
     .join('\n');
@@ -4441,15 +4441,15 @@ async function directSarvamCallMultiTurn(priorHistory, currentPrompt) {
 // ── Persist Nivi chat history to Firebase (debounced 3s) ──
 
 function _niviPersistChat() {
-  if (!currentUser || !AppState._niviCurrentSym) return;
+  if (!AppState.currentUser || !AppState._niviCurrentSym) return;
   if (AppState._niviPersistTimer) clearTimeout(AppState._niviPersistTimer);
   AppState._niviPersistTimer = setTimeout(async () => {
     try {
       // Keep last 20 messages to avoid large writes
-      const toSave = _niviChatHistory.slice(-20).map(m => ({
+      const toSave = AppState._niviChatHistory.slice(-20).map(m => ({
         role: m.role, text: m.text, ts: m.ts
       }));
-      await db.collection('users').doc(currentUser.userId)
+      await db.collection('users').doc(AppState.currentUser.userId)
         .collection('niviChats').doc(AppState._niviCurrentSym)
         .set({ messages: toSave, updatedAt: Date.now() });
     } catch(e) { /* silent — chat persist is best-effort */ }
@@ -4458,9 +4458,9 @@ function _niviPersistChat() {
 
 // ── Load persisted Nivi chat from Firebase ──
 async function _niviLoadPersistedChat(sym) {
-  if (!currentUser) return false;
+  if (!AppState.currentUser) return false;
   try {
-    const doc = await db.collection('users').doc(currentUser.userId)
+    const doc = await db.collection('users').doc(AppState.currentUser.userId)
       .collection('niviChats').doc(sym).get();
     if (doc.exists) {
       const data = doc.data();
@@ -4481,7 +4481,7 @@ async function _niviLoadPersistedChat(sym) {
 // --- CHAT HELPERS ---
 function _niviAddBubble(role, text, ts) {
   if (!text) return;
-  _niviChatHistory.push({ role, text, ts: ts || Date.now() });
+  AppState._niviChatHistory.push({ role, text, ts: ts || Date.now() });
   _niviRenderChat();
 }
 
@@ -4490,7 +4490,7 @@ function _niviRenderChat() {
   if (!area) return;
 
   let html = '';
-  _niviChatHistory.forEach(msg => {
+  AppState._niviChatHistory.forEach(msg => {
     if (msg.role === 'user') {
       html += `<div style="display:flex;justify-content:flex-end;">
         <div style="background:#1e3a5f;color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:80%;font-size:12px;line-height:1.6;font-family:'Noto Sans Devanagari','Mangal',sans-serif;word-break:normal;overflow-wrap:break-word;">${msg.text}</div>
@@ -4570,8 +4570,8 @@ function niviClearChat() {
   const area = document.getElementById('nivi-chat-area');
   if (area) area.innerHTML = '<div id="nivi-loading" style="text-align:center;padding:16px 0;display:none;"></div>';
   // Clear Firebase persisted chat too
-  if (currentUser && AppState._niviCurrentSym) {
-    db.collection('users').doc(currentUser.userId)
+  if (AppState.currentUser && AppState._niviCurrentSym) {
+    db.collection('users').doc(AppState.currentUser.userId)
       .collection('niviChats').doc(AppState._niviCurrentSym)
       .delete().catch(() => {});
   }
@@ -4605,7 +4605,7 @@ function saveSheetId(){
   const val = document.getElementById('sheet-id-input').value.trim();
   if(!val){ showPopup('Sheet ID cannot be empty'); return; }
   localStorage.setItem('sheetId', val);
-  if (currentUser) saveUserData('settings');
+  if (AppState.currentUser) saveUserData('settings');
   document.getElementById('sheet-id-display').innerText = val;
   cancelSheetEdit();
   showPopup('Sheet ID saved!');
@@ -4635,7 +4635,7 @@ function saveGeminiKey(){
   const val=document.getElementById('set-gemini-key').value.trim();
   if(!val){ showPopup('Key daalo pehle'); return; }
   localStorage.setItem('geminiApiKey',val);
-  if (currentUser) saveUserData('settings');
+  if (AppState.currentUser) saveUserData('settings');
   document.getElementById('gemini-key-status').innerHTML='<span style="color:#34d399;">✓ Gemini Key saved — Active</span>';
   document.getElementById('set-gemini-key').value='';
   showPopup('Gemini key saved ✓');
@@ -4828,7 +4828,7 @@ async function _loadAIInsights(forceRefresh) {
   if (loadEl) loadEl.style.display = 'block';
   if (btn)    btn.disabled = true;
 
-  const wlCtx = wl.slice(0, 15).map(s => {
+  const wlCtx = AppState.wl.slice(0, 15).map(s => {
     const d = AppState.cache[s] && AppState.cache[s].data;
     if (!d) return null;
     const diff = d.regularMarketPrice - d.chartPreviousClose;
@@ -5495,7 +5495,7 @@ async function _addToWaitlist(sym, msg) {
     await firebase.firestore().collection('new_requests').doc(sym).set({
       symbol: sym,
       requestedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      requestedBy: (typeof currentUser !== 'undefined' && currentUser?.userId) ? currentUser.userId : 'anonymous'
+      requestedBy: (typeof currentUser !== 'undefined' && AppState.currentUser?.userId) ? AppState.currentUser.userId : 'anonymous'
     });
     if (msg) {
       msg.textContent = `✅ "${sym}" waitlist ma add thayo! Python run thase tyare automatically sheet + Firebase ma aavse.`;
