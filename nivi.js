@@ -252,7 +252,7 @@ async function renderNews() {
 
           <div style="flex:1;position:relative;">
             <textarea id="tab-nivi-input"
-              placeholder="Ask anything to Nivi in Hindi, Gujarati, English 🙂"
+              placeholder="Ask anything to Nivi 🙂"
               rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_tabSend();}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px';"
@@ -448,7 +448,7 @@ window._tabClearFile = function() {
   const inp     = document.getElementById('tab-nivi-input');
   if (preview) preview.style.display = 'none';
   if (finput)  finput.value = '';
-  if (inp)     inp.placeholder = 'Ask anything to Nivi in Hindi, Gujarati, English 🙂';
+  if (inp)     inp.placeholder = 'Ask anything to Nivi 🙂';
 };
 
 async function _tabSend() {
@@ -485,7 +485,7 @@ async function _tabAsk(question) {
   const hasGujarati = /[\u0A80-\u0AFF]/.test(question);
   const langInstruction = hasGujarati
     ? "User has asked in Gujarati. Reply in Gujarati with English technical terms."
-    : "Reply in Hindi or English based on user query.";
+    : "Reply in Gujarati or Hindi or English based on user query.";
 
   // ✅ FIX 2: Watchlist context inject karo
   const wlContext = AppState.wl.slice(0, 12).map(s => {
