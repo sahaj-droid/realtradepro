@@ -49,7 +49,7 @@ function detectIntent(question, hasFile) {
 
   if (hasFile) return NIVI_MODES.FILE;
 
-  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi"))  || q.includes("buy") || q.includes("sell") || q.includes("hold") || q.includes("trend") || q.includes("analysis")){
+  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi")  || q.includes("buy") || q.includes("sell") || q.includes("hold") || q.includes("trend") || q.includes("analysis")){
     return NIVI_MODES.STOCK;
   }
 
@@ -854,4 +854,4 @@ window._tabAskWithFile = _tabAskWithFile;
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
 
-console.log('✅ nivi.js loaded | File Upload: ON | Fallback: Groq → OpenRouter');
+console.log("🧠 Nivi Mode:", intent);
