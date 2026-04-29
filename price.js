@@ -399,11 +399,11 @@ if (pe) {
     if (newPrice > oldPrice && oldPrice > 0) {
         pe.closest('.card')?.classList.remove('flash-red');
         pe.closest('.card')?.classList.add('flash-green');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 300);
+        setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1200);
     } else if (newPrice < oldPrice && oldPrice > 0) {
         pe.closest('.card')?.classList.remove('flash-green');
         pe.closest('.card')?.classList.add('flash-red');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 300);
+        setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1200);
     }
     
     pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
