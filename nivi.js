@@ -9,6 +9,78 @@ function formatAINewsText(raw) {
 }
 
 // ======================================
+// 🧠 NIVI MODULAR AI SYSTEM
+// ======================================
+window.NIVI_FORCE_MODE = null;
+
+const NIVI_MODES = {
+  STOCK: "stock",
+  FILE: "file",
+  BEGINNER: "beginner",
+  GENERAL: "general"
+};
+
+const STOCK_EXPERT_PROMPT = `
+You are Nivi, an expert stock market analyst.
+Give actionable insights:
+- Trend
+- Support/Resistance
+- Buy/Sell/Hold
+Keep it short.
+`;
+
+const FILE_ANALYZER_PROMPT = `
+You are Nivi, a document analysis expert.
+- Summarize key points
+- Extract important data
+- Explain clearly
+`;
+
+const BEGINNER_PROMPT = `
+You are Nivi, a friendly teacher.
+Explain in very simple language (like for a beginner).
+Use examples.
+`;
+
+function detectIntent(question, hasFile) {
+  if (window.NIVI_FORCE_MODE) return window.NIVI_FORCE_MODE;
+
+  const q = question.toLowerCase();
+
+  if (hasFile) return NIVI_MODES.FILE;
+
+  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi")) {
+    return NIVI_MODES.STOCK;
+  }
+
+  if (q.includes("explain") || q.includes("shu") || q.includes("samjavo")) {
+    return NIVI_MODES.BEGINNER;
+  }
+
+  return NIVI_MODES.GENERAL;
+}
+
+function buildModularPrompt(question, intent) {
+  let base = "";
+
+  switch (intent) {
+    case NIVI_MODES.STOCK:
+      base = STOCK_EXPERT_PROMPT;
+      break;
+    case NIVI_MODES.FILE:
+      base = FILE_ANALYZER_PROMPT;
+      break;
+    case NIVI_MODES.BEGINNER:
+      base = BEGINNER_PROMPT;
+      break;
+    default:
+      base = "You are a helpful AI assistant.";
+  }
+
+  return base + "\n\nUser Query:\n" + question;
+}
+
+// ======================================
 // BUILD MOVER CHIPS (for Market Brief)
 // ======================================
 function buildMoverChips() {
@@ -62,6 +134,7 @@ function _buildSmartChips() {
   );
   return chips.slice(0, 6);
 }
+
 // ======================================
 // RENDER NEWS TAB (Main News + Nivi Chat)
 // ======================================
@@ -82,7 +155,6 @@ async function renderNews() {
   el.innerHTML = `
   <div style="display:flex;flex-direction:column;position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:448px;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:#0a0f1a;z-index:1;">
 
-    <!-- Sub-tab switcher -->
     <div style="flex-shrink:0;padding-bottom:6px;">
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
         <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
@@ -100,10 +172,8 @@ async function renderNews() {
       </div>
     </div>
 
-    <!-- ===== CHAT SECTION ===== -->
     <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
-      <!-- Market Brief (collapsible) -->
       <div style="flex-shrink:0;">
         <div id="tab-brief-card" style="display:none;background:linear-gradient(135deg,#0a1e14,#0f1e33);border:1px solid rgba(52,211,153,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
           <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
@@ -119,14 +189,11 @@ async function renderNews() {
         </div>
       </div>
 
-      <!-- Chat bubbles area -->
       <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
       </div>
 
-      <!-- Input area -->
       <div style="flex-shrink:0;padding:8px 0 10px 0;border-top:1px solid rgba(52,211,153,0.15);background:#0a0f1a;">
 
-        <!-- Smart chips -->
         <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px;scrollbar-width:none;">
           <button onclick="_tabToggleMood()"
             style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.25);border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
@@ -135,22 +202,18 @@ async function renderNews() {
           ${chipsHtml}
         </div>
 
-        <!-- File Preview Bar -->
         <div id="tab-file-preview" style="display:none;align-items:center;gap:8px;margin-bottom:6px;background:#0a1e14;border:1px solid rgba(52,211,153,0.25);border-radius:10px;padding:6px 10px;">
           <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><rect x="3" y="2" width="10" height="14" rx="2" stroke="#34d399" stroke-width="1.4"/><path d="M7 6h4M7 9h4M7 12h2" stroke="#34d399" stroke-width="1.2" stroke-linecap="round"/></svg>
           <span id="tab-file-name" style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           <button onclick="_tabClearFile()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">✕</button>
         </div>
 
-        <!-- Hidden file input -->
         <input type="file" id="tab-file-input"
           accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
           style="display:none;"
           onchange="_tabFileSelected(this)">
 
-        <!-- Main input row -->
         <div style="display:flex;gap:8px;align-items:center;">
-          <!-- File attach button -->
           <button onclick="document.getElementById('tab-file-input').click()"
             title="File attach karo (PDF, JS, HTML...)"
             style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;align-self:flex-end;">
@@ -179,10 +242,7 @@ async function renderNews() {
         </div>
       </div>
 
-    </div><!-- end nivi-section-chat -->
-
-    <!-- ===== AI INSIGHTS SECTION ===== -->
-    <div id="nivi-section-news" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:0 4px 8px 4px;">
+    </div><div id="nivi-section-news" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:0 4px 8px 4px;">
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div style="font-size:12px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">AI INSIGHTS</div>
@@ -214,9 +274,7 @@ async function renderNews() {
 
       <div id="insights-timestamp" style="font-size:9px;color:#4b6280;text-align:center;padding-bottom:8px;font-family:'Rajdhani',sans-serif;"></div>
 
-    </div><!-- end nivi-section-news -->
-
-  </div>`;
+    </div></div>`;
 
   _tabLoadBrief();
   _niviSubTab('chat');
@@ -409,11 +467,17 @@ async function _tabAsk(question) {
     return `${s}: ₹${price.toFixed(2)} (${sign}${pct}%)`;
   }).filter(Boolean).join(', ');
 
+  const intent = detectIntent(question, false);
+  const modularPrompt = buildModularPrompt(question, intent);
+
   const systemPrompt = `[SYSTEM: ELITE FINANCIAL ANALYST — NIVI]
+Mode: ${intent.toUpperCase()}
 Today: ${liveDate}
 User Watchlist: ${wlContext || 'No live data available'}
 LANGUAGE: ${langInstruction}
-Task: Answer the user query using watchlist context above + your market knowledge. Be concise and actionable.`;
+
+${modularPrompt}
+`;
 
   // ✅ FIX 1: Multi-turn — full history Gemini ne pass karo
   const geminiHistory = AppState._tabChatHistory.slice(0, -1).slice(-10).map(msg => ({
@@ -468,12 +532,18 @@ async function _tabAskWithFile(question, file) {
     const mimeType = getFileMimeType(fileName);
     const liveDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    const prompt = `[SYSTEM: ELITE ANALYST — NIVI]
+    const intent = detectIntent(question, true);
+    const modularPrompt = buildModularPrompt(question, intent);
+
+    const prompt = `[SYSTEM: NIVI FILE ANALYZER]
+Mode: FILE
 Today: ${liveDate}
 File: ${fileName}
 Task: User e file upload kari che. File ni content read karo ane user na question no jawab apo.
-User Question: ${question}
-Reply in Gujarati/Hindi/English mix. Be concise and helpful.`;
+Reply in Gujarati/Hindi/English mix. Be concise and helpful.
+
+${modularPrompt}
+`;
 
     const r = await directGeminiCallWithFile(prompt, base64, mimeType);
     if (r && r.ok) answer = r.answer;
