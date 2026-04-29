@@ -49,12 +49,42 @@ function detectIntent(question, hasFile) {
 
   if (hasFile) return NIVI_MODES.FILE;
 
-  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi")  || q.includes("buy") || q.includes("sell") || q.includes("hold") || q.includes("trend") || q.includes("analysis")){
+    if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi")  || q.includes("buy") || q.includes("sell") || q.includes("hold") || q.includes("trend") || q.includes("analysis")) {
     return NIVI_MODES.STOCK;
   }
 
   if (q.includes("explain") || q.includes("shu") || q.includes("samjavo")) {
     return NIVI_MODES.BEGINNER;
+  }
+
+  return NIVI_MODES.GENERAL;
+}
+
+async function detectIntentAI(question, hasFile) {
+  if (window.NIVI_FORCE_MODE) return window.NIVI_FORCE_MODE;
+  if (hasFile) return NIVI_MODES.FILE;
+
+  const prompt = `
+Classify user intent into ONE of these:
+- stock
+- beginner
+- general
+
+User query: "${question}"
+
+Reply ONLY with one word: stock / beginner / general
+`;
+
+  try {
+    const r = await directGeminiCall(prompt);
+    if (r && r.ok) {
+      const intent = r.answer.toLowerCase().trim();
+
+      if (intent.includes("stock")) return NIVI_MODES.STOCK;
+      if (intent.includes("beginner")) return NIVI_MODES.BEGINNER;
+    }
+  } catch (e) {
+    console.warn("AI intent detection failed");
   }
 
   return NIVI_MODES.GENERAL;
@@ -436,6 +466,7 @@ async function _tabSend() {
     await _tabAsk(q);
   }
 }
+
 async function _tabChip(question) {
   const inp = document.getElementById('tab-nivi-input');
   if (inp) { inp.value = question; inp.style.height = 'auto'; inp.style.height = Math.min(inp.scrollHeight, 90) + 'px'; }
@@ -467,7 +498,8 @@ async function _tabAsk(question) {
     return `${s}: ₹${price.toFixed(2)} (${sign}${pct}%)`;
   }).filter(Boolean).join(', ');
 
-  const intent = detectIntent(question, false);
+  // CHANGED: Using async AI intent detection
+  const intent = await detectIntentAI(question, false);
   const modularPrompt = buildModularPrompt(question, intent);
 
   const systemPrompt = `[SYSTEM: ELITE FINANCIAL ANALYST — NIVI]
@@ -532,7 +564,8 @@ async function _tabAskWithFile(question, file) {
     const mimeType = getFileMimeType(fileName);
     const liveDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    const intent = detectIntent(question, true);
+    // CHANGED: Using async AI intent detection
+    const intent = await detectIntentAI(question, true);
     const modularPrompt = buildModularPrompt(question, intent);
 
     const prompt = `[SYSTEM: NIVI FILE ANALYZER]
@@ -854,4 +887,4 @@ window._tabAskWithFile = _tabAskWithFile;
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
 
-console.log("🧠 Nivi Mode:", intent);
+console.log('✅ nivi.js loaded | File Upload: ON | Fallback: Groq → OpenRouter');
