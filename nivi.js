@@ -49,7 +49,7 @@ function detectIntent(question, hasFile) {
 
   if (hasFile) return NIVI_MODES.FILE;
 
-  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi")) {
+  if (q.includes("stock") || q.includes("price") || q.includes("target") || q.includes("rsi"))  || q.includes("buy") || q.includes("sell") || q.includes("hold") || q.includes("trend") || q.includes("analysis")){
     return NIVI_MODES.STOCK;
   }
 
