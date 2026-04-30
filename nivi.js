@@ -256,17 +256,18 @@ async function renderNews() {
           <button onclick="_tabClearFile()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">✕</button>
         </div>
 
+<!-- મોબાઈલ માટે એકદમ સેફ: JS click કાઢીને Label વાપર્યું -->
         <input type="file" id="tab-file-input"
           accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
-          style="position:absolute; width:1px; height:1px; opacity:0; z-index:-1;"
+          style="display:none;"
           onchange="_tabFileSelected(this)">
 
         <div style="display:flex;gap:8px;align-items:center;">
-          <button onclick="document.getElementById('tab-file-input').click()"
+          <label for="tab-file-input"
             title="File attach karo (PDF, JS, HTML...)"
-            style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;align-self:flex-end;">
+            style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;align-self:flex-end;margin:0;">
             <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+          </label>
 
           <div style="flex:1;position:relative;">
             <textarea id="tab-nivi-input"
