@@ -102,6 +102,8 @@ async function updateGiftNifty() {
     _applyGiftNiftyToChip(AppState._giftNiftyCache);
     return;
   }
+
+  // 1. Try GAS first
   try {
     const apiUrl = getActiveGASUrl();
     const r      = await fetch(apiUrl + '?s=NIFTY1%21&t=' + now);
@@ -120,9 +122,44 @@ async function updateGiftNifty() {
       AppState._giftNiftyCacheTime = now;
       _pushGiftNiftyToCache({ price, prev_close: prev, change_abs: change, change_pct: pct });
       _applyGiftNiftyToChip(cached);
+      return;
     }
   } catch(e) {
     console.warn('[updateGiftNifty] GAS failed:', e);
+  }
+
+  // 2. Fallback: Firestore gift_nifty document (staleness check sathe)
+  try {
+    const doc = await firebase.firestore().collection('RealTradePro').doc('gift_nifty').get();
+    if (!doc.exists) return;
+    const fd = doc.data();
+    if (!fd || !fd.price) return;
+
+    // Stale data check — aaj no nahi hoy to -- j rakhhvu
+    if (fd.updated_at) {
+      const today    = new Date().toISOString().split('T')[0];
+      const dataDate = fd.updated_at.substring(0, 10);
+      if (dataDate < today) {
+        console.warn('[updateGiftNifty] Stale Firestore data:', fd.updated_at);
+        return;
+      }
+    }
+
+    const price  = parseFloat(fd.price);
+    const prev   = parseFloat(fd.prev_close || price);
+    const change = parseFloat(fd.change || (price - prev));
+    const pct    = parseFloat(fd.change_pct || (prev > 0 ? ((price - prev) / prev * 100) : 0));
+    const cached = {
+      price:     price.toFixed(2),
+      change:    change.toFixed(2),
+      changePct: pct.toFixed(2)
+    };
+    AppState._giftNiftyCache     = cached;
+    AppState._giftNiftyCacheTime = now;
+    _pushGiftNiftyToCache({ price, prev_close: prev, change_abs: change, change_pct: pct, high: fd.high, low: fd.low });
+    _applyGiftNiftyToChip(cached);
+  } catch(e) {
+    console.warn('[updateGiftNifty] Firestore fallback failed:', e);
   }
 }
 
