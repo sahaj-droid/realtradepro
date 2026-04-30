@@ -31,6 +31,12 @@ NAME_MAPPER = {
     "HDFCBANK": "HDFCBANK/consolidated", "ICICIBANK": "ICICIBANK/consolidated"
 }
 
+# ── INDICES LIST ─────────────────────────────────────────────
+INDICES = [
+    "^NSEI", "^BSESN", "^NSEBANK", "^CNXIT", "^CNXPHARMA", "^CNXAUTO",
+    "^CNXFMCG", "^CNXMETAL", "^CNXREALTY", "^CNXINFRA"
+]
+
 # ── FIREBASE INIT ─────────────────────────────────────────────
 def init_firebase():
     try:
@@ -171,6 +177,77 @@ def update_livemarket():
             'date':      date_str,
             'ticker':    tick
         }
+# ── Step 4b: Indices fetch + Gift Nifty ──
+    print("\n📊 Fetching Indices...")
+    try:
+        t_idx = Ticker(INDICES, asynchronous=True)
+        idx_prices = t_idx.price
+
+        for sym in INDICES:
+            p = idx_prices.get(sym, {}) if isinstance(idx_prices, dict) else {}
+            if not isinstance(p, dict): continue
+
+            ltp     = p.get('regularMarketPrice') or 0
+            prev    = p.get('regularMarketPreviousClose') or 0
+            high    = p.get('regularMarketDayHigh') or ltp
+            low     = p.get('regularMarketDayLow') or ltp
+            change  = p.get('regularMarketChange') or round(ltp - prev, 2)
+            chg_pct = p.get('regularMarketChangePercent') or (
+                round(((ltp - prev) / prev) * 100, 2) if prev else 0
+            )
+
+            firebase_batch[sym] = {
+                'ltp':        round(float(ltp),     2),
+                'price':      round(float(ltp),     2),
+                'prevClose':  round(float(prev),    2),
+                'high':       round(float(high),    2),
+                'low':        round(float(low),     2),
+                'change':     round(float(change),  2),
+                'change_pct': round(float(chg_pct), 2),
+                'volume':     0,
+                'open':       ltp,
+                'ts':         ts_str,
+                'date':       date_str,
+                'ticker':     sym,
+                '_type':      'index'
+            }
+        print(f"  ✅ {len(INDICES)} indices fetched")
+    except Exception as e:
+        print(f"  ❌ Indices fetch failed: {e}")
+
+    # ── Gift Nifty — TradingView ──
+    print("🎁 Fetching Gift Nifty...")
+    try:
+        import urllib.request
+        import json as _json
+        url = "https://scanner.tradingview.com/symbol?symbol=NSEIX%3ANIFTY1%21&fields=close,change,change_abs,high,low,prev_close_price&no_404=1"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0',
+            'Origin': 'https://www.tradingview.com',
+            'Referer': 'https://www.tradingview.com/'
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            d = _json.loads(resp.read())
+        gift_ltp = float(d.get('close') or 0)
+        gift_prev = float(d.get('prev_close_price') or 0)
+        firebase_batch['NIFTY1!'] = {
+            'ltp':        gift_ltp,
+            'price':      gift_ltp,
+            'prevClose':  gift_prev,
+            'high':       float(d.get('high') or gift_ltp),
+            'low':        float(d.get('low') or gift_ltp),
+            'change':     float(d.get('change_abs') or 0),
+            'change_pct': float(d.get('change') or 0),
+            'volume':     0,
+            'open':       gift_ltp,
+            'ts':         ts_str,
+            'date':       date_str,
+            'ticker':     'NIFTY1!',
+            '_type':      'index'
+        }
+        print(f"  ✅ Gift Nifty: {gift_ltp}")
+    except Exception as e:
+        print(f"  ❌ Gift Nifty fetch failed: {e}")
 
     # ── Step 5: Firebase Push ──
     if db:
