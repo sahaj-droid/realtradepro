@@ -382,53 +382,53 @@ async function updatePrices() {
   // ✅ UI UPDATE LOOP
   // =============================================
 
-  for (let s of activeWl) {
-    if (!AppState.cache[s]?.data) continue;
-    let d = { ...AppState.cache[s].data };
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || 0).toFixed(2));
-    let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || price).toFixed(2));
-    let diff = parseFloat((price - prev).toFixed(2));
-    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
-    let pe = document.getElementById(`price-${s}`);
-// _patchWLCard function ma, pe update karta pehla:
-if (pe) {
-    const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
-    const newPrice = _price;
-    
-    // Flash effect
-    if (newPrice > oldPrice && oldPrice > 0) {
-        pe.closest('.card')?.classList.remove('flash-red');
-        pe.closest('.card')?.classList.add('flash-green');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1200);
-    } else if (newPrice < oldPrice && oldPrice > 0) {
-        pe.closest('.card')?.classList.remove('flash-green');
-        pe.closest('.card')?.classList.add('flash-red');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1200);
-    }
-    
-    pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
-}
+for (let s of activeWl) {
+  if (!AppState.cache[s]?.data) continue;
+  let d = { ...AppState.cache[s].data };
+  let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || 0).toFixed(2));
+  let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || price).toFixed(2));
+  let diff = parseFloat((price - prev).toFixed(2));
+  let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
 
-      const bar52Elem = document.getElementById(`bar52-${s}`);
-      if (bar52Elem) bar52Elem.innerHTML = build52WBar(d);
-      const label52Elem = document.getElementById(`label52-${s}`);
-      if (label52Elem) label52Elem.innerHTML = get52WLabel(d) + getTargetBadge(s, price);
-      const dayBarElem = document.getElementById(`daybar-${s}`);
-      if (dayBarElem) dayBarElem.innerHTML = buildDayBar(d);
-      if (typeof checkAlerts === 'function') checkAlerts(s, price);
-      if (typeof checkTargets === 'function') checkTargets(s, price);
-      if (typeof checkVolumeSpike === 'function') checkVolumeSpike(s, d);
-      if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[s] = Date.now();
+  let pe = document.getElementById(`price-${s}`);
+  if (pe) {
+    const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
+
+    // ✅ Flash effect — _price ની જગ્યા price વાપરો
+    if (price > oldPrice && oldPrice > 0) {
+      pe.closest('.card')?.classList.remove('flash-red');
+      pe.closest('.card')?.classList.add('flash-green');
+      setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1000);
+    } else if (price < oldPrice && oldPrice > 0) {
+      pe.closest('.card')?.classList.remove('flash-green');
+      pe.closest('.card')?.classList.add('flash-red');
+      setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1000);
     }
-    let ce = document.getElementById(`change-${s}`);
-    if (ce) {
-      const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
-    }
+
+    pe.innerText = price > 0 ? '₹' + price.toFixed(2) : '--';
   }
+
+  const bar52Elem = document.getElementById(`bar52-${s}`);
+  if (bar52Elem) bar52Elem.innerHTML = build52WBar(d);
+  const label52Elem = document.getElementById(`label52-${s}`);
+  if (label52Elem) label52Elem.innerHTML = get52WLabel(d) + getTargetBadge(s, price);
+  const dayBarElem = document.getElementById(`daybar-${s}`);
+  if (dayBarElem) dayBarElem.innerHTML = buildDayBar(d);
+  if (typeof checkAlerts === 'function') checkAlerts(s, price);
+  if (typeof checkTargets === 'function') checkTargets(s, price);
+  if (typeof checkVolumeSpike === 'function') checkVolumeSpike(s, d);
+  if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[s] = Date.now();
+
+  let ce = document.getElementById(`change-${s}`);
+  if (ce) {
+    const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+    ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+    ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
+  }
+}
 if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
 if (typeof updatePriceTicker === 'function') updatePriceTicker();
+}
 // ======================================
 // SORT FUNCTIONS
 // ======================================
