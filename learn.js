@@ -872,7 +872,7 @@ function _learnNoData(sym, label) {
 // ======================================
 // MARKET SCHOOL DATA
 // ======================================
-const CANDLE_SVG = {
+var CANDLE_SVG = {
   basics: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" width="120" height="100">
     <!-- Green bullish candle -->
     <line x1="30" y1="10" x2="30" y2="25" stroke="#22c55e" stroke-width="2"/>
@@ -937,7 +937,7 @@ const CANDLE_SVG = {
   </svg>`
 };
 
-const MARKET_SCHOOL = {
+var MARKET_SCHOOL = {
   technical: {
     icon: '⚡', color: '#38bdf8',
     label: { hi: 'Technical Analysis', gu: 'Technical Analysis', en: 'Technical Analysis' },
