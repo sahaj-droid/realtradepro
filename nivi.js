@@ -17,7 +17,8 @@ const NIVI_MODES = {
   STOCK: "stock",
   FILE: "file",
   BEGINNER: "beginner",
-  GENERAL: "general"
+  GENERAL: "general",
+  IMAGE: "image"
 };
 
 const STOCK_EXPERT_PROMPT = `
@@ -42,6 +43,16 @@ Explain in very simple language (like for a beginner).
 Use examples.
 `;
 
+// ✅ IMAGE MODE PROMPT
+const IMAGE_ANALYZER_PROMPT = `
+You are Nivi, an expert visual analyst for Indian stock market.
+When analyzing an image:
+- If it is a stock chart: identify trend (uptrend/downtrend/sideways), key support/resistance levels, patterns (head & shoulders, breakout, etc.), and give a Buy/Sell/Hold suggestion.
+- If it is a portfolio screenshot: summarize holdings, identify best/worst performers, suggest any action.
+- If it is a news screenshot or any other image: extract key information and explain clearly.
+Always be concise and actionable. Mix Gujarati/Hindi/English naturally.
+`;
+
 function detectIntent(question, hasFile) {
   if (window.NIVI_FORCE_MODE) return window.NIVI_FORCE_MODE;
 
@@ -60,8 +71,12 @@ function detectIntent(question, hasFile) {
   return NIVI_MODES.GENERAL;
 }
 
-async function detectIntentAI(question, hasFile) {
+async function detectIntentAI(question, hasFile, mimeType) {
   if (window.NIVI_FORCE_MODE) return window.NIVI_FORCE_MODE;
+
+  // ✅ IMAGE: PNG/JPG/WEBP/GIF → IMAGE mode
+  if (hasFile && mimeType && mimeType.startsWith('image/')) return NIVI_MODES.IMAGE;
+
   if (hasFile) return NIVI_MODES.FILE;
 
   const prompt = `
@@ -102,6 +117,9 @@ function buildModularPrompt(question, intent) {
       break;
     case NIVI_MODES.BEGINNER:
       base = BEGINNER_PROMPT;
+      break;
+    case NIVI_MODES.IMAGE:
+      base = IMAGE_ANALYZER_PROMPT;
       break;
     default:
       base = "You are a helpful AI assistant.";
@@ -552,6 +570,9 @@ ${modularPrompt}
 // ======================================
 async function _tabAskWithFile(question, file) {
   const fileName = file.name;
+  const mimeType = getFileMimeType(fileName);
+  const isImage  = mimeType.startsWith('image/');
+
   const displayMsg = `📎 ${fileName}\n${question}`;
   AppState._tabChatHistory.push({ role: 'user', text: displayMsg, ts: Date.now() });
   _tabRenderChat();
@@ -561,14 +582,31 @@ async function _tabAskWithFile(question, file) {
 
   try {
     const base64   = await readFileAsBase64(file);
-    const mimeType = getFileMimeType(fileName);
     const liveDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-    // CHANGED: Using async AI intent detection
-    const intent = await detectIntentAI(question, true);
+    // ✅ IMAGE MODE: mimeType pass karo detectIntentAI ma
+    const intent = await detectIntentAI(question, true, mimeType);
     const modularPrompt = buildModularPrompt(question, intent);
 
-    const prompt = `[SYSTEM: NIVI FILE ANALYZER]
+    let prompt = '';
+
+    if (isImage) {
+      // ✅ IMAGE-SPECIFIC PROMPT
+      const defaultQ = question || 'Aa image analyze karo — shun dikhay che? Stock chart hoy to trend, levels ane suggestion apo.';
+      prompt = `[SYSTEM: NIVI IMAGE ANALYZER]
+Mode: IMAGE
+Today: ${liveDate}
+File: ${fileName}
+Task: User e image upload kari che. Image carefully analyze karo ane user na question no jawab apo.
+Reply in Gujarati/Hindi/English mix. Be concise and actionable.
+
+${IMAGE_ANALYZER_PROMPT}
+
+User Question: ${defaultQ}
+`;
+    } else {
+      // ✅ EXISTING FILE PROMPT — unchanged
+      prompt = `[SYSTEM: NIVI FILE ANALYZER]
 Mode: FILE
 Today: ${liveDate}
 File: ${fileName}
@@ -577,6 +615,7 @@ Reply in Gujarati/Hindi/English mix. Be concise and helpful.
 
 ${modularPrompt}
 `;
+    }
 
     const r = await directGeminiCallWithFile(prompt, base64, mimeType);
     if (r && r.ok) answer = r.answer;
@@ -586,7 +625,7 @@ ${modularPrompt}
   }
 
   _tabShowLoading(false);
-  AppState._tabChatHistory.push({ role: 'nivi', text: answer || '⚠️ File read failed. Gemini API key check karo.', ts: Date.now() });
+  AppState._tabChatHistory.push({ role: 'nivi', text: answer || '⚠️ Image read failed. Gemini API key check karo.', ts: Date.now() });
   localStorage.setItem('niviTabChat', JSON.stringify(AppState._tabChatHistory.slice(-30)));
   _tabRenderChat();
 }
