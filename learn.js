@@ -868,7 +868,76 @@ function _learnNoData(sym, label) {
     <div style="font-size:11px;color:#4b6280;margin-top:4px;">Try checking Settings → API URL</div>
   </div>`;
 }
-
+// ========================================
+// LEARN INFO DATA
+// ========================================
+const LEARN_INFO = {
+  pe: {
+    hi: { title: 'P/E Ratio', body: 'यह बताता है कि ₹1 कमाने के लिए आप कितने रुपये दे रहे हैं। कम P/E मतलब सस्ता शेयर।', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = सस्ता  |  15–30 = ठीक  |  > 30 = महँगा' },
+    gu: { title: 'P/E રેશિઓ', body: '₹1 કમાવા માટે તમે કેટલા રૂપિયા ચૂકવો છો. ઓછો P/E = સસ્તો શેર.', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = સસ્તો  |  15–30 = ઠીક  |  > 30 = મોંઘો' },
+    en: { title: 'P/E Ratio', body: 'How much you pay for ₹1 of earnings. Lower P/E = cheaper stock.', formula: 'P/E = Share Price ÷ EPS', good: '< 15 = Cheap  |  15–30 = Fair  |  > 30 = Expensive' }
+  },
+  eps: {
+    hi: { title: 'EPS (प्रति शेयर आय)', body: 'कंपनी ने प्रत्येक शेयर पर कितना मुनाफा कमाया। जितना ज्यादा, उतना अच्छा।', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = अच्छा  |  बढ़ता EPS = स्वस्थ कंपनी' },
+    gu: { title: 'EPS (પ્રતિ શેર કમાણી)', body: 'દરેક શેર પર કંપનીએ કેટલો નફો કર્યો. વધારે EPS = વધારે સારું.', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = સારું  |  વધતો EPS = તંદુરસ્ત કંપની' },
+    en: { title: 'EPS (Earnings Per Share)', body: 'Profit earned per share. Higher & growing EPS = healthier company.', formula: 'EPS = Net Profit ÷ Total Shares', good: '> 0 = Good  |  Growing EPS = Healthy' }
+  },
+  roe: {
+    hi: { title: 'ROE % (इक्विटी पर रिटर्न)', body: 'कंपनी अपने शेयरहोल्डर्स के पैसे पर कितना मुनाफा कमा रही है।', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = अच्छा  |  8–15% = ठीक  |  < 8% = कमजोर' },
+    gu: { title: 'ROE % (ઇક્વિટી પર રિટર્ન)', body: 'કંપની શેરહોલ્ડર્સના પૈસા પર કેટલો નફો કરે છે.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = સારું  |  8–15% = ઠીક  |  < 8% = નબળું' },
+    en: { title: 'ROE % (Return on Equity)', body: 'How efficiently the company generates profit from shareholders\' money.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', good: '≥ 15% = Good  |  8–15% = Fair  |  < 8% = Weak' }
+  },
+  roce: {
+    hi: { title: 'ROCE % (पूंजी पर रिटर्न)', body: 'कंपनी अपनी कुल लगाई गई पूंजी पर कितना मुनाफा बना रही है।', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = अच्छा  |  8–15% = ठीक  |  < 8% = कमजोर' },
+    gu: { title: 'ROCE % (મૂડી પર રિટર્ન)', body: 'કંપની લગાવેલી કુલ મૂડી પર કેટલો નફો કરે છે.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = સારું  |  8–15% = ઠીક  |  < 8% = નબળું' },
+    en: { title: 'ROCE % (Return on Capital Employed)', body: 'How much profit the company generates from all capital deployed.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', good: '≥ 15% = Good  |  8–15% = Fair  |  < 8% = Weak' }
+  },
+  bookVal: {
+    hi: { title: 'Book Value (बुक वैल्यू)', body: 'अगर कंपनी आज बंद हो जाए तो प्रति शेयर कितना मिलेगा। Price < Book Value = सस्ता!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = अंडरवैल्यूड' },
+    gu: { title: 'Book Value (બુક વેલ્યૂ)', body: 'કંપની બંધ થઈ જાય તો દરેક શેર પર કેટલું મળે. Price < BV = સસ્તો!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = Undervalued' },
+    en: { title: 'Book Value', body: 'What each share would be worth if the company liquidated. Price < BV = Undervalued!', formula: 'Book Value = Total Equity ÷ Total Shares', good: 'Price < BV = Undervalued' }
+  },
+  de: {
+    hi: { title: 'Debt-to-Equity (कर्ज अनुपात)', body: 'कंपनी ने अपनी इक्विटी के मुकाबले कितना कर्ज लिया है। कम = बेहतर।', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = कम कर्ज  |  0.5–1 = ठीक  |  > 1 = ज्यादा कर्ज' },
+    gu: { title: 'Debt-to-Equity (દેવું ગુણોત્તર)', body: 'ઇક્વિટી સામે કેટલું દેવું છે. ઓછું = વધારે સારું.', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = ઓછું દેવું  |  0.5–1 = ઠીક  |  > 1 = વધારે દેવું' },
+    en: { title: 'Debt-to-Equity Ratio', body: 'How much debt the company carries relative to equity. Lower is better.', formula: 'D/E = Total Debt ÷ Total Equity', good: '< 0.5 = Low debt  |  0.5–1 = Fair  |  > 1 = High debt' }
+  },
+  cr: {
+    hi: { title: 'Current Ratio (चालू अनुपात)', body: 'क्या कंपनी अपने अल्पकालिक कर्ज चुका सकती है? 1 से ज्यादा होना जरूरी।', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = सुरक्षित  |  1–1.5 = ठीक  |  < 1 = खतरा' },
+    gu: { title: 'Current Ratio (ચાલુ ગુણોત્તર)', body: 'કંપની ટૂંકા ગાળાની જવાબદારી ચૂકવી શકે? 1 થી વધારે હોવું જોઈએ.', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = સુરક્ષિત  |  1–1.5 = ઠીક  |  < 1 = જોખમ' },
+    en: { title: 'Current Ratio', body: 'Can the company pay its short-term obligations? Must be above 1.', formula: 'Current Ratio = Current Assets ÷ Current Liabilities', good: '≥ 1.5 = Safe  |  1–1.5 = Fair  |  < 1 = Risk' }
+  },
+  divYield: {
+    hi: { title: 'Dividend Yield %', body: 'शेयर की कीमत के मुकाबले कंपनी कितना लाभांश देती है।', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = अच्छा  |  > 0% = ठीक  |  0% = कोई लाभांश नहीं' },
+    gu: { title: 'Dividend Yield %', body: 'શેર ભાવ સામે કંપની કેટલું ડિવિડન્ડ આપે છે.', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = સારું  |  > 0% = ઠીક  |  0% = ડિવિડન્ડ નથી' },
+    en: { title: 'Dividend Yield %', body: 'How much dividend the company pays relative to share price.', formula: 'Div Yield = (Dividend ÷ Share Price) × 100', good: '≥ 1% = Good  |  > 0% = Fair  |  0% = No dividend' }
+  },
+  promoter: {
+    hi: { title: 'Promoter Holding %', body: 'कंपनी के मालिकों (प्रमोटर्स) के पास कितने % शेयर हैं। ज्यादा = भरोसेमंद।', formula: 'Screener/BSE से सीधा डेटा', good: '≥ 50% = मजबूत  |  35–50% = ठीक  |  < 35% = कम' },
+    gu: { title: 'Promoter Holding %', body: 'કંપનીના માલિકો (Promoters) પાસે કેટલા % શેર છે. વધારે = ભરોસાપાત્ર.', formula: 'Screener/BSE direct data', good: '≥ 50% = મજબૂત  |  35–50% = ઠીક  |  < 35% = ઓછું' },
+    en: { title: 'Promoter Holding %', body: 'How much % of shares the founders/promoters hold. Higher = more confidence.', formula: 'Direct from Screener/BSE', good: '≥ 50% = Strong  |  35–50% = Fair  |  < 35% = Low' }
+  },
+  rsi: {
+    hi: { title: 'RSI (Momentum)', body: 'बताता है कि शेयर ओवरसोल्ड (सस्ता) है या ओवरबॉट (महँगा)।', formula: 'Relative Strength Index', good: '< 40 = Oversold (Good) | > 70 = Overbought' },
+    gu: { title: 'RSI (મોમેન્ટમ)', body: 'શેર ઓવરસોલ્ડ (ખરીદવાની તક) છે કે ઓવરબૉટ (વેચવાની તક) તે દર્શાવે છે.', formula: 'Relative Strength Index', good: '< 40 = Oversold (સસ્તો) | > 70 = Overbought (મોંઘો)' },
+    en: { title: 'RSI (Momentum)', body: 'Indicates if a stock is oversold (buy) or overbought (sell).', formula: 'Relative Strength Index', good: '< 40 = Oversold (Good) | > 70 = Overbought' }
+  },
+  fii: {
+    hi: { title: 'FII Holding %', body: 'विदेशी संस्थागत निवेशकों की हिस्सेदारी। ज़्यादा = विदेशी भरोसा।', formula: 'Direct from BSE/NSE', good: '≥ 10% = अच्छा  |  5–10% = ठीक  |  < 5% = कम' },
+    gu: { title: 'FII Holding %', body: 'વિદેશી સંસ્થાકીય રોકાણકારોની હિસ્સેદારી. વધારે = વિદેશી વિશ્વાસ.', formula: 'Direct from BSE/NSE', good: '≥ 10% = સારું  |  5–10% = ઠીક  |  < 5% = ઓછું' },
+    en: { title: 'FII Holding %', body: 'Foreign Institutional Investors stake. Higher = more foreign confidence.', formula: 'Direct from BSE/NSE', good: '≥ 10% = Good  |  5–10% = Fair  |  < 5% = Low' }
+  },
+  dii: {
+    hi: { title: 'DII Holding %', body: 'घरेलू संस्थागत निवेशकों की हिस्सेदारी। MF, LIC जैसे संस्थान।', formula: 'Direct from BSE/NSE', good: '≥ 5% = अच्छा  |  2–5% = ठीक  |  < 2% = कम' },
+    gu: { title: 'DII Holding %', body: 'સ્થાનિક સંસ્થાકીય રોકાણકારોની હિસ્સેદારી. MF, LIC જેવી સંસ્થાઓ.', formula: 'Direct from BSE/NSE', good: '≥ 5% = સારું  |  2–5% = ઠીક  |  < 2% = ઓછું' },
+    en: { title: 'DII Holding %', body: 'Domestic Institutional Investors stake. MF, LIC type institutions.', formula: 'Direct from BSE/NSE', good: '≥ 5% = Good  |  2–5% = Fair  |  < 2% = Low' }
+  },
+  roa: {
+    hi: { title: 'ROA % (संपत्ति पर रिटर्न)', body: 'कंपनी अपनी कुल संपत्ति पर कितना मुनाफा कमाती है।', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = अच्छा  |  5–10% = ठीक  |  < 5% = कमजोर' },
+    gu: { title: 'ROA % (સંપત્તિ પર રિટર્ન)', body: 'કંપની કુલ સંપત્તિ પર કેટલો નફો કરે છે.', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = સારું  |  5–10% = ઠીક  |  < 5% = નબળું' },
+    en: { title: 'ROA % (Return on Assets)', body: 'How much profit the company generates from total assets.', formula: 'ROA = (Net Profit ÷ Total Assets) × 100', good: '≥ 10% = Good  |  5–10% = Fair  |  < 5% = Weak' }
+  },
+};
 // ======================================
 // MARKET SCHOOL DATA
 // ======================================
