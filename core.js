@@ -81,11 +81,21 @@ async function startApp() {
 // ======================================
 function startRefresh() {
   if (AppState.refreshInterval) clearInterval(AppState.refreshInterval);
+
+  // ✅ GAS Warmup — active URL warm રાખે, cold start avoid
+  if (AppState._warmupInterval) clearInterval(AppState._warmupInterval);
+  AppState._warmupInterval = setInterval(() => {
+    const urls = getEnabledGASUrls();
+    if (urls.length > 0) {
+      fetch(urls[0] + '?type=ping', { signal: AbortSignal.timeout(3000) }).catch(() => {});
+    }
+  }, 20000); // દર 20 sec — GAS VM alive રાખે
+
   AppState.refreshInterval = setInterval(() => {
     if (getMarketStatus().open) {
       if (typeof updatePrices === 'function') updatePrices();
     }
-  }, (parseInt(localStorage.getItem('refreshSec')) || 10) * 1000);
+  }, (parseInt(localStorage.getItem('refreshSec')) || 8) * 1000);
 }
 
 // ======================================
