@@ -12,7 +12,7 @@ const AppState = {
   wl: ["SBIN","RELIANCE","TCS"],
   cache: {},
   lastUpdatedMap: {},
-  CACHE_TIME: 300000,
+  CACHE_TIME: 60000,
   watchlists: [{name:"Watchlist 1",stocks:[]},{name:"Watchlist 2",stocks:[]},{name:"Watchlist 3",stocks:[]}],
   currentWL: 0,
   
