@@ -91,123 +91,61 @@ function updateHeaderIndices() {
 }
 
 // ======================================
-// GIFT NIFTY — update chip in headerStrip directly
-// FIX: Python Engine Dependency Removed - Using Direct API
+// GIFT NIFTY — DIRECT GAS CALL (TRADINGVIEW)
+// Interval: 60 Seconds | No Firestore
 // ======================================
 let _giftNiftyInterval = null;
 
 async function updateGiftNifty() {
   const now = Date.now();
-  if (AppState._giftNiftyCache && (now - AppState._giftNiftyCacheTime) < 30000) {
+  
+  // 60s cache check
+  if (AppState._giftNiftyCache && (now - AppState._giftNiftyCacheTime) < 60000) {
     _applyGiftNiftyToChip(AppState._giftNiftyCache);
     return;
   }
 
-  // 1. New Elite Fetch: Direct from Moneycontrol (Bypassing CORS via proxy)
-  try {
-    const targetUrl = encodeURIComponent('https://priceapi.moneycontrol.com/pricefeed/notapplicable/inidicesindia/in;GIFTNIF');
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
-    
-    const r = await fetch(proxyUrl);
-    const res = await r.json();
-    const data = JSON.parse(res.contents).data;
-
-    if (data && data.pricecurrent) {
-      const price = parseFloat(data.pricecurrent.replace(/,/g, ''));
-      const prev = parseFloat(data.priceprevclose.replace(/,/g, ''));
-      const change = price - prev;
-      const pct = parseFloat(data.percentchange);
-
-      const cached = {
-        price: price.toFixed(2),
-        change: change.toFixed(2),
-        changePct: pct.toFixed(2)
-      };
-
-      AppState._giftNiftyCache = cached;
-      AppState._giftNiftyCacheTime = now;
-      _pushGiftNiftyToCache({ 
-        price: price, 
-        prev_close: prev, 
-        change_abs: change, 
-        change_pct: pct, 
-        high: parseFloat((data.HIGH || '0').replace(/,/g,'')), 
-        low: parseFloat((data.LOW || '0').replace(/,/g,'')) 
-      });
-      _applyGiftNiftyToChip(cached);
-      return; // Exit successful!
-    }
-  } catch(e) {
-    console.warn('[updateGiftNifty] Direct API fetch failed, falling back:', e);
-  }
-
-  // 2. Fallback to GAS (if proxy is down)
+  // Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
-    const r      = await fetch(apiUrl + '?s=NIFTY1%21&t=' + now);
-    const data   = await r.json();
+    // GAS script should handle TradingView scraping/fetching for 'NIFTY1!'
+    const r = await fetch(apiUrl + '?s=NIFTY1%21&t=' + now);
+    const data = await r.json();
+    
     if (data && data.price && data.price > 0) {
-      const price  = data.price;
-      const prev   = data.prevClose || price;
+      const price  = parseFloat(data.price);
+      const prev   = parseFloat(data.prevClose || price);
       const change = price - prev;
       const pct    = prev ? (change / prev * 100) : 0;
+
       const cached = {
         price:     price.toFixed(2),
         change:    change.toFixed(2),
         changePct: pct.toFixed(2)
       };
+
       AppState._giftNiftyCache     = cached;
       AppState._giftNiftyCacheTime = now;
-      _pushGiftNiftyToCache({ price, prev_close: prev, change_abs: change, change_pct: pct });
+
+      _pushGiftNiftyToCache({ 
+        price: price, 
+        prev_close: prev, 
+        change_abs: change, 
+        change_pct: pct 
+      });
+      
       _applyGiftNiftyToChip(cached);
-      return;
     }
   } catch(e) {
-    console.warn('[updateGiftNifty] GAS failed:', e);
-  }
-
-  // 3. Fallback: Firestore (will show "---" if stale, which is expected if engine is off)
-  try {
-    const doc = await firebase.firestore().collection('RealTradePro').doc('gift_nifty').get();
-    if (!doc.exists) return;
-    const fd = doc.data();
-    if (!fd || !fd.price) return;
-
-    if (fd.updated_at) {
-      const today    = new Date().toISOString().split('T')[0];
-      const dataDate = fd.updated_at.substring(0, 10);
-      if (dataDate < today) {
-        console.warn('[updateGiftNifty] Stale Firestore data:', fd.updated_at);
-        return;
-      }
-    }
-
-    const price  = parseFloat(fd.price);
-    const prev   = parseFloat(fd.prev_close || price);
-    const change = parseFloat(fd.change || (price - prev));
-    const pct    = parseFloat(fd.change_pct || (prev > 0 ? ((price - prev) / prev * 100) : 0));
-    const cached = {
-      price:     price.toFixed(2),
-      change:    change.toFixed(2),
-      changePct: pct.toFixed(2)
-    };
-    AppState._giftNiftyCache     = cached;
-    AppState._giftNiftyCacheTime = now;
-    _pushGiftNiftyToCache({ price, prev_close: prev, change_abs: change, change_pct: pct, high: fd.high, low: fd.low });
-    _applyGiftNiftyToChip(cached);
-  } catch(e) {
-    console.warn('[updateGiftNifty] Firestore fallback failed:', e);
+    console.warn('[updateGiftNifty] GAS TradingView fetch failed:', e);
   }
 }
 
-// Push Gift Nifty data into AppState.cache['NIFTY1!'] so header chip renders it
 function _pushGiftNiftyToCache(data) {
-  const price    = parseFloat(data.price)     || 0;
-  const prev     = parseFloat(data.prev_close || data.prevClose || price);
-  const changeAbs = parseFloat(data.change_abs || data.change || (price - prev));
+  const price     = parseFloat(data.price) || 0;
+  const prev      = parseFloat(data.prev_close || price);
+  const changeAbs = parseFloat(data.change_abs || (price - prev));
   const changePct = parseFloat(data.change_pct || (prev > 0 ? ((price - prev) / prev * 100) : 0));
-
-  if (!price) return;
 
   AppState.cache['NIFTY1!'] = {
     data: {
@@ -215,17 +153,14 @@ function _pushGiftNiftyToCache(data) {
       chartPreviousClose:         prev,
       regularMarketChange:        parseFloat(changeAbs.toFixed(2)),
       regularMarketChangePercent: parseFloat(changePct.toFixed(2)),
-      regularMarketDayHigh:       parseFloat(data.high || price),
-      regularMarketDayLow:        parseFloat(data.low  || price),
-      fiftyTwoWeekHigh:           parseFloat(data.high52 || price),
-      fiftyTwoWeekLow:            parseFloat(data.low52  || price),
-      _source: 'gift_nifty_doc'
+      regularMarketDayHigh:       price,
+      regularMarketDayLow:        price,
+      _source: 'GAS_TradingView'
     },
     time: Date.now()
   };
 }
 
-// Write Gift Nifty values directly into its headerStrip chip
 function _applyGiftNiftyToChip(cached) {
   const strip = document.getElementById('headerStrip');
   if (!strip) return;
@@ -240,16 +175,17 @@ function _applyGiftNiftyToChip(cached) {
   const change    = parseFloat(cached.change);
   const changePct = parseFloat(cached.changePct);
   const isUp      = change >= 0;
-  const sign      = isUp ? '+' : '';
   const color     = isUp ? '#22c55e' : '#ef4444';
+  const sign      = isUp ? '+' : '';
 
-  // Flash
   if (priceDiv) {
     const oldPrice = parseFloat(priceDiv.innerText.replace(/,/g, '')) || 0;
-    priceDiv.innerText = price.toFixed(2);
+    priceDiv.innerText = price.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    
+    // Flash effect
     if (oldPrice > 0 && price !== oldPrice) {
       priceDiv.style.color = price > oldPrice ? '#22c55e' : '#ef4444';
-      setTimeout(() => { priceDiv.style.color = '#e2e8f0'; }, 600);
+      setTimeout(() => { priceDiv.style.color = '#e2e8f0'; }, 1200);
     }
   }
   if (changeDiv) {
@@ -261,8 +197,10 @@ function _applyGiftNiftyToChip(cached) {
 function startGiftNiftyUpdates() {
   if (_giftNiftyInterval) clearInterval(_giftNiftyInterval);
   updateGiftNifty();
-  _giftNiftyInterval = setInterval(updateGiftNifty, 30000);
+  // Set to 60 seconds as requested
+  _giftNiftyInterval = setInterval(updateGiftNifty, 60000);
 }
+
 
 // ======================================
 // RENDER INDICES TAB (Full Page)
