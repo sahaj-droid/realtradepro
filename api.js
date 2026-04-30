@@ -42,6 +42,12 @@ function getActiveGASUrl() {
   return url;
 }
 
+// ✅ Token append helper — every GAS call ma use karvo
+function _appendToken(url) {
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + '_t=rtp_2026_sahaj';
+}
+
 // ======================================
 // NORMALIZE API RESPONSE
 // ======================================
@@ -97,7 +103,7 @@ async function batchFetchStocks(symbols, isIndex = false) {
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
-      const r = await fetchWithTimeout(`${apiUrl}?type=batch&s=${syms}`, 6000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=batch&s=${syms}`), 6000);
       const j = await r.json();
       if (!j || j.error) continue;
       let stored = 0;
