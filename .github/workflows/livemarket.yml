@@ -1,0 +1,39 @@
+name: LiveMarket Snapshot
+
+on:
+  schedule:
+    # 3:25 PM IST = 09:55 UTC  → First run
+    - cron: '55 9 * * 1-5'
+    # 3:32 PM IST = 10:02 UTC  → Second run (closing price capture)
+    - cron: '2 10 * * 1-5'
+  workflow_dispatch:  # Manual trigger button GitHub par
+
+jobs:
+  run-livemarket:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread yahooquery pandas firebase-admin
+
+      - name: Write keys.json from secret
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > keys.json
+
+      - name: Run LiveMarket Engine
+        run: |
+          python Python\ Codes/livemarket.py
+
+      - name: Cleanup keys.json
+        if: always()
+        run: rm -f keys.json
