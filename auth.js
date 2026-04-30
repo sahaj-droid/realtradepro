@@ -4,7 +4,7 @@
 
 // Default FF2 URL
 (function setDefaultFF2Url() {
-  const DEFAULT_FF2_URL = "https://script.google.com/macros/s/AKfycbxcIGFZp7IWBSMJVsMIgpPR5oVmiEJbapQyknKrJ8iVpn9ahM6z9hc_QfiDKhhSMGNgiw/exec";
+  const DEFAULT_FF2_URL = "";
   if (!localStorage.getItem('ff2ApiUrl')) {
     localStorage.setItem('ff2ApiUrl', DEFAULT_FF2_URL);
   }

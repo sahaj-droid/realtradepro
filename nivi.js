@@ -250,23 +250,26 @@ async function renderNews() {
           ${chipsHtml}
         </div>
 
-        <div id="tab-file-preview" style="display:none;align-items:center;gap:8px;margin-bottom:6px;background:#0a1e14;border:1px solid rgba(52,211,153,0.25);border-radius:10px;padding:6px 10px;">
+<div id="tab-file-preview" style="display:none;align-items:center;gap:8px;margin-bottom:6px;background:#0a1e14;border:1px solid rgba(52,211,153,0.25);border-radius:10px;padding:6px 10px;">
           <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><rect x="3" y="2" width="10" height="14" rx="2" stroke="#34d399" stroke-width="1.4"/><path d="M7 6h4M7 9h4M7 12h2" stroke="#34d399" stroke-width="1.2" stroke-linecap="round"/></svg>
           <span id="tab-file-name" style="font-size:11px;color:#34d399;font-family:'Rajdhani',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           <button onclick="_tabClearFile()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">✕</button>
         </div>
 
-        <input type="file" id="tab-file-input"
-          accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
-          style="display:none;"
-          onchange="_tabFileSelected(this)">
-
         <div style="display:flex;gap:8px;align-items:center;">
-          <button onclick="document.getElementById('tab-file-input').click()"
-            title="File attach karo (PDF, JS, HTML...)"
-            style="flex-shrink:0;background:rgba(52,211,153,0.08);color:#34d399;border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;align-self:flex-end;">
-            <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+          
+          <!-- 🚀 બ્રહ્માસ્ત્ર જુગાડ: Invisible Overlay (100% Mobile Safe) -->
+          <div style="position:relative; flex-shrink:0; width:42px; height:42px;">
+            <!-- આ દેખાતું બટન છે -->
+            <div style="width:100%; height:100%; background:rgba(52,211,153,0.08); color:#34d399; border:1px solid rgba(52,211,153,0.2); border-radius:12px; display:flex; align-items:center; justify-content:center;">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="#34d399" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <!-- આ અદ્રશ્ય ફાઈલ ઇનપુટ છે જે બટન પર ઢંકાયેલું છે -->
+            <input type="file" id="tab-file-input"
+              accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
+              style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"
+              onchange="_tabFileSelected(this)">
+          </div>
 
           <div style="flex:1;position:relative;">
             <textarea id="tab-nivi-input"
@@ -570,7 +573,9 @@ ${modularPrompt}
 // ======================================
 async function _tabAskWithFile(question, file) {
   const fileName = file.name;
-  const mimeType = getFileMimeType(fileName);
+  
+  // ✅ FIX: Native file.type use karyu jethi mimeType nu function miss thay to error na aave
+  const mimeType = file.type || (typeof getFileMimeType === 'function' ? getFileMimeType(fileName) : 'application/octet-stream');
   const isImage  = mimeType.startsWith('image/');
 
   const displayMsg = `📎 ${fileName}\n${question}`;
@@ -922,6 +927,8 @@ window.niviChip = niviChip;
 window.niviClearChat = niviClearChat;
 window._niviModalAsk = _niviModalAsk;
 window._tabAskWithFile = _tabAskWithFile;
+window._tabFileSelected = _tabFileSelected;
+window._tabClearFile = _tabClearFile;
 
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
