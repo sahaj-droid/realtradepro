@@ -411,6 +411,9 @@ function initGeminiKeyDisplay() {
   if (f1) f1.value = savedModels[0] || '';
   if (f2) f2.value = savedModels[1] || '';
   if (f3) f3.value = savedModels[2] || '';
+
+  // ✅ Universal AI Provider status
+  _loadUniversalProviderUI();
 }
 
 function saveGeminiKey() {
@@ -598,6 +601,114 @@ function sToggle(bodyId, arrId) {
 }
 
 // ======================================
+// 🌐 UNIVERSAL AI PROVIDER SETTINGS
+// Primary + Fallback provider manage karo
+// Supported: groq, openrouter, gemini, nvidia
+// ======================================
+
+function _loadUniversalProviderUI() {
+  const config = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
+
+  // Primary status
+  const primStatus = document.getElementById('uni-primary-status');
+  if (primStatus) {
+    if (config?.primary?.provider) {
+      const p = config.primary;
+      primStatus.innerHTML = `<span style="color:#34d399;">✓ ${p.provider.toUpperCase()} — ${p.model || 'default'}</span>`;
+    } else {
+      primStatus.innerHTML = '<span style="color:#4b6280;">Not set — existing chain use thase</span>';
+    }
+  }
+
+  // Fallback status
+  const fallStatus = document.getElementById('uni-fallback-status');
+  if (fallStatus) {
+    if (config?.fallback?.provider) {
+      const f = config.fallback;
+      fallStatus.innerHTML = `<span style="color:#fb923c;">✓ ${f.provider.toUpperCase()} — ${f.model || 'default'}</span>`;
+    } else {
+      fallStatus.innerHTML = '<span style="color:#4b6280;">Not set</span>';
+    }
+  }
+
+  // Populate fields if config exists
+  if (config?.primary) {
+    const pp = document.getElementById('uni-primary-provider');
+    const pm = document.getElementById('uni-primary-model');
+    const pk = document.getElementById('uni-primary-key');
+    if (pp) pp.value = config.primary.provider || 'groq';
+    if (pm) pm.value = config.primary.model   || '';
+    if (pk) pk.value = '';  // key kabhi show nahi karva — security
+  }
+  if (config?.fallback) {
+    const fp = document.getElementById('uni-fallback-provider');
+    const fm = document.getElementById('uni-fallback-model');
+    const fk = document.getElementById('uni-fallback-key');
+    if (fp) fp.value = config.fallback.provider || 'openrouter';
+    if (fm) fm.value = config.fallback.model    || '';
+    if (fk) fk.value = '';
+  }
+}
+
+function saveUniversalProvider() {
+  const pp = (document.getElementById('uni-primary-provider')?.value || '').trim().toLowerCase();
+  const pm = (document.getElementById('uni-primary-model')?.value    || '').trim();
+  const pk = (document.getElementById('uni-primary-key')?.value      || '').trim();
+
+  const fp = (document.getElementById('uni-fallback-provider')?.value || '').trim().toLowerCase();
+  const fm = (document.getElementById('uni-fallback-model')?.value    || '').trim();
+  const fk = (document.getElementById('uni-fallback-key')?.value      || '').trim();
+
+  if (!pp || !pk) { showPopup('Primary provider ane key joie!'); return; }
+
+  const config = {};
+
+  config.primary = { provider: pp, model: pm, apiKey: pk };
+
+  // Existing keys reuse — jо key field blank hoy to existing key rakho
+  const existing = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
+  if (!pk && existing?.primary?.apiKey) config.primary.apiKey = existing.primary.apiKey;
+
+  if (fp && fk) {
+    config.fallback = { provider: fp, model: fm, apiKey: fk };
+  } else if (fp && existing?.fallback?.apiKey) {
+    config.fallback = { provider: fp, model: fm, apiKey: existing.fallback.apiKey };
+  }
+
+  if (typeof setAIProviderConfig === 'function') setAIProviderConfig(config);
+
+  // Clear key fields — security
+  const pkEl = document.getElementById('uni-primary-key');
+  const fkEl = document.getElementById('uni-fallback-key');
+  if (pkEl) pkEl.value = '';
+  if (fkEl) fkEl.value = '';
+
+  _loadUniversalProviderUI();
+  showPopup(`✅ Universal AI saved! Primary: ${pp.toUpperCase()}`);
+}
+
+function clearUniversalProvider() {
+  localStorage.removeItem('aiProviderConfig');
+  _loadUniversalProviderUI();
+  showPopup('🗑 Universal AI config cleared — existing chain active');
+}
+
+// Model suggestions per provider
+function onUniProviderChange(which) {
+  const provEl  = document.getElementById(`uni-${which}-provider`);
+  const modelEl = document.getElementById(`uni-${which}-model`);
+  if (!provEl || !modelEl) return;
+
+  const defaults = {
+    groq:       'llama-3.1-8b-instant',
+    openrouter: 'meta-llama/llama-3.1-8b-instruct:free',
+    gemini:     'gemini-2.0-flash-lite',
+    nvidia:     'meta/llama-3.1-8b-instruct'
+  };
+  modelEl.placeholder = defaults[provEl.value] || 'model name';
+}
+
+// ======================================
 // REGISTER FUNCTIONS TO WINDOW
 // ======================================
 window.toggleGASUrl = toggleGASUrl;
@@ -641,5 +752,8 @@ window.startFF2Edit  = startFF2Edit;
 window.cancelFF2Edit = cancelFF2Edit;
 window.saveFF2Url    = saveFF2Url;
 window.sToggle = sToggle;
+window.saveUniversalProvider  = saveUniversalProvider;
+window.clearUniversalProvider = clearUniversalProvider;
+window.onUniProviderChange    = onUniProviderChange;
 
 console.log('✅ settings.js loaded successfully');
