@@ -1013,6 +1013,61 @@ html[data-fsize='large'] { font-size: 128%; }
 
   </div>
 </div>
+  <!-- ✅ UNIVERSAL AI PROVIDER -->
+<div style="margin-top:16px;background:#0d1f35;border-radius:12px;padding:14px;border:1px solid rgba(56,189,248,0.15);">
+  <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:10px;">🌐 Universal AI Provider</div>
+  <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Primary provider set karo — Gemini bandh thay to auto-switch thase</div>
+
+  <!-- Primary -->
+  <div style="margin-bottom:8px;">
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">PRIMARY</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <select id="uni-primary-provider" onchange="onUniProviderChange('primary')"
+        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:1;min-width:90px;">
+        <option value="groq">Groq</option>
+        <option value="openrouter">OpenRouter</option>
+        <option value="gemini">Gemini</option>
+        <option value="nvidia">Nvidia</option>
+      </select>
+      <input id="uni-primary-model" type="text" placeholder="model name (optional)"
+        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:2;min-width:130px;" />
+    </div>
+    <input id="uni-primary-key" type="password" placeholder="API Key"
+      style="width:100%;margin-top:6px;background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;box-sizing:border-box;" />
+    <div id="uni-primary-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
+  </div>
+
+  <!-- Fallback -->
+  <div style="margin-bottom:10px;">
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">FALLBACK (optional)</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <select id="uni-fallback-provider" onchange="onUniProviderChange('fallback')"
+        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:1;min-width:90px;">
+        <option value="openrouter">OpenRouter</option>
+        <option value="groq">Groq</option>
+        <option value="gemini">Gemini</option>
+        <option value="nvidia">Nvidia</option>
+      </select>
+      <input id="uni-fallback-model" type="text" placeholder="model name (optional)"
+        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:2;min-width:130px;" />
+    </div>
+    <input id="uni-fallback-key" type="password" placeholder="API Key"
+      style="width:100%;margin-top:6px;background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;box-sizing:border-box;" />
+    <div id="uni-fallback-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
+  </div>
+
+  <!-- Buttons -->
+  <div style="display:flex;gap:8px;">
+    <button onclick="saveUniversalProvider()"
+      style="flex:1;background:#065f46;color:#34d399;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">
+      💾 Save
+    </button>
+    <button onclick="clearUniversalProvider()"
+      style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer;">
+      🗑 Clear
+    </button>
+  </div>
+</div>
   <!-- API CONFIGURATION -->
   <div class="s-section-label">API Configuration</div>
   <div class="s-card">
