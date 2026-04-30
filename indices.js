@@ -92,7 +92,7 @@ function updateHeaderIndices() {
 
 // ======================================
 // GIFT NIFTY — update chip in headerStrip directly
-// FIX: no separate #giftNifty element needed
+// FIX: Python Engine Dependency Removed - Using Direct API
 // ======================================
 let _giftNiftyInterval = null;
 
@@ -103,7 +103,45 @@ async function updateGiftNifty() {
     return;
   }
 
-  // 1. Try GAS first
+  // 1. New Elite Fetch: Direct from Moneycontrol (Bypassing CORS via proxy)
+  try {
+    const targetUrl = encodeURIComponent('https://priceapi.moneycontrol.com/pricefeed/notapplicable/inidicesindia/in;GIFTNIF');
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + targetUrl;
+    
+    const r = await fetch(proxyUrl);
+    const res = await r.json();
+    const data = JSON.parse(res.contents).data;
+
+    if (data && data.pricecurrent) {
+      const price = parseFloat(data.pricecurrent.replace(/,/g, ''));
+      const prev = parseFloat(data.priceprevclose.replace(/,/g, ''));
+      const change = price - prev;
+      const pct = parseFloat(data.percentchange);
+
+      const cached = {
+        price: price.toFixed(2),
+        change: change.toFixed(2),
+        changePct: pct.toFixed(2)
+      };
+
+      AppState._giftNiftyCache = cached;
+      AppState._giftNiftyCacheTime = now;
+      _pushGiftNiftyToCache({ 
+        price: price, 
+        prev_close: prev, 
+        change_abs: change, 
+        change_pct: pct, 
+        high: parseFloat((data.HIGH || '0').replace(/,/g,'')), 
+        low: parseFloat((data.LOW || '0').replace(/,/g,'')) 
+      });
+      _applyGiftNiftyToChip(cached);
+      return; // Exit successful!
+    }
+  } catch(e) {
+    console.warn('[updateGiftNifty] Direct API fetch failed, falling back:', e);
+  }
+
+  // 2. Fallback to GAS (if proxy is down)
   try {
     const apiUrl = getActiveGASUrl();
     const r      = await fetch(apiUrl + '?s=NIFTY1%21&t=' + now);
@@ -128,14 +166,13 @@ async function updateGiftNifty() {
     console.warn('[updateGiftNifty] GAS failed:', e);
   }
 
-  // 2. Fallback: Firestore gift_nifty document (staleness check sathe)
+  // 3. Fallback: Firestore (will show "---" if stale, which is expected if engine is off)
   try {
     const doc = await firebase.firestore().collection('RealTradePro').doc('gift_nifty').get();
     if (!doc.exists) return;
     const fd = doc.data();
     if (!fd || !fd.price) return;
 
-    // Stale data check — aaj no nahi hoy to -- j rakhhvu
     if (fd.updated_at) {
       const today    = new Date().toISOString().split('T')[0];
       const dataDate = fd.updated_at.substring(0, 10);
@@ -256,7 +293,6 @@ async function renderTerminal() {
     wrap.id = 'terminalContainer';
     wrap.style.cssText = 'margin-top:0px;';
     wrap.innerHTML = `
-<!-- Header bar -->
 <div style="position:sticky;top:0;z-index:10;background:#060e1a;padding:8px 0 6px 0;">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
     <div style="display:flex;align-items:center;gap:6px;">
@@ -268,7 +304,6 @@ async function renderTerminal() {
       ↻ Refresh
     </button>
   </div>
-  <!-- Column headers -->
   <div style="display:grid;grid-template-columns:80px 1fr 72px 56px 44px 52px;gap:4px;padding:4px 8px;border-bottom:1px solid #1e2d3d;">
     <span onclick="terminalSort('sym')"  style="font-size:9px;font-weight:700;color:#4b6280;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">SYMBOL <span id="ts-sym"></span></span>
     <span onclick="terminalSort('bb')"   style="font-size:9px;font-weight:700;color:#4b6280;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">BB LB/UB <span id="ts-bb"></span></span>
@@ -279,7 +314,6 @@ async function renderTerminal() {
   </div>
 </div>
 
-<!-- Rows -->
 <div id="terminalRows" style="display:flex;flex-direction:column;gap:1px;padding:0 0 8px 0;"></div>
     `;
     el.appendChild(wrap);
@@ -535,4 +569,4 @@ window._patchTerminalPrices   = _patchTerminalPrices;
 window.updateGiftNifty      = updateGiftNifty;
 window.startGiftNiftyUpdates = startGiftNiftyUpdates;
 
-console.log('✅ indices.js loaded successfully');
+console.log('✅ indices.js loaded successfully (Elite Proxy Fetch Active)');
