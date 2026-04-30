@@ -159,31 +159,6 @@ async function pullFromCloud(showMsg = false) {
       changed = true;
     }
     
-    // Load live prices from Firebase
-    try {
-      const lpDoc = await db.collection('RealTradePro').doc('live_prices').get();
-      if (lpDoc.exists) {
-        const prices = lpDoc.data().prices || {};
-        let priceLoaded = 0;
-        Object.keys(prices).forEach(key => {
-          const p = prices[key];
-          if (!p) return;
-          const sym = key.replace(/\.(NS|BO)$/, '');
-          if (p.ltp || p.regularMarketPrice || p.close || p.prev_close) {
-            AppState.cache[sym] = {
-              data: Object.assign({}, p, { _source: 'firebase_manual_pull' }),
-              time: Date.now()
-            };
-            if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[sym] = Date.now();
-            priceLoaded++;
-          }
-        });
-        if (priceLoaded > 0) changed = true;
-      }
-    } catch (lpErr) {
-      console.warn('[Download] live_prices fetch failed:', lpErr);
-    }
-    
     AppState._lastSyncTime = Date.now();
     localStorage.setItem('lastCloudSync', AppState._lastSyncTime.toString());
     
