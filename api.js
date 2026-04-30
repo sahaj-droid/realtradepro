@@ -130,7 +130,7 @@ async function fetchFull(sym, isIndex = false) {
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
-      const r = await fetchWithTimeout(`${apiUrl}?s=${encodedSymbol}`, 6000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?s=${encodedSymbol}`), 6000);
       const j = await r.json();
       if (j.error || !j.chart || !j.chart.result) continue;
       const data = j.chart.result[0].meta;
@@ -222,7 +222,7 @@ async function fetchHistory(sym, range = '30d', interval = '1d') {
   for (let apiUrl of urls) {
     try {
       const histSym = sym.startsWith('^') ? sym : sym + '.NS';
-      const r = await fetchWithTimeout(`${apiUrl}?type=history&s=${histSym}&range=${range}&interval=${interval}`, 10000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=history&s=${histSym}&range=${range}&interval=${interval}`), 10000);
       const j = await r.json();
       if (j.error || !j.dates || !j.close) continue;
       if (j.close.length < 14) continue;
@@ -254,7 +254,7 @@ async function fetchGlobalMarkets() {
   const urls = getEnabledGASUrls();
   for (const apiUrl of urls) {
     try {
-      const r = await fetchWithTimeout(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`, 8000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=batch&s=${encodeURIComponent(syms)}`), 8000);
       const data = await r.json();
       if (data && !data.error && Object.keys(data).length > 0) {
         AppState._globalCache = data;
