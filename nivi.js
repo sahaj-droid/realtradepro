@@ -258,7 +258,7 @@ async function renderNews() {
 
         <input type="file" id="tab-file-input"
           accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
-          style="display:none;"
+          style="position:absolute; width:1px; height:1px; opacity:0; z-index:-1;"
           onchange="_tabFileSelected(this)">
 
         <div style="display:flex;gap:8px;align-items:center;">
@@ -570,7 +570,9 @@ ${modularPrompt}
 // ======================================
 async function _tabAskWithFile(question, file) {
   const fileName = file.name;
-  const mimeType = getFileMimeType(fileName);
+  
+  // ✅ FIX: Native file.type use karyu jethi mimeType nu function miss thay to error na aave
+  const mimeType = file.type || (typeof getFileMimeType === 'function' ? getFileMimeType(fileName) : 'application/octet-stream');
   const isImage  = mimeType.startsWith('image/');
 
   const displayMsg = `📎 ${fileName}\n${question}`;
@@ -922,6 +924,8 @@ window.niviChip = niviChip;
 window.niviClearChat = niviClearChat;
 window._niviModalAsk = _niviModalAsk;
 window._tabAskWithFile = _tabAskWithFile;
+window._tabFileSelected = _tabFileSelected;
+window._tabClearFile = _tabClearFile;
 
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
