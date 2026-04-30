@@ -43,18 +43,34 @@ async function startApp() {
   setInterval(updateMarketStatus, 60000);
 
   renderWLTabs();
+
+  // ✅ MARKETDATA: Tier-1 LocalStorage instant load — user zero wait kare
+  // Market closed hoy to Firebase thi data aave, GAS call nahi thay
+  if (typeof initMarketData === 'function') {
+    await initMarketData();
+  }
+
   showLoader('Loading...');
 
   try {
-    // 1. Watchlist prices — only current watchlist stocks
     const startWl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl;
-    await batchFetchStocks(startWl);
+
+    // ✅ MARKETDATA: GAS call sirf market open hoy tyare
+    const _mktOpen = typeof isMarketOpen === 'function' ? isMarketOpen() : true;
+    if (_mktOpen) {
+      // 1. Watchlist prices — GAS thi fresh data
+      await batchFetchStocks(startWl);
+    }
+    // Market closed hoy to initMarketData() already Firebase/LocalCache inject kari chuke — skip GAS
+
     renderWL();
     if (typeof updatePriceTicker === 'function') updatePriceTicker();
 
     // 2. Indices (skip GIFT NIFTY here — handled by startGiftNiftyUpdates)
     const nonGiftIndices = AppState.indicesList.filter(i => i.sym !== 'NIFTY1!');
-    await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
+    if (_mktOpen) {
+      await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
+    }
 
     // 3. GIFT NIFTY via its dedicated function (reads gift_nifty Firestore doc)
     if (typeof startGiftNiftyUpdates === 'function') startGiftNiftyUpdates();
@@ -73,6 +89,12 @@ async function startApp() {
   }, 3000);
 
   hideLoader();
+
+  // ✅ MARKETDATA: Auto refresh sirf market open hoy tyare
+  if (typeof isMarketOpen === 'function' && isMarketOpen()) {
+    if (typeof startAutoRefresh === 'function') startAutoRefresh(60000);
+  }
+
   startRefresh();
 }
 
