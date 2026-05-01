@@ -55,7 +55,7 @@ const AppState = {
 indicesList: [
   { sym: '^NSEI', name: 'NIFTY 50' },
   { sym: '^BSESN', name: 'SENSEX' },
-  { sym: 'NIFTY1!', name: 'GIFT NIFTY' },
+  { sym: 'GIFTNIFTY', name: 'GIFT NIFTY' },
   { sym: '^NSEBANK', name: 'BANK NIFTY' },
 ],
 

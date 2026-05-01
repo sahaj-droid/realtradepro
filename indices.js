@@ -108,13 +108,12 @@ async function updateGiftNifty() {
   // Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
-    // GAS script should handle TradingView scraping/fetching for 'NIFTY1!'
-    const r = await fetch(apiUrl + '?s=NIFTY1%21&t=' + now);
+    const r = await fetch(_appendToken(apiUrl + '?type=giftNifty'));
     const data = await r.json();
     
     if (data && data.price && data.price > 0) {
       const price  = parseFloat(data.price);
-      const prev   = parseFloat(data.prevClose || price);
+      const prev   = parseFloat(data.prev_close || data.prevClose || price);
       const change = price - prev;
       const pct    = prev ? (change / prev * 100) : 0;
 
