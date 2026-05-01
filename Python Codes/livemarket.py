@@ -56,11 +56,28 @@ def update_livemarket():
     print("  LIVEMARKET ENGINE - Live Snapshot + Firebase Push")
     print("=" * 55)
 
-    now_ist = datetime.utcnow()
-    ts_str  = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
+    from datetime import timezone, timedelta
+    IST = timezone(timedelta(hours=5, minutes=30))
+    now_ist  = datetime.now(IST)
+    ts_str   = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
     date_str = now_ist.strftime("%Y-%m-%d")
     print(f"  Run Time: {ts_str}")
     print("=" * 55)
+
+    # ── NSE Market Hours + Holiday Check ──
+    day      = now_ist.weekday()   # 0=Mon, 6=Sun
+    ist_mins = now_ist.hour * 60 + now_ist.minute
+    mkt_open  = 9  * 60 + 15   # 9:15 AM IST
+    mkt_close = 15 * 60 + 35   # 3:35 PM IST (buffer)
+
+    if day >= 5:
+        print("⏭️  Weekend — Firebase push skipped. Exiting.")
+        return
+    if not (mkt_open <= ist_mins <= mkt_close):
+        print(f"⏭️  Market closed hours ({now_ist.strftime('%H:%M')} IST) — Firebase push skipped. Exiting.")
+        return
+
+    print(f"✅ Market hours confirmed ({now_ist.strftime('%H:%M')} IST) — proceeding...")
 
     # ── Step 1: Firebase Connect ──
     db = init_firebase()
@@ -162,6 +179,10 @@ def update_livemarket():
         if prev != 0 and chg_pct == 0:
             chg_pct = round(((ltp - prev) / prev) * 100, 2)
 
+        # ── Holiday/zero price skip ──
+        if ltp == 0:
+            continue
+
         # ── Firebase document — tamara existing structure match kare ──
         firebase_batch[sym_raw] = {
             'ltp':       round(float(ltp),     2),
@@ -173,6 +194,7 @@ def update_livemarket():
             'volume':    int(volume),
             'change':    round(float(change),  2),
             'change_pct': round(float(chg_pct), 2),
+            'regularMarketChangePercent': round(float(chg_pct), 2),
             'ts':        ts_str,
             'date':      date_str,
             'ticker':    tick
@@ -204,6 +226,7 @@ def update_livemarket():
                 'low':        round(float(low),     2),
                 'change':     round(float(change),  2),
                 'change_pct': round(float(chg_pct), 2),
+                'regularMarketChangePercent': round(float(chg_pct), 2),
                 'volume':     0,
                 'open':       ltp,
                 'ts':         ts_str,
@@ -230,7 +253,7 @@ def update_livemarket():
             d = _json.loads(resp.read())
         gift_ltp = float(d.get('close') or 0)
         gift_prev = float(d.get('prev_close_price') or 0)
-        firebase_batch['NIFTY1!'] = {
+        firebase_batch['GIFTNIFTY'] = {
             'ltp':        gift_ltp,
             'price':      gift_ltp,
             'prevClose':  gift_prev,
@@ -238,11 +261,12 @@ def update_livemarket():
             'low':        float(d.get('low') or gift_ltp),
             'change':     float(d.get('change_abs') or 0),
             'change_pct': float(d.get('change') or 0),
+            'regularMarketChangePercent': float(d.get('change') or 0),
             'volume':     0,
             'open':       gift_ltp,
             'ts':         ts_str,
             'date':       date_str,
-            'ticker':     'NIFTY1!',
+            'ticker':     'GIFTNIFTY',
             '_type':      'index'
         }
         print(f"  ✅ Gift Nifty: {gift_ltp}")
@@ -263,7 +287,7 @@ def update_livemarket():
 
                 for sym, data in chunk_items:
                     ref = db.collection('livemarket').document(sym)
-                    batch.set(ref, data)
+                    batch.set(ref, data, merge=True)
 
                 batch.commit()
                 print(f"  Firebase chunk {(ci // fb_chunk_size)+1}/{total_fb} committed ✅")
