@@ -216,72 +216,201 @@ async function renderIndices() {
 // ======================================
 let _terminalSort = { col: 'pct', dir: 'desc' };
 let _terminalLoading = false;
- 
+
+// Column definitions — exact sequence as requested
+const _T_COLS = [
+  { id:'sym',   label:'SYMBOL',       w:'110px', align:'left'   },
+  { id:'ltp',   label:'LTP',          w:'72px',  align:'center' },
+  { id:'abs',   label:'PRICE CHG',    w:'72px',  align:'center' },
+  { id:'pct',   label:'CHG%',         w:'58px',  align:'center' },
+  { id:'rsi',   label:'RSI',          w:'40px',  align:'center' },
+  { id:'macd',  label:'MACD',         w:'50px',  align:'center' },
+  { id:'vol',   label:'VOLUME',       w:'55px',  align:'center' },
+  { id:'sr',    label:'S&R',          w:'80px',  align:'center' },
+  { id:'ub',    label:'UB',           w:'60px',  align:'center' },
+  { id:'lb',    label:'LB',           w:'60px',  align:'center' },
+  { id:'sig',   label:'SIGNAL',       w:'52px',  align:'center' },
+];
+
 // ======================================
 // RENDER TERMINAL
 // ======================================
 async function renderTerminal() {
   const el = document.getElementById('indices');
   if (!el) return;
- 
-  // Inject terminal container if not present
-  if (!document.getElementById('terminalContainer')) {
-    const wrap = document.createElement('div');
-    wrap.id = 'terminalContainer';
-    wrap.style.cssText = 'margin-top:0px;';
-    wrap.innerHTML = `
-<div style="position:sticky;top:0;z-index:10;background:var(--bg-app,#060e1a);padding:8px 0 6px 0;border-bottom:1px solid var(--border,#1e2d3d);">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-    <div style="display:flex;align-items:center;gap:6px;">
-      <span style="font-size:10px;font-weight:800;color:var(--accent,#38bdf8);font-family:'Rajdhani',sans-serif;letter-spacing:1px;">⬡ TERMINAL</span>
-      <span id="terminalCount" style="font-size:9px;color:var(--text-label,#4b6280);font-family:'Rajdhani',sans-serif;"></span>
+
+  // Always rebuild container for fresh theme
+  const existing = document.getElementById('terminalContainer');
+  if (existing) existing.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'terminalContainer';
+  wrap.style.cssText = 'margin-top:0;';
+
+  const colWidths = _T_COLS.map(c => c.w).join(' ');
+
+  wrap.innerHTML = `
+<style>
+#terminalContainer { font-family:'Rajdhani',sans-serif; }
+#terminalContainer .t-hdr {
+  position:sticky;top:0;z-index:10;
+  background:var(--bg-header,#0d1425);
+  border-bottom:1px solid var(--border,#1e2d4a);
+  padding:8px 10px 0 10px;
+}
+#terminalContainer .t-toprow {
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+}
+#terminalContainer .t-title {
+  font-size:11px;font-weight:800;color:var(--accent,#38bdf8);letter-spacing:1px;
+}
+#terminalContainer .t-count {
+  font-size:9px;color:var(--text-label,#4b6280);
+  background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);
+  border-radius:8px;padding:1px 8px;margin-left:6px;
+}
+#terminalContainer .t-rfbtn {
+  background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);
+  border:1px solid var(--accent-border,#2d5a8e);
+  padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;
+}
+#terminalContainer .t-cols {
+  display:grid;grid-template-columns:${colWidths};
+  gap:2px;padding:5px 6px;border-bottom:1px solid var(--border,#1e2d4a);
+}
+#terminalContainer .t-col-hdr {
+  font-size:8px;font-weight:700;color:var(--text-label,#4b6280);
+  letter-spacing:0.5px;cursor:pointer;padding:2px 3px;border-radius:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color 0.15s;
+}
+#terminalContainer .t-col-hdr:hover { color:var(--accent,#38bdf8); }
+#terminalContainer .t-col-hdr.active { color:var(--accent,#38bdf8); }
+#terminalContainer .t-col-hdr.left { text-align:left; }
+#terminalContainer .t-col-hdr.center { text-align:center; }
+#terminalContainer .t-row {
+  display:grid;grid-template-columns:${colWidths};
+  gap:2px;align-items:center;padding:6px 6px;
+  border-bottom:1px solid var(--border,#0f1829);
+  cursor:pointer;transition:background 0.1s;
+}
+#terminalContainer .t-row:hover { background:var(--bg-card2,#0d1a2e) !important; }
+#terminalContainer .t-sym {
+  font-size:11px;font-weight:800;color:var(--accent,#38bdf8);letter-spacing:0.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#terminalContainer .t-sec {
+  font-size:8px;color:var(--text-label,#4b6280);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#terminalContainer .t-cell {
+  text-align:center;font-size:10px;color:var(--text-primary,#e2e8f0);
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;
+}
+#terminalContainer .t-cell.left { text-align:left; }
+#terminalContainer .t-muted { color:var(--text-label,#4b6280); }
+#terminalContainer .t-pos { color:var(--pos,#38bdf8); font-weight:700; }
+#terminalContainer .t-neg { color:#ef4444; font-weight:700; }
+#terminalContainer .badge {
+  display:inline-block;font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700;
+}
+#terminalContainer .badge-buy  { background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8); }
+#terminalContainer .badge-sell { background:rgba(239,68,68,0.12);color:#ef4444; }
+#terminalContainer .badge-hold { background:rgba(245,158,11,0.12);color:#f59e0b; }
+#terminalContainer .badge-watch{ background:rgba(167,139,250,0.12);color:#a78bfa; }
+#terminalContainer .rsi-ob { color:#ef4444;font-weight:700; }
+#terminalContainer .rsi-os { color:var(--accent,#38bdf8);font-weight:700; }
+#terminalContainer .rsi-ok { color:var(--text-sec,#94a3b8);font-weight:700; }
+#terminalContainer .bb-upper{ color:var(--accent,#38bdf8);font-weight:600; }
+#terminalContainer .bb-lower{ color:#ef4444;font-weight:600; }
+#terminalContainer .bb-mid  { color:#f59e0b;font-weight:600; }
+#terminalContainer .t-sumbar {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+  padding:8px 10px;background:var(--bg-header,#0d1425);
+  border-top:1px solid var(--border,#1e2d4a);
+}
+#terminalContainer .t-sum-card {
+  background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);
+  border-radius:8px;padding:5px 8px;text-align:center;
+}
+#terminalContainer .t-sum-lbl { font-size:8px;color:var(--text-label,#4b6280);text-transform:uppercase;letter-spacing:0.5px; }
+#terminalContainer .t-sum-val { font-size:14px;font-weight:800;margin-top:1px; }
+</style>
+
+<div class="t-hdr">
+  <div class="t-toprow">
+    <div style="display:flex;align-items:center;">
+      <span class="t-title">⬡ TERMINAL</span>
+      <span class="t-count" id="terminalCount"></span>
     </div>
-    <button onclick="refreshTerminal()" id="terminalRefreshBtn"
-      style="background:var(--accent-bg,#0f2a40);color:var(--accent,#38bdf8);border:1px solid var(--border,#1e3a5f);padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">
-      ↻ Refresh
-    </button>
+    <button class="t-rfbtn" onclick="refreshTerminal()" id="terminalRefreshBtn">↻ Refresh</button>
   </div>
-  <div style="display:grid;grid-template-columns:80px 1fr 72px 56px 44px 52px;gap:4px;padding:4px 8px;border-bottom:1px solid var(--border,#1e2d3d);">
-    <span onclick="terminalSort('sym')"  style="font-size:9px;font-weight:700;color:var(--text-label,#4b6280);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">SYMBOL <span id="ts-sym"></span></span>
-    <span onclick="terminalSort('bb')"   style="font-size:9px;font-weight:700;color:var(--text-label,#4b6280);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">BB LB/UB <span id="ts-bb"></span></span>
-    <span onclick="terminalSort('ltp')"  style="font-size:9px;font-weight:700;color:var(--text-label,#4b6280);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">LTP <span id="ts-ltp"></span></span>
-    <span onclick="terminalSort('pct')"  style="font-size:9px;font-weight:700;color:var(--accent,#38bdf8);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">CHG% <span id="ts-pct">▼</span></span>
-    <span onclick="terminalSort('rsi')"  style="font-size:9px;font-weight:700;color:var(--text-label,#4b6280);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">RSI <span id="ts-rsi"></span></span>
-    <span onclick="terminalSort('macd')" style="font-size:9px;font-weight:700;color:var(--text-label,#4b6280);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;text-align:center;display:block;">MACD <span id="ts-macd"></span></span>
-  </div>
+  <div class="t-cols" id="terminalColHdrs"></div>
 </div>
 
-<div id="terminalRows" style="display:flex;flex-direction:column;gap:1px;padding:0 0 8px 0;"></div>
-    `;
-    el.appendChild(wrap);
-  }
- 
+<div id="terminalRows" style="padding-bottom:8px;"></div>
+
+<div class="t-sumbar">
+  <div class="t-sum-card">
+    <div class="t-sum-lbl">Bullish</div>
+    <div class="t-sum-val" style="color:var(--accent,#38bdf8);" id="tSumBull">0</div>
+  </div>
+  <div class="t-sum-card">
+    <div class="t-sum-lbl">Bearish</div>
+    <div class="t-sum-val t-neg" id="tSumBear">0</div>
+  </div>
+  <div class="t-sum-card">
+    <div class="t-sum-lbl">Neutral</div>
+    <div class="t-sum-val" style="color:#f59e0b;" id="tSumNeu">0</div>
+  </div>
+  <div class="t-sum-card">
+    <div class="t-sum-lbl">Avg RSI</div>
+    <div class="t-sum-val" style="color:#a78bfa;" id="tSumRsi">--</div>
+  </div>
+</div>
+  `;
+
+  el.appendChild(wrap);
+
+  // Render column headers
+  _renderTerminalColHdrs();
   _renderTerminalRows();
 }
- 
+
 // ======================================
-// RENDER TERMINAL ROWS (from cache)
+// RENDER COLUMN HEADERS
+// ======================================
+function _renderTerminalColHdrs() {
+  const hdrEl = document.getElementById('terminalColHdrs');
+  if (!hdrEl) return;
+  hdrEl.innerHTML = _T_COLS.map(c => `
+    <span id="tch-${c.id}" onclick="terminalSort('${c.id}')"
+      class="t-col-hdr ${c.align} ${_terminalSort.col === c.id ? 'active' : ''}">
+      ${c.label}${_terminalSort.col === c.id ? (_terminalSort.dir === 'desc' ? ' ▼' : ' ▲') : ''}
+    </span>`).join('');
+}
+
+// ======================================
+// RENDER TERMINAL ROWS
 // ======================================
 function _renderTerminalRows() {
-  const rowsEl = document.getElementById('terminalRows');
+  const rowsEl  = document.getElementById('terminalRows');
   const countEl = document.getElementById('terminalCount');
   if (!rowsEl) return;
- 
+
   const wl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl || [];
-  
-  // Build data rows from cache + histcache
+
   const rows = wl.map(s => {
     const d = AppState.cache[s]?.data;
     if (!d || !d.regularMarketPrice) return null;
- 
-    const price = d.regularMarketPrice || 0;
-    const prev  = d.chartPreviousClose || price;
-    const pct   = prev > 0 ? ((price - prev) / prev * 100) : 0;
-    const vol   = d.regularMarketVolume || 0;
-    const avgVol = d.averageDailyVolume3Month || 0;
-    const volSpike = avgVol > 0 && vol >= avgVol * 1.5;
- 
-    // RSI + MACD + BB from histcache if available
+
+    const price   = d.regularMarketPrice || 0;
+    const prev    = d.chartPreviousClose || price;
+    const absChg  = price - prev;
+    const pct     = prev > 0 ? ((absChg / prev) * 100) : 0;
+    const vol     = d.regularMarketVolume || 0;
+    const avgVol  = d.averageDailyVolume3Month || 0;
+    const volSpike= avgVol > 0 && vol >= avgVol * 1.5;
+
     let rsi = null, macd = null, bb = null;
     const hist = AppState._histCache?.[s] || window._histCache?.[s];
     if (hist && hist.close && hist.close.length >= 30) {
@@ -289,97 +418,124 @@ function _renderTerminalRows() {
       macd = calcMACD(hist.close);
       bb   = calcBollinger(hist.close);
     }
- 
-    return { s, price, pct, vol, avgVol, volSpike, rsi, macd, bb };
+
+    // Signal logic
+    let sig = 'WATCH';
+    if (bb && rsi !== null && macd) {
+      const pctB = bb.pctB || 50;
+      if (rsi < 40 && pctB < 25 && macd.histogram < 0) sig = 'SELL';
+      else if (rsi > 60 && pctB > 70 && macd.histogram > 0) sig = 'BUY';
+      else if (macd.histogram > 0 && rsi < 70) sig = 'HOLD';
+    }
+
+    // S&R from BB
+    const sr = bb ? `${bb.lower}/${bb.upper}` : '--';
+
+    return { s, price, prev, absChg, pct, vol, avgVol, volSpike, rsi, macd, bb, sig, sr };
   }).filter(Boolean);
- 
+
   // Sort
   const { col, dir } = _terminalSort;
   rows.sort((a, b) => {
     let av, bv;
-    if (col === 'sym')  { av = a.s; bv = b.s; return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av); }
-    if (col === 'ltp')  { av = a.price; bv = b.price; }
-    if (col === 'pct')  { av = a.pct;   bv = b.pct; }
-    if (col === 'rsi')  { av = a.rsi ?? -1;  bv = b.rsi ?? -1; }
-    if (col === 'macd') { av = a.macd?.histogram ?? 0; bv = b.macd?.histogram ?? 0; }
-    if (col === 'bb')   { av = a.bb?.pctB ?? 50; bv = b.bb?.pctB ?? 50; }
+    if (col === 'sym')  { return dir === 'asc' ? a.s.localeCompare(b.s) : b.s.localeCompare(a.s); }
+    if (col === 'ltp')  { av = a.price;  bv = b.price; }
+    else if (col === 'abs')  { av = a.absChg; bv = b.absChg; }
+    else if (col === 'pct')  { av = a.pct;    bv = b.pct; }
+    else if (col === 'rsi')  { av = a.rsi ?? -1; bv = b.rsi ?? -1; }
+    else if (col === 'macd') { av = a.macd?.histogram ?? 0; bv = b.macd?.histogram ?? 0; }
+    else if (col === 'vol')  { av = a.vol;   bv = b.vol; }
+    else if (col === 'ub')   { av = a.bb?.upper ?? 0; bv = b.bb?.upper ?? 0; }
+    else if (col === 'lb')   { av = a.bb?.lower ?? 0; bv = b.bb?.lower ?? 0; }
+    else { av = 0; bv = 0; }
     return dir === 'asc' ? av - bv : bv - av;
   });
- 
+
   if (countEl) countEl.textContent = rows.length + ' stocks';
- 
+
+  // Summary counts
+  let bull = 0, bear = 0, neu = 0, rsiSum = 0, rsiCount = 0;
+
   if (rows.length === 0) {
-    rowsEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-label,#4b6280);font-size:12px;">
+    rowsEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-label,#4b6280);font-size:12px;">
       No data — go to Watchlist and refresh first
     </div>`;
     return;
   }
- 
-  rowsEl.innerHTML = rows.map((r, i) => {
-    const pctColor  = r.pct >= 0 ? 'var(--pos,#38bdf8)' : '#ef4444';
-    const pctStr    = (r.pct >= 0 ? '+' : '') + r.pct.toFixed(2) + '%';
- 
-    // RSI pill
-    let rsiHtml = '<span style="color:var(--text-label,#4b6280);font-size:10px;">--</span>';
-    if (r.rsi !== null) {
-      const rc = r.rsi >= 70 ? '#ef4444' : r.rsi <= 30 ? 'var(--pos,#38bdf8)' : 'var(--text-sec,#94a3b8)';
-      const rb = r.rsi >= 70 ? 'rgba(239,68,68,0.12)' : r.rsi <= 30 ? 'rgba(56,189,248,0.12)' : 'transparent';
-      rsiHtml = `<span style="font-size:10px;font-weight:700;color:${rc};background:${rb};padding:1px 4px;border-radius:4px;">${r.rsi.toFixed(0)}</span>`;
-    }
- 
-    // MACD signal
-    let macdHtml = '<span style="color:var(--text-label,#4b6280);font-size:10px;">--</span>';
-    if (r.macd) {
-      const mc = r.macd.bullishCross ? 'var(--pos,#38bdf8)' : r.macd.bearishCross ? '#ef4444' :
-                 r.macd.histogram > 0 ? 'var(--pos,#38bdf8)' : '#ef4444';
-      const arrow = r.macd.bullishCross ? '⬆' : r.macd.bearishCross ? '⬇' :
-                    r.macd.histogram > 0 ? '↑' : '↓';
-      macdHtml = `<span style="font-size:11px;color:${mc};font-weight:700;">${arrow}</span>`;
-    }
- 
-    // BB position bar
-    let bbHtml = '<div style="color:var(--text-label,#4b6280);font-size:9px;text-align:left;">--</div>';
-    if (r.bb) {
-      const pctB = Math.max(0, Math.min(100, r.bb.pctB));
-      const bbColor = pctB >= 90 ? 'var(--pos,#38bdf8)' : pctB <= 10 ? '#ef4444' : 'var(--accent,#38bdf8)';
-      bbHtml = `
-        <div style="display:flex;flex-direction:column;gap:1px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:8px;color:#ef4444;font-family:'JetBrains Mono',monospace;font-weight:600;">▼${r.bb.lower}</span>
-          <span style="font-size:8px;color:var(--pos,#38bdf8);font-family:'JetBrains Mono',monospace;font-weight:600;">▲${r.bb.upper}</span>
-            </div>
-          <div style="height:3px;background:var(--border,#1e2d3d);border-radius:2px;position:relative;">
-            <div style="position:absolute;left:0;top:0;height:3px;width:${pctB}%;background:${bbColor};border-radius:2px;"></div>
-            <div style="position:absolute;top:-2px;left:calc(${pctB}% - 3px);width:6px;height:6px;border-radius:50%;background:${bbColor};border:1px solid var(--bg-card,#0d1f35);"></div>
-          </div>
-        </div>`;
-    }
-    // Volume spike badge
-    const volBadge = r.volSpike
-      ? `<span style="font-size:8px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 4px;border-radius:3px;margin-left:3px;font-family:'Rajdhani',sans-serif;font-weight:700;">VOL</span>`
-      : '';
- 
-    const bg = i % 2 === 0 ? 'var(--bg-app,#080f1a)' : 'var(--bg-card2,#0a1220)';
 
-    return `<div onclick="openDetail('${r.s}',false)"
-      style="display:grid;grid-template-columns:80px 1fr 72px 56px 44px 52px;gap:4px;align-items:center;padding:7px 8px;background:${bg};cursor:pointer;border-radius:4px;border-bottom:1px solid var(--border,#0f1829);">
-      <div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent,#38bdf8);">${r.s}</span>
-        ${volBadge}
+  rowsEl.innerHTML = rows.map((r, i) => {
+    const isUp      = r.pct >= 0;
+    const chgCls    = isUp ? 't-pos' : 't-neg';
+    const chgPfx    = isUp ? '+' : '';
+    const absPfx    = isUp ? '▲' : '▼';
+    const bg        = i % 2 === 0 ? 'var(--bg-app,#0a0e1a)' : 'var(--bg-card,#111827)';
+
+    // Price + change
+    const ltpStr  = '₹' + (r.price >= 1000 ? r.price.toFixed(0) : r.price.toFixed(2));
+    const absStr  = absPfx + ' ₹' + Math.abs(r.absChg).toFixed(2);
+    const pctStr  = chgPfx + r.pct.toFixed(2) + '%';
+
+    // RSI
+    let rsiStr = '--', rsiCls = 't-muted';
+    if (r.rsi !== null) {
+      rsiStr = r.rsi.toFixed(0);
+      rsiCls = r.rsi >= 70 ? 'rsi-ob' : r.rsi <= 30 ? 'rsi-os' : 'rsi-ok';
+      rsiSum += r.rsi; rsiCount++;
+    }
+
+    // MACD
+    let macdStr = '--', macdCls = 't-muted';
+    if (r.macd) {
+      if (r.macd.bullishCross)      { macdStr = '▲ Bull'; macdCls = 't-pos'; }
+      else if (r.macd.bearishCross) { macdStr = '▼ Bear'; macdCls = 't-neg'; }
+      else if (r.macd.histogram > 0){ macdStr = '↑ Bull'; macdCls = 't-pos'; }
+      else                          { macdStr = '↓ Bear'; macdCls = 't-neg'; }
+    }
+
+    // Volume
+    const volStr = r.vol >= 1e7 ? (r.vol/1e7).toFixed(1)+'Cr'
+                 : r.vol >= 1e5 ? (r.vol/1e5).toFixed(1)+'L'
+                 : r.vol > 0    ? (r.vol/1000).toFixed(0)+'K' : '--';
+    const volStyle = r.volSpike ? 'color:#a78bfa;font-weight:700;' : '';
+
+    // BB
+    const ubStr = r.bb ? '₹'+r.bb.upper : '--';
+    const lbStr = r.bb ? '₹'+r.bb.lower : '--';
+
+    // Signal badge
+    const sigMap = { BUY:'badge-buy', SELL:'badge-sell', HOLD:'badge-hold', WATCH:'badge-watch' };
+    if (r.sig === 'BUY') bull++;
+    else if (r.sig === 'SELL') bear++;
+    else neu++;
+
+    return `<div class="t-row" style="background:${bg};" onclick="openDetail('${r.s}',false)">
+      <div class="t-cell left">
+        <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
       </div>
-      <div>${bbHtml}</div>
-      <div style="text-align:center;">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-primary,#e2e8f0);">₹${r.price >= 1000 ? r.price.toFixed(0) : r.price.toFixed(2)}</span>
-      </div>
-      <div style="text-align:center;">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:${pctColor};">${pctStr}</span>
-      </div>
-      <div style="text-align:center;">${rsiHtml}</div>
-      <div style="text-align:center;">${macdHtml}</div>
+      <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
+      <div class="t-cell"><span class="${chgCls}">${absStr}</span></div>
+      <div class="t-cell"><span class="${chgCls}">${pctStr}</span></div>
+      <div class="t-cell"><span class="${rsiCls}">${rsiStr}</span></div>
+      <div class="t-cell"><span class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
+      <div class="t-cell"><span style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
+      <div class="t-cell" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
+      <div class="t-cell" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
+      <div class="t-cell" style="color:#ef4444;font-weight:600;">${lbStr}</div>
+      <div class="t-cell"><span class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
     </div>`;
   }).join('');
+
+  // Update summary bar
+  const bull$ = document.getElementById('tSumBull');
+  const bear$ = document.getElementById('tSumBear');
+  const neu$  = document.getElementById('tSumNeu');
+  const rsi$  = document.getElementById('tSumRsi');
+  if (bull$) bull$.textContent = bull;
+  if (bear$) bear$.textContent = bear;
+  if (neu$)  neu$.textContent  = neu;
+  if (rsi$)  rsi$.textContent  = rsiCount ? Math.round(rsiSum/rsiCount) : '--';
 }
- 
+
 // ======================================
 // SORT TERMINAL
 // ======================================
@@ -390,11 +546,7 @@ function terminalSort(col) {
     _terminalSort.col = col;
     _terminalSort.dir = 'desc';
   }
-  // Update header indicators
-  ['sym','bb','ltp','pct','rsi','macd'].forEach(c => {
-    const el = document.getElementById('ts-' + c);
-    if (el) el.textContent = c === col ? (_terminalSort.dir === 'desc' ? '▼' : '▲') : '';
-  });
+  _renderTerminalColHdrs();
   _renderTerminalRows();
 }
  
@@ -502,6 +654,7 @@ window.renderTerminal         = renderTerminal;
 window.terminalSort           = terminalSort;
 window.refreshTerminal        = refreshTerminal;
 window._renderTerminalRows    = _renderTerminalRows;
+window._renderTerminalColHdrs = _renderTerminalColHdrs;
 window._patchTerminalPrices   = _patchTerminalPrices;
 window.updateGiftNifty      = updateGiftNifty;
 window.startGiftNiftyUpdates = startGiftNiftyUpdates;
