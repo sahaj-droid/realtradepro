@@ -100,6 +100,10 @@ function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
   if (el.closest && el.closest('[data-notheme]')) return;
+  // Skip act-btn — each button has intentional BUY/SELL/etc colors
+  if (el.classList && el.classList.contains('act-btn')) return;
+  // Skip profile/pin screens
+  if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
   // Skip if already processed in this mode
   if (isLight && el._rtpDone === 'light') return;
   if (!isLight && el._rtpDone === 'dark') return;
