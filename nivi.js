@@ -672,22 +672,27 @@ ${modularPrompt}
 }
 
 // ======================================
-// FORMAT NIVI RESPONSE — Beautify AI output
-// Handles: **bold**, bullet points, numbered lists, newlines
+// FORMAT NIVI RESPONSE — Beautify AI output (FIXED SPACING)
 // ======================================
 function _formatNiviResponse(text) {
   if (!text) return '';
-  return text
-    // **bold** → styled heading
-    .replace(/\*\*(.+?)\*\*/g, '<div style="font-size:11px;font-weight:700;color:var(--accent,#38bdf8);letter-spacing:0.4px;margin-top:10px;margin-bottom:3px;">$1</div>')
-    // Numbered list: "1. " or "1) "
-    .replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:#38bdf8;font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$2</span></div>')
-    // Bullet: "- " or "* " or "• "
-    .replace(/^[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-bottom:5px;"><span style="color:var(--accent,#38bdf8);flex-shrink:0;font-size:10px;margin-top:3px;">●</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$1</span></div>')
-    // Blank line → spacing
-    .replace(/\n\n/g, '<div style="margin-top:6px;"></div>')
-    // Single newline → line break
-    .replace(/\n/g, '<br>');
+  
+  let html = text;
+
+  // ૧. ક્યારેક AI ખાલી લાઈનમાં એકલો '*' આપી દે છે, તેને હટાવવા:
+  html = html.replace(/^\s*[\*\-]\s*$/gm, '');
+  // ૨. Bold (**text**) ને Block (div) ની જગ્યાએ Inline (span) બનાવ્યું
+  // જેથી બુલેટ પોઇન્ટની અંદર બોલ્ડ ટેક્સ્ટ આવે તો નવી લાઈન કે મોટો સ્પેસ ના પડે.
+  html = html.replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:700;color:var(--accent,#38bdf8);letter-spacing:0.3px;">$1</span>');
+  // ૩. Numbered list: "1. " or "1) "
+  html = html.replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:6px;margin-bottom:6px;"><span style="color:#38bdf8;font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$2</span></div>');
+  // ૪. Bullet points: "- " or "* " or "• " 
+  html = html.replace(/^\s*[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:4px;margin-bottom:4px;"><span style="color:var(--accent,#38bdf8);flex-shrink:0;font-size:10px;margin-top:3px;">●</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$1</span></div>');
+  // ૫. વધારાની ખાલી જગ્યાઓ (Extra Newlines) ક્લિયર કરવા
+  html = html.replace(/\n{3,}/g, '\n\n'); // ૩+ લાઈન હોય તો માત્ર ૨ જ રાખશે
+  html = html.replace(/\n\n/g, '<div style="margin-top:8px;"></div>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
 }
 
 function _tabRenderChat() {
