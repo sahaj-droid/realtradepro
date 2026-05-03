@@ -465,33 +465,59 @@ function sortPercent() {
 // ======================================
 // SEARCH SUGGESTIONS (Yahoo) - CORS Fixed
 // ======================================
+let _searchTimer = null;
+let _lastSearchVal = '';
+
+function showSuggestions(val) {
+  val = val.trim();
+  const box = document.getElementById("suggestionBox");
+  if (!val || val.length < 1) { 
+    if (box) box.style.display = "none"; 
+    return; 
+  }
+
+  const valUpper = val.toUpperCase();
+  const alreadyIn = new Set(AppState.wl);
+  const localMatches = (typeof POPULAR_STOCKS !== 'undefined' ? POPULAR_STOCKS : [])
+    .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
+    .slice(0, 4);
+
+  if (localMatches.length > 0) {
+    renderSuggestions(localMatches.map(s => ({symbol: s, name: '', exchange: ''})), box, true);
+  }
+
+  if (_searchTimer) clearTimeout(_searchTimer);
+  _lastSearchVal = val;
+  _searchTimer = setTimeout(() => {
+    if (_lastSearchVal !== val) return;
+    fetchYahooSuggestions(val, box);
+  }, 300);
+}
+
 async function fetchYahooSuggestions(val, box) {
   try {
     const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(val)}&lang=en-IN&region=IN&quotesCount=10&newsCount=0`;
-    
     let j = null;
     
     // Fallback Engine: Try multiple routes to bypass CORS
     try {
-      // Route 1: corsproxy.io (Very fast)
+      // Route 1: corsproxy.io
       const res1 = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
       j = await res1.json();
     } catch (e1) {
       try {
-        // Route 2: AllOrigins RAW (Bypasses standard CORS blocks)
+        // Route 2: AllOrigins RAW
         const res2 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`);
         j = await res2.json();
       } catch (e2) {
-        // Route 3: Tamaru potanu GAS API (Ultimate Fallback)
+        // Route 3: Tamaru potanu GAS API
         const api = getActiveGASUrl();
         const res3 = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
         const gasData = await res3.json();
-        // Format mapping for GAS
         j = { quotes: gasData.results || [] };
       }
     }
 
-    // Parse data based on response structure
     const quotes = j.quotes || j.results || [];
     if (!quotes || quotes.length === 0) {
       if (box) box.style.display = "none";
@@ -507,19 +533,15 @@ async function fetchYahooSuggestions(val, box) {
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
         const type = (r.quoteType || '').toUpperCase();
         
-        // 🔥 STRICT EQUITY CHECK: ETFs ane Mutual Funds ne remove karo
+        // STRICT EQUITY CHECK
         if (type && type !== 'EQUITY') return false;
         
         const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
-        
-        // 🔥 Extra Filter: Name ma BEES ke FUND hoy to skip
         const name = (r.shortname || r.longname || r.name || '').toUpperCase();
         if (name.includes('BEES') || name.includes('ETF') || name.includes('LIQUID') || name.includes('FUND')) return false;
 
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
-        const notInWL = !alreadyIn.has(cleanSym);
-        
-        return isIndian && notInWL;
+        return isIndian && !alreadyIn.has(cleanSym);
       })
       .map(r => ({
         symbol: r.symbol,
@@ -548,8 +570,9 @@ function renderSuggestions(items, box, isLocal) {
     const sym = item.symbol || item;
     const rawSym = sym.replace('.NS', '').replace('.BO', '');
     const name = item.name || '';
-    const exch = item.exchange ? `<span style="font-size:9px;color:#4b6280;margin-left:4px;">${item.exchange}</span>` : '';
-    const nameHtml = name ? `<div style="font-size:10px;color:#94a3b8;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
+    // CSS Variables add karya chhe jethi Light Mode ma text vachay
+    const exch = item.exchange ? `<span style="font-size:9px;color:var(--text-muted, #4b6280);margin-left:4px;">${item.exchange}</span>` : '';
+    const nameHtml = name ? `<div style="font-size:10px;color:var(--text-sec, #94a3b8);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
     return `<div class="suggestion-item" style="padding:7px 14px;" onclick="selectSuggestion('${rawSym}')">
       <div style="display:flex;align-items:center;gap:4px;">
         <span style="font-weight:700;">${rawSym}</span>${exch}
