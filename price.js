@@ -463,7 +463,7 @@ function sortPercent() {
 }
 
 // ======================================
-// SEARCH SUGGESTIONS (Yahoo)
+// SEARCH SUGGESTIONS (Yahoo) - Speed & Bug Fix
 // ======================================
 let _searchTimer = null;
 let _lastSearchVal = '';
@@ -471,49 +471,71 @@ let _lastSearchVal = '';
 function showSuggestions(val) {
   val = val.trim();
   const box = document.getElementById("suggestionBox");
+  
+  // 🔥 BUG FIX: Jab text delete thay tyare background queue clear kari do
   if (!val || val.length < 1) { 
+    _lastSearchVal = ''; 
     if (box) box.style.display = "none"; 
     return; 
   }
 
   const valUpper = val.toUpperCase();
-  const alreadyIn = new Set(AppState.wl);
+  const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
   
-  // Local matches from POPULAR_STOCKS (as per your old file)
-  const localMatches = POPULAR_STOCKS
+  const localMatches = (typeof POPULAR_STOCKS !== 'undefined' ? POPULAR_STOCKS : [])
     .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
     .slice(0, 4);
 
   if (localMatches.length > 0) {
-    renderSuggestions(localMatches.map(s => ({symbol: s, name: '', exchange: ''})), box, true);
+    renderSuggestions(localMatches.map(s => ({symbol: s, name: 'Popular Stock', exchange: ''})), box, true);
   }
 
   if (_searchTimer) clearTimeout(_searchTimer);
   _lastSearchVal = val;
+  
   _searchTimer = setTimeout(() => {
     if (_lastSearchVal !== val) return;
+    
+    // 🔥 UX FIX: API slow chhe etle user ne "Searching" no message batao
+    if (localMatches.length === 0 && box) {
+        box.style.background = "var(--bg-card, #0d1f35)";
+        box.style.border = "1px solid var(--border, #1e3a5f)";
+        box.style.borderRadius = "0 0 10px 10px";
+        box.style.position = "absolute";
+        box.style.width = "100%";
+        box.style.zIndex = "100";
+        box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
+        box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">🔍 Searching for "${val}"...</div>`;
+        box.style.display = "block";
+    }
+    
     fetchYahooSuggestions(val, box);
-  }, 300);
+  }, 400); // Thodo debounce time rakhyo jethi har letter par GAS API call na thay
 }
 
 async function fetchYahooSuggestions(val, box) {
   try {
-    // Tamara potana original GAS API no use (No external proxy)
     const api = getActiveGASUrl();
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
     
-    if (!j.ok || !j.results || j.results.length === 0) return;
+    // Double check: Jo user e fetch thata pehla text badli nakhyu hoy to return
+    if (_lastSearchVal !== val) return; 
+
+    if (!j.ok || !j.results || j.results.length === 0) {
+        if (box && _lastSearchVal === val) {
+             box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">No results found.</div>`;
+        }
+        return;
+    }
     
-    const alreadyIn = new Set(AppState.wl);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS']);
+    const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS', 'BSE.BO', 'NSE.NS']);
     
     const results = j.results
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
-        
-        // 🔥 Strict filter to remove ETFs and Mutual Funds
         const type = (r.quoteType || '').toUpperCase();
         if (type && type !== 'EQUITY') return false;
         
@@ -522,16 +544,21 @@ async function fetchYahooSuggestions(val, box) {
 
         const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
-        const notInWL = !alreadyIn.has(cleanSym);
-        
-        return isIndian && notInWL;
+        return isIndian && !alreadyIn.has(cleanSym);
       })
       .slice(0, 7);
       
     if (results.length > 0 && _lastSearchVal === val) {
       renderSuggestions(results, box, false);
+    } else if (_lastSearchVal === val && box) {
+      box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">No valid Indian stocks found.</div>`;
     }
-  } catch(e) { console.warn('Yahoo suggestions error:', e); }
+  } catch(e) { 
+    console.warn('Yahoo suggestions error:', e); 
+    if (box && _lastSearchVal === val) {
+        box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">Error fetching data. Try again.</div>`;
+    }
+  }
 }
 
 function renderSuggestions(items, box, isLocal) {
@@ -540,7 +567,6 @@ function renderSuggestions(items, box, isLocal) {
     return; 
   }
   
-  // Theme Variables for Light/Dark mode
   box.style.background = "var(--bg-card, #0d1f35)";
   box.style.border = "1px solid var(--border, #1e3a5f)";
   box.style.borderRadius = "0 0 10px 10px";
@@ -570,7 +596,8 @@ function renderSuggestions(items, box, isLocal) {
 }
 
 function selectSuggestion(sym) {
-  document.getElementById("searchBox").value = sym;
+  const sb = document.getElementById("searchBox");
+  if(sb) sb.value = sym;
   hideSuggestions();
   addStock(sym);
 }
