@@ -167,36 +167,38 @@ async function directGeminiCall(prompt, useSearch = false) {
 }
 
 // ========================================
-// 💬 GEMINI MULTI-TURN CHAT (with Fallback)
+// 💬 GEMINI MULTI-TURN CHAT (3.1 -> 2.0 -> Groq Fallback)
 // ========================================
 async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
-    const modelName = 'gemini-3.1-flash-lite-preview';
+    const models = ['gemini-3.1-flash-lite-preview', 'gemini-2.0-flash'];
     const keys = getGeminiKeys();
 
-    // --- Try Gemini ---
     if (keys.length > 0) {
         for (const k of keys) {
-            try {
-                const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`;
+            // બંને મોડલ માટે લૂપ
+            for (const modelName of models) {
+                try {
+                    const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`;
 
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents,
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-                    })
-                });
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents,
+                            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+                        })
+                    });
 
-                const data = await response.json();
-                if (response.ok && data.candidates && data.candidates[0]?.content) {
-                    return { ok: true, answer: data.candidates[0].content.parts[0].text };
+                    const data = await response.json();
+                    if (response.ok && data.candidates && data.candidates[0]?.content) {
+                        return { ok: true, answer: data.candidates[0].content.parts[0].text };
+                    }
+                    if (response.status === 429) { continue; } // રેટ લિમિટ આવે તો આગળ વધો
+                    console.warn(`Gemini MultiTurn error with ${modelName}:`, data.error?.message);
+                } catch (e) {
+                    console.error(`Gemini MultiTurn error with ${modelName}:`, e.message);
                 }
-                if (response.status === 429) { continue; }
-                console.warn('Gemini MultiTurn error:', data.error?.message);
-            } catch (e) {
-                console.error('Gemini MultiTurn error:', e.message);
             }
         }
     }
@@ -208,7 +210,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
     })).concat({ role: 'user', content: currentPrompt });
 
     // --- Fallback 1: Groq ---
-    console.log('🔄 Gemini MultiTurn failed → Trying Groq...');
+    console.log('🔄 All Gemini models failed → Trying Groq...');
     const groqResult = await _groqCall(openAiMessages);
     if (groqResult.ok) return groqResult;
 
@@ -355,62 +357,78 @@ window.getApiStatus = function () {
     };
 };
 // ========================================
-// 🌊 GEMINI MULTI-TURN STREAMING (with Live Search)
+// 🌊 GEMINI MULTI-TURN STREAMING (3.1 -> 2.0 -> Groq Fallback)
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
-    const modelName = 'gemini-3.1-flash-lite-preview';
+    // 🚀 તમારી ડિમાન્ડ મુજબ: પહેલા 3.1, પછી 2.0 
+    const models = ['gemini-3.1-flash-lite-preview', 'gemini-2.0-flash'];
     const keys = getGeminiKeys();
+
     if (keys.length === 0) return { ok: false };
-    // અત્યારે પહેલી કી નો ઉપયોગ કરીએ છીએ
     const k = keys[0]; 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${k}`;
 
     const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
     const body = {
         contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
     };
-    // 🚀 ગૂગલ સર્ચ એક્ટિવેટ કરવાનું લોજિક
+
+    // 🚀 ગૂગલ સર્ચ નો સાચો સ્પેલિંગ
     if (useSearch) {
         body.tools = [{ googleSearch: {} }];
     }
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (!response.ok) throw new Error('Stream failed');
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let fullText = "";
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
-            for (const line of lines) {
-                const dataStr = line.replace('data: ', '').trim();
-                if (dataStr) {
-                    try {
-                        const data = JSON.parse(dataStr);
-                        if (data.candidates && data.candidates[0].content) {
-                            const textPart = data.candidates[0].content.parts.map(p => p.text).join('');
-                            fullText += textPart;
-                            if (onChunk) onChunk(fullText); // UI ને નવો શબ્દ મોકલો
+
+    // એક પછી એક મોડલ ટ્રાય કરશે
+    for (const modelName of models) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${k}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                console.warn(`⚠️ ${modelName} failed (${response.status}). Trying next model...`);
+                continue; // જો 3.1 ફેલ થાય તો સીધું 2.0 પર જશે
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let fullText = "";
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+
+                for (const line of lines) {
+                    const dataStr = line.replace('data: ', '').trim();
+                    if (dataStr) {
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.candidates && data.candidates[0].content) {
+                                const textPart = data.candidates[0].content.parts.map(p => p.text).join('');
+                                fullText += textPart;
+                                if (onChunk) onChunk(fullText); // UI ને નવો શબ્દ મોકલો
+                            }
+                        } catch (e) {
+                            // Incomplete JSON chunk, ignore
                         }
-                    } catch (e) {
-                        // Incomplete JSON chunk, ignore and wait for next
                     }
                 }
             }
+            return { ok: true, answer: fullText }; // 🚀 સક્સેસ!
+        } catch (e) {
+            console.error(`Stream error with ${modelName}:`, e.message);
         }
-        return { ok: true, answer: fullText };
-    } catch (e) {
-        console.error("Stream error, falling back to normal call:", e.message);
-        // જો સ્ટ્રીમ ફેલ થાય તો જૂની રીત (વિના સ્ટ્રીમ) વાપરો
-        return await directGeminiCallMultiTurn(priorHistory, currentPrompt);
     }
+
+    // જો Gemini 3.1 અને 2.0 બંને ફેલ થાય, તો જ Groq પાસે જશે
+    console.log("🔄 Both Gemini models failed for stream → Falling back to Groq/OpenRouter...");
+    return await directGeminiCallMultiTurn(priorHistory, currentPrompt);
 }
 
 // ========================================
