@@ -124,18 +124,27 @@ async function fetchFull(sym, isIndex = false) {
   const key = sym;
   const symbol = isIndex ? sym : sym + '.NS';
   const encodedSymbol = symbol.replace(/\^/g, '%5E');
+  
   if (AppState.cache[key] && (Date.now() - AppState.cache[key].time < (AppState.CACHE_TIME || 60000))) {
     return AppState.cache[key].data;
   }
+  
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
       const r = await fetchWithTimeout(_appendToken(`${apiUrl}?s=${encodedSymbol}`), 6000);
       const j = await r.json();
       if (j.error || !j.chart || !j.chart.result) continue;
+      
       const data = j.chart.result[0].meta;
       AppState.cache[key] = { data, time: Date.now() };
       if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[key] = Date.now();
+      
+      // 🔥 NEW CACHE LOGIC: Nava prices aavta j tene permanent save kari do
+      try { 
+        localStorage.setItem('rtp_price_cache', JSON.stringify(AppState.cache)); 
+      } catch(e) { }
+      
       return data;
     } catch (e) {}
   }
