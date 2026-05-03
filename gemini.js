@@ -128,7 +128,7 @@ async function directGeminiCall(prompt, useSearch = false) {
 
                 // Google Search Grounding (real-time web search)
                 if (useSearch) {
-                    body.tools = [{ google_search: {} }];
+                    body.tools = [{ googleSearch: {} }];
                 }
 
                 const response = await fetch(url, {
@@ -372,7 +372,7 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
     };
     // 🚀 ગૂગલ સર્ચ એક્ટિવેટ કરવાનું લોજિક
     if (useSearch) {
-        body.tools = [{ google_search: {} }];
+        body.tools = [{ googleSearch: {} }];
     }
     try {
         const response = await fetch(url, {
