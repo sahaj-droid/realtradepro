@@ -463,7 +463,7 @@ function sortPercent() {
 }
 
 // ======================================
-// SEARCH SUGGESTIONS (Yahoo) - Smooth UI
+// SEARCH SUGGESTIONS (Yahoo)
 // ======================================
 let _searchTimer = null;
 let _lastSearchVal = '';
@@ -471,120 +471,77 @@ let _lastSearchVal = '';
 function showSuggestions(val) {
   val = val.trim();
   const box = document.getElementById("suggestionBox");
-  
   if (!val || val.length < 1) { 
-    _lastSearchVal = '';
     if (box) box.style.display = "none"; 
     return; 
   }
 
   const valUpper = val.toUpperCase();
-  const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
-  
-  const localMatches = (typeof POPULAR_STOCKS !== 'undefined' ? POPULAR_STOCKS : [])
+  const alreadyIn = new Set(AppState.wl);
+  const localMatches = POPULAR_STOCKS
     .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
     .slice(0, 4);
 
-  // Instant local feedback jo available hoy to (Smooth rendering)
   if (localMatches.length > 0) {
-    renderSuggestions(localMatches.map(s => ({symbol: s, name: 'Popular Stock', exchange: ''})), box);
+    renderSuggestions(localMatches.map(s => ({symbol: s, name: '', exchange: ''})), box, true);
   }
 
   if (_searchTimer) clearTimeout(_searchTimer);
   _lastSearchVal = val;
-  
   _searchTimer = setTimeout(() => {
     if (_lastSearchVal !== val) return;
     fetchYahooSuggestions(val, box);
-  }, 350); 
+  }, 300);
 }
 
 async function fetchYahooSuggestions(val, box) {
   try {
-    const api = typeof getActiveGASUrl === 'function' ? getActiveGASUrl() : API;
+    const api = getActiveGASUrl();
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
+    if (!j.ok || !j.results || j.results.length === 0) return;
     
-    // User e fetch thata pehla nava letters lakhi didha hoy to ignore
-    if (_lastSearchVal !== val) return; 
-
-    if (!j.ok || !j.results || j.results.length === 0) {
-        renderSuggestions([], box);
-        return;
-    }
-    
-    const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'BSE.BO', 'NSE.NS']);
-    
+    const alreadyIn = new Set(AppState.wl);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS']);
     const results = j.results
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
-        const type = (r.quoteType || '').toUpperCase();
-        
-        // STRICT EQUITY CHECK
-        if (type && type !== 'EQUITY') return false;
-        
-        const name = (r.shortname || r.longname || r.name || '').toUpperCase();
-        if (name.includes('BEES') || name.includes('ETF') || name.includes('LIQUID') || name.includes('FUND')) return false;
-
         const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
-        return isIndian && !alreadyIn.has(cleanSym);
+        const notInWL = !alreadyIn.has(cleanSym);
+        return isIndian && notInWL;
       })
-      .map(r => ({
-        symbol: r.symbol,
-        name: r.shortname || r.longname || r.name || '',
-        exchange: r.exchDisp || r.exchange || ''
-      }))
       .slice(0, 7);
-      
-    if (_lastSearchVal === val) {
-      renderSuggestions(results, box);
+    if (results.length > 0 && _lastSearchVal === val) {
+      renderSuggestions(results, box, false);
     }
-  } catch(e) { 
-    console.warn('Yahoo suggestions error:', e); 
-  }
+  } catch(e) { console.warn('Yahoo suggestions error:', e); }
 }
 
-function renderSuggestions(items, box) {
+function renderSuggestions(items, box, isLocal) {
   if (!items || items.length === 0) { 
-    box.style.display = "none"; 
+    if (box) box.style.display = "none"; 
     return; 
   }
-  
-  // Fixed CSS for proper dropdown visibility
-  box.style.background = "var(--bg-card, #0d1f35)";
-  box.style.border = "1px solid var(--border, #1e3a5f)";
-  box.style.borderRadius = "0 0 10px 10px";
-  box.style.position = "absolute";
-  box.style.width = "100%";
-  box.style.zIndex = "9999";
-  box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
-
   box.innerHTML = items.map(item => {
     const sym = item.symbol || item;
     const rawSym = sym.replace('.NS', '').replace('.BO', '');
     const name = item.name || '';
-    
-    const exch = item.exchange ? `<span style="font-size:9px;color:var(--text-muted, #4b6280);margin-left:4px;">${item.exchange}</span>` : '';
-    const nameHtml = name ? `<div style="font-size:10px;color:var(--text-sec, #94a3b8);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
-    
-    return `<div class="suggestion-item" style="padding:10px 14px; border-bottom:1px solid var(--border, #1e2d4a); cursor:pointer;" onclick="selectSuggestion('${rawSym}')" onmouseover="this.style.background='var(--bg-header, rgba(255,255,255,0.05))'" onmouseout="this.style.background='transparent'">
+    const exch = item.exchange ? `<span style="font-size:9px;color:#4b6280;margin-left:4px;">${item.exchange}</span>` : '';
+    const nameHtml = name ? `<div style="font-size:10px;color:#94a3b8;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
+    return `<div class="suggestion-item" style="padding:7px 14px;" onclick="selectSuggestion('${rawSym}')">
       <div style="display:flex;align-items:center;gap:4px;">
-        <span style="font-weight:700; color:var(--text-primary, #e2e8f0); font-family:'JetBrains Mono',monospace;">${rawSym}</span>${exch}
+        <span style="font-weight:700;">${rawSym}</span>${exch}
       </div>
       ${nameHtml}
     </div>`;
   }).join('');
-  
-  if(box.lastChild) box.lastChild.style.borderBottom = "none";
   box.style.display = "block";
 }
 
 function selectSuggestion(sym) {
-  const sb = document.getElementById("searchBox");
-  if(sb) sb.value = sym;
+  document.getElementById("searchBox").value = sym;
   hideSuggestions();
   addStock(sym);
 }
