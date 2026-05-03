@@ -463,7 +463,7 @@ function sortPercent() {
 }
 
 // ======================================
-// SEARCH SUGGESTIONS (Yahoo) - Speed & Bug Fix
+// SEARCH SUGGESTIONS (Yahoo) - Smooth UI
 // ======================================
 let _searchTimer = null;
 let _lastSearchVal = '';
@@ -472,9 +472,8 @@ function showSuggestions(val) {
   val = val.trim();
   const box = document.getElementById("suggestionBox");
   
-  // 🔥 BUG FIX: Jab text delete thay tyare background queue clear kari do
   if (!val || val.length < 1) { 
-    _lastSearchVal = ''; 
+    _lastSearchVal = '';
     if (box) box.style.display = "none"; 
     return; 
   }
@@ -486,8 +485,9 @@ function showSuggestions(val) {
     .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
     .slice(0, 4);
 
+  // Instant local feedback jo available hoy to (Smooth rendering)
   if (localMatches.length > 0) {
-    renderSuggestions(localMatches.map(s => ({symbol: s, name: 'Popular Stock', exchange: ''})), box, true);
+    renderSuggestions(localMatches.map(s => ({symbol: s, name: 'Popular Stock', exchange: ''})), box);
   }
 
   if (_searchTimer) clearTimeout(_searchTimer);
@@ -495,48 +495,34 @@ function showSuggestions(val) {
   
   _searchTimer = setTimeout(() => {
     if (_lastSearchVal !== val) return;
-    
-    // 🔥 UX FIX: API slow chhe etle user ne "Searching" no message batao
-    if (localMatches.length === 0 && box) {
-        box.style.background = "var(--bg-card, #0d1f35)";
-        box.style.border = "1px solid var(--border, #1e3a5f)";
-        box.style.borderRadius = "0 0 10px 10px";
-        box.style.position = "absolute";
-        box.style.width = "100%";
-        box.style.zIndex = "100";
-        box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
-        box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">🔍 Searching for "${val}"...</div>`;
-        box.style.display = "block";
-    }
-    
     fetchYahooSuggestions(val, box);
-  }, 400); // Thodo debounce time rakhyo jethi har letter par GAS API call na thay
+  }, 350); 
 }
 
 async function fetchYahooSuggestions(val, box) {
   try {
-    const api = getActiveGASUrl();
+    const api = typeof getActiveGASUrl === 'function' ? getActiveGASUrl() : API;
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
     
-    // Double check: Jo user e fetch thata pehla text badli nakhyu hoy to return
+    // User e fetch thata pehla nava letters lakhi didha hoy to ignore
     if (_lastSearchVal !== val) return; 
 
     if (!j.ok || !j.results || j.results.length === 0) {
-        if (box && _lastSearchVal === val) {
-             box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">No results found.</div>`;
-        }
+        renderSuggestions([], box);
         return;
     }
     
     const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS', 'BSE.BO', 'NSE.NS']);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'BSE.BO', 'NSE.NS']);
     
     const results = j.results
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
         const type = (r.quoteType || '').toUpperCase();
+        
+        // STRICT EQUITY CHECK
         if (type && type !== 'EQUITY') return false;
         
         const name = (r.shortname || r.longname || r.name || '').toUpperCase();
@@ -546,33 +532,34 @@ async function fetchYahooSuggestions(val, box) {
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
         return isIndian && !alreadyIn.has(cleanSym);
       })
+      .map(r => ({
+        symbol: r.symbol,
+        name: r.shortname || r.longname || r.name || '',
+        exchange: r.exchDisp || r.exchange || ''
+      }))
       .slice(0, 7);
       
-    if (results.length > 0 && _lastSearchVal === val) {
-      renderSuggestions(results, box, false);
-    } else if (_lastSearchVal === val && box) {
-      box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">No valid Indian stocks found.</div>`;
+    if (_lastSearchVal === val) {
+      renderSuggestions(results, box);
     }
   } catch(e) { 
     console.warn('Yahoo suggestions error:', e); 
-    if (box && _lastSearchVal === val) {
-        box.innerHTML = `<div style="padding:10px 14px; font-size:11px; color:var(--text-muted, #4b6280);">Error fetching data. Try again.</div>`;
-    }
   }
 }
 
-function renderSuggestions(items, box, isLocal) {
+function renderSuggestions(items, box) {
   if (!items || items.length === 0) { 
-    if (box) box.style.display = "none"; 
+    box.style.display = "none"; 
     return; 
   }
   
+  // Fixed CSS for proper dropdown visibility
   box.style.background = "var(--bg-card, #0d1f35)";
   box.style.border = "1px solid var(--border, #1e3a5f)";
   box.style.borderRadius = "0 0 10px 10px";
   box.style.position = "absolute";
   box.style.width = "100%";
-  box.style.zIndex = "100";
+  box.style.zIndex = "9999";
   box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
 
   box.innerHTML = items.map(item => {
