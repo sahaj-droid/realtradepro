@@ -582,18 +582,41 @@ html {
   min-height: -webkit-fill-available;
 }
 /* Light mode overrides */
-body.light-mode .profile-screen-bg { background:#faf8f5; }
-body.light-mode .profile-title { color:#1c1917; }
-body.light-mode .profile-subtitle { color:#78716c; }
-body.light-mode .profile-card { background:#fff; border-color:#e7e5e4; box-shadow:0 2px 10px rgba(0,0,0,0.06); }
-body.light-mode .profile-card:hover { border-color:#d97706; box-shadow:0 6px 20px rgba(217,119,6,0.15); }
-body.light-mode .profile-card-name { color:#1c1917; }
-body.light-mode .pin-numpad button { background:#fff; border-color:#e7e5e4; color:#1c1917; }
-body.light-mode .pin-numpad button:hover { border-color:#d97706; color:#d97706; }
+/* ---- PROFILE SCREENS — ALWAYS DARK, never affected by light mode ---- */
+body.light-mode .profile-screen-bg { background:#faf8f5 !important; }
+body.light-mode .profile-title { color:#1c1917 !important; }
+body.light-mode .profile-subtitle { color:#78716c !important; }
+body.light-mode .profile-card { background:#fff !important; border-color:#e7e5e4 !important; box-shadow:0 2px 10px rgba(0,0,0,0.06) !important; }
+body.light-mode .profile-card:hover { border-color:#d97706 !important; box-shadow:0 6px 20px rgba(217,119,6,0.15) !important; }
+body.light-mode .profile-card-name { color:#1c1917 !important; }
+body.light-mode .pin-numpad button { background:#fff !important; border-color:#e7e5e4 !important; color:#1c1917 !important; }
+body.light-mode .pin-numpad button:hover { border-color:#d97706 !important; color:#d97706 !important; }
 body.light-mode .form-group input,
-body.light-mode .form-group select { background:#fff; border-color:#e7e5e4; color:#1c1917; }
+body.light-mode .form-group select { background:#fff !important; border-color:#e7e5e4 !important; color:#1c1917 !important; }
 body.light-mode .form-group input:focus,
-body.light-mode .form-group select:focus { border-color:#d97706; }
+body.light-mode .form-group select:focus { border-color:#d97706 !important; }
+
+/* ---- CRITICAL: Profile screen container — always visible, always clickable ---- */
+#profileScreen, #pinScreen, #createProfileScreen, #forgotPINScreen {
+  pointer-events: auto !important;
+  z-index: 99999 !important;
+  background: transparent !important;
+}
+/* Profile bg itself is dark always */
+#profileScreen .profile-screen-bg,
+#pinScreen .profile-screen-bg,
+#createProfileScreen .profile-screen-bg,
+#forgotPINScreen .profile-screen-bg {
+  background: #0f0f0f !important;
+  color: #f0f0f0 !important;
+}
+body.light-mode #profileScreen .profile-screen-bg,
+body.light-mode #pinScreen .profile-screen-bg,
+body.light-mode #createProfileScreen .profile-screen-bg,
+body.light-mode #forgotPINScreen .profile-screen-bg {
+  background: #faf8f5 !important;
+  color: #1c1917 !important;
+}
 
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 
@@ -696,6 +719,18 @@ html[data-fsize='large'] { font-size: 128%; }
 .icon-svg svg { width:100%;height:100%; }
 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:var(--scrollbar-track,#0a0f1a);} ::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb,#1e3a5f);border-radius:4px;}
+
+/* -- FLASH PRICE TICKER -- */
+/* ---- Alert Modal ---- */
+
+/* ---- Target Modal ---- */
+
+/* ---- Remove Modal ---- */
+
+/* ---- Global Market Ticker (globalTicker bar) ---- */
+
+/* ---- Learn tab suggestion / search box ---- */
+/* learnSearchInput + learnSuggBox - dark hardcoded inline styles */
 
 /* ===== END LIGHT MODE ===== */
 #priceTicker{background:var(--bg-ticker,#060d1a);border-bottom:1px solid var(--border,#1e2d3d);overflow:hidden;height:22px;display:flex;align-items:center;}
