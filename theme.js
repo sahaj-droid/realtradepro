@@ -1,0 +1,230 @@
+// ============================================================
+// RTP THEME ENGINE v2 — MutationObserver
+// Watches ALL DOM changes — auto-applies light/dark theme
+// No JS file changes needed — works on dynamically added elements
+// ============================================================
+
+const RTP_DARK = {
+  bg:      ['#071428','#0a0f1a','#060e1a','#060d1a','#080f1a','#0a1220','#080c18','#071221','#0f1e33','#0a0e1a'],
+  card:    ['#0d1f35','#0d1425','#111827','#1a2332','#0d1a2e','#0f2a40','#0a1628','#0a1e14','#0a2218','#0f2a1a','#0a2218','#1e3a5f'],
+  green:   ['#34d399','#22c55e','#86efac','#00d4aa','#065f46','#166534','#0f2a1a','#0a2218','#0a1e14'],
+  textDark:['#e2e8f0','#cbd5e1'],
+  textMid: ['#94a3b8'],
+  textMuted:['#4b6280','#64748b'],
+};
+
+const RTP_LIGHT = {
+  bg:      '#f0f9ff',
+  card:    '#ffffff',
+  cardAlt: '#f8fafc',
+  border:  '#bae6fd',
+  text:    '#0f172a',
+  textSec: '#475569',
+  textMuted:'#64748b',
+  accent:  '#0284c7',
+  pos:     '#0284c7',
+};
+
+// Color map: dark hex → light hex
+const COLOR_MAP_LIGHT = {
+  // Backgrounds
+  '#071428': RTP_LIGHT.bg,
+  '#0a0f1a': RTP_LIGHT.bg,
+  '#060e1a': RTP_LIGHT.bg,
+  '#060d1a': RTP_LIGHT.bg,
+  '#080f1a': RTP_LIGHT.bg,
+  '#0a1220': RTP_LIGHT.cardAlt,
+  '#080c18': RTP_LIGHT.bg,
+  '#071221': RTP_LIGHT.bg,
+  '#0f1e33': RTP_LIGHT.bg,
+  '#0a0e1a': RTP_LIGHT.bg,
+  // Cards
+  '#0d1f35': RTP_LIGHT.card,
+  '#0d1425': RTP_LIGHT.card,
+  '#111827': RTP_LIGHT.card,
+  '#1a2332': RTP_LIGHT.card,
+  '#0d1a2e': RTP_LIGHT.cardAlt,
+  '#0f2a40': '#dbeafe',
+  '#0a1628': RTP_LIGHT.cardAlt,
+  '#0a1e14': RTP_LIGHT.card,
+  '#0a2218': RTP_LIGHT.card,
+  '#0f2a1a': '#dbeafe',
+  '#1e3a5f': '#dbeafe',
+  // Text
+  '#e2e8f0': RTP_LIGHT.text,
+  '#cbd5e1': RTP_LIGHT.textSec,
+  '#94a3b8': RTP_LIGHT.textSec,
+  '#4b6280': RTP_LIGHT.textMuted,
+  '#64748b': RTP_LIGHT.textMuted,
+  // Green → Cyan
+  '#34d399': RTP_LIGHT.accent,
+  '#22c55e': RTP_LIGHT.accent,
+  '#86efac': RTP_LIGHT.accent,
+  '#00d4aa': RTP_LIGHT.accent,
+  '#065f46': '#dbeafe',
+  '#166534': '#dbeafe',
+  '#0f2a1a': '#dbeafe',
+  // Borders
+  '#1e3a5f': '#bae6fd',
+  '#2d3f52': '#bae6fd',
+  '#1e2d3d': '#bae6fd',
+  '#2d5a8e': '#93c5fd',
+  // Accents stay
+  '#38bdf8': RTP_LIGHT.accent,
+  '#fb923c': '#d97706',
+};
+
+// rgba patterns → light equivalents
+const RGBA_MAP_LIGHT = [
+  [/rgba\(52,211,153,[0-9.]+\)/g,   (m) => m.replace('52,211,153', '2,132,199')],
+  [/rgba\(34,197,94,[0-9.]+\)/g,    (m) => m.replace('34,197,94',  '2,132,199')],
+  [/rgba\(255,255,255,0\.0[0-9]+\)/g, () => 'rgba(0,0,0,0.04)'],
+  [/rgba\(255,255,255,0\.1[0-9]*\)/g, () => 'rgba(0,0,0,0.06)'],
+  [/rgba\(127,29,29,[0-9.]+\)/g,    (m) => m.replace('127,29,29', '220,38,38')],
+  [/rgba\(6,95,70,[0-9.]+\)/g,      (m) => m.replace('6,95,70',   '2,132,199')],
+];
+
+function _mapColor(val) {
+  if (!val) return val;
+  let v = val.trim().toLowerCase();
+  // Exact hex match
+  for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
+    if (v === dark.toLowerCase()) return light;
+  }
+  return null;
+}
+
+function _fixInlineStyle(el, isLight) {
+  if (!el || !el.style) return;
+  const props = ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor'];
+
+  if (isLight) {
+    // Store original if not already stored
+    if (!el._rtpOrig) {
+      el._rtpOrig = {};
+      props.forEach(p => { if (el.style[p]) el._rtpOrig[p] = el.style[p]; });
+      // Also store full cssText for regex replacement
+      el._rtpOrigCss = el.getAttribute('style') || '';
+    }
+
+    let css = el._rtpOrigCss;
+    if (!css) return;
+
+    // Replace hex colors
+    for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
+      const escaped = dark.replace('#', '\\#');
+      css = css.replace(new RegExp(dark, 'gi'), light);
+    }
+
+    // Replace rgba patterns
+    for (const [pattern, replacer] of RGBA_MAP_LIGHT) {
+      css = css.replace(pattern, replacer);
+    }
+
+    // Replace linear-gradient dark bgs
+    css = css.replace(/linear-gradient\(145deg,#111827,#1a2332\)/gi, 'linear-gradient(145deg,#ffffff,#f0f9ff)');
+    css = css.replace(/linear-gradient\(135deg,#0d2a45,#0a1f35\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
+    css = css.replace(/linear-gradient\(135deg,#0a2218,#0f2a1a\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
+    css = css.replace(/linear-gradient\(135deg,#0a1e14,#0f1e33\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
+    css = css.replace(/linear-gradient\(90deg,#0a0f1a,#0f1e33\)/gi, 'linear-gradient(90deg,#e0f2fe,#f0f9ff)');
+
+    el.setAttribute('style', css);
+
+  } else {
+    // Restore original
+    if (el._rtpOrig !== undefined) {
+      if (el._rtpOrigCss !== undefined) {
+        el.setAttribute('style', el._rtpOrigCss);
+      }
+      el._rtpOrig = undefined;
+      el._rtpOrigCss = undefined;
+    }
+  }
+}
+
+function _applyThemeToEl(el, isLight) {
+  if (!el || el.nodeType !== 1) return;
+  // Skip profile/pin screens
+  if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+  _fixInlineStyle(el, isLight);
+  // Recurse children
+  el.querySelectorAll && el.querySelectorAll('[style]').forEach(child => _fixInlineStyle(child, isLight));
+}
+
+function applyFullTheme() {
+  const isLight = document.body.classList.contains('light-mode');
+  // Apply to all existing styled elements
+  document.querySelectorAll('[style]').forEach(el => {
+    if (el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+    _fixInlineStyle(el, isLight);
+  });
+}
+
+// MutationObserver — watches new elements added to DOM
+let _rtpObserver = null;
+function startThemeObserver() {
+  if (_rtpObserver) _rtpObserver.disconnect();
+
+  _rtpObserver = new MutationObserver((mutations) => {
+    const isLight = document.body.classList.contains('light-mode');
+    if (!isLight) return; // Dark mode = no override needed
+
+    mutations.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        if (node.closest && node.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+        // Fix the node itself
+        if (node.getAttribute && node.getAttribute('style')) _fixInlineStyle(node, true);
+        // Fix all styled descendants
+        node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => _fixInlineStyle(el, true));
+      });
+
+      // Also handle attribute changes (style changes on existing elements)
+      if (m.type === 'attributes' && m.attributeName === 'style') {
+        const el = m.target;
+        if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+        _fixInlineStyle(el, true);
+      }
+    });
+  });
+
+  _rtpObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style']
+  });
+
+  console.log('✅ RTP Theme Observer started');
+}
+
+// Patch toggleAppTheme to also run applyFullTheme
+const _origToggle = window.toggleAppTheme;
+window.toggleAppTheme = function() {
+  _origToggle && _origToggle();
+  // Small delay to let JS render first
+  setTimeout(applyFullTheme, 50);
+  setTimeout(applyFullTheme, 300);
+  setTimeout(applyFullTheme, 800);
+};
+
+// Start observer on DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    startThemeObserver();
+    // Apply if light mode was saved
+    if (localStorage.getItem('rtp_theme') === 'light') {
+      setTimeout(applyFullTheme, 500);
+      setTimeout(applyFullTheme, 1500);
+    }
+  });
+} else {
+  startThemeObserver();
+  if (localStorage.getItem('rtp_theme') === 'light') {
+    setTimeout(applyFullTheme, 500);
+    setTimeout(applyFullTheme, 1500);
+  }
+}
+
+window.applyFullTheme = applyFullTheme;
+window.startThemeObserver = startThemeObserver;
