@@ -87,7 +87,6 @@ const RGBA_MAP_LIGHT = [
 function _mapColor(val) {
   if (!val) return val;
   let v = val.trim().toLowerCase();
-  // Exact hex match
   for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
     if (v === dark.toLowerCase()) return light;
   }
@@ -96,35 +95,28 @@ function _mapColor(val) {
 
 function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
-  // Skip elements marked with data-notheme or inside them
   if (el.dataset && el.dataset.notheme) return;
   if (el.closest && el.closest('[data-notheme]')) return;
-  const props = ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor'];
 
   if (isLight) {
-    // Store original if not already stored
     if (!el._rtpOrig) {
       el._rtpOrig = {};
-      props.forEach(p => { if (el.style[p]) el._rtpOrig[p] = el.style[p]; });
-      // Also store full cssText for regex replacement
+      ['backgroundColor','color','borderColor','borderTopColor','borderBottomColor','borderLeftColor']
+        .forEach(p => { if (el.style[p]) el._rtpOrig[p] = el.style[p]; });
       el._rtpOrigCss = el.getAttribute('style') || '';
     }
 
     let css = el._rtpOrigCss;
     if (!css) return;
 
-    // Replace hex colors
     for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
-      const escaped = dark.replace('#', '\\#');
       css = css.replace(new RegExp(dark, 'gi'), light);
     }
 
-    // Replace rgba patterns
     for (const [pattern, replacer] of RGBA_MAP_LIGHT) {
       css = css.replace(pattern, replacer);
     }
 
-    // Replace linear-gradient dark bgs
     css = css.replace(/linear-gradient\(145deg,#111827,#1a2332\)/gi, 'linear-gradient(145deg,#ffffff,#f0f9ff)');
     css = css.replace(/linear-gradient\(135deg,#0d2a45,#0a1f35\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
     css = css.replace(/linear-gradient\(135deg,#0a2218,#0f2a1a\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
@@ -134,7 +126,6 @@ function _fixInlineStyle(el, isLight) {
     el.setAttribute('style', css);
 
   } else {
-    // Restore original
     if (el._rtpOrig !== undefined) {
       if (el._rtpOrigCss !== undefined) {
         el.setAttribute('style', el._rtpOrigCss);
@@ -147,10 +138,8 @@ function _fixInlineStyle(el, isLight) {
 
 function _applyThemeToEl(el, isLight) {
   if (!el || el.nodeType !== 1) return;
-  // Skip profile/pin screens
   if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
   _fixInlineStyle(el, isLight);
-  // Recurse children
   el.querySelectorAll && el.querySelectorAll('[style]').forEach(child => _fixInlineStyle(child, isLight));
 }
 
@@ -177,9 +166,13 @@ function startThemeObserver() {
         if (node.nodeType !== 1) return;
         if (node.dataset && node.dataset.notheme) return;
         if (node.closest && node.closest('[data-notheme]')) return;
+        // ✅ FIX: Profile screens ne skip karo — Observer thi pan
+        if (node.id && ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'].includes(node.id)) return;
+        if (node.closest && node.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
         if (node.getAttribute && node.getAttribute('style')) _fixInlineStyle(node, true);
         node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => {
           if (el.closest && el.closest('[data-notheme]')) return;
+          if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
           _fixInlineStyle(el, true);
         });
       });
@@ -187,6 +180,7 @@ function startThemeObserver() {
         const el = m.target;
         if (el.dataset && el.dataset.notheme) return;
         if (el.closest && el.closest('[data-notheme]')) return;
+        if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
         _fixInlineStyle(el, true);
       }
     });
@@ -203,6 +197,35 @@ function startThemeObserver() {
 }
 
 // ============================================================
+// TOGGLE FUNCTION — called by button onclick
+// ============================================================
+window.toggleAppTheme = function() {
+  // 1. Light/Dark mode class toggle
+  const isLight = document.body.classList.toggle('light-mode');
+
+  // 2. Button icon update
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+
+  // 3. Save preference
+  localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
+
+  // 4. Sync AppState
+  if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
+
+  // 5. Re-render dynamic components
+  if (typeof renderWL === 'function') renderWL();
+  if (typeof renderHold === 'function') renderHold();
+  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
+  if (typeof renderHeaderStrip === 'function') renderHeaderStrip();
+
+  // 6. Apply full theme after toggle
+  setTimeout(applyFullTheme, 50);
+  setTimeout(applyFullTheme, 300);
+  setTimeout(applyFullTheme, 800);
+};
+
+// ============================================================
 // INIT THEME — on page load, restore saved preference
 // ============================================================
 (function initTheme() {
@@ -214,51 +237,10 @@ function startThemeObserver() {
   }
 })();
 
-// ============================================================
-// TOGGLE FUNCTION — called by button onclick
-// ============================================================
-window.toggleAppTheme = function() {
-  // 1. Light/Dark mode ક્લાસ ટૉગલ કરો
-  const isLight = document.body.classList.toggle('light-mode');
-  
-  // 2. બટનનો આઇકોન બદલો
-  const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
-  
-  // 3. યુઝરની પસંદગી સેવ કરો
-  localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
-
-  // 4. એપના ડેટાને સિન્ક કરો
-  if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
-
-  // 5. ડાયનેમિક કમ્પોનન્ટ્સ રિફ્રેશ કરો
-  if (typeof renderWL === 'function') renderWL();
-  if (typeof renderHold === 'function') renderHold();
-  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-  if (typeof renderHeaderStrip === 'function') renderHeaderStrip();
-};
-
-// Start theme on DOM ready (કોઈ જ Observer વગર!)
-(function initTheme() {
-  const savedTheme = localStorage.getItem('rtp_theme') || 'dark';
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-mode');
-    const btn = document.getElementById('themeToggleBtn');
-    if (btn) btn.textContent = '☀️';
-  }
-})();
-
-  // Apply MutationObserver theme to all current + new elements
-  setTimeout(applyFullTheme, 50);
-  setTimeout(applyFullTheme, 300);
-  setTimeout(applyFullTheme, 800);
-};
-
 // Start observer on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     startThemeObserver();
-    // Apply if light mode was saved
     if (localStorage.getItem('rtp_theme') === 'light') {
       setTimeout(applyFullTheme, 500);
       setTimeout(applyFullTheme, 1500);
