@@ -502,7 +502,7 @@ async function fetchYahooSuggestions(val, box) {
     if (!j.ok || !j.results || j.results.length === 0) return;
     
     const alreadyIn = new Set(AppState.wl);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS']);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE']);
     const results = j.results
       .filter(r => {
         const sym = r.symbol || '';
