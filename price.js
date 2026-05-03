@@ -463,13 +463,13 @@ function sortPercent() {
 }
 
 // ======================================
-// SEARCH SUGGESTIONS (Yahoo) - CORS Fixed
+// SEARCH SUGGESTIONS (Yahoo) - Ultra Safe
 // ======================================
 let _searchTimer = null;
 let _lastSearchVal = '';
 
 function showSuggestions(val) {
-  val = val.trim();
+  val = (val || "").trim();
   const box = document.getElementById("suggestionBox");
   if (!val || val.length < 1) { 
     if (box) box.style.display = "none"; 
@@ -477,7 +477,9 @@ function showSuggestions(val) {
   }
 
   const valUpper = val.toUpperCase();
-  const alreadyIn = new Set(AppState.wl);
+  const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
+  
+  // Safe check for POPULAR_STOCKS
   const localMatches = (typeof POPULAR_STOCKS !== 'undefined' ? POPULAR_STOCKS : [])
     .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
     .slice(0, 4);
@@ -491,7 +493,7 @@ function showSuggestions(val) {
   _searchTimer = setTimeout(() => {
     if (_lastSearchVal !== val) return;
     fetchYahooSuggestions(val, box);
-  }, 300);
+  }, 400); // Thodo delay vadharyo jethi fast typing ma limit cross na thay
 }
 
 async function fetchYahooSuggestions(val, box) {
@@ -499,33 +501,37 @@ async function fetchYahooSuggestions(val, box) {
     const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(val)}&lang=en-IN&region=IN&quotesCount=10&newsCount=0`;
     let j = null;
     
-    // Fallback Engine: Try multiple routes to bypass CORS
+    // Fallback Engine (Route 1 -> Route 2 -> Route 3)
     try {
-      // Route 1: corsproxy.io
-      const res1 = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
+      // Route 1: AllOrigins proxy 
+      const res1 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`);
+      if (!res1.ok) throw new Error("AllOrigins failed");
       j = await res1.json();
     } catch (e1) {
       try {
-        // Route 2: AllOrigins RAW
-        const res2 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`);
+        // Route 2: corsproxy.io
+        const res2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
+        if (!res2.ok) throw new Error("Corsproxy failed");
         j = await res2.json();
       } catch (e2) {
-        // Route 3: Tamaru potanu GAS API
-        const api = getActiveGASUrl();
-        const res3 = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
-        const gasData = await res3.json();
-        j = { quotes: gasData.results || [] };
+        // Route 3: GAS API (Tamaru potanu API)
+        if (typeof getActiveGASUrl === 'function') {
+            const api = getActiveGASUrl();
+            const res3 = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
+            const gasData = await res3.json();
+            j = { quotes: gasData.results || [] };
+        }
       }
     }
 
-    const quotes = j.quotes || j.results || [];
+    const quotes = j && (j.quotes || j.results) ? (j.quotes || j.results) : [];
     if (!quotes || quotes.length === 0) {
-      if (box) box.style.display = "none";
+      if (box && _lastSearchVal === val) box.style.display = "none";
       return;
     }
     
-    const alreadyIn = new Set(AppState.wl);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE']);
+    const alreadyIn = new Set(typeof AppState !== 'undefined' && AppState.wl ? AppState.wl : []);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'BSE.BO', 'NSE.NS']);
     
     const results = quotes
       .filter(r => {
@@ -552,12 +558,12 @@ async function fetchYahooSuggestions(val, box) {
       
     if (results.length > 0 && _lastSearchVal === val) {
       renderSuggestions(results, box, false);
-    } else {
+    } else if (_lastSearchVal === val) {
       if (box) box.style.display = "none";
     }
   } catch(e) { 
     console.warn('Yahoo suggestions error:', e); 
-    if (box) box.style.display = "none";
+    if (box && _lastSearchVal === val) box.style.display = "none";
   }
 }
 
@@ -566,34 +572,44 @@ function renderSuggestions(items, box, isLocal) {
     if (box) box.style.display = "none"; 
     return; 
   }
+  
+  // Style apeli chhe jethi dropdown barabar dekhay
+  box.style.background = "var(--bg-card, #0d1f35)";
+  box.style.border = "1px solid var(--border, #1e3a5f)";
+  box.style.borderRadius = "0 0 10px 10px";
+  box.style.position = "absolute";
+  box.style.width = "100%";
+  box.style.zIndex = "100";
+  box.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
+  
   box.innerHTML = items.map(item => {
     const sym = item.symbol || item;
     const rawSym = sym.replace('.NS', '').replace('.BO', '');
     const name = item.name || '';
-    // CSS Variables add karya chhe jethi Light Mode ma text vachay
     const exch = item.exchange ? `<span style="font-size:9px;color:var(--text-muted, #4b6280);margin-left:4px;">${item.exchange}</span>` : '';
     const nameHtml = name ? `<div style="font-size:10px;color:var(--text-sec, #94a3b8);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>` : '';
-    return `<div class="suggestion-item" style="padding:7px 14px;" onclick="selectSuggestion('${rawSym}')">
+    
+    return `<div class="suggestion-item" style="padding:10px 14px; border-bottom:1px solid var(--border, #1e2d4a); cursor:pointer;" onclick="selectSuggestion('${rawSym}')" onmouseover="this.style.background='var(--bg-header, rgba(255,255,255,0.05))'" onmouseout="this.style.background='transparent'">
       <div style="display:flex;align-items:center;gap:4px;">
-        <span style="font-weight:700;">${rawSym}</span>${exch}
+        <span style="font-weight:700; color:var(--text-primary, #e2e8f0); font-family:'JetBrains Mono',monospace;">${rawSym}</span>${exch}
       </div>
       ${nameHtml}
     </div>`;
   }).join('');
+// Remove last border
+  if(box.lastChild) box.lastChild.style.borderBottom = "none";
   box.style.display = "block";
 }
-
 function selectSuggestion(sym) {
-  document.getElementById("searchBox").value = sym;
+  const sb = document.getElementById("searchBox");
+  if(sb) sb.value = sym;
   hideSuggestions();
   addStock(sym);
 }
-
 function hideSuggestions() { 
   const box = document.getElementById("suggestionBox");
   if (box) box.style.display = "none"; 
 }
-
 // Close suggestions on outside click
 document.addEventListener("click", e => { 
   if (!e.target.closest("#searchSection")) hideSuggestions(); 
