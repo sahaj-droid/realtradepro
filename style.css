@@ -863,11 +863,8 @@ body.light-mode .group-btn.active {
   border-color: var(--accent-border, #93c5fd) !important;
   color: var(--accent, #0284c7) !important;
 }
-/* act-btn (watchlist action buttons) */
-body.light-mode .act-btn {
-  background: var(--bg-card2, #f0f9ff) !important;
-  color: var(--text-primary, #0f172a) !important;
-}
+/* act-btn — keep individual inline colors in BOTH dark and light mode
+   DO NOT override here — each button has specific bg/color inline */
 /* Portfolio card inner text */
 body.light-mode .portfolio-card [style*="color:#e2e8f0"],
 body.light-mode .portfolio-card [style*="color:#94a3b8"] {
