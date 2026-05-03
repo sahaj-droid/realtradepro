@@ -106,6 +106,7 @@ async function batchFetchStocks(symbols, isIndex = false) {
       const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=batch&s=${syms}`), 6000);
       const j = await r.json();
       if (!j || j.error) continue;
+      
       let stored = 0;
       Object.entries(j).forEach(([sym, gasData]) => {
         const normalized = _N(gasData);
@@ -115,7 +116,12 @@ async function batchFetchStocks(symbols, isIndex = false) {
         if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[cacheKey] = Date.now();
         stored++;
       });
-      if (stored > 0) return;
+      
+      if (stored > 0) {
+        // 🔥 NEW CACHE LOGIC: Aakhi watchlist na data aavta j tene permanent save kari do
+        try { localStorage.setItem('rtp_price_cache', JSON.stringify(AppState.cache)); } catch(e) {}
+        return;
+      }
     } catch (e) {}
   }
 }
