@@ -96,6 +96,9 @@ function _mapColor(val) {
 
 function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
+  // Skip elements marked with data-notheme or inside them
+  if (el.dataset && el.dataset.notheme) return;
+  if (el.closest && el.closest('[data-notheme]')) return;
   const props = ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor'];
 
   if (isLight) {
@@ -153,14 +156,9 @@ function _applyThemeToEl(el, isLight) {
 
 function applyFullTheme() {
   const isLight = document.body.classList.contains('light-mode');
-
-  // Skip IDs to exclude
-  const SKIP = ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'];
-
   document.querySelectorAll('[style]').forEach(el => {
-    // Skip if element IS a profile screen or inside one
-    if (SKIP.includes(el.id)) return;
-    if (el.closest && SKIP.some(id => el.closest('#' + id))) return;
+    if (el.dataset && el.dataset.notheme) return;
+    if (el.closest && el.closest('[data-notheme]')) return;
     _fixInlineStyle(el, isLight);
   });
 }
@@ -174,24 +172,21 @@ function startThemeObserver() {
     const isLight = document.body.classList.contains('light-mode');
     if (!isLight) return;
 
-    const SKIP = ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'];
-
     mutations.forEach(m => {
       m.addedNodes.forEach(node => {
         if (node.nodeType !== 1) return;
-        if (SKIP.includes(node.id)) return;
-        if (node.closest && SKIP.some(id => node.closest('#' + id))) return;
+        if (node.dataset && node.dataset.notheme) return;
+        if (node.closest && node.closest('[data-notheme]')) return;
         if (node.getAttribute && node.getAttribute('style')) _fixInlineStyle(node, true);
         node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => {
-          if (SKIP.some(id => el.closest && el.closest('#' + id))) return;
+          if (el.closest && el.closest('[data-notheme]')) return;
           _fixInlineStyle(el, true);
         });
       });
-
       if (m.type === 'attributes' && m.attributeName === 'style') {
         const el = m.target;
-        if (SKIP.includes(el.id)) return;
-        if (el.closest && SKIP.some(id => el.closest('#' + id))) return;
+        if (el.dataset && el.dataset.notheme) return;
+        if (el.closest && el.closest('[data-notheme]')) return;
         _fixInlineStyle(el, true);
       }
     });
