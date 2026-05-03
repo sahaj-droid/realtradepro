@@ -354,6 +354,64 @@ window.getApiStatus = function () {
         openRouterModels: getOpenRouterModels().join(', ')
     };
 };
+// ========================================
+// 🌊 GEMINI MULTI-TURN STREAMING (with Live Search)
+// ========================================
+async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
+    const modelName = 'gemini-3.1-flash-lite-preview';
+    const keys = getGeminiKeys();
+    if (keys.length === 0) return { ok: false };
+    // અત્યારે પહેલી કી નો ઉપયોગ કરીએ છીએ
+    const k = keys[0]; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${k}`;
+
+    const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
+    const body = {
+        contents,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+    };
+    // 🚀 ગૂગલ સર્ચ એક્ટિવેટ કરવાનું લોજિક
+    if (useSearch) {
+        body.tools = [{ google_search: {} }];
+    }
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) throw new Error('Stream failed');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let fullText = "";
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+            for (const line of lines) {
+                const dataStr = line.replace('data: ', '').trim();
+                if (dataStr) {
+                    try {
+                        const data = JSON.parse(dataStr);
+                        if (data.candidates && data.candidates[0].content) {
+                            const textPart = data.candidates[0].content.parts.map(p => p.text).join('');
+                            fullText += textPart;
+                            if (onChunk) onChunk(fullText); // UI ને નવો શબ્દ મોકલો
+                        }
+                    } catch (e) {
+                        // Incomplete JSON chunk, ignore and wait for next
+                    }
+                }
+            }
+        }
+        return { ok: true, answer: fullText };
+    } catch (e) {
+        console.error("Stream error, falling back to normal call:", e.message);
+        // જો સ્ટ્રીમ ફેલ થાય તો જૂની રીત (વિના સ્ટ્રીમ) વાપરો
+        return await directGeminiCallMultiTurn(priorHistory, currentPrompt);
+    }
+}
 
 // ========================================
 // 📤 GLOBAL EXPORTS
@@ -361,6 +419,7 @@ window.getApiStatus = function () {
 window.directGeminiCall             = directGeminiCall;
 window.directGeminiCallMultiTurn    = directGeminiCallMultiTurn;
 window.directGeminiCallWithFile     = directGeminiCallWithFile;
+window.directGeminiCallStreamMultiTurn = directGeminiCallStreamMultiTurn;
 
 console.log('✅ Gemini Module Loaded | Fallback: Groq → OpenRouter | File Reading: ON');
 console.log('📊 API Status:', getApiStatus());
