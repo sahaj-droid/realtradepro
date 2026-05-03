@@ -9,8 +9,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="style.css">
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase Config + Init -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyATS7Jw8Gek7sDEq8p19KkfwFe59cZYG8c", 
@@ -52,18 +54,23 @@
   
 <body>
 
-<div id="profileScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
-  <div class="profile-screen-bg" data-notheme="true">
+<!-- ========== PROFILE SCREEN ========== -->
+<div id="profileScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+  <div class="profile-screen-bg">
     
+    <!-- Logo + Title -->
     <div class="profile-header">
       <div class="profile-logo">📈</div>
       <h1 class="profile-title">RealTradePro</h1>
       <p class="profile-subtitle">Select your profile to continue</p>
     </div>
 
+    <!-- Profile Cards (dynamically loaded) -->
     <div id="profileList" class="profile-list">
-      </div>
+      <!-- JS thhi render thase -->
+    </div>
 
+    <!-- Create New Profile Button -->
     <button class="profile-create-btn" onclick="showCreateProfile()">
       + Create New Profile
     </button>
@@ -71,8 +78,9 @@
   </div>
 </div>
 
-<div id="pinScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
-  <div class="profile-screen-bg" data-notheme="true">
+<!-- ========== PIN SCREEN ========== -->
+<div id="pinScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+  <div class="profile-screen-bg">
 
     <div class="profile-header">
       <div id="pinUserAvatar" class="profile-avatar-large">A</div>
@@ -80,6 +88,7 @@
       <p class="profile-subtitle">Enter your 4-digit PIN</p>
     </div>
 
+    <!-- PIN Dots -->
     <div class="pin-dots">
       <span class="pin-dot" id="dot0"></span>
       <span class="pin-dot" id="dot1"></span>
@@ -87,8 +96,10 @@
       <span class="pin-dot" id="dot3"></span>
     </div>
 
+    <!-- PIN Error -->
     <p id="pinError" class="pin-error" style="display:none;">❌ Wrong PIN. Try again.</p>
 
+    <!-- Number Pad -->
     <div class="pin-numpad">
       <button onclick="pinInput('1')">1</button>
       <button onclick="pinInput('2')">2</button>
@@ -104,15 +115,18 @@
       <button onclick="pinBackspace()" class="pin-clear">←</button>
     </div>
 
+    <!-- Forgot PIN -->
     <button class="pin-forgot" onclick="showForgotPIN()">Forgot PIN?</button>
 
+    <!-- Back -->
     <button class="pin-back" onclick="showProfileScreen()">← Back</button>
 
   </div>
 </div>
 
-<div id="createProfileScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow-y:auto;">
-  <div class="profile-screen-bg" data-notheme="true">
+<!-- ========== CREATE PROFILE SCREEN ========== -->
+<div id="createProfileScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow-y:auto;">
+  <div class="profile-screen-bg">
 
     <div class="profile-header">
       <div class="profile-logo">👤</div>
@@ -122,21 +136,25 @@
 
     <div class="create-profile-form">
 
+      <!-- Name -->
       <div class="form-group">
         <label>Your Name</label>
         <input type="text" id="newProfileName" placeholder="e.g. Dad, Mom, Raj..." maxlength="20" />
       </div>
 
+      <!-- PIN -->
       <div class="form-group">
         <label>Set 4-digit PIN</label>
         <input type="password" id="newProfilePIN" placeholder="••••" maxlength="4" inputmode="numeric" />
       </div>
 
+      <!-- Confirm PIN -->
       <div class="form-group">
         <label>Confirm PIN</label>
         <input type="password" id="newProfilePINConfirm" placeholder="••••" maxlength="4" inputmode="numeric" />
       </div>
 
+      <!-- Security Question -->
       <div class="form-group">
         <label>Security Question (PIN reset માટે)</label>
         <select id="newProfileSecQ">
@@ -146,6 +164,7 @@
         </select>
       </div>
 
+      <!-- Security Answer -->
       <div class="form-group">
         <label>Answer</label>
         <input type="text" id="newProfileSecA" placeholder="Your answer..." />
@@ -160,8 +179,9 @@
   </div>
 </div>
 
-<div id="forgotPINScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
-  <div class="profile-screen-bg" data-notheme="true">
+<!-- ========== FORGOT PIN SCREEN ========== -->
+<div id="forgotPINScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+  <div class="profile-screen-bg">
 
     <div class="profile-header">
       <div class="profile-logo">🔐</div>
@@ -195,22 +215,30 @@
   </div>
 </div>
   
+<!-- == LOADER == -->
 <div id="loaderOverlay">
   <div class="spinner"></div>
   <div id="loaderMsg" style="font-size:13px;color:#38bdf8;font-family:'Rajdhani',sans-serif;">Loading...</div>
 </div>
 
+<!-- == ALERT POPUP == -->
 <div id="alertPopup"><svg viewBox="0 0 10 10" width="8" height="8" style="display:inline-block;vertical-align:middle;margin-right:4px;"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg><span id="alertMsg"></span></div>
 
   
+<!-- == MAIN APP == -->
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
 <div id="fixedHeader" style="position:sticky;top:0;z-index:99;width:100%;">
+<!-- HEADER -->
 <div class="app-header" style="padding:6px 10px;">
-<div style="display:flex;flex:1;align-items:center;min-width:0;overflow:hidden;">
+<!-- Indices: scrollable strip + add button -->
+  <div style="display:flex;flex:1;align-items:center;min-width:0;overflow:hidden;">
     <div id="headerStrip" style="display:flex;gap:0;flex:1;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;" onscroll="this.style.cssText=this.style.cssText">
+    <!-- chips rendered by renderHeaderStrip() -->
     </div>
+
   </div>
+  <!-- Right: theme + refresh + add stacked -->
   <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
     <button onclick="toggleAppTheme()" id="themeToggleBtn" title="Toggle Light/Dark">🌙</button>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
@@ -218,23 +246,29 @@
   </div>
 </div>
 
+<!-- MARKET STATUS + LIVE CLOCK BAR -->
 <div style="background:#0f1e33;border-bottom:1px solid #1e2d3d;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;">
   <div id="marketStatus" style="font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;">Checking...</div>
   <div id="liveClock" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">--:--:--</div>
 </div>
 
 
+<!-- FLASH PRICE TICKER -->
 <div id="priceTicker" style="display:none;">
   <div class="ticker-track" id="tickerTrack">
     <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
   </div>
 </div>
+<!-- GLOBAL MARKETS TICKER -->
 <div id="globalTicker">
   <div class="ticker-track" id="globalTickerTrack">
     <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
   </div>
 </div>
-</div><div id="searchSection" class="p-3 pb-1">
+</div><!-- end fixedHeader -->
+
+<!-- SEARCH + SUGGESTIONS -->
+<div id="searchSection" class="p-3 pb-1">
   <div style="position:relative;">
     <input id="searchBox" placeholder="Search stock name or symbol..."
       oninput="showSuggestions(this.value)"
@@ -243,6 +277,7 @@
   </div>
 </div>
 
+<!-- SORT + WATCHLIST TABS BAR -->
 <div id="filterBar" class="px-3 pb-2">
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
     <span style="font-size:10px;color:#4b6280;">Sort:</span>
@@ -251,10 +286,13 @@
     <button onclick="sortPercent()" class="sort-btn">%</button>
     <button onclick="triggerWatchlistCSVImport()" style="margin-left:auto;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128229; CSV</button>
   </div>
+  <!-- Watchlist Tabs: fixed 3 + add, left-right scrollable, rename on long press -->
   <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;align-items:center;" id="wlTabsBar">
-    </div>
+    <!-- rendered by renderWLTabs() -->
+  </div>
 </div>
 
+<!-- TABS -->
 <div id="watchlist" class="tab active p-3 space-y-[5px]"></div>
 <div id="indices" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);"></div>
 
@@ -272,6 +310,7 @@
       <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">TOTAL P&amp;L</div><div id="combinedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
     </div>
   </div>
+  <!-- Portfolio Diversity Pie Chart -->
   <div class="card">
     <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;">PORTFOLIO DIVERSITY</div>
     <canvas id="pieChart" width="260" height="260"></canvas>
@@ -281,6 +320,7 @@
 </div>
 
 <div id="history" class="tab p-3 space-y-[5px]">
+  <!-- All 5 buttons in one scrollable line -->
   <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
     <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
     <button onclick="backupData()" style="background:#166534;color:#86efac;border:1px solid #166534;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Backup</button>
@@ -288,15 +328,18 @@
     <button id="histViewList" onclick="setHistView('list')" style="background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">List</button>
     <button id="histViewCal" onclick="setHistView('calendar')" style="background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Calendar</button>
   </div>
+  <!-- hidden file inputs -->
   <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
   <div id="historyList"></div>
   <div id="historyCalendar" style="display:none;"></div>
 </div>
 <div id="alerts"  class="tab p-3 space-y-[5px]"></div>
 
+<!-- SETTINGS TAB -->
 <div id="settings" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
 
 
+  <!-- HEADER -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);">
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="width:28px;height:28px;background:rgba(148,163,184,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;">
@@ -307,6 +350,7 @@
     <span style="font-size:10px;color:#64748b;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);padding:2px 8px;border-radius:20px;">v2.2</span>
   </div>
 
+  <!-- ACCOUNT -->
   <div class="s-section-label">Account</div>
   <div class="s-account-card">
     <div style="display:flex;align-items:center;">
@@ -319,6 +363,7 @@
     <button onclick="logoutUser()" class="s-pill s-pill-red">Logout</button>
   </div>
 
+  <!-- APPEARANCE -->
   <div class="s-section-label">Appearance</div>
   <div class="s-card">
 
@@ -333,6 +378,7 @@
     </div>
   </div>
 
+  <!-- CLOUD SYNC -->
   <div class="s-section-label">Cloud Sync <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
   <div class="s-card">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 2px;">
@@ -355,6 +401,7 @@
     </div>
   </div>
 
+  <!-- DATA & REFRESH -->
   <div class="s-section-label">Data &amp; Refresh</div>
   <div class="s-card">
     <div class="s-row">
@@ -385,6 +432,7 @@
     </div>
   </div>
 
+  <!-- ALERTS -->
   <div class="s-section-label">Alerts</div>
   <div class="s-card">
     <div class="s-row">
@@ -412,6 +460,7 @@
     </div>
   </div>
 
+<!-- NIVI AI -->
 <div class="s-section-label">Nivi AI</div>
 <div class="s-card">
   <div class="s-collapse-hd" onclick="sToggle('nivi-s-body','nivi-s-arr')">
@@ -425,6 +474,7 @@
   </div>
   <div id="nivi-s-body" style="padding:0 14px 12px;">
 
+    <!-- ── GEMINI ── -->
     <div style="font-size:9px;font-weight:700;color:#34d399;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">PRIMARY — GEMINI</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div>
@@ -442,6 +492,7 @@
     </div>
     <div style="font-size:9px;color:#4b6280;margin-bottom:14px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com</a> · Model: gemini-3.1-flash-lite-preview · Multiple keys: comma separated</div>
 
+    <!-- ── GROQ ── -->
     <div style="font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-bottom:6px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">FALLBACK 1 — GROQ</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div>
@@ -459,6 +510,7 @@
     </div>
     <div style="font-size:9px;color:#4b6280;margin-bottom:14px;">Free key: <a href="https://console.groq.com" target="_blank" style="color:#38bdf8;">console.groq.com</a> · Model: llama-3.1-8b-instant · 14,400 req/day free</div>
 
+    <!-- ── OPENROUTER ── -->
     <div style="font-size:9px;font-weight:700;color:#fb923c;letter-spacing:1px;margin-bottom:6px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">FALLBACK 2 — OPENROUTER</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div>
@@ -476,6 +528,7 @@
     </div>
     <div style="font-size:9px;color:#4b6280;margin-bottom:10px;">Free key: <a href="https://openrouter.ai/keys" target="_blank" style="color:#38bdf8;">openrouter.ai</a> · Claude, ChatGPT, Gemini, DeepSeek, Meta badha available</div>
 
+    <!-- OpenRouter Models -->
     <div style="font-size:10px;color:#fb923c;font-weight:700;margin-bottom:6px;">OpenRouter Models <span style="font-size:9px;font-weight:400;color:#4b6280;">(try in order — first available use thashe)</span></div>
     <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:4px;">
       <div style="display:flex;gap:5px;align-items:center;">
@@ -500,10 +553,12 @@
 
   </div>
 </div>
-  <div style="margin-top:16px;background:var(--bg-card,#0d1f35);border-radius:12px;padding:14px;border:1px solid var(--border,rgba(56,189,248,0.15));">
+  <!-- ✅ UNIVERSAL AI PROVIDER -->
+<div style="margin-top:16px;background:var(--bg-card,#0d1f35);border-radius:12px;padding:14px;border:1px solid var(--border,rgba(56,189,248,0.15));">
   <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:10px;">🌐 Universal AI Provider</div>
   <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Primary provider set karo — Gemini bandh thay to auto-switch thase</div>
 
+  <!-- Primary -->
   <div style="margin-bottom:8px;">
     <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">PRIMARY</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -522,6 +577,7 @@
     <div id="uni-primary-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
   </div>
 
+  <!-- Fallback -->
   <div style="margin-bottom:10px;">
     <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">FALLBACK (optional)</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -540,6 +596,7 @@
     <div id="uni-fallback-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
   </div>
 
+  <!-- Buttons -->
   <div style="display:flex;gap:8px;">
     <button onclick="saveUniversalProvider()"
       style="flex:1;background:#065f46;color:#34d399;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">
@@ -551,6 +608,7 @@
     </button>
   </div>
 </div>
+  <!-- API CONFIGURATION -->
   <div class="s-section-label">API Configuration</div>
   <div class="s-card">
     <div class="s-collapse-hd" onclick="sToggle('api-s-body','api-s-arr')">
@@ -636,6 +694,7 @@
     </div>
   </div>
 
+  <!-- GOOGLE SHEETS -->
   <div class="s-section-label">Google Sheets <span style="color:#0f9d58;font-size:9px;font-weight:700;letter-spacing:0;">Fundamentals</span></div>
   <div class="s-card">
     <div class="s-collapse-hd" onclick="sToggle('sheet-s-body','sheet-s-arr')">
@@ -668,7 +727,9 @@
       <div id="sheet-status" style="font-size:9px;margin-top:4px;color:#4b6280;"></div>
     </div>
   </div>
-<div class="s-section-label">Search &amp; Learn <span style="color:#fb923c;font-size:9px;font-weight:700;letter-spacing:0;">FF2 API</span></div>
+<!-- ══ ENGINE URL SECTION ══ -->
+  <!-- FF2 SEARCH & LEARN API -->
+  <div class="s-section-label">Search &amp; Learn <span style="color:#fb923c;font-size:9px;font-weight:700;letter-spacing:0;">FF2 API</span></div>
   <div class="s-card">
     <div class="s-collapse-hd" onclick="sToggle('ff2-s-body','ff2-s-arr')">
       <div class="s-row-left" style="pointer-events:none;">
@@ -696,6 +757,8 @@
     </div>
   </div>
 
+  <!-- DANGER ZONE -->
+  <!-- EXPORT -->
   <div class="s-section-label">Export <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
   <div class="s-card">
     <div class="s-row">
@@ -724,6 +787,7 @@
   <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
 </div>
 
+<!-- ERROR BANNER -->
 <div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
   <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:#fca5a5;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
     ! <span id="errorMsg"></span>
@@ -732,484 +796,12 @@
 </div>
 
 <div id="news" class="tab" style="padding:0;"></div>
-<div id="watchlist" class="tab active p-3 space-y-[5px]"></div>
-<div id="indices" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);"></div>
-<div id="holdings" class="tab p-3 space-y-3">
-  <div class="portfolio-card">
-    <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;text-align:center;">PORTFOLIO SUMMARY</div>
-    <div class="grid grid-cols-2 gap-3">
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">INVESTMENT</div><div id="totalInvestment" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">CURRENT VALUE</div><div id="currentValue" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">UNREALIZED P&amp;L</div><div id="totalPL" style="font-size:15px;font-weight:700;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">RETURN %</div><div id="returnPercent" style="font-size:15px;font-weight:700;">0%</div></div>
-    </div>
-    <div class="grid grid-cols-2 gap-3" style="margin-top:10px;">
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">REALIZED P&amp;L</div><div id="realizedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">TOTAL P&amp;L</div><div id="combinedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
-    </div>
-  </div>
-  <div class="card">
-    <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;">PORTFOLIO DIVERSITY</div>
-    <canvas id="pieChart" width="260" height="260"></canvas>
-    <div id="pieLegend" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
-  </div>
-  <div id="holdingsList"></div>
-</div>
 
-<div id="history" class="tab p-3 space-y-[5px]">
-  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
-    <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
-    <button onclick="backupData()" style="background:#166534;color:#86efac;border:1px solid #166534;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Backup</button>
-    <button onclick="triggerRestore()" style="background:#713f12;color:#fde68a;border:1px solid #713f12;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Restore</button>
-    <button id="histViewList" onclick="setHistView('list')" style="background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">List</button>
-    <button id="histViewCal" onclick="setHistView('calendar')" style="background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Calendar</button>
-  </div>
-  <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
-  <div id="historyList"></div>
-  <div id="historyCalendar" style="display:none;"></div>
-</div>
-<div id="alerts"  class="tab p-3 space-y-[5px]"></div>
+<!-- SEARCH & LEARN TAB — TABBED VERSION -->
+<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:var(--bg-app,#060e1a);height:calc(100vh - 102px - 64px);">
 
-<div id="settings" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
-
-
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div style="width:28px;height:28px;background:rgba(148,163,184,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      </div>
-      <span style="font-size:13px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;">SETTINGS</span>
-    </div>
-    <span style="font-size:10px;color:#64748b;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);padding:2px 8px;border-radius:20px;">v2.2</span>
-  </div>
-
-  <div class="s-section-label">Account</div>
-  <div class="s-account-card">
-    <div style="display:flex;align-items:center;">
-      <div class="s-avatar" id="settingsAvatarLetter">—</div>
-      <div>
-        <div id="currentUserLabel" style="font-size:13px;font-weight:700;color:#34d399;">—</div>
-        <div style="font-size:10px;color:#4b6280;">Logged in · Firebase</div>
-      </div>
-    </div>
-    <button onclick="logoutUser()" class="s-pill s-pill-red">Logout</button>
-  </div>
-
-  <div class="s-section-label">Appearance</div>
-  <div class="s-card">
-
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(167,139,250,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Font Size</div><div class="s-row-sub">Small / Medium / Large</div></div>
-      </div>
-      <button onclick="cycleFontSize()" class="s-pill" style="background:rgba(167,139,250,0.15);color:#a78bfa;"><span id="fontSizeLabel">Font: M</span></button>
-    </div>
-  </div>
-
-  <div class="s-section-label">Cloud Sync <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
-  <div class="s-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 2px;">
-      <span style="font-size:10px;color:#4b6280;">Last sync: <span id="lastSyncDisplay" style="color:#64748b;">--</span></span>
-      <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></div>
-    </div>
-    <div class="s-sync-row">
-      <button onclick="pushToCloud(true)" class="s-sync-btn" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
-        Upload
-      </button>
-      <button onclick="pullFromCloud(true)" class="s-sync-btn" style="background:#1a3320;color:#86efac;border:1px solid #166534;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 104.08 15.91"/></svg>
-        Download
-      </button>
-      <button id="syncStatusBtn" onclick="pushToCloud(true)" class="s-sync-btn" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-        Sync
-      </button>
-    </div>
-  </div>
-
-  <div class="s-section-label">Data &amp; Refresh</div>
-  <div class="s-card">
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(56,189,248,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Auto Refresh</div><div class="s-row-sub">Price update interval</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:5px;">
-        <input id="set-refresh" type="number" min="10" max="300" class="s-num-input">
-        <span style="font-size:10px;color:#4b6280;">sec</span>
-        <button onclick="saveSetting('refresh')" class="s-pill s-pill-green" style="padding:4px 10px;">Set</button>
-      </div>
-    </div>
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(245,158,11,0.08);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Duplicate Warning</div><div class="s-row-sub">Warn on duplicate add</div></div>
-      </div>
-      <label class="ios-tog">
-        <input type="checkbox" id="dupToggleChk" checked onchange="toggleDupWarnChk(this.checked)">
-        <div class="ios-track"></div>
-        <div class="ios-thumb"></div>
-      </label>
-    </div>
-  </div>
-
-  <div class="s-section-label">Alerts</div>
-  <div class="s-card">
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(245,158,11,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Technical Alerts</div><div class="s-row-sub">Master toggle — all alerts</div></div>
-      </div>
-      <label class="ios-tog">
-        <input type="checkbox" id="alertEngineChk" checked onchange="toggleAlertEngine()">
-        <div class="ios-track"></div>
-        <div class="ios-thumb"></div>
-      </label>
-    </div>
-
-<div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(56,189,248,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Alert History</div><div class="s-row-sub">View Telegram alert log</div></div>
-      </div>
-      <button onclick="openAlertHistory()" class="s-pill s-pill-blue" style="padding:4px 12px;">View</button>
-    </div>
-  </div>
-
-<div class="s-section-label">Nivi AI</div>
-<div class="s-card">
-  <div class="s-collapse-hd" onclick="sToggle('nivi-s-body','nivi-s-arr')">
-    <div class="s-row-left" style="pointer-events:none;">
-      <div class="s-row-icon" style="background:rgba(52,211,153,0.1);">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-      </div>
-      <div class="s-row-info"><div class="s-row-title">Nivi AI Configuration</div><div class="s-row-sub">Gemini · Groq · OpenRouter</div></div>
-    </div>
-    <span id="nivi-s-arr" class="s-collapse-arr" style="color:#34d399;">▼</span>
-  </div>
-  <div id="nivi-s-body" style="padding:0 14px 12px;">
-
-    <div style="font-size:9px;font-weight:700;color:#34d399;letter-spacing:1px;margin-bottom:6px;margin-top:4px;">PRIMARY — GEMINI</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div>
-        <div style="font-size:11px;color:#e2e8f0;font-weight:600;">Gemini API Key</div>
-        <div id="gemini-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
-      </div>
-      <button onclick="document.getElementById('gemini-key-row').style.display=document.getElementById('gemini-key-row').style.display==='none'?'flex':'none'" class="s-pill s-pill-green" style="padding:3px 10px;font-size:10px;">Edit</button>
-    </div>
-    <div id="gemini-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
-      <input id="set-gemini-key" type="password" placeholder="AIza... (comma separated for multiple keys)" class="s-key-input">
-      <div style="display:flex;gap:5px;">
-        <button onclick="saveGeminiKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-        <button onclick="clearGeminiKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
-      </div>
-    </div>
-    <div style="font-size:9px;color:#4b6280;margin-bottom:14px;">Free key: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#38bdf8;">aistudio.google.com</a> · Model: gemini-3.1-flash-lite-preview · Multiple keys: comma separated</div>
-
-    <div style="font-size:9px;font-weight:700;color:#a78bfa;letter-spacing:1px;margin-bottom:6px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">FALLBACK 1 — GROQ</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div>
-        <div style="font-size:11px;color:#e2e8f0;font-weight:600;">Groq API Key</div>
-        <div id="groq-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
-      </div>
-      <button onclick="document.getElementById('groq-key-row').style.display=document.getElementById('groq-key-row').style.display==='none'?'flex':'none'" class="s-pill" style="padding:3px 10px;font-size:10px;background:rgba(167,139,250,0.15);color:#a78bfa;border:1px solid rgba(167,139,250,0.3);">Edit</button>
-    </div>
-    <div id="groq-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
-      <input id="set-groq-key" type="password" placeholder="gsk_..." class="s-key-input" style="border-color:rgba(167,139,250,0.3);">
-      <div style="display:flex;gap:5px;">
-        <button onclick="saveGroqKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-        <button onclick="clearGroqKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
-      </div>
-    </div>
-    <div style="font-size:9px;color:#4b6280;margin-bottom:14px;">Free key: <a href="https://console.groq.com" target="_blank" style="color:#38bdf8;">console.groq.com</a> · Model: llama-3.1-8b-instant · 14,400 req/day free</div>
-
-    <div style="font-size:9px;font-weight:700;color:#fb923c;letter-spacing:1px;margin-bottom:6px;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">FALLBACK 2 — OPENROUTER</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div>
-        <div style="font-size:11px;color:#e2e8f0;font-weight:600;">OpenRouter API Key</div>
-        <div id="or-key-status" style="font-size:9px;color:#4b6280;margin-top:1px;"></div>
-      </div>
-      <button onclick="document.getElementById('or-key-row').style.display=document.getElementById('or-key-row').style.display==='none'?'flex':'none'" class="s-pill" style="padding:3px 10px;font-size:10px;background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">Edit</button>
-    </div>
-    <div id="or-key-row" style="display:none;gap:5px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">
-      <input id="set-or-key" type="password" placeholder="sk-or-..." class="s-key-input" style="border-color:rgba(251,146,60,0.3);">
-      <div style="display:flex;gap:5px;">
-        <button onclick="saveORKey()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-        <button onclick="clearORKey()" class="s-pill s-pill-gray" style="font-size:10px;">Clear</button>
-      </div>
-    </div>
-    <div style="font-size:9px;color:#4b6280;margin-bottom:10px;">Free key: <a href="https://openrouter.ai/keys" target="_blank" style="color:#38bdf8;">openrouter.ai</a> · Claude, ChatGPT, Gemini, DeepSeek, Meta badha available</div>
-
-    <div style="font-size:10px;color:#fb923c;font-weight:700;margin-bottom:6px;">OpenRouter Models <span style="font-size:9px;font-weight:400;color:#4b6280;">(try in order — first available use thashe)</span></div>
-    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:4px;">
-      <div style="display:flex;gap:5px;align-items:center;">
-        <span style="font-size:9px;color:#4b6280;width:16px;text-align:center;">1</span>
-        <input id="or-model-1" type="text" placeholder="meta-llama/llama-3.1-8b-instruct:free" class="s-key-input" style="margin-bottom:0;border-color:rgba(251,146,60,0.2);font-size:10px;">
-      </div>
-      <div style="display:flex;gap:5px;align-items:center;">
-        <span style="font-size:9px;color:#4b6280;width:16px;text-align:center;">2</span>
-        <input id="or-model-2" type="text" placeholder="deepseek/deepseek-r1:free" class="s-key-input" style="margin-bottom:0;border-color:rgba(251,146,60,0.2);font-size:10px;">
-      </div>
-      <div style="display:flex;gap:5px;align-items:center;">
-        <span style="font-size:9px;color:#4b6280;width:16px;text-align:center;">3</span>
-        <input id="or-model-3" type="text" placeholder="google/gemma-2-9b-it:free" class="s-key-input" style="margin-bottom:0;border-color:rgba(251,146,60,0.2);font-size:10px;">
-      </div>
-    </div>
-    <div style="display:flex;gap:5px;margin-bottom:4px;">
-      <button onclick="saveORModels()" class="s-pill s-pill-green" style="font-size:10px;">Save Models</button>
-      <button onclick="clearORModels()" class="s-pill s-pill-gray" style="font-size:10px;">Reset</button>
-    </div>
-    <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">Popular free models: <span style="color:#fb923c;">openrouter.ai/models?q=free</span></div>
-    <div id="or-models-status" style="font-size:9px;color:#34d399;margin-bottom:4px;"></div>
-
-  </div>
-</div>
-  <div style="margin-top:16px;background:#0d1f35;border-radius:12px;padding:14px;border:1px solid rgba(56,189,248,0.15);">
-  <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:10px;">🌐 Universal AI Provider</div>
-  <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Primary provider set karo — Gemini bandh thay to auto-switch thase</div>
-
-  <div style="margin-bottom:8px;">
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">PRIMARY</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      <select id="uni-primary-provider" onchange="onUniProviderChange('primary')"
-        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:1;min-width:90px;">
-        <option value="groq">Groq</option>
-        <option value="openrouter">OpenRouter</option>
-        <option value="gemini">Gemini</option>
-        <option value="nvidia">Nvidia</option>
-      </select>
-      <input id="uni-primary-model" type="text" placeholder="model name (optional)"
-        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:2;min-width:130px;" />
-    </div>
-    <input id="uni-primary-key" type="password" placeholder="API Key"
-      style="width:100%;margin-top:6px;background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;box-sizing:border-box;" />
-    <div id="uni-primary-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
-  </div>
-
-  <div style="margin-bottom:10px;">
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:4px;">FALLBACK (optional)</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      <select id="uni-fallback-provider" onchange="onUniProviderChange('fallback')"
-        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:1;min-width:90px;">
-        <option value="openrouter">OpenRouter</option>
-        <option value="groq">Groq</option>
-        <option value="gemini">Gemini</option>
-        <option value="nvidia">Nvidia</option>
-      </select>
-      <input id="uni-fallback-model" type="text" placeholder="model name (optional)"
-        style="background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;flex:2;min-width:130px;" />
-    </div>
-    <input id="uni-fallback-key" type="password" placeholder="API Key"
-      style="width:100%;margin-top:6px;background:#071221;color:#e2e8f0;border:1px solid #1e3a5f;border-radius:8px;padding:6px 8px;font-size:11px;box-sizing:border-box;" />
-    <div id="uni-fallback-status" style="font-size:10px;margin-top:4px;color:#4b6280;">Not set</div>
-  </div>
-
-  <div style="display:flex;gap:8px;">
-    <button onclick="saveUniversalProvider()"
-      style="flex:1;background:#065f46;color:#34d399;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">
-      💾 Save
-    </button>
-    <button onclick="clearUniversalProvider()"
-      style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 12px;font-size:11px;cursor:pointer;">
-      🗑 Clear
-    </button>
-  </div>
-</div>
-  <div class="s-section-label">API Configuration</div>
-  <div class="s-card">
-    <div class="s-collapse-hd" onclick="sToggle('api-s-body','api-s-arr')">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(245,158,11,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">GAS API URLs</div><div class="s-row-sub">Primary · Secondary · Tertiary</div></div>
-      </div>
-      <span id="api-s-arr" class="s-collapse-arr" style="color:#f59e0b;">▶</span>
-    </div>
-    <div id="api-s-body" style="display:none;padding:0 14px 12px;">
-      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-size:11px;color:#e2e8f0;">Primary</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <label class="s-ios-toggle" title="Enable/Disable Primary URL"><input type="checkbox" id="gasToggle1" onchange="toggleGASUrl(1,this.checked)" checked><span class="s-ios-slider"></span></label>
-            <button onclick="startAPIEdit()" id="changeURLBtn" class="s-pill s-pill-amber" style="font-size:10px;padding:2px 10px;">Edit</button>
-          </div>
-        </div>
-        <div id="set-api-display" class="s-url-text"></div>
-        <div id="set-api-edit" style="display:none;margin-top:5px;">
-          <input id="set-api-input" placeholder="Paste new API URL..." class="s-key-input" style="border-color:rgba(245,158,11,0.3);">
-          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPIEdit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-        </div>
-      </div>
-      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-size:11px;color:#e2e8f0;">Secondary <span class="s-badge" style="background:rgba(56,189,248,0.1);color:#38bdf8;">FB1</span></span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <label class="s-ios-toggle" title="Enable/Disable Secondary URL"><input type="checkbox" id="gasToggle2" onchange="toggleGASUrl(2,this.checked)" checked><span class="s-ios-slider"></span></label>
-            <button onclick="startAPI2Edit()" id="changeURL2Btn" class="s-pill s-pill-amber" style="font-size:10px;padding:2px 10px;">Edit</button>
-          </div>
-        </div>
-        <div id="set-api2-display" class="s-url-text"></div>
-        <div id="set-api2-edit" style="display:none;margin-top:5px;">
-          <input id="set-api2-input" placeholder="Paste secondary API URL..." class="s-key-input" style="border-color:rgba(245,158,11,0.3);">
-          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api2')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI2Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-        </div>
-      </div>
-      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-size:11px;color:#e2e8f0;">Tertiary <span class="s-badge" style="background:rgba(167,139,250,0.1);color:#a78bfa;">FB2</span></span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <label class="s-ios-toggle" title="Enable/Disable Tertiary URL"><input type="checkbox" id="gasToggle3" onchange="toggleGASUrl(3,this.checked)" checked><span class="s-ios-slider"></span></label>
-            <button onclick="startAPI3Edit()" id="changeURL3Btn" class="s-pill" style="background:rgba(74,29,150,0.4);color:#c4b5fd;font-size:10px;padding:2px 10px;">Edit</button>
-          </div>
-        </div>
-        <div id="set-api3-display" class="s-url-text"></div>
-        <div id="set-api3-edit" style="display:none;margin-top:5px;">
-          <input id="set-api3-input" placeholder="Paste tertiary API URL..." class="s-key-input" style="border-color:rgba(167,139,250,0.3);">
-          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api3')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI3Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-        </div>
-      </div>
-      <div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-size:11px;color:#e2e8f0;">API 4 <span class="s-badge" style="background:rgba(251,146,60,0.1);color:#fb923c;">FB3</span></span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <label class="s-ios-toggle" title="Enable/Disable API 4"><input type="checkbox" id="gasToggle4" onchange="toggleGASUrl(4,this.checked)" checked><span class="s-ios-slider"></span></label>
-            <button onclick="startAPI4Edit()" id="changeURL4Btn" class="s-pill" style="background:rgba(120,53,15,0.4);color:#fb923c;font-size:10px;padding:2px 10px;">Edit</button>
-          </div>
-        </div>
-        <div id="set-api4-display" class="s-url-text"></div>
-        <div id="set-api4-edit" style="display:none;margin-top:5px;">
-          <input id="set-api4-input" placeholder="Paste API 4 URL..." class="s-key-input" style="border-color:rgba(251,146,60,0.3);">
-          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api4')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI4Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-        </div>
-      </div>
-      <div style="padding:6px 0;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-          <span style="font-size:11px;color:#e2e8f0;">API 5 <span class="s-badge" style="background:rgba(34,197,94,0.1);color:#34d399;">FB4</span></span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <label class="s-ios-toggle" title="Enable/Disable API 5"><input type="checkbox" id="gasToggle5" onchange="toggleGASUrl(5,this.checked)" checked><span class="s-ios-slider"></span></label>
-            <button onclick="startAPI5Edit()" id="changeURL5Btn" class="s-pill" style="background:rgba(6,78,59,0.4);color:#34d399;font-size:10px;padding:2px 10px;">Edit</button>
-          </div>
-        </div>
-        <div id="set-api5-display" class="s-url-text"></div>
-        <div id="set-api5-edit" style="display:none;margin-top:5px;">
-          <input id="set-api5-input" placeholder="Paste API 5 URL..." class="s-key-input" style="border-color:rgba(34,197,94,0.3);">
-          <div style="display:flex;gap:5px;"><button onclick="saveSetting('api5')" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelAPI5Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="s-section-label">Google Sheets <span style="color:#0f9d58;font-size:9px;font-weight:700;letter-spacing:0;">Fundamentals</span></div>
-  <div class="s-card">
-    <div class="s-collapse-hd" onclick="sToggle('sheet-s-body','sheet-s-arr')">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(15,157,88,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f9d58" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Sheet Integration</div><div class="s-row-sub">GOOGLEFINANCE fundamentals</div></div>
-      </div>
-      <span id="sheet-s-arr" class="s-collapse-arr" style="color:#4285F4;">▶</span>
-    </div>
-    <div id="sheet-s-body" style="display:none;padding:0 14px 12px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);margin-bottom:8px;">
-        <span style="font-size:11px;color:#e2e8f0;">Enable Integration</span>
-        <label class="ios-tog">
-          <input type="checkbox" id="sheet-enabled" onchange="toggleSheetIntegration(this.checked)">
-          <div class="ios-track"></div>
-          <div class="ios-thumb"></div>
-        </label>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-        <span style="font-size:11px;color:#e2e8f0;">Sheet ID</span>
-        <button onclick="startSheetEdit()" id="changeSheetBtn" class="s-pill s-pill-blue" style="font-size:10px;padding:2px 10px;">Edit</button>
-      </div>
-      <div id="sheet-id-display" class="s-url-text"></div>
-      <div id="sheet-id-edit" style="display:none;margin-top:5px;">
-        <input id="sheet-id-input" placeholder="Paste Google Sheet ID..." class="s-key-input" style="border-color:rgba(66,133,244,0.3);">
-        <div style="display:flex;gap:5px;"><button onclick="saveSheetId()" class="s-pill s-pill-green" style="font-size:10px;">Save</button><button onclick="cancelSheetEdit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button></div>
-      </div>
-      <div id="sheet-status" style="font-size:9px;margin-top:4px;color:#4b6280;"></div>
-    </div>
-  </div>
-<div class="s-section-label">Search &amp; Learn <span style="color:#fb923c;font-size:9px;font-weight:700;letter-spacing:0;">FF2 API</span></div>
-  <div class="s-card">
-    <div class="s-collapse-hd" onclick="sToggle('ff2-s-body','ff2-s-arr')">
-      <div class="s-row-left" style="pointer-events:none;">
-        <div class="s-row-icon" style="background:rgba(251,146,60,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">FF2 GAS URL</div><div id="ff2-url-sub" class="s-row-sub">Not set — tap to configure</div></div>
-      </div>
-      <span id="ff2-s-arr" class="s-collapse-arr" style="color:#fb923c;">▶</span>
-    </div>
-    <div id="ff2-s-body" style="display:none;padding:0 14px 12px;">
-      <div style="font-size:10px;color:#64748b;margin-bottom:8px;">FF2 Google Apps Script URL (separate project for Screener data)</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-size:11px;color:#e2e8f0;">GAS URL</span>
-        <button onclick="startFF2Edit()" id="changeFF2Btn" class="s-pill" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);font-size:10px;padding:2px 10px;">Edit</button>
-      </div>
-      <div id="ff2-url-display" class="s-url-text"></div>
-      <div id="ff2-url-edit" style="display:none;margin-top:6px;">
-        <input id="ff2-url-input" placeholder="https://script.google.com/macros/s/..." class="s-key-input" style="border-color:rgba(251,146,60,0.3);">
-        <div style="display:flex;gap:5px;">
-          <button onclick="saveFF2Url()" class="s-pill s-pill-green" style="font-size:10px;">Save</button>
-          <button onclick="cancelFF2Edit()" class="s-pill s-pill-gray" style="font-size:10px;">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="s-section-label">Export <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
-  <div class="s-card">
-    <div class="s-row">
-      <div class="s-row-left">
-        <div class="s-row-icon" style="background:rgba(34,197,94,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </div>
-        <div class="s-row-info"><div class="s-row-title">Technical Snapshot</div><div class="s-row-sub">Symbol · CMP · BB Upper/Lower · RSI · Volume</div></div>
-      </div>
-      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:#14532d;color:#22c55e;border:1px solid #166534;padding:4px 12px;">Export</button>
-    </div>
-  </div>
-
-  <div class="s-section-label" style="color:#ef4444;">Danger Zone</div>
-  <div style="margin:0 10px 4px;">
-    <div class="s-danger-grid">
-      <button onclick="clearData('holdings')" class="s-danger-btn">Holdings</button>
-      <button onclick="clearData('history')" class="s-danger-btn">History</button>
-      <button onclick="clearData('alerts')" class="s-danger-btn">Alerts</button>
-    </div>
-    <div style="padding:0 0 8px;">
-      <button onclick="clearFundCache()" class="s-danger-btn" style="width:100%;margin-top:6px;background:rgba(127,29,29,0.3);">🗑️ Clear Fundamentals Cache</button>
-    </div>
-  </div>
-
-  <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
-</div>
-
-<div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
-  <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:#fca5a5;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
-    ! <span id="errorMsg"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
-  </div>
-</div>
-
-<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:#060e1a;height:calc(100vh - 102px - 64px);">
-
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#060e1a;z-index:10;">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));position:sticky;top:0;background:var(--bg-header,#060e1a);z-index:10;">
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="width:28px;height:28px;background:rgba(251,146,60,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
@@ -1223,7 +815,8 @@
     </div>
   </div>
 
-  <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);background:#060e1a;position:sticky;top:53px;z-index:9;">
+  <!-- Main Tab Switcher: Company Financial | Learning -->
+  <div style="display:flex;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));background:var(--bg-header,#060e1a);position:sticky;top:53px;z-index:9;">
     <button id="lmain-financial" onclick="switchLearnMain('financial')"
       style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
       📊 Company Financial
@@ -1234,15 +827,17 @@
     </button>
   </div>
 
+  <!-- PANEL: Company Financial -->
   <div id="lpanel-financial" style="display:flex;flex-direction:column;">
 
+    <!-- Search Bar -->
     <div style="padding:12px 14px 0;">
       <div style="display:flex;gap:8px;">
         <div style="flex:1;position:relative;">
           <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
-            style="width:100%;background:#0d1f35;border:1px solid rgba(251,146,60,0.3);color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
+            style="width:100%;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.3);color:var(--text-primary,#e2e8f0);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
             oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
-          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#0d1f35;border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
         </div>
         <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
           ANALYZE
@@ -1254,6 +849,7 @@
       <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
     </div>
 
+    <!-- Sub-Tab Pills (hidden until data loads) -->
     <div id="learnSubTabs" style="display:none;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none;">
       <div style="display:flex;gap:6px;min-width:max-content;">
         <button id="lst-fundamentals" onclick="switchLearnTab('fundamentals')"
@@ -1283,11 +879,17 @@
       </div>
     </div>
 
+    <!-- Content Area -->
     <div id="learnResults" style="padding:10px 14px 100px;"></div>
 
-  </div><div id="lpanel-school" style="display:none;padding:10px 14px 100px;">
+  </div><!-- end lpanel-financial -->
+
+  <!-- PANEL: Learning (Market School) -->
+  <div id="lpanel-school" style="display:none;padding:10px 14px 100px;">
     <div id="marketSchoolContent"></div>
-  </div></div>
+  </div><!-- end lpanel-school -->
+
+</div>
 
 <div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid rgba(251,146,60,0.3);border-radius:16px;padding:20px;width:300px;max-width:92vw;position:relative;">
@@ -1297,7 +899,8 @@
     <div id="learnInfoFormula" style="font-size:11px;color:#34d399;margin-top:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;"></div>
   </div>
 </div>
-  <div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
+  <!-- DANGER CONFIRM MODAL (bottom sheet) -->
+<div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid rgba(239,68,68,0.3);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;box-sizing:border-box;">
     <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 16px;"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
@@ -1316,6 +919,9 @@
     </div>
   </div>
 </div>
+
+
+<!-- BOTTOM NAV -->
 <div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
   <div class="w-full max-w-md flex justify-around px-1 py-2" style="background:rgba(10,15,26,0.97);backdrop-filter:blur(16px);border-top:2px solid #1e3a5f;box-shadow:0 -4px 20px rgba(0,0,0,0.5);gap:0;">
     <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Watch</button>
@@ -1324,29 +930,32 @@
     <button class="bot-nav-btn" id="nav-history" onclick="tab('history')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>History</button>
     <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 28 28" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.2"/><circle cx="14" cy="14" r="11" fill="none" stroke="#4c1d95" stroke-width="0.6" opacity="0.5"/><rect x="6.5" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><rect x="18" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><polygon points="10,7.5 13,7.5 22,20.5 19,20.5" fill="#c4b5fd"/><line x1="14" y1="2" x2="14" y2="4.5" stroke="#c4b5fd" stroke-width="1.2" stroke-linecap="round"/><line x1="12.8" y1="2.6" x2="15.2" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/><line x1="15.2" y1="2.6" x2="12.8" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/></svg></span>Ask Nivi</button>
     <button class="bot-nav-btn" id="nav-learn" onclick="tab('learn')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></span>Learn</button>
-    <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
+    <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
   </div>
 </div>
 
-  <div id="modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:200;">
+  <!-- TRADE MODAL -->
+<div id="modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:200;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-height:90vh;overflow-y:auto;">
     <h2 id="m-title" style="font-size:16px;font-weight:700;margin-bottom:10px;color:#e2e8f0;"></h2>
 
+    <!-- Trade Type (only for BUY/SELL) -->
     <div id="m-type-row" style="display:flex;gap:6px;margin-bottom:8px;">
       <button id="type-cnc" onclick="setTradeType('CNC')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;">CNC</button>
       <button id="type-mis" onclick="setTradeType('MIS')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">MIS</button>
     </div>
 
     <input id="m-price" placeholder="Price (₹)" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;"
       oninput="updateTaxCalc()">
     <input id="m-qty" placeholder="Quantity" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;"
       oninput="updateTaxCalc()">
     <input id="m-date" type="date" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;">
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;">
 
-    <div id="taxCalcBox" style="background:#0a1628;border:1px solid #1e2d3d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;display:none;">
+    <!-- Tax Calculator -->
+    <div id="taxCalcBox" style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e2d3d);border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;display:none;">
       <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:4px;">CHARGES ESTIMATE</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
         <span style="color:#94a3b8;">Trade Value:</span>
@@ -1385,6 +994,7 @@
   </div>
 </div>
 
+<!-- EXIT CONFIRMATION MODAL -->
 <div id="exitModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:9999;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:24px;width:270px;text-align:center;">
     <div style="font-size:28px;margin-bottom:8px;">👋</div>
@@ -1397,12 +1007,15 @@
   </div>
 </div>
 
+<!-- DETAILS MODAL -->
 <div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="z-index:200;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:12px;width:min(360px,96vw);max-height:92vh;display:flex;flex-direction:column;">
+    <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
       <h2 id="d-title" style="font-size:18px;font-weight:700;color:#38bdf8;margin:0;"></h2>
       <button onclick="closeDetail()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
     </div>
+    <!-- Tab buttons -->
     <div style="display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;">
       <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">📈 Price</button>
       <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">📊 Fund</button>
@@ -1410,22 +1023,28 @@
       <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">〰 BB</button>
       <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">🔗 Links</button>
     </div>
+    <!-- Tab content (scrollable) -->
     <div style="flex:1;overflow-y:auto;min-height:0;">
+      <!-- Tab: Price + Chart -->
       <div id="dtab-price" style="display:block;">
         <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
         <div id="d-chart" style="margin-top:8px;border-radius:10px;overflow:hidden;"></div>
         <button id="d-tv-btn2" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:8px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:Rajdhani,sans-serif;">📊 View Full Chart on TradingView</button>
       </div>
+      <!-- Tab: Fundamentals -->
       <div id="dtab-fund" style="display:none;">
         <div id="fundamentalsSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div></div>
       </div>
+      <!-- Tab: Technical -->
       <div id="dtab-tech" style="display:none;">
         <div id="techSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div></div>
         <div id="smartAlertSection" style="margin-top:8px;"></div>
       </div>
+      <!-- Tab: Bollinger -->
       <div id="dtab-bb" style="display:none;">
         <div id="bbSection"></div>
       </div>
+      <!-- Tab: Links -->
       <div id="dtab-links" style="display:none;">
         <div id="quickLinksSection"></div>
         <button id="d-tv-btn" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">📊 View Full Chart on TradingView</button>
@@ -1433,6 +1052,7 @@
     </div>
   </div>
 </div>
+<!-- ADD INDEX MODAL -->
 <div id="addIdxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:350;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1445,6 +1065,8 @@
     <div id="addIdxResults" style="background:#0a1628;border-radius:8px;max-height:200px;overflow-y:auto;border:1px solid #1e2d3d;"></div>
   </div>
 </div>
+<!-- ADD GROUP MODAL -->
+<!-- WATCHLIST NAME MODAL (Add / Rename) -->
 <div id="wlNameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:288px;">
     <h2 id="wlNameModalTitle" style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:14px;letter-spacing:0.3px;">+ New Watchlist</h2>
@@ -1457,16 +1079,20 @@
     </div>
   </div>
 </div>
+<!-- legacy id kept for backward compat -->
 <div id="addGroupModal" style="display:none;"></div>
 
 
+<!-- ALERT MODAL — Upgraded -->
 <div id="alertModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #713f12;border-radius:16px;padding:18px;width:300px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div id="alert-title" style="font-size:14px;font-weight:700;color:#fde68a;">🔔 Alert Set Karo</div>
       <button onclick="closeAlertModal()" style="background:transparent;border:none;color:#4b6280;font-size:16px;cursor:pointer;">✕</button>
     </div>
+    <!-- Current price display -->
     <div id="alert-current-price" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e2e8f0;"></div>
+    <!-- Above / Below toggle -->
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <button id="alert-above-btn" onclick="setAlertDir('above')"
         style="flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#166534;color:#86efac;border:1px solid #166534;">▲ Upar (Above)</button>
@@ -1476,6 +1102,7 @@
     <input id="alert-price" placeholder="Alert Price (₹)" type="number"
       style="width:100%;background:#0a1628;border:1px solid #713f12;color:white;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px;">
     <div style="font-size:9px;color:#4b6280;margin-bottom:12px;">Price is reached when trigger fires. Repeat alerts: app open ho to bar bar aavse.</div>
+    <!-- Existing alerts list -->
     <div id="alert-existing-list" style="margin-bottom:10px;"></div>
     <div style="display:flex;gap:8px;">
       <button onclick="confirmAlert()" style="flex:1;padding:8px;border-radius:8px;font-weight:700;font-size:13px;background:#713f12;color:#fde68a;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;">🔔 Set Alert</button>
@@ -1484,6 +1111,7 @@
   </div>
 </div>
 
+<!-- TARGET MODAL -->
 <div id="target-modal-box" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #4a1d96;border-radius:16px;padding:20px;width:280px;">
     <h2 id="target-title" style="font-size:16px;font-weight:700;margin-bottom:12px;color:#c4b5fd;">Set Target</h2>
@@ -1497,6 +1125,7 @@
   </div>
 </div>
 
+<!-- REMOVE STOCK MODAL -->
 <div id="remove-modal-box" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #7f1d1d;border-radius:16px;padding:20px;width:280px;">
     <h2 id="remove-title" style="font-size:15px;font-weight:700;margin-bottom:8px;color:#fca5a5;">Remove Stock</h2>
@@ -1510,10 +1139,12 @@
 </div>
 
 
+<!-- AVERAGING CALCULATOR MODAL -->
 <div id="avgCalcModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:300;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:18px;width:300px;max-width:94vw;max-height:90vh;overflow-y:auto;">
     <div style="font-size:14px;font-weight:700;color:#38bdf8;margin-bottom:12px;">Averaging Calculator</div>
 
+    <!-- Current Holdings -->
     <div style="background:#0a1628;border-radius:8px;padding:10px;margin-bottom:10px;">
       <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:6px;letter-spacing:0.5px;">CURRENT HOLDINGS</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;">
@@ -1536,11 +1167,13 @@
       </div>
     </div>
 
+    <!-- Mode Toggle -->
     <div style="display:flex;gap:5px;margin-bottom:10px;">
       <button id="ac-mode-buy" onclick="setAvgMode('buy')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;">Add More Qty</button>
       <button id="ac-mode-target" onclick="setAvgMode('target')" style="flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;">Target Avg</button>
     </div>
 
+    <!-- Mode: Add More Qty -->
     <div id="ac-panel-buy">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <div>
@@ -1556,6 +1189,7 @@
       </div>
     </div>
 
+    <!-- Mode: Target Avg -->
     <div id="ac-panel-target" style="display:none;">
       <div style="margin-bottom:8px;">
         <div style="font-size:10px;color:#4b6280;margin-bottom:3px;">Target Avg Price (₹)</div>
@@ -1569,16 +1203,21 @@
       </div>
     </div>
 
+    <!-- Result Box -->
     <div id="ac-result" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px;margin-bottom:10px;">
-      </div>
+      <!-- filled by JS -->
+    </div>
 
     <button onclick="closeAvgCalc()" style="width:100%;background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Close</button>
   </div>
 </div>
 
+<!-- ============================================================ -->
+<!-- 🤖 Ask Nivi MODAL — Chat UI v3 -->
 <div id="niviModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;align-items:flex-end;justify-content:center;">
   <div style="background:linear-gradient(160deg,#0a1a10,#0f2a1a);border:1px solid #065f46;border-radius:20px 20px 0 0;width:100%;max-width:440px;height:90vh;display:flex;flex-direction:column;overflow:hidden;">
 
+    <!-- FIXED TOP: Header + Price + Tech chips -->
     <div style="padding:12px 14px 8px;flex-shrink:0;border-bottom:1px solid rgba(6,95,70,0.4);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -1606,6 +1245,7 @@
           <button onclick="closeNivi()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">✕</button>
         </div>
       </div>
+      <!-- Price + Rec compact row -->
       <div id="nivi-price-row" style="display:none;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:7px 10px;margin-bottom:6px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
@@ -1615,18 +1255,24 @@
           <div id="nivi-rec-badge" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;text-align:center;">--</div>
         </div>
       </div>
+      <!-- Tech chips -->
       <div id="nivi-tech-row" style="display:none;gap:3px;overflow-x:auto;padding-bottom:2px;"></div>
     </div>
 
+    <!-- SCROLLABLE MIDDLE: Chat bubbles -->
     <div id="nivi-chat-area" style="flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;">
+      <!-- Loading state -->
       <div id="nivi-loading" style="text-align:center;padding:30px 0;display:none;">
         <div class="spinner" style="margin:0 auto 8px;"></div>
         <div style="font-size:11px;color:#4b6280;font-family:'Rajdhani',sans-serif;">Nivi is thinking...</div>
       </div>
-      </div>
+      <!-- Chat messages render here via JS -->
+    </div>
 
+    <!-- FIXED BOTTOM: Quick chips + Input + Mic + Send -->
     <div style="padding:8px 14px 20px;flex-shrink:0;border-top:1px solid rgba(6,95,70,0.35);">
 
+      <!-- Quick question chips -->
       <div id="nivi-chips" style="display:flex;gap:5px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px;scrollbar-width:none;">
         <button onclick="niviChip('आज कौन सा स्टॉक खरीदूं?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🛒 क्या खरीदूं?</button>
         <button onclick="niviChip('मेरी पोर्टफोलियो का विश्लेषण करो')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">📊 Portfolio</button>
@@ -1635,16 +1281,19 @@
         <button onclick="niviChip('आज कौन से सेक्टर में तेज़ी है?')" style="flex-shrink:0;background:#0f2a1a;color:#34d399;border:1px solid #065f46;border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Noto Sans Devanagari','Mangal',sans-serif;white-space:nowrap;">🏭 Sector</button>
       </div>
 
+      <!-- Input row: text + send -->
       <div style="display:flex;gap:6px;align-items:center;">
         <input id="nivi-input" type="text" placeholder="Ask anything to Nivi..." onkeydown="if(event.key==='Enter')niviSend()"
           style="flex:1;background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:9px 12px;font-size:12px;color:#e2e8f0;font-family:'Rajdhani',sans-serif;outline:none;"/>
         <button onclick="niviSend()"
           style="background:#065f46;color:#34d399;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Send</button>
       </div>
+      <!-- Disclaimer -->
       <div style="font-size:9px;color:#2d4a3e;margin-top:6px;font-family:'Rajdhani',sans-serif;">⚠️ Only for information। Not SEBI registered advisor।</div>
     </div>
   </div>
-</div><script src="appstate.js"></script>
+</div><!-- end mainApp -->
+<script src="appstate.js"></script>
 <script src="utils.js"></script>
 <script src="api.js"></script>
 <script src="auth.js"></script>
@@ -1675,7 +1324,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 200);
 });
 </script>
-
 <script src="theme.js"></script>
 </body>
 </html>
