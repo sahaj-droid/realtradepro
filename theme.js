@@ -153,9 +153,14 @@ function _applyThemeToEl(el, isLight) {
 
 function applyFullTheme() {
   const isLight = document.body.classList.contains('light-mode');
-  // Apply to all existing styled elements
+
+  // Skip IDs to exclude
+  const SKIP = ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'];
+
   document.querySelectorAll('[style]').forEach(el => {
-    if (el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+    // Skip if element IS a profile screen or inside one
+    if (SKIP.includes(el.id)) return;
+    if (el.closest && SKIP.some(id => el.closest('#' + id))) return;
     _fixInlineStyle(el, isLight);
   });
 }
@@ -167,22 +172,26 @@ function startThemeObserver() {
 
   _rtpObserver = new MutationObserver((mutations) => {
     const isLight = document.body.classList.contains('light-mode');
-    if (!isLight) return; // Dark mode = no override needed
+    if (!isLight) return;
+
+    const SKIP = ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'];
 
     mutations.forEach(m => {
       m.addedNodes.forEach(node => {
         if (node.nodeType !== 1) return;
-        if (node.closest && node.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
-        // Fix the node itself
+        if (SKIP.includes(node.id)) return;
+        if (node.closest && SKIP.some(id => node.closest('#' + id))) return;
         if (node.getAttribute && node.getAttribute('style')) _fixInlineStyle(node, true);
-        // Fix all styled descendants
-        node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => _fixInlineStyle(el, true));
+        node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => {
+          if (SKIP.some(id => el.closest && el.closest('#' + id))) return;
+          _fixInlineStyle(el, true);
+        });
       });
 
-      // Also handle attribute changes (style changes on existing elements)
       if (m.type === 'attributes' && m.attributeName === 'style') {
         const el = m.target;
-        if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+        if (SKIP.includes(el.id)) return;
+        if (el.closest && SKIP.some(id => el.closest('#' + id))) return;
         _fixInlineStyle(el, true);
       }
     });
