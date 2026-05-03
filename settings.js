@@ -32,7 +32,7 @@ function loadSettingsUI() {
   if (d3) d3.innerText = localStorage.getItem("customAPI3") || API3;
   if (d4) d4.innerText = localStorage.getItem("customAPI4") || 'Not set';
   if (d5) d5.innerText = localStorage.getItem("customAPI5") || 'Not set';
-  // Load GAS URL toggle states
+  
   [1,2,3,4,5].forEach(n => {
     const t = document.getElementById('gasToggle' + n);
     if (t) t.checked = localStorage.getItem('gasUrlEnabled_' + n) !== 'false';
@@ -40,15 +40,12 @@ function loadSettingsUI() {
   if (refEl) refEl.value = parseInt(localStorage.getItem("refreshSec") || "10");
   if (cacheEl) cacheEl.value = parseInt(localStorage.getItem("cacheSec") || "8000");
   
-  // Dup warn toggle
   const dupChk = document.getElementById('dupToggleChk');
   if (dupChk) dupChk.checked = AppState.dupWarnEnabled;
   
-  // Font size
   const curFs = localStorage.getItem('fontSize') || 'medium';
   setFontSize(curFs);
   
-  // Google Sheets UI
   const sheetDisplay = document.getElementById('sheet-id-display');
   const sheetCheck = document.getElementById('sheet-enabled');
   const DEFAULT_SHEET_ID = '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
@@ -57,11 +54,9 @@ function loadSettingsUI() {
   if (sheetCheck) sheetCheck.checked = localStorage.getItem('sheetEnabled') === 'true';
   updateSheetStatus();
   
-  // Alert engine toggle
   const aeChk = document.getElementById('alertEngineChk');
   if (aeChk) aeChk.checked = localStorage.getItem('alertEngineOn') !== 'false';
   
-  // Notification toggle
   const ntChk = document.getElementById('notifToggleChk');
   const ntStat = document.getElementById('notifPermStatus');
   if (ntChk) ntChk.checked = localStorage.getItem('notifOn') !== 'false';
@@ -69,17 +64,16 @@ function loadSettingsUI() {
     const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
     if (perm === 'granted') {
       ntStat.textContent = 'Permission: Granted ✓';
-      ntStat.style.color = '#4ade80';
+      ntStat.style.color = 'var(--pos, #4ade80)';
     } else if (perm === 'denied') {
       ntStat.textContent = 'Permission: Blocked ✗ (Enable in browser)';
-      ntStat.style.color = '#f87171';
+      ntStat.style.color = 'var(--neg, #f87171)';
     } else {
       ntStat.textContent = 'Not yet requested';
-      ntStat.style.color = '#64748b';
+      ntStat.style.color = 'var(--text-muted, #64748b)';
     }
   }
   
-  // Avatar initial letter
   const avEl = document.getElementById('settingsAvatarLetter');
   if (avEl && AppState.currentUser) {
     const userObj = AppState.currentUser;
@@ -87,10 +81,8 @@ function loadSettingsUI() {
     avEl.textContent = uname.charAt(0).toUpperCase();
   }
   
-  // Nivi AI key status refresh
   if (typeof initGeminiKeyDisplay === 'function') initGeminiKeyDisplay();
 
-  // FF2 URL display
   const ff2Display = document.getElementById('ff2-url-display');
   const ff2Sub = document.getElementById('ff2-url-sub');
   const ff2Saved = localStorage.getItem('ff2ApiUrl') || '';
@@ -98,80 +90,66 @@ function loadSettingsUI() {
   if (ff2Sub) {
     if (ff2Saved) {
       ff2Sub.textContent = '✓ FF2 URL set · Screener data active';
-      ff2Sub.style.color = '#fb923c';
+      ff2Sub.style.color = 'var(--warn, #fb923c)';
     } else {
       ff2Sub.textContent = 'Not set — tap to configure';
-      ff2Sub.style.color = '#64748b';
+      ff2Sub.style.color = 'var(--text-muted, #64748b)';
     }
   }
 }
 
-// ======================================
-// API URL EDITORS
-// ======================================
+// ... Keep existing startAPIEdit, startAPI2Edit, etc functions here ...
 function startAPIEdit() {
   const inp = document.getElementById("set-api-input");
   if (inp) inp.value = localStorage.getItem("customAPI") || API;
   document.getElementById("set-api-edit").style.display = "block";
   document.getElementById("changeURLBtn").style.display = "none";
 }
-
 function cancelAPIEdit() {
   document.getElementById("set-api-edit").style.display = "none";
   document.getElementById("changeURLBtn").style.display = "inline-block";
 }
-
 function startAPI2Edit() {
   const inp = document.getElementById("set-api2-input");
   if (inp) inp.value = localStorage.getItem("customAPI2") || "";
   document.getElementById("set-api2-edit").style.display = "block";
   document.getElementById("changeURL2Btn").style.display = "none";
 }
-
 function cancelAPI2Edit() {
   document.getElementById("set-api2-edit").style.display = "none";
   document.getElementById("changeURL2Btn").style.display = "inline-block";
 }
-
 function startAPI3Edit() {
   const inp = document.getElementById('set-api3-input');
   if (inp) inp.value = localStorage.getItem('customAPI3') || '';
   document.getElementById('set-api3-edit').style.display = 'block';
   document.getElementById('changeURL3Btn').style.display = 'none';
 }
-
 function cancelAPI3Edit() {
   document.getElementById('set-api3-edit').style.display = 'none';
   document.getElementById('changeURL3Btn').style.display = 'inline-block';
 }
-
 function startAPI4Edit() {
   const inp = document.getElementById('set-api4-input');
   if (inp) inp.value = localStorage.getItem('customAPI4') || '';
   document.getElementById('set-api4-edit').style.display = 'block';
   document.getElementById('changeURL4Btn').style.display = 'none';
 }
-
 function cancelAPI4Edit() {
   document.getElementById('set-api4-edit').style.display = 'none';
   document.getElementById('changeURL4Btn').style.display = 'inline-block';
 }
-
 function startAPI5Edit() {
   const inp = document.getElementById('set-api5-input');
   if (inp) inp.value = localStorage.getItem('customAPI5') || '';
   document.getElementById('set-api5-edit').style.display = 'block';
   document.getElementById('changeURL5Btn').style.display = 'none';
 }
-
 function cancelAPI5Edit() {
   document.getElementById('set-api5-edit').style.display = 'none';
   document.getElementById('changeURL5Btn').style.display = 'inline-block';
 }
 
-// ======================================
-// SAVE SETTINGS
-// ======================================
 function saveSetting(type) {
   if (type === "api") {
     const val = document.getElementById("set-api-input").value.trim();
@@ -237,7 +215,7 @@ function saveSetting(type) {
 }
 
 // ======================================
-// FONT SIZE CONTROL
+// FONT SIZE CONTROL (Fixed for light mode)
 // ======================================
 function setFontSize(size) {
   document.documentElement.setAttribute('data-fsize', size);
@@ -245,16 +223,13 @@ function setFontSize(size) {
   ['small', 'medium', 'large'].forEach(s => {
     const btn = document.getElementById('fs-' + s);
     if (btn) {
-      btn.style.background = s === size ? '#1e3a5f' : '#0f172a';
-      btn.style.color = s === size ? '#38bdf8' : '#4b6280';
-      btn.style.borderColor = s === size ? '#2d5a8e' : '#1e2d3d';
+      btn.style.background = s === size ? 'var(--accent-bg, #1e3a5f)' : 'var(--bg-input, #0f172a)';
+      btn.style.color = s === size ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #4b6280)';
+      btn.style.borderColor = s === size ? 'var(--accent-border, #2d5a8e)' : 'var(--border, #1e2d3d)';
     }
   });
 }
 
-// ======================================
-// DUPLICATE WARNING TOGGLE
-// ======================================
 function toggleDupWarn() {
   AppState.dupWarnEnabled = !AppState.dupWarnEnabled;
   localStorage.setItem("dupWarn", AppState.dupWarnEnabled ? "true" : "false");
@@ -269,9 +244,6 @@ function toggleDupWarnChk(val) {
   showPopup(`Duplicate warning ${val ? "ON" : "OFF"}`);
 }
 
-// ======================================
-// ALERT ENGINE TOGGLE
-// ======================================
 function toggleAlertEngine() {
   const chk = document.getElementById('alertEngineChk');
   const next = chk ? chk.checked : true;
@@ -279,9 +251,6 @@ function toggleAlertEngine() {
   showPopup('Technical Alerts ' + (next ? 'ON ⚡' : 'OFF 🔕'));
 }
 
-// ======================================
-// NOTIFICATIONS TOGGLE
-// ======================================
 function toggleNotifications() {
   const chk = document.getElementById('notifToggleChk');
   const next = chk ? chk.checked : true;
@@ -300,16 +269,13 @@ function toggleNotifications() {
       const s = document.getElementById('notifPermStatus');
       if (s) {
         s.textContent = p === 'granted' ? 'Permission: Granted ✓' : 'Permission: Denied ✗';
-        s.style.color = p === 'granted' ? '#4ade80' : '#f87171';
+        s.style.color = p === 'granted' ? 'var(--pos, #4ade80)' : 'var(--neg, #f87171)';
       }
     });
   }
   showPopup('Browser Notifications ' + (next ? 'ON 🔔' : 'OFF 🔕'));
 }
 
-// ======================================
-// CLEAR DATA WITH CONFIRMATION
-// ======================================
 function clearData(type) {
   const labels = { holdings: 'Holdings', history: 'Trade History', alerts: 'All Alerts' };
   const descs = {
@@ -378,32 +344,28 @@ function clearAllData() {
 }
 
 // ======================================
-// GEMINI API KEY
+// GEMINI / OPENROUTER UI (Light Mode Fixed)
 // ======================================
 function initGeminiKeyDisplay() {
-  // Gemini
   const k = localStorage.getItem('geminiApiKey');
   const keys = k ? k.split(',').filter(x => x.trim()) : [];
   const el = document.getElementById('gemini-key-status');
   if (el) el.innerHTML = keys.length > 0
-    ? '<span style="color:#34d399;">✓ ' + keys.length + ' Gemini key(s) — Active</span>'
-    : '<span style="color:#4b6280;">No key saved</span>';
+    ? '<span style="color:var(--pos, #34d399);">✓ ' + keys.length + ' Gemini key(s) — Active</span>'
+    : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
 
-  // Groq
   const gk = localStorage.getItem('groqApiKey');
   const grEl = document.getElementById('groq-key-status');
   if (grEl) grEl.innerHTML = gk
-    ? '<span style="color:#a78bfa;">✓ Groq Key saved — Active</span>'
-    : '<span style="color:#4b6280;">No key saved</span>';
+    ? '<span style="color:var(--accent-purple, #a78bfa);">✓ Groq Key saved — Active</span>'
+    : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
 
-  // OpenRouter
   const ok = localStorage.getItem('openRouterApiKey');
   const orEl = document.getElementById('or-key-status');
   if (orEl) orEl.innerHTML = ok
-    ? '<span style="color:#fb923c;">✓ OpenRouter Key saved — Active</span>'
-    : '<span style="color:#4b6280;">No key saved</span>';
+    ? '<span style="color:var(--warn, #fb923c);">✓ OpenRouter Key saved — Active</span>'
+    : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
 
-  // OpenRouter Models — populate fields
   const savedModels = (localStorage.getItem('openRouterModels') || '').split(',').filter(Boolean);
   const f1 = document.getElementById('or-model-1');
   const f2 = document.getElementById('or-model-2');
@@ -412,7 +374,6 @@ function initGeminiKeyDisplay() {
   if (f2) f2.value = savedModels[1] || '';
   if (f3) f3.value = savedModels[2] || '';
 
-  // ✅ Universal AI Provider status
   _loadUniversalProviderUI();
 }
 
@@ -421,7 +382,7 @@ function saveGeminiKey() {
   if (!val) { showPopup('Enter Key'); return; }
   localStorage.setItem('geminiApiKey', val);
   if (AppState.currentUser) saveUserData('settings');
-  document.getElementById('gemini-key-status').innerHTML = '<span style="color:#34d399;">✓ Gemini Key saved — Active</span>';
+  document.getElementById('gemini-key-status').innerHTML = '<span style="color:var(--pos, #34d399);">✓ Gemini Key saved — Active</span>';
   document.getElementById('set-gemini-key').value = '';
   showPopup('Gemini key saved ✓');
 }
@@ -429,13 +390,10 @@ function saveGeminiKey() {
 function clearGeminiKey() {
   localStorage.removeItem('geminiApiKey');
   document.getElementById('set-gemini-key').value = '';
-  document.getElementById('gemini-key-status').innerHTML = '<span style="color:#4b6280;">No key saved</span>';
+  document.getElementById('gemini-key-status').innerHTML = '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
   showPopup('Gemini key cleared');
 }
 
-// ======================================
-// GROQ API KEY
-// ======================================
 function saveGroqKey() {
   const val = (document.getElementById('set-groq-key').value || '').trim();
   if (!val) { showPopup('Enter Groq'); return; }
@@ -443,20 +401,17 @@ function saveGroqKey() {
   document.getElementById('set-groq-key').value = '';
   document.getElementById('groq-key-row').style.display = 'none';
   const el = document.getElementById('groq-key-status');
-  if (el) el.innerHTML = '<span style="color:#a78bfa;">✓ Groq Key saved — Active</span>';
+  if (el) el.innerHTML = '<span style="color:var(--accent-purple, #a78bfa);">✓ Groq Key saved — Active</span>';
   showPopup('✅ Groq key saved! Fallback 1 ready.');
 }
 
 function clearGroqKey() {
   localStorage.removeItem('groqApiKey');
   const el = document.getElementById('groq-key-status');
-  if (el) el.innerHTML = '<span style="color:#4b6280;">No key saved</span>';
+  if (el) el.innerHTML = '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
   showPopup('Groq key cleared');
 }
 
-// ======================================
-// OPENROUTER API KEY
-// ======================================
 function saveORKey() {
   const val = (document.getElementById('set-or-key').value || '').trim();
   if (!val) { showPopup('Enter OpenRouter key'); return; }
@@ -464,20 +419,17 @@ function saveORKey() {
   document.getElementById('set-or-key').value = '';
   document.getElementById('or-key-row').style.display = 'none';
   const el = document.getElementById('or-key-status');
-  if (el) el.innerHTML = '<span style="color:#fb923c;">✓ OpenRouter Key saved — Active</span>';
+  if (el) el.innerHTML = '<span style="color:var(--warn, #fb923c);">✓ OpenRouter Key saved — Active</span>';
   showPopup('✅ OpenRouter key saved! Fallback 2 ready.');
 }
 
 function clearORKey() {
   localStorage.removeItem('openRouterApiKey');
   const el = document.getElementById('or-key-status');
-  if (el) el.innerHTML = '<span style="color:#4b6280;">No key saved</span>';
+  if (el) el.innerHTML = '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
   showPopup('OpenRouter key cleared');
 }
 
-// ======================================
-// OPENROUTER MODELS
-// ======================================
 function saveORModels() {
   const m1 = (document.getElementById('or-model-1').value || '').trim();
   const m2 = (document.getElementById('or-model-2').value || '').trim();
@@ -500,11 +452,6 @@ function clearORModels() {
   if (st) { st.textContent = '🗑 Models reset'; setTimeout(() => st.textContent = '', 2000); }
   showPopup('OpenRouter models reset');
 }
-
-// ======================================
-// GOOGLE SHEETS INTEGRATION
-// ======================================
-const DEFAULT_SHEET_ID = '1INjKSkOkXYF4y1DDorsCCFIYu0lBkEJTmLupJ6y9i8U';
 
 function getSheetId() { return localStorage.getItem('sheetId') || DEFAULT_SHEET_ID; }
 function isSheetEnabled() { return localStorage.getItem('sheetEnabled') === 'true'; }
@@ -542,8 +489,8 @@ function updateSheetStatus() {
   if (!el) return;
   const on = isSheetEnabled();
   el.innerHTML = on
-    ? '<span style="color:#34d399;">✅ Active — PE/EPS/MarketCap/BookValue/History via Sheets | Price+Volume = Yahoo ⚡</span>'
-    : '<span style="color:#4b6280;">Disabled — using Yahoo Finance API</span>';
+    ? '<span style="color:var(--pos, #34d399);">✅ Active — PE/EPS/MarketCap/BookValue/History via Sheets | Price+Volume = Yahoo ⚡</span>'
+    : '<span style="color:var(--text-muted, #4b6280);">Disabled — using Yahoo Finance API</span>';
 }
 
 function clearFundCache() {
@@ -557,9 +504,6 @@ function clearFundCache() {
   showPopup('🗑️ Fund cache cleared! (' + count + ' stocks) — Reload stock to refresh.');
 }
 
-// ======================================
-// FF2 URL CONFIGURATION
-// ======================================
 function startFF2Edit() {
   const inp = document.getElementById('ff2-url-input');
   if (inp) inp.value = localStorage.getItem('ff2ApiUrl') || '';
@@ -584,9 +528,6 @@ function saveFF2Url() {
   showPopup(val ? '✅ FF2 URL saved! Learn tab ready.' : 'FF2 URL cleared');
 }
 
-// ======================================
-// SETTINGS COLLAPSIBLE TOGGLE
-// ======================================
 function sToggle(bodyId, arrId) {
   event.preventDefault();
   event.stopPropagation();
@@ -600,45 +541,36 @@ function sToggle(bodyId, arrId) {
   a.textContent = hidden ? '▼' : '▶';
 }
 
-// ======================================
-// 🌐 UNIVERSAL AI PROVIDER SETTINGS
-// Primary + Fallback provider manage karo
-// Supported: groq, openrouter, gemini, nvidia
-// ======================================
-
 function _loadUniversalProviderUI() {
   const config = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
 
-  // Primary status
   const primStatus = document.getElementById('uni-primary-status');
   if (primStatus) {
     if (config?.primary?.provider) {
       const p = config.primary;
-      primStatus.innerHTML = `<span style="color:#34d399;">✓ ${p.provider.toUpperCase()} — ${p.model || 'default'}</span>`;
+      primStatus.innerHTML = `<span style="color:var(--pos, #34d399);">✓ ${p.provider.toUpperCase()} — ${p.model || 'default'}</span>`;
     } else {
-      primStatus.innerHTML = '<span style="color:#4b6280;">Not set — existing chain use thase</span>';
+      primStatus.innerHTML = '<span style="color:var(--text-muted, #4b6280);">Not set — existing chain use thase</span>';
     }
   }
 
-  // Fallback status
   const fallStatus = document.getElementById('uni-fallback-status');
   if (fallStatus) {
     if (config?.fallback?.provider) {
       const f = config.fallback;
-      fallStatus.innerHTML = `<span style="color:#fb923c;">✓ ${f.provider.toUpperCase()} — ${f.model || 'default'}</span>`;
+      fallStatus.innerHTML = `<span style="color:var(--warn, #fb923c);">✓ ${f.provider.toUpperCase()} — ${f.model || 'default'}</span>`;
     } else {
-      fallStatus.innerHTML = '<span style="color:#4b6280;">Not set</span>';
+      fallStatus.innerHTML = '<span style="color:var(--text-muted, #4b6280);">Not set</span>';
     }
   }
 
-  // Populate fields if config exists
   if (config?.primary) {
     const pp = document.getElementById('uni-primary-provider');
     const pm = document.getElementById('uni-primary-model');
     const pk = document.getElementById('uni-primary-key');
     if (pp) pp.value = config.primary.provider || 'groq';
     if (pm) pm.value = config.primary.model   || '';
-    if (pk) pk.value = '';  // key kabhi show nahi karva — security
+    if (pk) pk.value = ''; 
   }
   if (config?.fallback) {
     const fp = document.getElementById('uni-fallback-provider');
@@ -662,10 +594,8 @@ function saveUniversalProvider() {
   if (!pp || !pk) { showPopup('Primary provider ane key joie!'); return; }
 
   const config = {};
-
   config.primary = { provider: pp, model: pm, apiKey: pk };
 
-  // Existing keys reuse — jо key field blank hoy to existing key rakho
   const existing = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
   if (!pk && existing?.primary?.apiKey) config.primary.apiKey = existing.primary.apiKey;
 
@@ -677,7 +607,6 @@ function saveUniversalProvider() {
 
   if (typeof setAIProviderConfig === 'function') setAIProviderConfig(config);
 
-  // Clear key fields — security
   const pkEl = document.getElementById('uni-primary-key');
   const fkEl = document.getElementById('uni-fallback-key');
   if (pkEl) pkEl.value = '';
@@ -693,7 +622,6 @@ function clearUniversalProvider() {
   showPopup('🗑 Universal AI config cleared — existing chain active');
 }
 
-// Model suggestions per provider
 function onUniProviderChange(which) {
   const provEl  = document.getElementById(`uni-${which}-provider`);
   const modelEl = document.getElementById(`uni-${which}-model`);
@@ -708,9 +636,6 @@ function onUniProviderChange(which) {
   modelEl.placeholder = defaults[provEl.value] || 'model name';
 }
 
-// ======================================
-// REGISTER FUNCTIONS TO WINDOW
-// ======================================
 window.toggleGASUrl = toggleGASUrl;
 window.loadSettingsUI = loadSettingsUI;
 window.saveSetting = saveSetting;
