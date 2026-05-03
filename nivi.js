@@ -496,19 +496,42 @@ async function _tabChip(question) {
   await _tabAsk(question);
 }
 
+// સ્માર્ટ સર્ચ ડિટેક્ટર: જો યુઝર સમાચાર કે કારણ પૂછે તો જ લાઈવ સર્ચ થશે
+function _needsLiveSearch(q) {
+  const text = q.toLowerCase();
+  return text.includes("news") || text.includes("samachar") || text.includes("aaje") || 
+         text.includes("latest") || text.includes("why") || text.includes("kem") || text.includes("karan");
+}
+
 async function _tabAsk(question) {
+  // 1. યુઝરનો મેસેજ હિસ્ટ્રીમાં સેવ અને રેન્ડર કરો
   AppState._tabChatHistory.push({ role:'user', text:question, ts:Date.now() });
   _tabRenderChat();
 
-  const liveDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  _tabShowLoading(true);
+  const area = document.getElementById('tab-chat-area');
+  
+  // 2. સ્ટ્રીમિંગ માટે એક ટેમ્પરરી બબલ બનાવો
+  const streamingMsgId = 'nivi-stream-' + Date.now();
+  const loadingHtml = `
+    <div id="wrapper-${streamingMsgId}" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
+      <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--accent,#38bdf8);background:var(--bg-card,#0d1f35);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 28 28" width="12" height="12" fill="var(--accent,#38bdf8)"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+      </div>
+      <div id="${streamingMsgId}" style="background:var(--bg-card,#0d1f35);border:1px solid rgba(56,189,248,0.2);color:var(--text-primary,#e2e8f0);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;">
+        <span style="color:var(--accent,#38bdf8);font-size:12px;animation: pulse 1.5s infinite;">વિચારી રહી છું... ⚡</span>
+      </div>
+    </div>`;
+  
+  area.insertAdjacentHTML('beforeend', loadingHtml);
+  area.scrollTop = area.scrollHeight;
 
+  // પ્રોમ્પ્ટ અને કોન્ટેક્સ્ટની તૈયારી
+  const liveDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const hasGujarati = /[\u0A80-\u0AFF]/.test(question);
   const langInstruction = hasGujarati
     ? "User has asked in Gujarati. Reply in Gujarati with English technical terms."
     : "Reply in Gujarati or Hindi or English based on user query.";
 
-  // ✅ FIX 2: Watchlist context inject karo
   const wlContext = AppState.wl.slice(0, 12).map(s => {
     const d = AppState.cache[s]?.data;
     if (!d || !d.regularMarketPrice) return null;
@@ -519,7 +542,6 @@ async function _tabAsk(question) {
     return `${s}: ₹${price.toFixed(2)} (${sign}${pct}%)`;
   }).filter(Boolean).join(', ');
 
-  // CHANGED: Using async AI intent detection
   const intent = await detectIntentAI(question, false);
   const modularPrompt = buildModularPrompt(question, intent);
 
@@ -532,34 +554,48 @@ LANGUAGE: ${langInstruction}
 ${modularPrompt}
 `;
 
-  // ✅ FIX 1: Multi-turn — full history Gemini ne pass karo
   const geminiHistory = AppState._tabChatHistory.slice(0, -1).slice(-10).map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
     parts: [{ text: msg.text }]
   }));
 
+  // 🚀 લાઈવ સર્ચ કરવું છે કે નહિ તે ચેક કરો
+  const useLiveSearch = _needsLiveSearch(question);
+  
   let answer = null;
   const keys = getGeminiKeys();
 
+  // 3. નવો સ્ટ્રીમિંગ API કોલ
   if (keys.length > 0) {
-    const r = await directGeminiCallMultiTurn(
+    const r = await directGeminiCallStreamMultiTurn(
       [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'Understood. I am Nivi, your elite financial analyst. Ready to help.' }] }, ...geminiHistory],
-      question
+      question,
+      (currentText) => {
+        // જેમ જેમ ડેટા આવે તેમ UI અપડેટ કરો
+        const msgDiv = document.getElementById(streamingMsgId);
+        if (msgDiv) {
+          msgDiv.innerHTML = _formatNiviResponse(currentText);
+          area.scrollTop = area.scrollHeight;
+        }
+      },
+      useLiveSearch // સર્ચ પેરામીટર પાસ કર્યો
     );
     if (r && r.ok) answer = r.answer;
   }
 
+  // જો Gemini API ફેલ થાય તો જૂનો Fallback
   if (!answer) {
     try {
       const fallbackPrompt = `${systemPrompt}\nUser Query: "${question}"`;
-      const gasUrl = getActiveGASUrl();
-      const r = await fetch(`${gasUrl}?type=askMarket&prompt=${encodeURIComponent(fallbackPrompt)}`);
+      const r = await fetch(`${getActiveGASUrl()}?type=askMarket&prompt=${encodeURIComponent(fallbackPrompt)}`);
       const data = await r.json();
       answer = data.answer || data.text || null;
     } catch(e) { console.error("Nivi bypass failed"); }
   }
 
-  _tabShowLoading(false);
+  // 4. સ્ટ્રીમિંગ પૂરું થાય એટલે ટેમ્પરરી બબલ હટાવીને ઓરિજિનલ હિસ્ટ્રીમાં સેવ કરી લો
+  const tempWrapper = document.getElementById(`wrapper-${streamingMsgId}`);
+  if (tempWrapper) tempWrapper.remove();
 
   const fallback = "⚠️ Nivi Universal Brain is currently unresponsive. Please check your Gemini API keys.";
   AppState._tabChatHistory.push({ role:'nivi', text: answer || fallback, ts:Date.now() });
