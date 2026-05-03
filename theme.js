@@ -87,59 +87,67 @@ const RGBA_MAP_LIGHT = [
 function _mapColor(val) {
   if (!val) return val;
   let v = val.trim().toLowerCase();
+  // Exact hex match
   for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
     if (v === dark.toLowerCase()) return light;
   }
   return null;
 }
 
+let _rtpProcessing = false; // Guard flag — prevents Observer infinite loop
+
 function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
   if (el.closest && el.closest('[data-notheme]')) return;
+  // Skip if already processed in this mode
+  if (isLight && el._rtpDone === 'light') return;
+  if (!isLight && el._rtpDone === 'dark') return;
+
+  const props = ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor'];
 
   if (isLight) {
-    if (!el._rtpOrig) {
-      el._rtpOrig = {};
-      ['backgroundColor','color','borderColor','borderTopColor','borderBottomColor','borderLeftColor']
-        .forEach(p => { if (el.style[p]) el._rtpOrig[p] = el.style[p]; });
+    if (!el._rtpOrigCss) {
       el._rtpOrigCss = el.getAttribute('style') || '';
     }
-
     let css = el._rtpOrigCss;
     if (!css) return;
 
     for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
-      css = css.replace(new RegExp(dark, 'gi'), light);
+      css = css.replace(new RegExp(dark.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), light);
     }
-
     for (const [pattern, replacer] of RGBA_MAP_LIGHT) {
       css = css.replace(pattern, replacer);
     }
-
     css = css.replace(/linear-gradient\(145deg,#111827,#1a2332\)/gi, 'linear-gradient(145deg,#ffffff,#f0f9ff)');
     css = css.replace(/linear-gradient\(135deg,#0d2a45,#0a1f35\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
     css = css.replace(/linear-gradient\(135deg,#0a2218,#0f2a1a\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
     css = css.replace(/linear-gradient\(135deg,#0a1e14,#0f1e33\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
     css = css.replace(/linear-gradient\(90deg,#0a0f1a,#0f1e33\)/gi, 'linear-gradient(90deg,#e0f2fe,#f0f9ff)');
 
+    // Pause observer, set style, resume
+    _rtpProcessing = true;
     el.setAttribute('style', css);
+    el._rtpDone = 'light';
+    _rtpProcessing = false;
 
   } else {
-    if (el._rtpOrig !== undefined) {
-      if (el._rtpOrigCss !== undefined) {
-        el.setAttribute('style', el._rtpOrigCss);
-      }
-      el._rtpOrig = undefined;
+    if (el._rtpOrigCss !== undefined) {
+      _rtpProcessing = true;
+      el.setAttribute('style', el._rtpOrigCss);
       el._rtpOrigCss = undefined;
+      el._rtpDone = 'dark';
+      _rtpProcessing = false;
     }
   }
 }
 
 function _applyThemeToEl(el, isLight) {
   if (!el || el.nodeType !== 1) return;
+  // Skip profile/pin screens
   if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
   _fixInlineStyle(el, isLight);
+  // Recurse children
   el.querySelectorAll && el.querySelectorAll('[style]').forEach(child => _fixInlineStyle(child, isLight));
 }
 
@@ -158,6 +166,7 @@ function startThemeObserver() {
   if (_rtpObserver) _rtpObserver.disconnect();
 
   _rtpObserver = new MutationObserver((mutations) => {
+    if (_rtpProcessing) return; // Ignore our own style changes
     const isLight = document.body.classList.contains('light-mode');
     if (!isLight) return;
 
@@ -166,13 +175,9 @@ function startThemeObserver() {
         if (node.nodeType !== 1) return;
         if (node.dataset && node.dataset.notheme) return;
         if (node.closest && node.closest('[data-notheme]')) return;
-        // ✅ FIX: Profile screens ne skip karo — Observer thi pan
-        if (node.id && ['profileScreen','pinScreen','createProfileScreen','forgotPINScreen'].includes(node.id)) return;
-        if (node.closest && node.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
         if (node.getAttribute && node.getAttribute('style')) _fixInlineStyle(node, true);
         node.querySelectorAll && node.querySelectorAll('[style]').forEach(el => {
           if (el.closest && el.closest('[data-notheme]')) return;
-          if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
           _fixInlineStyle(el, true);
         });
       });
@@ -180,7 +185,6 @@ function startThemeObserver() {
         const el = m.target;
         if (el.dataset && el.dataset.notheme) return;
         if (el.closest && el.closest('[data-notheme]')) return;
-        if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
         _fixInlineStyle(el, true);
       }
     });
@@ -197,35 +201,6 @@ function startThemeObserver() {
 }
 
 // ============================================================
-// TOGGLE FUNCTION — called by button onclick
-// ============================================================
-window.toggleAppTheme = function() {
-  // 1. Light/Dark mode class toggle
-  const isLight = document.body.classList.toggle('light-mode');
-
-  // 2. Button icon update
-  const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
-
-  // 3. Save preference
-  localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
-
-  // 4. Sync AppState
-  if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
-
-  // 5. Re-render dynamic components
-  if (typeof renderWL === 'function') renderWL();
-  if (typeof renderHold === 'function') renderHold();
-  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-  if (typeof renderHeaderStrip === 'function') renderHeaderStrip();
-
-  // 6. Apply full theme after toggle
-  setTimeout(applyFullTheme, 50);
-  setTimeout(applyFullTheme, 300);
-  setTimeout(applyFullTheme, 800);
-};
-
-// ============================================================
 // INIT THEME — on page load, restore saved preference
 // ============================================================
 (function initTheme() {
@@ -237,10 +212,35 @@ window.toggleAppTheme = function() {
   }
 })();
 
+// ============================================================
+// TOGGLE FUNCTION — called by button onclick
+// ============================================================
+window.toggleAppTheme = function() {
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
+
+  // Sync AppState
+  if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
+
+  // Re-render dynamic components
+  if (typeof renderWL            === 'function') renderWL();
+  if (typeof renderHold          === 'function') renderHold();
+  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
+  if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
+
+  // Apply MutationObserver theme to all current + new elements
+  setTimeout(applyFullTheme, 50);
+  setTimeout(applyFullTheme, 300);
+  setTimeout(applyFullTheme, 800);
+};
+
 // Start observer on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     startThemeObserver();
+    // Apply if light mode was saved
     if (localStorage.getItem('rtp_theme') === 'light') {
       setTimeout(applyFullTheme, 500);
       setTimeout(applyFullTheme, 1500);
@@ -253,6 +253,5 @@ if (document.readyState === 'loading') {
     setTimeout(applyFullTheme, 1500);
   }
 }
-
 window.applyFullTheme = applyFullTheme;
 window.startThemeObserver = startThemeObserver;
