@@ -463,43 +463,37 @@ function sortPercent() {
 }
 
 // ======================================
-// SEARCH SUGGESTIONS (Yahoo)
+// SEARCH SUGGESTIONS (Yahoo) - CORS Fixed
 // ======================================
-let _searchTimer = null;
-let _lastSearchVal = '';
-
-function showSuggestions(val) {
-  val = val.trim();
-  const box = document.getElementById("suggestionBox");
-  if (!val || val.length < 1) { 
-    if (box) box.style.display = "none"; 
-    return; 
-  }
-
-  const valUpper = val.toUpperCase();
-  const alreadyIn = new Set(AppState.wl);
-  const localMatches = POPULAR_STOCKS
-    .filter(s => s.startsWith(valUpper) && !alreadyIn.has(s))
-    .slice(0, 4);
-
-  if (localMatches.length > 0) {
-    renderSuggestions(localMatches.map(s => ({symbol: s, name: '', exchange: ''})), box, true);
-  }
-
-  if (_searchTimer) clearTimeout(_searchTimer);
-  _lastSearchVal = val;
-  _searchTimer = setTimeout(() => {
-    if (_lastSearchVal !== val) return;
-    fetchYahooSuggestions(val, box);
-  }, 300);
-}
-
 async function fetchYahooSuggestions(val, box) {
   try {
-    const api = getActiveGASUrl();
-    const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
-    const j = await r.json();
-    if (!j.ok || !j.results || j.results.length === 0) {
+    const yahooUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(val)}&lang=en-IN&region=IN&quotesCount=10&newsCount=0`;
+    
+    let j = null;
+    
+    // Fallback Engine: Try multiple routes to bypass CORS
+    try {
+      // Route 1: corsproxy.io (Very fast)
+      const res1 = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
+      j = await res1.json();
+    } catch (e1) {
+      try {
+        // Route 2: AllOrigins RAW (Bypasses standard CORS blocks)
+        const res2 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`);
+        j = await res2.json();
+      } catch (e2) {
+        // Route 3: Tamaru potanu GAS API (Ultimate Fallback)
+        const api = getActiveGASUrl();
+        const res3 = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
+        const gasData = await res3.json();
+        // Format mapping for GAS
+        j = { quotes: gasData.results || [] };
+      }
+    }
+
+    // Parse data based on response structure
+    const quotes = j.quotes || j.results || [];
+    if (!quotes || quotes.length === 0) {
       if (box) box.style.display = "none";
       return;
     }
@@ -507,19 +501,19 @@ async function fetchYahooSuggestions(val, box) {
     const alreadyIn = new Set(AppState.wl);
     const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE']);
     
-    const results = j.results
+    const results = quotes
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
         const type = (r.quoteType || '').toUpperCase();
         
-        // 🔥 1. STRICT EQUITY CHECK: ETFs, Mutual Funds, ke Indices nai aave
-        if (type !== 'EQUITY') return false;
+        // 🔥 STRICT EQUITY CHECK: ETFs ane Mutual Funds ne remove karo
+        if (type && type !== 'EQUITY') return false;
         
         const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
         
-        // 🔥 2. Extra Filter: Name ma BEES ke FUND hoy to skip
-        const name = (r.name || '').toUpperCase();
+        // 🔥 Extra Filter: Name ma BEES ke FUND hoy to skip
+        const name = (r.shortname || r.longname || r.name || '').toUpperCase();
         if (name.includes('BEES') || name.includes('ETF') || name.includes('LIQUID') || name.includes('FUND')) return false;
 
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
@@ -527,14 +521,22 @@ async function fetchYahooSuggestions(val, box) {
         
         return isIndian && notInWL;
       })
+      .map(r => ({
+        symbol: r.symbol,
+        name: r.shortname || r.longname || r.name || '',
+        exchange: r.exchDisp || r.exchange || ''
+      }))
       .slice(0, 7);
       
     if (results.length > 0 && _lastSearchVal === val) {
       renderSuggestions(results, box, false);
-    } else if (results.length === 0) {
+    } else {
       if (box) box.style.display = "none";
     }
-  } catch(e) { console.warn('Yahoo suggestions error:', e); }
+  } catch(e) { 
+    console.warn('Yahoo suggestions error:', e); 
+    if (box) box.style.display = "none";
+  }
 }
 
 function renderSuggestions(items, box, isLocal) {
