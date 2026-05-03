@@ -198,11 +198,37 @@ function startThemeObserver() {
   console.log('✅ RTP Theme Observer started');
 }
 
-// Patch toggleAppTheme to also run applyFullTheme
-const _origToggle = window.toggleAppTheme;
+// ============================================================
+// INIT THEME — on page load, restore saved preference
+// ============================================================
+(function initTheme() {
+  const saved = localStorage.getItem('rtp_theme') || 'dark';
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+
+// ============================================================
+// TOGGLE FUNCTION — called by button onclick
+// ============================================================
 window.toggleAppTheme = function() {
-  _origToggle && _origToggle();
-  // Small delay to let JS render first
+  const isLight = document.body.classList.toggle('light-mode');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
+
+  // Sync AppState
+  if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
+
+  // Re-render dynamic components
+  if (typeof renderWL            === 'function') renderWL();
+  if (typeof renderHold          === 'function') renderHold();
+  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
+  if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
+
+  // Apply MutationObserver theme to all current + new elements
   setTimeout(applyFullTheme, 50);
   setTimeout(applyFullTheme, 300);
   setTimeout(applyFullTheme, 800);
