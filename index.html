@@ -1329,88 +1329,120 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 // ============================================================
-// SEARCH SUGGESTION FIX — Stocks Only (NSE/BSE)
-// Overrides existing showSuggestions to filter out MF/ETF
-// Works regardless of which file the original function is in
+// SEARCH SUGGESTION v2 — Multi-proxy + AppState fallback
+// Stocks only (NSE/BSE), no MF/ETF/US stocks
 // ============================================================
 (function() {
-  // Wait for original showSuggestions to be defined, then override
-  function overrideSuggestions() {
-    if (typeof window._originalShowSuggestions === 'undefined' && typeof window.showSuggestions === 'function') {
-      window._originalShowSuggestions = window.showSuggestions;
-    }
+  const BLOCK_TYPES = ['etf','mutualfund','fund','future','option','currency','cryptocurrency'];
+  const BLOCK_EXCH  = ['NMS','NGM','NYQ','PCX','AMEX','CME','CBT','NYM','NCM','ASE'];
 
-    // Keyword blocklist — mutual funds, ETFs, foreign stocks (Yahoo returns these for S-prefix searches)
-    const BLOCK_TYPES  = ['etf','mutualfund','fund','future','option','currency','cryptocurrency','index'];
-    const BLOCK_EXCH   = ['NMS','NGM','NYQ','PCX','AMEX','CME','CBT','NYM','NCM','ASE']; // US exchanges
-    const ALLOW_EXCH   = ['NSI','BSI','NSE','BSE']; // Indian stock exchanges only
+  // CORS proxies — try in order
+  const PROXIES = [
+    q => `https://api.allorigins.win/get?url=${encodeURIComponent('https://query2.finance.yahoo.com/v1/finance/search?q='+q+'&lang=en-IN&region=IN&quotesCount=10&newsCount=0')}`,
+    q => `https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v1/finance/search?q='+q+'&lang=en-IN&region=IN&quotesCount=10&newsCount=0')}`,
+    q => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent('https://query1.finance.yahoo.com/v1/finance/search?q='+q+'&lang=en-IN&region=IN&quotesCount=10&newsCount=0')}`,
+  ];
 
-    // New filtered suggestion function
-    window.showSuggestions = async function(val) {
-      const box = document.getElementById('suggestionBox');
-      if (!box) return;
-      if (!val || val.trim().length < 1) {
-        box.style.display = 'none';
-        box.innerHTML = '';
-        return;
-      }
-
-      const q = val.trim().toUpperCase();
-
-      try {
-        // Use Yahoo Finance v1 autocomplete — same as original likely does
-        const url = `https://corsproxy.io/?${encodeURIComponent('https://query1.finance.yahoo.com/v1/finance/search?q=' + q + '&lang=en-IN&region=IN&quotesCount=8&newsCount=0&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query')}`;
-        const resp = await fetch(url, { signal: AbortSignal.timeout(4000) });
-        const data = await resp.json();
-
-        const quotes = (data.quotes || []).filter(item => {
-          if (!item.symbol) return false;
-          const type = (item.quoteType || '').toLowerCase();
-          const exch = item.exchDisp || item.exchange || '';
-
-          // Block non-stock types
-          if (BLOCK_TYPES.some(t => type.includes(t))) return false;
-          // Block non-Indian exchanges
-          if (BLOCK_EXCH.includes(exch)) return false;
-          // Must end in .NS or .BO (NSE/BSE) — or match Indian exchange
-          const sym = item.symbol;
-          if (!sym.endsWith('.NS') && !sym.endsWith('.BO') && !ALLOW_EXCH.includes(exch)) return false;
-          return true;
-        }).slice(0, 6);
-
-        if (quotes.length === 0) {
-          box.style.display = 'none';
-          box.innerHTML = '';
-          return;
-        }
-
-        box.innerHTML = quotes.map(item => {
-          // Strip .NS / .BO suffix for display and addStock
-          const cleanSym = item.symbol.replace(/\.(NS|BO)$/, '');
-          const name = item.longname || item.shortname || cleanSym;
-          return `<div class="suggestion-item" onclick="addStock('${cleanSym}');hideSuggestions();">
-            <span style="font-weight:700;">${cleanSym}</span>
-            <span style="font-size:11px;color:#64748b;margin-left:6px;">${name}</span>
-          </div>`;
-        }).join('');
-
-        box.style.display = 'block';
-
-      } catch(e) {
-        // Fallback to original if our fetch fails
-        if (window._originalShowSuggestions) window._originalShowSuggestions(val);
-      }
-    };
-
-    console.log('✅ Search suggestion override active — Indian stocks only');
+  function filterQuotes(quotes) {
+    return (quotes || []).filter(item => {
+      if (!item || !item.symbol) return false;
+      const type = (item.quoteType || '').toLowerCase();
+      const exch = item.exchDisp || item.exchange || '';
+      if (BLOCK_TYPES.some(t => type.includes(t))) return false;
+      if (BLOCK_EXCH.includes(exch)) return false;
+      // Allow only Indian stocks — symbol must end .NS or .BO
+      if (!item.symbol.endsWith('.NS') && !item.symbol.endsWith('.BO')) return false;
+      return true;
+    }).slice(0, 6);
   }
 
-  // Override immediately + after DOM ready (handles both cases)
+  function renderSuggestions(quotes) {
+    const box = document.getElementById('suggestionBox');
+    if (!box) return;
+    if (!quotes || quotes.length === 0) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = quotes.map(item => {
+      const sym  = item.symbol.replace(/\.(NS|BO)$/, '');
+      const name = item.longname || item.shortname || sym;
+      return `<div class="suggestion-item" onclick="addStock('${sym}');hideSuggestions();" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-weight:700;font-family:'JetBrains Mono',monospace;">${sym}</span>
+        <span style="font-size:11px;color:var(--text-label,#64748b);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}</span>
+      </div>`;
+    }).join('');
+    box.style.display = 'block';
+  }
+
+  // Local fallback — filter AppState symbols if all proxies fail
+  function localFallback(q, box) {
+    try {
+      const syms = window.AppState && window.AppState.marketData
+        ? Object.keys(window.AppState.marketData)
+        : (window._allSymbols || []);
+      if (!syms.length) { box.style.display='none'; return; }
+      const matches = syms.filter(s => s.toUpperCase().startsWith(q.toUpperCase())).slice(0, 6);
+      if (!matches.length) { box.style.display='none'; return; }
+      box.innerHTML = matches.map(sym =>
+        `<div class="suggestion-item" onclick="addStock('${sym}');hideSuggestions();" style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-family:'JetBrains Mono',monospace;">${sym}</span>
+        </div>`
+      ).join('');
+      box.style.display = 'block';
+    } catch(e) {
+      box.style.display = 'none';
+    }
+  }
+
+  let _suggDebounce = null;
+
+  async function newShowSuggestions(val) {
+    const box = document.getElementById('suggestionBox');
+    if (!box) return;
+    if (!val || val.trim().length < 1) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+
+    clearTimeout(_suggDebounce);
+    _suggDebounce = setTimeout(async () => {
+      const q = val.trim();
+      let success = false;
+
+      for (let i = 0; i < PROXIES.length; i++) {
+        try {
+          const url  = PROXIES[i](q);
+          const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+          let data = await resp.json();
+
+          // allorigins wraps response in contents string
+          if (data.contents) data = JSON.parse(data.contents);
+
+          const filtered = filterQuotes(data.quotes);
+          if (filtered.length > 0) {
+            renderSuggestions(filtered);
+            success = true;
+            break;
+          }
+        } catch(e) {
+          // try next proxy
+        }
+      }
+
+      if (!success) localFallback(q, box);
+    }, 220); // 220ms debounce
+  }
+
+  function overrideSuggestions() {
+    window.showSuggestions = newShowSuggestions;
+    console.log('✅ Suggestion v2 active — multi-proxy, NSE/BSE only');
+  }
+
   overrideSuggestions();
   document.addEventListener('DOMContentLoaded', overrideSuggestions);
-  // Also try after scripts load with delay
-  setTimeout(overrideSuggestions, 500);
-  setTimeout(overrideSuggestions, 1500);
+  setTimeout(overrideSuggestions, 800);
 })();
 </script>
 </body>
