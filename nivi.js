@@ -496,11 +496,13 @@ async function _tabChip(question) {
   await _tabAsk(question);
 }
 
-// સ્માર્ટ સર્ચ ડિટેક્ટર: જો યુઝર સમાચાર કે કારણ પૂછે તો જ લાઈવ સર્ચ થશે
+// સ્માર્ટ સર્ચ ડિટેક્ટર: જો યુઝર સમાચાર, કારણ કે રિઝલ્ટ પૂછે તો જ લાઈવ સર્ચ થશે
 function _needsLiveSearch(q) {
   const text = q.toLowerCase();
   return text.includes("news") || text.includes("samachar") || text.includes("aaje") || 
-         text.includes("latest") || text.includes("why") || text.includes("kem") || text.includes("karan");
+         text.includes("latest") || text.includes("why") || text.includes("kem") || 
+         text.includes("karan") || text.includes("result") || text.includes("રિજલ્ટ") || 
+         text.includes("q4") || text.includes("પરિણામ");
 }
 
 async function _tabAsk(question) {
