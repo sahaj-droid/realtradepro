@@ -377,24 +377,23 @@
       <button onclick="cycleFontSize()" class="s-pill" style="background:rgba(167,139,250,0.15);color:#a78bfa;"><span id="fontSizeLabel">Font: M</span></button>
     </div>
   </div>
-
-  <!-- CLOUD SYNC -->
-  <div class="s-section-label">Cloud Sync <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
+<!-- CLOUD SYNC -->
+<div class="s-section-label">Cloud Sync <span style="color:var(--pos, #22c55e);font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
   <div class="s-card">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 2px;">
-      <span style="font-size:10px;color:#4b6280;">Last sync: <span id="lastSyncDisplay" style="color:#64748b;">--</span></span>
-      <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></div>
+      <span style="font-size:10px;color:var(--text-muted, #4b6280);">Last sync: <span id="lastSyncDisplay" style="color:var(--text-label, #64748b);">--</span></span>
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--pos, #22c55e);"></div>
     </div>
     <div class="s-sync-row">
-      <button onclick="pushToCloud(true)" class="s-sync-btn" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;">
+      <button onclick="pushToCloud(true)" class="s-sync-btn" style="background:var(--accent-bg, #1e3a5f);color:var(--accent, #38bdf8);border:1px solid var(--accent-border, #2d5a8e);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
         Upload
       </button>
-      <button onclick="pullFromCloud(true)" class="s-sync-btn" style="background:#1a3320;color:#86efac;border:1px solid #166534;">
+      <button onclick="pullFromCloud(true)" class="s-sync-btn" style="background:rgba(34,197,94,0.1);color:var(--pos, #22c55e);border:1px solid rgba(34,197,94,0.3);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 104.08 15.91"/></svg>
         Download
       </button>
-      <button id="syncStatusBtn" onclick="pushToCloud(true)" class="s-sync-btn" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;">
+      <button id="syncStatusBtn" onclick="pushToCloud(true)" class="s-sync-btn" style="background:var(--bg-input, #0f172a);color:var(--accent, #38bdf8);border:1px solid var(--border, #1e2d4a);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
         Sync
       </button>
@@ -759,39 +758,38 @@
 
   <!-- DANGER ZONE -->
   <!-- EXPORT -->
-  <div class="s-section-label">Export <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
+<div class="s-section-label">Export <span style="color:var(--pos, #22c55e);font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
   <div class="s-card">
     <div class="s-row">
       <div class="s-row-left">
         <div class="s-row-icon" style="background:rgba(34,197,94,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--pos, #22c55e);"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
         <div class="s-row-info"><div class="s-row-title">Technical Snapshot</div><div class="s-row-sub">Symbol · CMP · BB Upper/Lower · RSI · Volume</div></div>
       </div>
-      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:#14532d;color:#22c55e;border:1px solid #166534;padding:4px 12px;">Export</button>
+      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:var(--bg-input, #14532d);color:var(--pos, #22c55e);border:1px solid var(--border, #166534);padding:4px 12px;">Export</button>
     </div>
   </div>
 
-  <div class="s-section-label" style="color:#ef4444;">Danger Zone</div>
+  <div class="s-section-label" style="color:var(--neg, #ef4444);">Danger Zone</div>
   <div style="margin:0 10px 4px;">
     <div class="s-danger-grid">
-      <button onclick="clearData('holdings')" class="s-danger-btn">Holdings</button>
-      <button onclick="clearData('history')" class="s-danger-btn">History</button>
-      <button onclick="clearData('alerts')" class="s-danger-btn">Alerts</button>
+      <button onclick="clearData('holdings')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">Holdings</button>
+      <button onclick="clearData('history')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">History</button>
+      <button onclick="clearData('alerts')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">Alerts</button>
     </div>
     <div style="padding:0 0 8px;">
-      <button onclick="clearFundCache()" class="s-danger-btn" style="width:100%;margin-top:6px;background:rgba(127,29,29,0.3);">🗑️ Clear Fundamentals Cache</button>
+      <button onclick="clearFundCache()" class="s-danger-btn" style="width:100%;margin-top:6px;background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">🗑️ Clear Fundamentals Cache</button>
     </div>
   </div>
 
-  <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
+  <div style="text-align:center;font-size:10px;color:var(--text-muted, #4b6280);padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
 </div>
 
-<!-- ERROR BANNER -->
 <div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
-  <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:#fca5a5;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+  <div style="background:var(--bg-card, #7f1d1d);border:1px solid var(--neg, #ef4444);border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:var(--neg, #fca5a5);box-shadow:0 4px 12px rgba(0,0,0,0.5);">
     ! <span id="errorMsg"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:var(--neg, #fca5a5);cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
   </div>
 </div>
 
