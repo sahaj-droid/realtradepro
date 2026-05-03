@@ -697,18 +697,6 @@ html[data-fsize='large'] { font-size: 128%; }
 
 ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:var(--scrollbar-track,#0a0f1a);} ::-webkit-scrollbar-thumb{background:var(--scrollbar-thumb,#1e3a5f);border-radius:4px;}
 
-/* -- FLASH PRICE TICKER -- */
-/* ---- Alert Modal ---- */
-
-/* ---- Target Modal ---- */
-
-/* ---- Remove Modal ---- */
-
-/* ---- Global Market Ticker (globalTicker bar) ---- */
-
-/* ---- Learn tab suggestion / search box ---- */
-/* learnSearchInput + learnSuggBox - dark hardcoded inline styles */
-
 /* ===== END LIGHT MODE ===== */
 #priceTicker{background:var(--bg-ticker,#060d1a);border-bottom:1px solid var(--border,#1e2d3d);overflow:hidden;height:22px;display:flex;align-items:center;}
 #priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
