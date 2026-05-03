@@ -499,22 +499,40 @@ async function fetchYahooSuggestions(val, box) {
     const api = getActiveGASUrl();
     const r = await fetch(`${api}?type=search&q=${encodeURIComponent(val)}`);
     const j = await r.json();
-    if (!j.ok || !j.results || j.results.length === 0) return;
+    if (!j.ok || !j.results || j.results.length === 0) {
+      if (box) box.style.display = "none";
+      return;
+    }
     
     const alreadyIn = new Set(AppState.wl);
-    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE', 'NMS']);
+    const INDIAN_EXCHANGES = new Set(['NSI', 'BSE', 'NSE']);
+    
     const results = j.results
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
+        const type = (r.quoteType || '').toUpperCase();
+        
+        // 🔥 1. STRICT EQUITY CHECK: ETFs, Mutual Funds, ke Indices nai aave
+        if (type !== 'EQUITY') return false;
+        
         const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
+        
+        // 🔥 2. Extra Filter: Name ma BEES ke FUND hoy to skip
+        const name = (r.name || '').toUpperCase();
+        if (name.includes('BEES') || name.includes('ETF') || name.includes('LIQUID') || name.includes('FUND')) return false;
+
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
         const notInWL = !alreadyIn.has(cleanSym);
+        
         return isIndian && notInWL;
       })
       .slice(0, 7);
+      
     if (results.length > 0 && _lastSearchVal === val) {
       renderSuggestions(results, box, false);
+    } else if (results.length === 0) {
+      if (box) box.style.display = "none";
     }
   } catch(e) { console.warn('Yahoo suggestions error:', e); }
 }
