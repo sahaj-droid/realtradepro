@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 /* ========================================
    RTP THEME SYSTEM — Ocean Blue
    Dark default | Light toggle
@@ -562,7 +563,7 @@ body.light-mode input, body.light-mode textarea, body.light-mode select { backgr
   border-color: #00d4aa;
 }
 html, body {
-  background: #071428 !important;
+  background: var(--bg-app, #071428) !important;
   min-height: 100%;
   min-height: -webkit-fill-available;
 }
@@ -572,7 +573,7 @@ html {
 }
 
 #settings {
-  background: #071428 !important;
+  background: var(--bg-settings, #071428) !important;
   min-height: 100vh;
   padding-bottom: 80px;
 }
@@ -618,7 +619,6 @@ body.light-mode #forgotPINScreen .profile-screen-bg {
   color: #1c1917 !important;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 
 body { background:var(--bg-app,#0a0f1a); color:var(--text-primary,#e2e8f0); font-family:'Rajdhani',sans-serif; transition:background 0.3s,color 0.3s; }
 html { font-size: 112%; }
@@ -629,30 +629,12 @@ html[data-fsize='large'] { font-size: 128%; }
 .tab { display:none }
 .tab.active { display:block }
 
-.card {background:linear-gradient(145deg,#111827,#1a2332); .card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.2s; }
-.flash-green { animation:flashGreen 0.25s; }
-.flash-red   { animation:flashRed 0.25s; }
-@keyframes flashGreen { 0%{background:rgba(34,197,94,0.35);}100%{background:transparent;} }
-@keyframes flashRed   { 0%{background:rgba(239,68,68,0.35);}100%{background:transparent;} }
-.green{color:var(--pos,#38bdf8);font-weight:700;} .red{color:#ef4444;font-weight:700;}
-  border:1px solid rgba(255,255,255,0.06); 
-  border-radius:12px; 
-  padding:8px 10px; 
-  box-shadow:0 4px 12px rgba(0,0,0,0.4); 
-  transition:background 0.2s; 
-}
+.card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.2s; }
 .flash-green { animation:flashGreen 0.3s ease-out !important; }
 .flash-red   { animation:flashRed 0.3s ease-out !important; }
-@keyframes flashGreen { 
-  0%   { background:rgba(34,197,94,0.5) !important; } 
-  100% { background:transparent; } 
-}
-@keyframes flashRed { 
-  0%   { background:rgba(239,68,68,0.5) !important; } 
-  100% { background:transparent; } 
-}
-
-.green { color:var(--pos,#38bdf8); font-weight:700; } 
+@keyframes flashGreen { 0%{background:rgba(34,197,94,0.5) !important;}100%{background:transparent;} }
+@keyframes flashRed   { 0%{background:rgba(239,68,68,0.5) !important;}100%{background:transparent;} }
+.green { color:var(--pos,#38bdf8); font-weight:700; }
 .red { color:#ef4444; font-weight:700; }
 
 .bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#4b5563;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none;border-top:2px solid transparent;position:relative; }
@@ -794,3 +776,100 @@ html[data-fsize='large'] { font-size: 128%; }
 .s-sync-btn:active{opacity:0.7;}
 .s-account-card{background:var(--s-account-bg,linear-gradient(135deg,#0d2a45,#0a1f35));border-radius:12px;margin:6px 10px 4px;padding:12px 14px;border:1px solid var(--border,rgba(56,189,248,0.12));display:flex;align-items:center;justify-content:space-between;}
 .s-avatar{width:36px;height:36px;border-radius:50%;background:var(--s-avatar-bg,rgba(56,189,248,0.12));border:1.5px solid var(--s-avatar-border,rgba(56,189,248,0.25));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--s-avatar-color,#38bdf8);margin-right:10px;flex-shrink:0;}
+
+/* ========== LEARN TAB — LIGHT MODE OVERRIDES ========== */
+/* learnSearchInput and learnSuggBox have hardcoded dark inline styles */
+body.light-mode #learnSearchInput {
+  background: var(--search-bg, #ffffff) !important;
+  border-color: var(--search-border, #93c5fd) !important;
+  color: var(--text-primary, #0f172a) !important;
+}
+body.light-mode #learnSuggBox {
+  background: var(--suggestion-bg, #ffffff) !important;
+  border-color: var(--suggestion-border, #bae6fd) !important;
+  color: var(--text-primary, #0f172a) !important;
+}
+body.light-mode #learnSuggBox div,
+body.light-mode #learnSuggBox span {
+  background: transparent !important;
+  color: var(--text-primary, #0f172a) !important;
+}
+body.light-mode #learnSuggBox div:hover {
+  background: var(--suggestion-hover, #f0f9ff) !important;
+  color: var(--accent, #0284c7) !important;
+}
+
+/* ========== HISTORY / TRADES BUTTONS — LIGHT MODE ========== */
+body.light-mode #history button[style*="background:#1e3a5f"],
+body.light-mode #history button[style*="background:#166534"],
+body.light-mode #history button[style*="background:#713f12"],
+body.light-mode #history button[style*="background:#1e2d3d"] {
+  background: var(--accent-bg, #dbeafe) !important;
+  color: var(--accent, #0284c7) !important;
+  border-color: var(--accent-border, #93c5fd) !important;
+}
+
+/* ========== INLINE DARK COLORS — DEEP LIGHT OVERRIDE ========== */
+/* Catches any remaining inline styles missed by theme.js */
+body.light-mode [style*="background:#0a0e1a"],
+body.light-mode [style*="background:#0d1425"],
+body.light-mode [style*="background:#0d1a2e"],
+body.light-mode [style*="background:#162744"],
+body.light-mode [style*="background:#0a1e14"],
+body.light-mode [style*="background:#0f2a1a"],
+body.light-mode [style*="background:#0a2218"] {
+  background: var(--bg-card, #ffffff) !important;
+}
+body.light-mode [style*="background:linear-gradient(135deg,#0f1e33"],
+body.light-mode [style*="background:linear-gradient(145deg,#111827"] {
+  background: var(--card-grad, linear-gradient(145deg,#ffffff,#f0f9ff)) !important;
+}
+body.light-mode [style*="background:#0f1e33"] {
+  background: var(--bg-mktbar, #f8fafc) !important;
+}
+/* Terminal / indices tab cards */
+body.light-mode #indices [style*="background"],
+body.light-mode .header-index-chip {
+  background: var(--bg-card, #ffffff) !important;
+  border-color: var(--border, #bae6fd) !important;
+}
+body.light-mode .header-index-chip [style*="color:#e2e8f0"] {
+  color: var(--text-primary, #0f172a) !important;
+}
+/* Nivi modal */
+body.light-mode #niviModal > div {
+  background: linear-gradient(160deg,#f0f9ff,#e0f2fe) !important;
+  border-color: var(--border, #bae6fd) !important;
+}
+body.light-mode #niviModal [style*="background:#0a1628"] {
+  background: var(--bg-input, #ffffff) !important;
+}
+/* s-row border */
+body.light-mode .s-row {
+  border-bottom-color: var(--border, #bae6fd) !important;
+}
+/* s-card border fix */
+body.light-mode .s-card {
+  border-color: var(--border, #bae6fd) !important;
+}
+/* Group buttons in light mode */
+body.light-mode .group-btn {
+  background: var(--bg-card2, #f0f9ff) !important;
+  border-color: var(--border, #bae6fd) !important;
+  color: var(--text-sec, #475569) !important;
+}
+body.light-mode .group-btn.active {
+  background: var(--accent-bg, #dbeafe) !important;
+  border-color: var(--accent-border, #93c5fd) !important;
+  color: var(--accent, #0284c7) !important;
+}
+/* act-btn (watchlist action buttons) */
+body.light-mode .act-btn {
+  background: var(--bg-card2, #f0f9ff) !important;
+  color: var(--text-primary, #0f172a) !important;
+}
+/* Portfolio card inner text */
+body.light-mode .portfolio-card [style*="color:#e2e8f0"],
+body.light-mode .portfolio-card [style*="color:#94a3b8"] {
+  color: var(--text-primary, #0f172a) !important;
+}
