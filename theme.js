@@ -80,6 +80,7 @@ let _rtpProcessing = false;
 function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
+  if (el.dataset && el.dataset.flashing) return;  // ← NEW
   if (el.closest && el.closest('[data-notheme]')) return;
   if (el.classList && el.classList.contains('act-btn')) return;
   if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
@@ -195,10 +196,7 @@ window.toggleAppTheme = function() {
 
   if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
 
-  if (typeof renderWL             === 'function') renderWL();
-  if (typeof renderHold           === 'function') renderHold();
-  if (typeof updateHeaderIndices  === 'function') updateHeaderIndices();
-  if (typeof renderHeaderStrip    === 'function') renderHeaderStrip();
+  if (typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
 
   setTimeout(applyFullTheme, 50);
   setTimeout(applyFullTheme, 300);
