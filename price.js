@@ -308,29 +308,27 @@ function _patchWLCard(s, d) {
     let oldPrice = parseFloat(rawPrice);
     if (isNaN(oldPrice)) oldPrice = 0;
 
-// REPLACE: existing flash block in _patchWLCard()
-if (oldPrice > 0 && _price.toFixed(2) !== oldPrice.toFixed(2)) {
-  const isUp = _price > oldPrice;
-  const flashText = isUp ? '#22c55e' : '#ef4444';
-  const flashBg = isUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
-  const card = pe.closest('.card');
-  
-  if (card) {
-    card.dataset.flashing = '1';        // ← NEW
-    card.style.transition = 'none';
-    card.style.background = flashBg;
-  }
-  pe.style.color = flashText;
+    // 🔥 NEW FIX: Inline Background Flash (Exact same as Indices)
+    if (oldPrice > 0 && _price.toFixed(2) !== oldPrice.toFixed(2)) {
+      const isUp = _price > oldPrice;
+      const flashText = isUp ? '#22c55e' : '#ef4444'; // Exact Green / Red
+      const flashBg = isUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+      const card = pe.closest('.card');
+      
+      if (card) {
+          card.style.transition = 'none';
+          card.style.background = flashBg;
+      }
+      pe.style.color = flashText;
 
-  setTimeout(() => { 
-    if (card) {
-      card.style.transition = 'background 0.5s ease';
-      card.style.background = '';
-      delete card.dataset.flashing;     // ← NEW
+      setTimeout(() => { 
+        if (card) {
+            card.style.transition = 'background 0.5s ease';
+            card.style.background = ''; // Reverts to CSS default gradient
+        }
+        pe.style.color = 'var(--text-primary, #e2e8f0)'; 
+      }, 400);
     }
-    pe.style.color = 'var(--text-primary, #e2e8f0)'; 
-  }, 500);
-}
     
     pe.innerHTML = _price > 0 ? '₹' + _price.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '<span style="color:var(--text-muted, #4b6280);font-size:13px;">--</span>';
   }
@@ -445,20 +443,18 @@ async function updatePrices() {
         const card = pe.closest('.card');
         
         if (card) {
-          card.dataset.flashing = '1';
-          card.style.transition = 'none';
-          card.style.background = flashBg;
+            card.style.transition = 'none';
+            card.style.background = flashBg;
         }
         pe.style.color = flashText;
 
         setTimeout(() => { 
           if (card) {
               card.style.transition = 'background 0.5s ease';
-              card.style.background = '';
-              delete card.dataset.flashing;     // ← NEW: hata do
+              card.style.background = ''; // Reverts to normal card theme
           }
           pe.style.color = 'var(--text-primary, #e2e8f0)'; 
-        }, 500);
+        }, 400);
       }
 
       pe.innerText = price > 0 ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '--';
