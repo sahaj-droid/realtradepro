@@ -223,42 +223,22 @@ async function initMarketData() {
 // ======================================
 async function _backgroundGASFetch() {
   try {
-    const wl = AppState.watchlists?.[AppState.currentWL]?.stocks
-            || AppState.wl
-            || [];
-
-    if (!wl.length) {
-      console.warn('[MarketData] Watchlist empty — GAS fetch skipped');
-      return;
-    }
-
-    // Existing batchFetchStocks use karo — api.js thi
-    if (typeof batchFetchStocks !== 'function') {
-      console.warn('[MarketData] batchFetchStocks not available');
-      return;
-    }
-
-    await batchFetchStocks(wl, false);
-
-    // GAS data aavyu — localStorage ma save karo
     const cacheToSave = {};
+    const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || AppState.wl || [];
     wl.forEach(sym => {
       if (AppState.cache[sym]?.data) {
         cacheToSave[sym] = AppState.cache[sym].data;
       }
     });
-
     if (Object.keys(cacheToSave).length > 0) {
       saveToLocalCache(cacheToSave);
     }
-
-    // UI silently update
-    if (typeof renderWL === 'function') renderWL();
+    // UI silently update — indices mate
     if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-    console.log('[MarketData] ✅ Background GAS fetch complete');
-
+    if (typeof updatePriceTicker === 'function') updatePriceTicker();
+    console.log('[MarketData] ✅ Background cache save complete');
   } catch (e) {
-    console.warn('[MarketData] Background GAS fetch failed:', e.message);
+    console.warn('[MarketData] Background fetch failed:', e.message);
   }
 }
 
