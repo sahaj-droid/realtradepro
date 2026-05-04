@@ -170,9 +170,12 @@
         // ── MARKET OPEN: fetch fresh prices from GAS ──────────
         const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
         if (wl.length > 0) {
-          await batchFetchStocks(wl).catch(e => {
-            console.warn('[LivePrice] GAS fetch failed:', e.message);
-          });
+try {
+  await batchFetchStocks(wl);
+} catch(e) {
+  console.warn('[LivePrice] GAS fetch failed:', e.message);
+  // fetch fail thay to pan patch continue karse!
+}
 
           // Save to localStorage after successful fetch
           _saveToLocalStorage(wl);
