@@ -108,7 +108,7 @@ async function updateGiftNifty() {
   // Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
-    const r = await fetch(_appendToken(apiUrl + '?type=giftNifty'));
+    const r = await fetchWithTimeout(_appendToken(apiUrl + '?type=giftNifty'), 6000);
     const data = await r.json();
     
     if (data && data.price && data.price > 0) {
