@@ -178,7 +178,7 @@ function _applyGiftNiftyToChip(cached) {
   const change    = parseFloat(cached.change);
   const changePct = parseFloat(cached.changePct);
   const isUp      = change >= 0;
-  const color     = isUp ? 'var(--pos,#38bdf8)' : '#ef4444';
+  const color     = isUp ? 'var(--pos,#22c55e)' : '#ef4444';
   const sign      = isUp ? '+' : '';
 
   if (priceDiv) {
@@ -650,7 +650,7 @@ function _calcChipValues(d) {
   const pct       = prev ? (change / prev * 100) : 0;
   const isUp      = change >= 0;
   const sign      = isUp ? '+' : '';
-  const color     = isUp ? 'var(--pos,#38bdf8)' : '#ef4444';
+  const color     = isUp ? 'var(--pos,#22c55e)' : '#ef4444';
   return {
     price,
     priceStr:    price.toFixed(2),
