@@ -82,7 +82,7 @@ async function startApp() {
     // 2. Indices (skip GIFT NIFTY here — handled by startGiftNiftyUpdates)
     const nonGiftIndices = AppState.indicesList.filter(i => i.sym !== 'NIFTY1!');
     if (_mktOpen) {
-    await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
+      await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
     }
 
     // 3. GIFT NIFTY via its dedicated function (reads gift_nifty Firestore doc)
@@ -105,7 +105,8 @@ async function startApp() {
 
   // ✅ MARKETDATA: Auto refresh sirf market open hoy tyare
   if (typeof isMarketOpen === 'function' && isMarketOpen()) {
-    }
+    if (typeof startAutoRefresh === 'function') startAutoRefresh(60000);
+  }
 
   startRefresh();
 }
@@ -114,24 +115,20 @@ async function startApp() {
 // ======================================
 function startRefresh() {
   if (AppState.refreshInterval) clearInterval(AppState.refreshInterval);
-  // ← AA LINE YAHAN — function ni andar, setInterval ni bahar
-  let _priceUpdateRunning = false;
+
+  // ✅ GAS Warmup — active URL warm રાખે, cold start avoid
   if (AppState._warmupInterval) clearInterval(AppState._warmupInterval);
-  AppState._warmupInterval = setInterval(() => {
+AppState._warmupInterval = setInterval(() => {
     if (typeof isMarketOpen === 'function' && !isMarketOpen()) return;
     const urls = getEnabledGASUrls();
     if (urls.length > 0) {
       fetch(urls[0] + '?type=ping', { signal: AbortSignal.timeout(3000) }).catch(() => {});
     }
-  }, 45000); // 20000 → 45000
-  AppState.refreshInterval = setInterval(async () => {
-    if (!getMarketStatus().open) return;
-    if (_priceUpdateRunning) return;
-    _priceUpdateRunning = true;
-    try {
-      if (typeof updatePrices === 'function') await updatePrices();
-    } finally {
-      _priceUpdateRunning = false;
+  }, 20000); // દર 20 sec — GAS VM alive રાખે (market open only)
+
+  AppState.refreshInterval = setInterval(() => {
+    if (getMarketStatus().open) {
+      if (typeof updatePrices === 'function') updatePrices();
     }
   }, (parseInt(localStorage.getItem('refreshSec')) || 8) * 1000);
 }
