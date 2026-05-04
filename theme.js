@@ -57,9 +57,6 @@ const COLOR_MAP_LIGHT = {
   '#4b6280': RTP_LIGHT.textMuted,
   '#64748b': RTP_LIGHT.textMuted,
   // Green → Cyan
-  '#34d399': RTP_LIGHT.accent,
-  '#22c55e': RTP_LIGHT.accent,
-  '#86efac': RTP_LIGHT.accent,
   '#00d4aa': RTP_LIGHT.accent,
   '#065f46': '#dbeafe',
   '#166534': '#dbeafe',
