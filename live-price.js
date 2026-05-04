@@ -46,8 +46,8 @@
     return Math.max(6, sec) * 1000; // minimum 6s
   }
 
-// live-price.js ની અંદર _flashCard() ફંક્શનમાં આ બદલાવ કરો:
-function _flashCard(cardEl, isUp) {
+// window. સાથે જોડી દો જેથી ગમે ત્યાંથી એક્સેસ થાય
+window._flashCard = function(cardEl, isUp) {
   if (!cardEl) return;
 
   // થીમ એન્જિનને આ એલિમેન્ટ ટચ કરવાની મનાઈ કરો
@@ -62,11 +62,11 @@ function _flashCard(cardEl, isUp) {
     cardEl.removeAttribute('data-notheme'); // લૉક ખોલી નાખો
     
     // લાઈટ મોડમાં કલર ફિક્સ કરવા માટે
-    if (document.body.classList.contains('light-mode')) {
+    if (document.body.classList.contains('light-mode') && typeof applyFullTheme === 'function') {
       applyFullTheme();
     }
-  }, 800); // 800ms સુધી ઈફેક્ટ દેખાશે
-}
+  }, 1000); // ૧ સેકન્ડ રાખો, મસ્ત દેખાશે
+};
 
   // ── Patch single stock card in DOM (no rebuild) ────────────
   function _patchCard(sym, data) {
@@ -87,9 +87,12 @@ function _flashCard(cardEl, isUp) {
     if (pe) {
       const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
 
-      // Flash only if price actually changed
+      // ... પ્રાઈઝ ચેક કર્યા પછી ...
       if (oldPrice > 0 && price > 0 && price.toFixed(2) !== oldPrice.toFixed(2)) {
-        _flashCard(pe.closest('.card'), price > oldPrice);
+        // window._flashCard ને કોલ કરો
+        if (typeof _flashCard === 'function') {
+          _flashCard(pe.closest('.card') || pe.closest('.wl-card-wrap'), price > oldPrice);
+        }
       }
 
       pe.innerHTML = price > 0
