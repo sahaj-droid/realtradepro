@@ -290,30 +290,57 @@ async function renderWL() {
 }
 
 // ======================================
-// PATCH WL CARD (for live updates)
+// PATCH WL CARD (Updated with Flash & Fixed Signs)
 // ======================================
 function _patchWLCard(s, d) {
   const _price = d.regularMarketPrice || d.ltp || 0;
+  const pe = document.getElementById('price-' + s);
+  
+  // 1. FLASH LOGIC: નવી પ્રાઈઝ અને જૂની પ્રાઈઝ સરખાવો
+  if (pe && _price > 0) {
+    const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
+    
+    // જો પ્રાઈઝ ખરેખર બદલાઈ હોય તો જ ફ્લેશ ટ્રિગર કરો
+    if (oldPrice > 0 && _price.toFixed(2) !== oldPrice.toFixed(2)) {
+      const card = pe.closest('.card') || pe.closest('.wl-card-wrap');
+      if (typeof _flashCard === 'function') {
+        _flashCard(card, _price > oldPrice);
+      }
+    }
+  }
+
+  // 2. ડેટા કેલ્ક્યુલેશન
   const _prev = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
   const diff = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
   const pct = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
-  
-  const pe = document.getElementById('price-' + s);
+  const sign = diff >= 0 ? '+' : '-';
+
+  // 3. UI અપડેટ (Price)
+  if (pe) {
+    pe.innerHTML = _price > 0 
+      ? '₹' + _price.toLocaleString('en-IN', { minimumFractionDigits: 2 }) 
+      : '<span style="color:#4b6280;font-size:13px;">--</span>';
+  }
+
+  // 4. UI અપડેટ (Change & Percentage)
   const ce = document.getElementById(`change-${s}`);
-  if (ce) {ce.innerText = `${sign}${diff.toFixed(2)} (${sign}${pct}%)`;
-    ce.style.color = diff >= 0 ? "var(--pos)" : "var(--neg)";}
+  if (ce) {
+    ce.innerHTML = _price > 0 
+      ? `${sign}₹${Math.abs(diff).toFixed(2)} (${sign}${Math.abs(pct).toFixed(2)}%)` 
+      : '<span style="color:#4b6280;">--</span>';
+    ce.style.color = diff >= 0 ? "var(--pos)" : "var(--neg)";
+  }
+
+  // 5. બાર અને લેબલ્સનું અપડેટ
   const db = document.getElementById('daybar-' + s);
   const b5 = document.getElementById('bar52-' + s);
   const l5 = document.getElementById('label52-' + s);
   
-  if (pe) pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
-  if (ce) {
-    ce.innerHTML = _price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>';
-    ce.style.color = diff >= 0 ? 'var(--pos)' : 'var(--neg)';
+  if (db && typeof buildDayBar === 'function') db.innerHTML = buildDayBar(d);
+  if (b5 && typeof build52WBar === 'function') b5.innerHTML = build52WBar(d);
+  if (l5 && typeof get52WLabel === 'function') {
+    l5.innerHTML = get52WLabel(d) + (typeof getTargetBadge === 'function' ? getTargetBadge(s, _price) : '');
   }
-  if (db) db.innerHTML = buildDayBar(d);
-  if (b5) b5.innerHTML = build52WBar(d);
-  if (l5) l5.innerHTML = get52WLabel(d) + getTargetBadge(s, _price);
 }
 
 // ======================================
