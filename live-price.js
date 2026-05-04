@@ -50,23 +50,22 @@
 function _flashCard(cardEl, isUp) {
   if (!cardEl) return;
 
-  // ૧. Theme Engine ને રોકવા માટે data-notheme સેટ કરો
+  // થીમ એન્જિનને આ એલિમેન્ટ ટચ કરવાની મનાઈ કરો
   cardEl.setAttribute('data-notheme', '1');
   
   cardEl.classList.remove('flash-green', 'flash-red');
-  void cardEl.offsetWidth; // Force reflow
+  void cardEl.offsetWidth; // રિફ્રેશ એનિમેશન
   cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
 
-  // ૨. 800ms પછી ક્લાસ અને data-notheme હટાવો જેથી ઈફેક્ટ સરખી દેખાય
   setTimeout(() => {
     cardEl.classList.remove('flash-green', 'flash-red');
-    cardEl.removeAttribute('data-notheme');
+    cardEl.removeAttribute('data-notheme'); // લૉક ખોલી નાખો
     
-    // જો લાઈટ મોડ ચાલુ હોય તો ફરીથી થીમ અપ્લાય કરી દેવી
-    if (document.body.classList.contains('light-mode') && typeof applyFullTheme === 'function') {
+    // લાઈટ મોડમાં કલર ફિક્સ કરવા માટે
+    if (document.body.classList.contains('light-mode')) {
       applyFullTheme();
     }
-  }, 800);
+  }, 800); // 800ms સુધી ઈફેક્ટ દેખાશે
 }
 
   // ── Patch single stock card in DOM (no rebuild) ────────────
