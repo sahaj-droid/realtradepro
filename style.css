@@ -638,11 +638,11 @@ html[data-fsize='large'] { font-size: 128%; }
 }
 
 @keyframes flashGreen { 
-  0% { background-color: rgba(34, 197, 94, 0.6) !important; }
+  0% { background-color: rgba(34, 197, 94, 0.8) !important; }
   100% { background-color: transparent; } 
 }
 @keyframes flashRed { 
-  0% { background-color: rgba(239, 68, 68, 0.6) !important; }
+  0% { background-color: rgba(239, 68, 68, 0.8) !important; }
   100% { background-color: transparent; } 
 }
 .green { color:var(--pos,#38bdf8); font-weight:700; }
