@@ -103,7 +103,7 @@ async function batchFetchStocks(symbols, isIndex = false) {
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
-      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=batch&s=${syms}`), 6000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?type=batch&s=${syms}&_t=${Date.now()}`), 6000);
       const j = await r.json();
       if (!j || j.error) continue;
       
@@ -138,7 +138,7 @@ async function fetchFull(sym, isIndex = false) {
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
-      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?s=${encodedSymbol}`), 6000);
+      const r = await fetchWithTimeout(_appendToken(`${apiUrl}?s=${encodedSymbol}&_t=${Date.now()}`), 6000);
       const j = await r.json();
       if (j.error || !j.chart || !j.chart.result) continue;
       
