@@ -46,19 +46,22 @@
     return Math.max(6, sec) * 1000; // minimum 6s
   }
 
-  // ── Flash effect — CSS class based (theme-safe) ────────────
-  // style.css must have .flash-green and .flash-red animations
-  function _flashCard(cardEl, isUp) {
-    if (!cardEl) return;
-    cardEl.dataset.flashing = '1'; // tells theme.js to skip this element
+// live-price.js ની અંદર _flashCard() ફંક્શનમાં આ બદલાવ કરો:
+function _flashCard(cardEl, isUp) {
+  if (!cardEl) return;
+  // જૂનું: cardEl.dataset.flashing = '1';
+  cardEl.dataset.notheme = '1'; // Theme observer ને રોકવા 
+  
+  cardEl.classList.remove('flash-green', 'flash-red');
+  void cardEl.offsetWidth; 
+  cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
+  
+  setTimeout(() => {
     cardEl.classList.remove('flash-green', 'flash-red');
-    void cardEl.offsetWidth; // force reflow — restarts animation
-    cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
-    setTimeout(() => {
-      cardEl.classList.remove('flash-green', 'flash-red');
-      delete cardEl.dataset.flashing;
-    }, 500);
-  }
+    // જૂનું: delete cardEl.dataset.flashing;
+    delete cardEl.dataset.notheme;
+  }, 500);
+}
 
   // ── Patch single stock card in DOM (no rebuild) ────────────
   function _patchCard(sym, data) {
@@ -166,23 +169,27 @@
         await updateGiftNifty().catch(() => {});
       }
 
-      if (status.open) {
+if (status.open) {
         // ── MARKET OPEN: fetch fresh prices from GAS ──────────
         const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
-        if (wl.length > 0) {
-try {
-  await batchFetchStocks(wl);
-} catch(e) {
-  console.warn('[LivePrice] GAS fetch failed:', e.message);
-  // fetch fail thay to pan patch continue karse!
-}
+        const nonGiftIndices = (AppState.indicesList || []).filter(i => i.sym !== 'NIFTY1!').map(i => i.sym);
+        
+        try {
+          // વોચલિસ્ટ અને ઈન્ડાઈસિસ બંને એકસાથે અપડેટ કરો
+          await Promise.all([
+             wl.length > 0 ? batchFetchStocks(wl) : Promise.resolve(),
+             nonGiftIndices.length > 0 ? batchFetchStocks(nonGiftIndices, true) : Promise.resolve()
+          ]);
+        } catch(e) {
+          console.warn('[LivePrice] GAS fetch failed:', e.message);
+          // fetch fail thay to pan patch continue karse!
+        }
 
-          // Save to localStorage after successful fetch
+        // Save to localStorage after successful fetch
+        if (wl.length > 0) {
           _saveToLocalStorage(wl);
         }
       }
-      // MARKET CLOSED: just patch from existing cache — no GAS call
-
       // ── Patch DOM (works for both open & closed) ──────────
       _patchAllVisible();
 
