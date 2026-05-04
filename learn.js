@@ -1101,25 +1101,12 @@ function _renderMSTopic(el, lang) {
   if (!topic) { AppState._msTopic = null; renderMarketSchool(); return; }
   const L = topic[lang] || topic.en;
 
-  // 🔥 FIX: SVG Images ne load karvanu logic add karyu
-  let svgHtml = '';
-  if (topic.svg && typeof CANDLE_SVG !== 'undefined' && CANDLE_SVG[topic.svg]) {
-    svgHtml = `<div style="text-align:center; margin-bottom: 12px;">${CANDLE_SVG[topic.svg]}</div>`;
-  }
-
   const html = `
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
     <button onclick="AppState._msTopic=null;renderMarketSchool();" style="background:var(--border, rgba(255,255,255,0.06));border:1px solid var(--border, rgba(255,255,255,0.1));color:var(--text-sec, #94a3b8);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">← Back</button>
     <span style="font-size:13px;font-weight:700;color:${cat.color};">${topic.label}</span>
   </div>
-  <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;">
-    <div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));">
-      <span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">📖 WHAT IS IT?</span>
-    </div>
-    <div style="padding:12px 14px;font-size:13px;color:var(--text-primary, #cbd5e1);line-height:1.7;">
-      ${svgHtml} ${L.what}
-    </div>
-  </div>
+  <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">📖 WHAT IS IT?</span></div><div style="padding:12px 14px;font-size:13px;color:var(--text-primary, #cbd5e1);line-height:1.7;">${L.what}</div></div>
   <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">🔢 FORMULA</span></div><div style="padding:12px 14px;font-size:12px;color:var(--pos, #34d399);font-family:'JetBrains Mono',monospace;line-height:1.8;background:rgba(52,211,153,0.04);">${L.formula}</div></div>
   <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">📊 LEVELS</span></div><div style="padding:12px 14px;font-size:12px;color:var(--warn, #f59e0b);line-height:1.8;">${L.levels}</div></div>`;
   el.innerHTML = html;

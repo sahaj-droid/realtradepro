@@ -190,7 +190,7 @@ function saveSetting(type) {
   }
   if (type === "refresh") {
     const val = parseInt(document.getElementById("set-refresh").value);
-    if (isNaN(val) || val < 6) {
+    if (isNaN(val) || val < 10) {
       showPopup("Minimum 10 seconds required");
       return;
     }

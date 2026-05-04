@@ -38,19 +38,6 @@ async function startApp() {
   if (!AppState._globalCache)     AppState._globalCache    = {};
   if (!AppState._globalCacheTime) AppState._globalCacheTime = 0;
 
-  // 🔥 NEW CACHE LOGIC: App load thata j local storage mathi juna prices pacha lavi lo
-  try {
-    const savedCache = localStorage.getItem('rtp_price_cache');
-    if (savedCache) {
-      AppState.cache = JSON.parse(savedCache);
-      console.log('✅ Loaded previous prices from LocalStorage');
-    } else {
-      if (!AppState.cache) AppState.cache = {};
-    }
-  } catch(e) { 
-    if (!AppState.cache) AppState.cache = {}; 
-  }
-
   updateMarketStatus();
   startClock();
   setInterval(updateMarketStatus, 60000);
@@ -110,6 +97,7 @@ async function startApp() {
 
   startRefresh();
 }
+
 // ======================================
 // AUTO REFRESH
 // ======================================

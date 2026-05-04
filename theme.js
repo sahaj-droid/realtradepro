@@ -1,26 +1,8 @@
 // ============================================================
-// RTP THEME ENGINE v2.1 — Fixed for Live Prices & CSS Vars
+// RTP THEME ENGINE v2 — MutationObserver
 // Watches ALL DOM changes — auto-applies light/dark theme
+// No JS file changes needed — works on dynamically added elements
 // ============================================================
-
-// 🔥 NEW FIX: Global CSS Variables (આનાથી લાઈવ પ્રાઈઝમાં કલર જાતે બદલાશે)
-const themeStyle = document.createElement('style');
-themeStyle.innerHTML = `
-  .light-mode {
-    --bg-app: #f0f9ff !important;
-    --bg-card: #ffffff !important;
-    --bg-card2: #f8fafc !important;
-    --bg-header: #f0f9ff !important;
-    --border: #bae6fd !important;
-    --text-primary: #0f172a !important;
-    --text-sec: #475569 !important;
-    --text-muted: #64748b !important;
-    --accent: #0284c7 !important;
-    --pos: #0284c7 !important;   /* લાઈટ મોડમાં + માટે ભૂરો કલર */
-    --neg: #dc2626 !important;   /* લાઈટ મોડમાં - માટે લાલ કલર */
-  }
-`;
-document.head.appendChild(themeStyle);
 
 const RTP_DARK = {
   bg:      ['#071428','#0a0f1a','#060e1a','#060d1a','#080f1a','#0a1220','#080c18','#071221','#0f1e33','#0a0e1a'],
@@ -46,23 +28,50 @@ const RTP_LIGHT = {
 // Color map: dark hex → light hex
 const COLOR_MAP_LIGHT = {
   // Backgrounds
-  '#071428': RTP_LIGHT.bg, '#0a0f1a': RTP_LIGHT.bg, '#060e1a': RTP_LIGHT.bg, '#060d1a': RTP_LIGHT.bg,
-  '#080f1a': RTP_LIGHT.bg, '#0a1220': RTP_LIGHT.cardAlt, '#080c18': RTP_LIGHT.bg, '#071221': RTP_LIGHT.bg,
-  '#0f1e33': RTP_LIGHT.bg, '#0a0e1a': RTP_LIGHT.bg,
+  '#071428': RTP_LIGHT.bg,
+  '#0a0f1a': RTP_LIGHT.bg,
+  '#060e1a': RTP_LIGHT.bg,
+  '#060d1a': RTP_LIGHT.bg,
+  '#080f1a': RTP_LIGHT.bg,
+  '#0a1220': RTP_LIGHT.cardAlt,
+  '#080c18': RTP_LIGHT.bg,
+  '#071221': RTP_LIGHT.bg,
+  '#0f1e33': RTP_LIGHT.bg,
+  '#0a0e1a': RTP_LIGHT.bg,
   // Cards
-  '#0d1f35': RTP_LIGHT.card, '#0d1425': RTP_LIGHT.card, '#111827': RTP_LIGHT.card, '#1a2332': RTP_LIGHT.card,
-  '#0d1a2e': RTP_LIGHT.cardAlt, '#0f2a40': '#dbeafe', '#0a1628': RTP_LIGHT.cardAlt, '#0a1e14': RTP_LIGHT.card,
-  '#0a2218': RTP_LIGHT.card, '#0f2a1a': '#dbeafe', '#1e3a5f': '#dbeafe',
+  '#0d1f35': RTP_LIGHT.card,
+  '#0d1425': RTP_LIGHT.card,
+  '#111827': RTP_LIGHT.card,
+  '#1a2332': RTP_LIGHT.card,
+  '#0d1a2e': RTP_LIGHT.cardAlt,
+  '#0f2a40': '#dbeafe',
+  '#0a1628': RTP_LIGHT.cardAlt,
+  '#0a1e14': RTP_LIGHT.card,
+  '#0a2218': RTP_LIGHT.card,
+  '#0f2a1a': '#dbeafe',
+  '#1e3a5f': '#dbeafe',
   // Text
-  '#e2e8f0': RTP_LIGHT.text, '#cbd5e1': RTP_LIGHT.textSec, '#94a3b8': RTP_LIGHT.textSec, 
-  '#4b6280': RTP_LIGHT.textMuted, '#64748b': RTP_LIGHT.textMuted,
+  '#e2e8f0': RTP_LIGHT.text,
+  '#cbd5e1': RTP_LIGHT.textSec,
+  '#94a3b8': RTP_LIGHT.textSec,
+  '#4b6280': RTP_LIGHT.textMuted,
+  '#64748b': RTP_LIGHT.textMuted,
   // Green → Cyan
-  '#34d399': RTP_LIGHT.accent, '#22c55e': RTP_LIGHT.accent, '#86efac': RTP_LIGHT.accent, 
-  '#00d4aa': RTP_LIGHT.accent, '#065f46': '#dbeafe', '#166534': '#dbeafe', '#0f2a1a': '#dbeafe',
+  '#34d399': RTP_LIGHT.accent,
+  '#22c55e': RTP_LIGHT.accent,
+  '#86efac': RTP_LIGHT.accent,
+  '#00d4aa': RTP_LIGHT.accent,
+  '#065f46': '#dbeafe',
+  '#166534': '#dbeafe',
+  '#0f2a1a': '#dbeafe',
   // Borders
-  '#1e3a5f': '#bae6fd', '#2d3f52': '#bae6fd', '#1e2d3d': '#bae6fd', '#2d5a8e': '#93c5fd',
+  '#1e3a5f': '#bae6fd',
+  '#2d3f52': '#bae6fd',
+  '#1e2d3d': '#bae6fd',
+  '#2d5a8e': '#93c5fd',
   // Accents stay
-  '#38bdf8': RTP_LIGHT.accent, '#fb923c': '#d97706',
+  '#38bdf8': RTP_LIGHT.accent,
+  '#fb923c': '#d97706',
 };
 
 // rgba patterns → light equivalents
@@ -75,17 +84,31 @@ const RGBA_MAP_LIGHT = [
   [/rgba\(6,95,70,[0-9.]+\)/g,      (m) => m.replace('6,95,70',   '2,132,199')],
 ];
 
-let _rtpProcessing = false;
+function _mapColor(val) {
+  if (!val) return val;
+  let v = val.trim().toLowerCase();
+  // Exact hex match
+  for (const [dark, light] of Object.entries(COLOR_MAP_LIGHT)) {
+    if (v === dark.toLowerCase()) return light;
+  }
+  return null;
+}
+
+let _rtpProcessing = false; // Guard flag — prevents Observer infinite loop
 
 function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
-  if (el.dataset && el.dataset.flashing) return;  // ← NEW
   if (el.closest && el.closest('[data-notheme]')) return;
+  // Skip act-btn — each button has intentional BUY/SELL/etc colors
   if (el.classList && el.classList.contains('act-btn')) return;
+  // Skip profile/pin screens
   if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
+  // Skip if already processed in this mode
   if (isLight && el._rtpDone === 'light') return;
   if (!isLight && el._rtpDone === 'dark') return;
+
+  const props = ['backgroundColor', 'color', 'borderColor', 'borderTopColor', 'borderBottomColor', 'borderLeftColor'];
 
   if (isLight) {
     if (!el._rtpOrigCss) {
@@ -106,6 +129,7 @@ function _fixInlineStyle(el, isLight) {
     css = css.replace(/linear-gradient\(135deg,#0a1e14,#0f1e33\)/gi, 'linear-gradient(135deg,#dbeafe,#eff6ff)');
     css = css.replace(/linear-gradient\(90deg,#0a0f1a,#0f1e33\)/gi, 'linear-gradient(90deg,#e0f2fe,#f0f9ff)');
 
+    // Pause observer, set style, resume
     _rtpProcessing = true;
     el.setAttribute('style', css);
     el._rtpDone = 'light';
@@ -124,8 +148,10 @@ function _fixInlineStyle(el, isLight) {
 
 function _applyThemeToEl(el, isLight) {
   if (!el || el.nodeType !== 1) return;
+  // Skip profile/pin screens
   if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
   _fixInlineStyle(el, isLight);
+  // Recurse children
   el.querySelectorAll && el.querySelectorAll('[style]').forEach(child => _fixInlineStyle(child, isLight));
 }
 
@@ -138,13 +164,13 @@ function applyFullTheme() {
   });
 }
 
-// MutationObserver
+// MutationObserver — watches new elements added to DOM
 let _rtpObserver = null;
 function startThemeObserver() {
   if (_rtpObserver) _rtpObserver.disconnect();
 
   _rtpObserver = new MutationObserver((mutations) => {
-    if (_rtpProcessing) return; 
+    if (_rtpProcessing) return; // Ignore our own style changes
     const isLight = document.body.classList.contains('light-mode');
     if (!isLight) return;
 
@@ -163,8 +189,6 @@ function startThemeObserver() {
         const el = m.target;
         if (el.dataset && el.dataset.notheme) return;
         if (el.closest && el.closest('[data-notheme]')) return;
-        
-        // 🚨 ભૂલ સુધારી લીધી: અહીંથી પેલી 2 લાઈનો (el._rtpDone = null વાળી) કાઢી નાખી છે જે લૂપ બનાવતી હતી!
         _fixInlineStyle(el, true);
       }
     });
@@ -176,9 +200,13 @@ function startThemeObserver() {
     attributes: true,
     attributeFilter: ['style']
   });
+
+  console.log('✅ RTP Theme Observer started');
 }
 
-// INIT THEME
+// ============================================================
+// INIT THEME — on page load, restore saved preference
+// ============================================================
 (function initTheme() {
   const saved = localStorage.getItem('rtp_theme') || 'dark';
   if (saved === 'light') {
@@ -188,28 +216,46 @@ function startThemeObserver() {
   }
 })();
 
+// ============================================================
+// TOGGLE FUNCTION — called by button onclick
+// ============================================================
 window.toggleAppTheme = function() {
   const isLight = document.body.classList.toggle('light-mode');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isLight ? '☀️' : '🌙';
   localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
 
+  // Sync AppState
   if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
 
-  if (typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
+  // Re-render dynamic components
+  if (typeof renderWL            === 'function') renderWL();
+  if (typeof renderHold          === 'function') renderHold();
+  if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
+  if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
 
+  // Apply MutationObserver theme to all current + new elements
   setTimeout(applyFullTheme, 50);
   setTimeout(applyFullTheme, 300);
+  setTimeout(applyFullTheme, 800);
 };
 
+// Start observer on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     startThemeObserver();
-    if (localStorage.getItem('rtp_theme') === 'light') setTimeout(applyFullTheme, 500);
+    // Apply if light mode was saved
+    if (localStorage.getItem('rtp_theme') === 'light') {
+      setTimeout(applyFullTheme, 500);
+      setTimeout(applyFullTheme, 1500);
+    }
   });
 } else {
   startThemeObserver();
-  if (localStorage.getItem('rtp_theme') === 'light') setTimeout(applyFullTheme, 500);
+  if (localStorage.getItem('rtp_theme') === 'light') {
+    setTimeout(applyFullTheme, 500);
+    setTimeout(applyFullTheme, 1500);
+  }
 }
 window.applyFullTheme = applyFullTheme;
 window.startThemeObserver = startThemeObserver;
