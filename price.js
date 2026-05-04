@@ -186,28 +186,28 @@ function _buildWLCard(s, d) {
   return `
     <div class="wl-card-wrap" id="wrap-${s}">
       <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">✕</button>
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:var(--neg, #ef4444); font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">✕</button>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
           <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline;">${s}</span>
+            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:var(--accent, #38bdf8); text-decoration:underline;">${s}</span>
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div id="daybar-${s}" style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">${_price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>'}</div>
+            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:var(--text-primary, #e2e8f0);">${_price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:var(--text-muted, #4b6280);font-size:13px;">--</span>'}</div>
           </div>
         </div>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div id="label52-${s}" style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
+          <div id="label52-${s}" style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:var(--text-sec, #94a3b8); font-weight:600;">
             ${get52WLabel(d)}${getTargetBadge(s, _price)}
           </div>
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${_price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
+            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? 'var(--pos, #22c55e)' : 'var(--neg, #ef4444)'}; white-space:nowrap;">
+              ${_price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:var(--text-muted, #4b6280);">--</span>'}
             </div>
           </div>
         </div>
@@ -224,8 +224,6 @@ function _buildWLCard(s, d) {
           <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
           <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#065f46; color:#34d399; padding:8px 0;">💬 NIVI AI</button>
         </div>
-      </div>
-      </div>
       </div>
     </div>`;
 }
@@ -305,10 +303,10 @@ function _patchWLCard(s, d) {
   const b5 = document.getElementById('bar52-' + s);
   const l5 = document.getElementById('label52-' + s);
   
-  if (pe) pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
+  if (pe) pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:var(--text-muted, #4b6280);font-size:13px;">--</span>';
   if (ce) {
-    ce.innerHTML = _price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>';
-    ce.style.color = diff >= 0 ? '#22c55e' : '#ef4444';
+    ce.innerHTML = _price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:var(--text-muted, #4b6280);">--</span>';
+    ce.style.color = diff >= 0 ? 'var(--pos, #22c55e)' : 'var(--neg, #ef4444)';
   }
   if (db) db.innerHTML = buildDayBar(d);
   if (b5) b5.innerHTML = build52WBar(d);
@@ -389,54 +387,53 @@ async function updatePrices() {
     console.log("[updatePrices] Market Closed — using cached data");
   }
 
-  // =============================================
-  // ✅ UI UPDATE LOOP (Stocks)
-  // =============================================
-  for (let s of activeWl) {
-    if (!AppState.cache[s]?.data) continue;
-    let d = { ...AppState.cache[s].data };
-    let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || 0).toFixed(2));
-    let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || price).toFixed(2));
-    let diff = parseFloat((price - prev).toFixed(2));
-    let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
+// =============================================
+// ✅ UI UPDATE LOOP
+// =============================================
+for (let s of activeWl) {
+  if (!AppState.cache[s]?.data) continue;
+  let d = { ...AppState.cache[s].data };
+  let price = parseFloat(Number(d.regularMarketPrice || d.ltp || d.price || 0).toFixed(2));
+  let prev = parseFloat(Number(d.prevClose || d.regularMarketPreviousClose || d.chartPreviousClose || price).toFixed(2));
+  let diff = parseFloat((price - prev).toFixed(2));
+  let pct = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
 
-    let pe = document.getElementById(`price-${s}`);
-    if (pe) {
-      const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
+  let pe = document.getElementById(`price-${s}`);
+  if (pe) {
+    const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
 
-      // ✅ Flash effect (Card background)
-      if (price > oldPrice && oldPrice > 0) {
-        pe.closest('.card')?.classList.remove('flash-red');
-        pe.closest('.card')?.classList.add('flash-green');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1000);
-      } else if (price < oldPrice && oldPrice > 0) {
-        pe.closest('.card')?.classList.remove('flash-green');
-        pe.closest('.card')?.classList.add('flash-red');
-        setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1000);
-      }
-
-      pe.innerText = price > 0 ? '₹' + price.toFixed(2) : '--';
+    // ✅ Flash effect — _price ની જગ્યા price વાપરો
+    if (price > oldPrice && oldPrice > 0) {
+      pe.closest('.card')?.classList.remove('flash-red');
+      pe.closest('.card')?.classList.add('flash-green');
+      setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1000);
+    } else if (price < oldPrice && oldPrice > 0) {
+      pe.closest('.card')?.classList.remove('flash-green');
+      pe.closest('.card')?.classList.add('flash-red');
+      setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1000);
     }
 
-    const bar52Elem = document.getElementById(`bar52-${s}`);
-    if (bar52Elem) bar52Elem.innerHTML = build52WBar(d);
-    const label52Elem = document.getElementById(`label52-${s}`);
-    if (label52Elem) label52Elem.innerHTML = get52WLabel(d) + getTargetBadge(s, price);
-    const dayBarElem = document.getElementById(`daybar-${s}`);
-    if (dayBarElem) dayBarElem.innerHTML = buildDayBar(d);
-    
-    if (typeof checkAlerts === 'function') checkAlerts(s, price);
-    if (typeof checkTargets === 'function') checkTargets(s, price);
-    if (typeof checkVolumeSpike === 'function') checkVolumeSpike(s, d);
-    if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[s] = Date.now();
-
-    let ce = document.getElementById(`change-${s}`);
-    if (ce) {
-      const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
-      ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-      ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
-    }
+    pe.innerText = price > 0 ? '₹' + price.toFixed(2) : '--';
   }
+
+  const bar52Elem = document.getElementById(`bar52-${s}`);
+  if (bar52Elem) bar52Elem.innerHTML = build52WBar(d);
+  const label52Elem = document.getElementById(`label52-${s}`);
+  if (label52Elem) label52Elem.innerHTML = get52WLabel(d) + getTargetBadge(s, price);
+  const dayBarElem = document.getElementById(`daybar-${s}`);
+  if (dayBarElem) dayBarElem.innerHTML = buildDayBar(d);
+  if (typeof checkAlerts === 'function') checkAlerts(s, price);
+  if (typeof checkTargets === 'function') checkTargets(s, price);
+  if (typeof checkVolumeSpike === 'function') checkVolumeSpike(s, d);
+  if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[s] = Date.now();
+
+  let ce = document.getElementById(`change-${s}`);
+  if (ce) {
+    const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+    ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
+    ce.style.color = diff > 0 ? "var(--pos, #22c55e)" : (diff < 0 ? "var(--neg, #ef4444)" : "var(--text-muted, #64748b)");
+  }
+}
   
   // =============================================
   // ✅ UI UPDATE (Indices & Ticker)
