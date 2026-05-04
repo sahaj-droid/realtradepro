@@ -110,11 +110,11 @@ function buildDayBar(d) {
   const pct = Math.min(100, Math.max(0, ((cur - lo) / range) * 100)).toFixed(0);
   return '<div style="margin:0;">'
     + '<div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;margin-bottom:2px;">'
-    + '<span style="color:#ef4444;">' + lo.toFixed(2) + '</span>'
+    + '<span style="color:var(--neg);">' + lo.toFixed(2) + '</span>'
     + '<span style="color:#4b6280;font-size:8px;">DAY</span>'
-    + '<span style="color:#22c55e;">' + hi.toFixed(2) + '</span></div>'
+    + '<span style="color:var(--pos);">' + hi.toFixed(2) + '</span></div>'
     + '<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
-    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--neg),var(--pos));border-radius:2px;"></div>'
     + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:50%;"></div>'
     + '</div></div>';
 }
@@ -130,11 +130,11 @@ function build52WBar(d) {
   const pct = Math.min(100, Math.max(0, ((cur - lo) / range) * 100)).toFixed(0);
   return '<div style="margin:0;margin-top:4px;">'
     + '<div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;margin-bottom:2px;">'
-    + '<span style="color:#ef4444;">' + lo.toFixed(2) + '</span>'
+    + '<span style="color:var(--neg);">' + lo.toFixed(2) + '</span>'
     + '<span style="color:#4b6280;font-size:8px;">52W</span>'
-    + '<span style="color:#22c55e;">' + hi.toFixed(2) + '</span></div>'
+    + '<span style="color:var(--pos);">' + hi.toFixed(2) + '</span></div>'
     + '<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
-    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--neg),var(--pos));border-radius:2px;"></div>'
     + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:#38bdf8;border-radius:50%;"></div>'
     + '</div></div>';
 }
@@ -146,8 +146,8 @@ function get52WLabel(d) {
   if (!d || !d.fiftyTwoWeekHigh || !d.fiftyTwoWeekLow) return '';
   const p = d.regularMarketPrice, hi = d.fiftyTwoWeekHigh, lo = d.fiftyTwoWeekLow;
   const fromHi = ((hi - p) / hi * 100).toFixed(1);
-  if (p >= hi * 0.97) return '<span style="color:#22c55e;font-weight:700;font-size:9px;">🔥 Near 52W High</span>';
-  if (p <= lo * 1.03) return '<span style="color:#ef4444;font-weight:700;font-size:9px;">⚠️ Near 52W Low</span>';
+  if (p >= hi * 0.97) return '<span style="color:var(--pos);font-weight:700;font-size:9px;">🔥 Near 52W High</span>';
+  if (p <= lo * 1.03) return '<span style="color:var(--neg);font-weight:700;font-size:9px;">⚠️ Near 52W Low</span>';
   return '<span style="color:#4b6280;font-size:10px;">▼' + fromHi + '% from H</span>';
 }
 
@@ -186,7 +186,7 @@ function _buildWLCard(s, d) {
   return `
     <div class="wl-card-wrap" id="wrap-${s}">
       <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">✕</button>
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:var(--neg); font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">✕</button>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
           <div style="width:75px; flex-shrink:0;">
             <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline;">${s}</span>
@@ -206,7 +206,7 @@ function _buildWLCard(s, d) {
             <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
           </div>
           <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
+            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? 'var(--pos)' : 'var(--neg)'}; white-space:nowrap;">
               ${_price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
             </div>
           </div>
@@ -258,7 +258,7 @@ async function renderWL() {
       needFetch.push(s);
       html += `<div class="wl-card-wrap" id="wrap-${s}">
         <div class="card" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-          <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; padding:4px;">✕</button>
+          <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:var(--neg); font-size:6px; background:none; border:none; cursor:pointer; padding:4px;">✕</button>
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
             <div style="width:75px;"><span style="font-size:14px; font-weight:700; color:#38bdf8;">${s}</span></div>
             <div style="flex:1;"></div>
@@ -308,7 +308,7 @@ function _patchWLCard(s, d) {
   if (pe) pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
   if (ce) {
     ce.innerHTML = _price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>';
-    ce.style.color = diff >= 0 ? '#22c55e' : '#ef4444';
+    ce.style.color = diff >= 0 ? 'var(--pos)' : 'var(--neg)';
   }
   if (db) db.innerHTML = buildDayBar(d);
   if (b5) b5.innerHTML = build52WBar(d);
@@ -423,7 +423,7 @@ for (let s of activeWl) {
   if (ce) {
     const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
     ce.innerHTML = sign + '₹' + Math.abs(diff).toFixed(2) + ' <span style="font-size:12px;">(' + sign + pct.toFixed(2) + '%)</span>';
-    ce.style.color = diff > 0 ? "#22c55e" : (diff < 0 ? "#ef4444" : "#64748b");
+    ce.style.color = diff > 0 ? "var(--pos)" : (diff < 0 ? "var(--neg)" : "#64748b");
   }
 }
 if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
