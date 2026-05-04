@@ -619,7 +619,6 @@ body.light-mode #forgotPINScreen .profile-screen-bg {
   color: #1c1917 !important;
 }
 
-
 body { background:var(--bg-app,#0a0f1a); color:var(--text-primary,#e2e8f0); font-family:'Rajdhani',sans-serif; transition:background 0.3s,color 0.3s; }
 html { font-size: 112%; }
 html[data-fsize='small'] { font-size: 95%; }
@@ -629,13 +628,14 @@ html[data-fsize='large'] { font-size: 128%; }
 .tab { display:none }
 .tab.active { display:block }
 
-.card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.2s; }
-.flash-green { animation:flashGreen 0.3s ease-out !important; }
-.flash-red   { animation:flashRed 0.3s ease-out !important; }
-@keyframes flashGreen { 0%{background:rgba(34,197,94,0.5) !important;}100%{background:transparent;} }
-@keyframes flashRed   { 0%{background:rgba(239,68,68,0.5) !important;}100%{background:transparent;} }
-.green { color:var(--pos,#38bdf8); font-weight:700; }
-.red { color:#ef4444; font-weight:700; }
+/* Clean and fixed card & flash CSS */
+.card {background: linear-gradient(145deg, #111827, #1a2332); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 8px 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); transition: background 0.2s;}
+.flash-green { animation: flashGreen 0.4s ease-out !important; }
+.flash-red   { animation: flashRed 0.4s ease-out !important; }
+@keyframes flashGreen { 0%   { background: rgba(34, 197, 94, 0.5) !important; } 100% { background: transparent !important; } }
+@keyframes flashRed { 0%   { background: rgba(239, 68, 68, 0.5) !important; } 100% { background: transparent !important; } }
+.green { color: var(--pos, #38bdf8) !important; font-weight: 700; } 
+.red { color: var(--neg, #ef4444) !important; font-weight: 700; }
 
 .bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#4b5563;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none;border-top:2px solid transparent;position:relative; }
 .bot-nav-btn.active { background:transparent;border-top:2px solid currentColor; }
