@@ -82,7 +82,7 @@ async function startApp() {
     // 2. Indices (skip GIFT NIFTY here — handled by startGiftNiftyUpdates)
     const nonGiftIndices = AppState.indicesList.filter(i => i.sym !== 'NIFTY1!');
     if (_mktOpen) {
-      await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
+    await Promise.all(nonGiftIndices.map(i => fetchFull(i.sym, true)));
     }
 
     // 3. GIFT NIFTY via its dedicated function (reads gift_nifty Firestore doc)
@@ -105,8 +105,7 @@ async function startApp() {
 
   // ✅ MARKETDATA: Auto refresh sirf market open hoy tyare
   if (typeof isMarketOpen === 'function' && isMarketOpen()) {
-    if (typeof startAutoRefresh === 'function') startAutoRefresh(60000);
-  }
+    }
 
   startRefresh();
 }
