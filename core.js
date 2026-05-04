@@ -115,21 +115,19 @@ async function startApp() {
 // ======================================
 function startRefresh() {
   if (AppState.refreshInterval) clearInterval(AppState.refreshInterval);
-
-  // ✅ GAS Warmup — active URL warm રાખે, cold start avoid
+  // ← AA LINE YAHAN — function ni andar, setInterval ni bahar
+  let _priceUpdateRunning = false;
   if (AppState._warmupInterval) clearInterval(AppState._warmupInterval);
-AppState._warmupInterval = setInterval(() => {
+  AppState._warmupInterval = setInterval(() => {
     if (typeof isMarketOpen === 'function' && !isMarketOpen()) return;
     const urls = getEnabledGASUrls();
     if (urls.length > 0) {
       fetch(urls[0] + '?type=ping', { signal: AbortSignal.timeout(3000) }).catch(() => {});
     }
-  }, 45000); // દર 20 sec — GAS VM alive રાખે (market open only)
-
-let _priceUpdateRunning = false;
-AppState.refreshInterval = setInterval(async () => {
+  }, 45000); // 20000 → 45000
+  AppState.refreshInterval = setInterval(async () => {
     if (!getMarketStatus().open) return;
-    if (_priceUpdateRunning) return; // ← overlap rokse!
+    if (_priceUpdateRunning) return;
     _priceUpdateRunning = true;
     try {
       if (typeof updatePrices === 'function') await updatePrices();
@@ -137,6 +135,7 @@ AppState.refreshInterval = setInterval(async () => {
       _priceUpdateRunning = false;
     }
   }, (parseInt(localStorage.getItem('refreshSec')) || 8) * 1000);
+}
 
 // ======================================
 // MANUAL REFRESH
