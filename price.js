@@ -205,11 +205,10 @@ function _buildWLCard(s, d) {
           <div style="flex:1; min-width:0; display:flex; justify-content:center;">
             <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
           </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? 'var(--pos)' : 'var(--neg)'}; white-space:nowrap;">
-              ${_price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
-            </div>
+        <div style="width:105px; flex-shrink:0; text-align:right;">
+        <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? 'var(--pos)' : 'var(--neg)'}; white-space:nowrap;"> ${_price > 0 ? (diff >= 0 ? '+' : '-') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)': '<span style="color:#4b6280;">--</span>'}
           </div>
+        </div>
         </div>
       </div>
       <div class="wl-actions-panel" id="act-${s}" style="display:none;">
@@ -300,7 +299,9 @@ function _patchWLCard(s, d) {
   const pct = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
   
   const pe = document.getElementById('price-' + s);
-  const ce = document.getElementById('change-' + s);
+  const ce = document.getElementById(`change-${s}`);
+  if (ce) {ce.innerText = `${sign}${diff.toFixed(2)} (${sign}${pct}%)`;
+    ce.style.color = diff >= 0 ? "var(--pos)" : "var(--neg)";}
   const db = document.getElementById('daybar-' + s);
   const b5 = document.getElementById('bar52-' + s);
   const l5 = document.getElementById('label52-' + s);
