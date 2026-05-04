@@ -4,7 +4,6 @@
 
 // ======================================
 // RENDER HEADER STRIP
-// Builds chips fresh — called once on load / manual refresh
 // ======================================
 function renderHeaderStrip() {
   const strip = document.getElementById('headerStrip');
@@ -23,7 +22,7 @@ function renderHeaderStrip() {
     const d    = _resolveIndexData(idx.sym);
     const chip = document.createElement('div');
     chip.className    = 'header-index-chip';
-    chip.dataset.sym  = idx.sym; // store sym for targeted updates
+    chip.dataset.sym  = idx.sym; 
     chip.style.cssText = 'background:var(--bg-card,#0d1f35);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:6px 10px;margin-right:8px;min-width:85px;text-align:center;cursor:pointer;scroll-snap-align:start;flex-shrink:0;transition:background 0.3s,border 0.3s;';
     chip.onclick = function() { openDetail(idx.sym, true); };
 
@@ -40,8 +39,6 @@ function renderHeaderStrip() {
 
 // ======================================
 // UPDATE HEADER INDICES (Live Updates)
-// Called by onSnapshot / updatePrices — updates chips in-place
-// FIX: read oldPrice BEFORE writing new price
 // ======================================
 function updateHeaderIndices() {
   const strip = document.getElementById('headerStrip');
@@ -54,7 +51,6 @@ function updateHeaderIndices() {
     { sym: '^NSEBANK', name: 'BANK NIFTY' }
   ];
 
-  // Rebuild strip if chips count doesn't match (e.g. user added/removed index)
   const chips = strip.querySelectorAll('.header-index-chip');
   if (chips.length !== indices.length) {
     renderHeaderStrip();
@@ -72,8 +68,9 @@ function updateHeaderIndices() {
 
     const { price, priceStr, changeStr, changeColor } = _calcChipValues(d);
 
-    // ✅ FIX: read oldPrice BEFORE overwriting innerText
-    const oldPrice = priceDiv ? (parseFloat(priceDiv.innerText.replace(/[,]/g, '')) || 0) : 0;
+    const rawPrice = priceDiv ? priceDiv.innerText.replace(/[,]/g, '') : '0';
+    let oldPrice = parseFloat(rawPrice);
+    if (isNaN(oldPrice)) oldPrice = 0;
 
     if (priceDiv)  priceDiv.innerText  = priceStr;
     if (changeDiv) {
@@ -81,31 +78,38 @@ function updateHeaderIndices() {
       changeDiv.style.color  = changeColor;
     }
 
-    // Flash on price change
-    if (priceDiv && oldPrice > 0 && price !== oldPrice) {
-      const flashColor = price > oldPrice ? 'var(--pos,#38bdf8)' : '#ef4444';
-      priceDiv.style.color = flashColor;
-      setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 600);
+    // ✅ FIX 1: Strict 2-decimal comparison ane Background Flash
+    if (priceDiv && oldPrice > 0 && price.toFixed(2) !== oldPrice.toFixed(2)) {
+      const isUp = price > oldPrice;
+      const flashText = isUp ? '#22c55e' : '#ef4444'; // Exact Green / Red
+      const flashBg = isUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'; 
+      
+      chip.style.transition = 'none'; 
+      chip.style.background = flashBg;
+      priceDiv.style.color = flashText;
+
+      setTimeout(() => { 
+        chip.style.transition = 'background 0.5s ease, color 0.5s ease'; 
+        chip.style.background = 'var(--bg-card,#0d1f35)';
+        priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; 
+      }, 400);
     }
   });
 }
 
 // ======================================
-// GIFT NIFTY — DIRECT GAS CALL (TRADINGVIEW)
-// Interval: 60 Seconds | No Firestore
+// GIFT NIFTY — DIRECT GAS CALL
 // ======================================
 let _giftNiftyInterval = null;
 
 async function updateGiftNifty() {
   const now = Date.now();
   
-  // 60s cache check
-  if (AppState._giftNiftyCache && (now - AppState._giftNiftyCacheTime) < 60000) {
+  if (AppState._giftNiftyCache && (now - AppState._giftNiftyCacheTime) < 20000) { // 20s cache check
     _applyGiftNiftyToChip(AppState._giftNiftyCache);
     return;
   }
 
-  // Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
     const r = await fetch(_appendToken(apiUrl + '?type=giftNifty'));
@@ -136,7 +140,7 @@ async function updateGiftNifty() {
       _applyGiftNiftyToChip(cached);
     }
   } catch(e) {
-    console.warn('[updateGiftNifty] GAS TradingView fetch failed:', e);
+    console.warn('[updateGiftNifty] GAS fetch failed:', e);
   }
 }
 
@@ -178,28 +182,55 @@ function _applyGiftNiftyToChip(cached) {
   const sign      = isUp ? '+' : '';
 
   if (priceDiv) {
-    const oldPrice = parseFloat(priceDiv.innerText.replace(/,/g, '')) || 0;
+    const rawPrice = priceDiv.innerText.replace(/,/g, '');
+    let oldPrice = parseFloat(rawPrice);
+    if (isNaN(oldPrice)) oldPrice = 0;
+    
     priceDiv.innerText = price.toLocaleString('en-IN', { minimumFractionDigits: 2 });
     
-    // Flash effect
-    if (oldPrice > 0 && price !== oldPrice) {
-      priceDiv.style.color = price > oldPrice ? 'var(--pos,#38bdf8)' : '#ef4444';
-      setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 1200);
+    // ✅ FIX 2: Background Flash for GIFT Nifty
+    if (oldPrice > 0 && price.toFixed(2) !== oldPrice.toFixed(2)) {
+      const isPriceUp = price > oldPrice;
+      const flashText = isPriceUp ? '#22c55e' : '#ef4444';
+      const flashBg = isPriceUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+      
+      chip.style.transition = 'none';
+      chip.style.background = flashBg;
+      priceDiv.style.color = flashText;
+
+      setTimeout(() => { 
+        chip.style.transition = 'background 0.5s ease, color 0.5s ease';
+        chip.style.background = 'var(--bg-card,#0d1f35)';
+        priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; 
+      }, 400);
     }
   }
+  
   if (changeDiv) {
     changeDiv.innerText   = sign + change.toFixed(2) + ' (' + sign + changePct.toFixed(2) + '%)';
     changeDiv.style.color = color;
   }
 }
 
+// ✅ FIX 3: Fast Live Update Loop (20 Seconds)
 function startGiftNiftyUpdates() {
   if (_giftNiftyInterval) clearInterval(_giftNiftyInterval);
-  updateGiftNifty();
-  // Set to 60 seconds as requested
-  _giftNiftyInterval = setInterval(updateGiftNifty, 60000);
-}
+  
+  _giftNiftyInterval = setInterval(async () => {
+    await updateGiftNifty();
 
+    const indices = AppState.indicesList || [];
+    const nonGift = indices.filter(i => i.sym !== 'NIFTY1!');
+    
+    await Promise.all(nonGift.map(async (idx) => {
+       if (AppState.cache[idx.sym]) { AppState.cache[idx.sym].time = 0; }
+       if (typeof fetchFull === 'function') { await fetchFull(idx.sym, true); }
+    }));
+
+    if (typeof updateHeaderIndices === 'function') { updateHeaderIndices(); }
+    
+  }, 20000); 
+}
 
 // ======================================
 // RENDER INDICES TAB (Full Page)
