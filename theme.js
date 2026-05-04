@@ -163,10 +163,7 @@ function startThemeObserver() {
         if (el.dataset && el.dataset.notheme) return;
         if (el.closest && el.closest('[data-notheme]')) return;
         
-        // 🔥 THE FIX: અપડેટ થયેલો નવો ભાવ/કલર જૂના થીમથી દબાઈ ન જાય તે માટે
-        el._rtpOrigCss = undefined; 
-        el._rtpDone = null;
-        
+        // 🚨 ભૂલ સુધારી લીધી: અહીંથી પેલી 2 લાઈનો (el._rtpDone = null વાળી) કાઢી નાખી છે જે લૂપ બનાવતી હતી!
         _fixInlineStyle(el, true);
       }
     });
