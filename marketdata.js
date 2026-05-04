@@ -184,7 +184,6 @@ async function initMarketData() {
   // ── TIER 1: LocalStorage — instant load ──
   const localCount = loadFromLocalCache();
   if (localCount > 0) {
-    // Turant UI render karo — user zero wait kare
     if (typeof renderWL === 'function') renderWL();
     if (typeof renderHeaderStrip === 'function') renderHeaderStrip();
     console.log('[MarketData] ⚡ UI rendered from LocalCache instantly');
@@ -192,23 +191,20 @@ async function initMarketData() {
 
   // ── TIER 2 or 3 depending on market status ──
   if (status.open) {
-    // Market OPEN → background ma GAS call
-    console.log('[MarketData] 📡 Market open — GAS fetch in background...');
-    _backgroundGASFetch();
+    // Market OPEN → live-price.js engine handle kare 6e — yahan koi GAS call nahi
+    console.log('[MarketData] 📡 Market open — live-price.js engine will handle fetching');
   } else {
     // Market CLOSED → Firebase thi fresh data
     console.log('[MarketData] 🔥 Market closed — loading from Firebase...');
     const fbCount = await loadFromFirebase();
 
     if (fbCount > 0) {
-      // Firebase data aavyu — UI refresh
       if (typeof renderWL === 'function') renderWL();
       if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
       console.log(`[MarketData] ✅ UI updated from Firebase — ${fbCount} symbols`);
     } else if (localCount === 0) {
-      // Na local, na firebase — last resort GAS call
-      console.log('[MarketData] ⚠️ No cache/Firebase — trying GAS as last resort...');
-      _backgroundGASFetch();
+      // Na local, na firebase — last resort: engine nu pehlu tick trigger karo
+      console.log('[MarketData] ⚠️ No cache/Firebase — engine will fetch on first tick');
     }
   }
 
@@ -218,29 +214,17 @@ async function initMarketData() {
 
 // ======================================
 // 📡 BACKGROUND GAS FETCH
-// Market open hoy tyare — UI block na thay
-// GAS data aave to LocalStorage update
+// ⚠️  IMPORTANT: live-price.js engine start thaya pachhi
+//     aa function GAS call NAHI kare — sirf localStorage save kare
+//     GAS fetch = live-price.js ni responsibility
 // ======================================
 async function _backgroundGASFetch() {
   try {
-    const wl = AppState.watchlists?.[AppState.currentWL]?.stocks
-            || AppState.wl
-            || [];
+    const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || AppState.wl || [];
+    if (!wl.length) return;
 
-    if (!wl.length) {
-      console.warn('[MarketData] Watchlist empty — GAS fetch skipped');
-      return;
-    }
-
-    // Existing batchFetchStocks use karo — api.js thi
-    if (typeof batchFetchStocks !== 'function') {
-      console.warn('[MarketData] batchFetchStocks not available');
-      return;
-    }
-
-    await batchFetchStocks(wl, false);
-
-    // GAS data aavyu — localStorage ma save karo
+    // ✅ Sirf existing cache localStorage ma save karo
+    // GAS call NAHI — live-price.js engine handle kare 6e
     const cacheToSave = {};
     wl.forEach(sym => {
       if (AppState.cache[sym]?.data) {
@@ -250,54 +234,36 @@ async function _backgroundGASFetch() {
 
     if (Object.keys(cacheToSave).length > 0) {
       saveToLocalCache(cacheToSave);
+      console.log('[MarketData] ✅ Cache saved to localStorage');
     }
 
-    // UI silently update
-    if (typeof renderWL === 'function') renderWL();
-    if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-    console.log('[MarketData] ✅ Background GAS fetch complete');
-
   } catch (e) {
-    console.warn('[MarketData] Background GAS fetch failed:', e.message);
+    console.warn('[MarketData] Cache save failed:', e.message);
   }
 }
 
 // ======================================
 // 🏷️ MARKET STATUS BADGE
-// Header ma badge show karo
-// Existing element hoy to update, nahi to skip
 // ======================================
 function _renderMarketStatusBadge(status) {
-  // Jо existing badge element hoy to j update karo
   const badge = document.getElementById('marketStatusBadge');
-  if (!badge) return;  // index.html ma element nathi to skip
-
-  badge.textContent   = status.label;
-  badge.style.color   = status.color;
+  if (!badge) return;
+  badge.textContent      = status.label;
+  badge.style.color      = status.color;
   badge.style.background = status.bg;
 }
 
 // ======================================
-// 🔄 AUTO REFRESH — Market Open hoy tyare
-// Har 60 sec ma background refresh
+// 🔄 AUTO REFRESH
+// ⚠️  startAutoRefresh — live-price.js engine 6e tyare CALL NA KARVO
+//     core.js ma startAutoRefresh call remove kari devo
 // ======================================
 let _autoRefreshInterval = null;
 
 function startAutoRefresh(intervalMs = 60000) {
-  if (_autoRefreshInterval) clearInterval(_autoRefreshInterval);
-  if (!isMarketOpen()) {
-    console.log('[MarketData] Market closed — auto refresh not started');
-    return;
-  }
-  _autoRefreshInterval = setInterval(() => {
-    if (!isMarketOpen()) {
-      clearInterval(_autoRefreshInterval);
-      console.log('[MarketData] Market closed — auto refresh stopped');
-      return;
-    }
-    _backgroundGASFetch();
-  }, intervalMs);
-  console.log(`[MarketData] 🔄 Auto refresh started — every ${intervalMs / 1000}s`);
+  // live-price.js engine active hoy tyare aa function koi kaam nathi karto
+  // Kept for backward compatibility only
+  console.log('[MarketData] startAutoRefresh — skipped, live-price.js engine is active');
 }
 
 function stopAutoRefresh() {
@@ -319,4 +285,4 @@ window.saveToLocalCache    = saveToLocalCache;
 window.startAutoRefresh    = startAutoRefresh;
 window.stopAutoRefresh     = stopAutoRefresh;
 
-console.log('✅ marketdata.js loaded | Tier: LocalStorage → GAS → Firebase');
+console.log('✅ marketdata.js loaded | Tier: LocalStorage → GAS(live-price.js) → Firebase');
