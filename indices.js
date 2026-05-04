@@ -82,11 +82,17 @@ function updateHeaderIndices() {
     }
 
     // Flash on price change
-    if (priceDiv && oldPrice > 0 && price !== oldPrice) {
-      const flashColor = price > oldPrice ? 'var(--pos,#38bdf8)' : '#ef4444';
-      priceDiv.style.color = flashColor;
-      setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 600);
-    }
+// Flash on price change
+if (priceDiv && oldPrice > 0 && price !== oldPrice) {
+  // મસ્ત વેરિએબલનો ઉપયોગ
+  const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
+  
+  priceDiv.style.transition = "color 0.2s ease"; // સ્મૂથ કલર ચેન્જ માટે
+  priceDiv.style.color = flashColor;
+
+  setTimeout(() => { 
+  priceDiv.style.color = 'var(--text-primary)'; 
+  }, 1200);}
   });
 }
 
@@ -174,7 +180,7 @@ function _applyGiftNiftyToChip(cached) {
   const change    = parseFloat(cached.change);
   const changePct = parseFloat(cached.changePct);
   const isUp      = change >= 0;
-  const color     = isUp ? 'var(--pos,#38bdf8)' : '#ef4444';
+  const color     = isUp ? 'var(--pos,var(--pos))' : 'var(--neg)';
   const sign      = isUp ? '+' : '';
 
   if (priceDiv) {
@@ -183,7 +189,7 @@ function _applyGiftNiftyToChip(cached) {
     
     // Flash effect
     if (oldPrice > 0 && price !== oldPrice) {
-      priceDiv.style.color = price > oldPrice ? 'var(--pos,#38bdf8)' : '#ef4444';
+      priceDiv.style.color = price > oldPrice ? 'var(--pos,var(--pos))' : 'var(--neg)';
       setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 1200);
     }
   }
@@ -619,7 +625,7 @@ function _calcChipValues(d) {
   const pct       = prev ? (change / prev * 100) : 0;
   const isUp      = change >= 0;
   const sign      = isUp ? '+' : '';
-  const color     = isUp ? 'var(--pos,#38bdf8)' : '#ef4444';
+  const color     = isUp ? 'var(--pos,var(--pos))' : '#var(--neg)';
   return {
     price,
     priceStr:    price.toFixed(2),
