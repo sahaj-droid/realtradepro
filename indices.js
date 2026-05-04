@@ -112,7 +112,7 @@ async function updateGiftNifty() {
 
   try {
     const apiUrl = getActiveGASUrl();
-    const r = await fetch(_appendToken(apiUrl + '?type=giftNifty'));
+    const r = await fetch(_appendToken(apiUrl + `?type=giftNifty&_t=${Date.now()}`));
     const data = await r.json();
     
     if (data && data.price && data.price > 0) {
