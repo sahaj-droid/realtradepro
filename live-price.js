@@ -49,18 +49,24 @@
 // live-price.js ની અંદર _flashCard() ફંક્શનમાં આ બદલાવ કરો:
 function _flashCard(cardEl, isUp) {
   if (!cardEl) return;
-  // જૂનું: cardEl.dataset.flashing = '1';
-  cardEl.dataset.notheme = '1'; // Theme observer ને રોકવા 
+
+  // ૧. Theme Engine ને રોકવા માટે data-notheme સેટ કરો
+  cardEl.setAttribute('data-notheme', '1');
   
   cardEl.classList.remove('flash-green', 'flash-red');
-  void cardEl.offsetWidth; 
+  void cardEl.offsetWidth; // Force reflow
   cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
-  
+
+  // ૨. 800ms પછી ક્લાસ અને data-notheme હટાવો જેથી ઈફેક્ટ સરખી દેખાય
   setTimeout(() => {
     cardEl.classList.remove('flash-green', 'flash-red');
-    // જૂનું: delete cardEl.dataset.flashing;
-    delete cardEl.dataset.notheme;
-  }, 500);
+    cardEl.removeAttribute('data-notheme');
+    
+    // જો લાઈટ મોડ ચાલુ હોય તો ફરીથી થીમ અપ્લાય કરી દેવી
+    if (document.body.classList.contains('light-mode') && typeof applyFullTheme === 'function') {
+      applyFullTheme();
+    }
+  }, 800);
 }
 
   // ── Patch single stock card in DOM (no rebuild) ────────────
