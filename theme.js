@@ -57,6 +57,9 @@ const COLOR_MAP_LIGHT = {
   '#4b6280': RTP_LIGHT.textMuted,
   '#64748b': RTP_LIGHT.textMuted,
   // Green → Cyan
+  '#34d399': RTP_LIGHT.accent,
+  '#22c55e': RTP_LIGHT.accent,
+  '#86efac': RTP_LIGHT.accent,
   '#00d4aa': RTP_LIGHT.accent,
   '#065f46': '#dbeafe',
   '#166534': '#dbeafe',
@@ -97,10 +100,6 @@ function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
   if (el.closest && el.closest('[data-notheme]')) return;
-  // Skip act-btn — each button has intentional BUY/SELL/etc colors
-  if (el.classList && el.classList.contains('act-btn')) return;
-  // Skip profile/pin screens
-  if (el.closest && el.closest('#profileScreen,#pinScreen,#createProfileScreen,#forgotPINScreen')) return;
   // Skip if already processed in this mode
   if (isLight && el._rtpDone === 'light') return;
   if (!isLight && el._rtpDone === 'dark') return;
@@ -225,8 +224,11 @@ window.toggleAppTheme = function() {
   // Sync AppState
   if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
 
-  // Re-render dynamic components
-  if (typeof renderWL            === 'function') renderWL();
+  // Re-render dynamic components — NO renderWL() here!
+  // renderWL() is async and fetches missing stocks → shows "Adding..." loader
+  // Instead: patch DOM in-place (colors only, no fetch)
+  if (typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
+  else if (typeof patchVisiblePrices === 'function') patchVisiblePrices();
   if (typeof renderHold          === 'function') renderHold();
   if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
   if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
