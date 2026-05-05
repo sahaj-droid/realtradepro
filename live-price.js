@@ -1,106 +1,61 @@
 // ============================================================
-// LIVE PRICE ENGINE — RealTradePro
-// Version: 1.0 FINAL
-// ⚠️  DO NOT MODIFY THIS FILE
-// This is the heart of RealTradePro — live price tracking
-// Author: Built for Dost — sahaj-droid
-// ============================================================
-//
-// WHAT THIS FILE DOES:
-//   1. Fetches live prices from GAS every N seconds (no overlap)
-//   2. Patches only price/change/bars in DOM — no full rebuild
-//   3. Flash green/red on price change via CSS class
-//   4. Updates indices (Nifty, Sensex, Bank Nifty) after every fetch
-//   5. GAS warmup ping every 45s — prevents cold start delay
-//   6. Auto-saves fetched data to localStorage for offline load
-//   7. Market hours check — no GAS calls when market is closed
-//   8. Survives tab switches, theme changes, watchlist changes
-//
-// DEPENDENCIES (must load before this file):
-//   - appstate.js   → AppState
-//   - api.js        → batchFetchStocks, getEnabledGASUrls, fetchFull
-//   - marketdata.js → getMarketStatus, saveToLocalCache
-//   - indices.js    → updateHeaderIndices
-//   - price.js      → buildDayBar, build52WBar, get52WLabel, getTargetBadge
-//
-// HOW TO USE:
-//   In index.html — load AFTER all above files:
-//   <script src="live-price.js"></script>
-//   Then call: startLivePriceEngine()  ← from core.js startApp()
-//   To stop:   stopLivePriceEngine()
-//
+// LIVE PRICE ENGINE — RealTradePro v1.1 FIXED
 // ============================================================
 
 (function() {
   'use strict';
 
-  // ── Private state ──────────────────────────────────────────
-  let _interval     = null;   // main price refresh interval
-  let _warmupTimer  = null;   // GAS warmup ping interval
-  let _running      = false;  // overlap prevention flag
-  let _started      = false;  // engine started flag
+  let _interval     = null;
+  let _warmupTimer  = null;
+  let _running      = false;
+  let _started      = false;
 
-  // ── Config (reads from localStorage — set via Settings UI) ──
   function _getRefreshMs() {
     const sec = parseInt(localStorage.getItem('refreshSec')) || 8;
-    return Math.max(6, sec) * 1000; // minimum 6s
+    return Math.max(6, sec) * 1000;
   }
 
-// window. સાથે જોડી દો જેથી ગમે ત્યાંથી એક્સેસ થાય
-window._flashCard = function(cardEl, isUp) {
-  if (!cardEl) return;
-
-  // થીમ એન્જિનને આ એલિમેન્ટ ટચ કરવાની મનાઈ કરો
-  cardEl.setAttribute('data-notheme', '1');
-  
-  cardEl.classList.remove('flash-green', 'flash-red');
-  void cardEl.offsetWidth; // રિફ્રેશ એનિમેશન
-  cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
-
-  setTimeout(() => {
+  // ── _flashCard FIX ─────────────────────────────────────────
+  // REMOVED: applyFullTheme() — it was resetting ALL inline styles
+  //          after every flash, killing 52W bar track color,
+  //          live DOM colors, and causing visible flicker
+  // REMOVED: data-notheme toggle — not needed, caused bar resets
+  // theme.js MutationObserver handles theme on new nodes automatically
+  window._flashCard = function(cardEl, isUp) {
+    if (!cardEl) return;
     cardEl.classList.remove('flash-green', 'flash-red');
-    cardEl.removeAttribute('data-notheme'); // લૉક ખોલી નાખો
-    
-    // લાઈટ મોડમાં કલર ફિક્સ કરવા માટે
-    if (document.body.classList.contains('light-mode') && typeof applyFullTheme === 'function') {
-      applyFullTheme();
-    }
-  }, 1000); // ૧ સેકન્ડ રાખો, મસ્ત દેખાશે
-};
+    void cardEl.offsetWidth; // reflow to restart CSS animation
+    cardEl.classList.add(isUp ? 'flash-green' : 'flash-red');
+    setTimeout(() => {
+      cardEl.classList.remove('flash-green', 'flash-red');
+    }, 1000);
+  };
 
-  // ── Patch single stock card in DOM (no rebuild) ────────────
+  // ── Patch single card ──────────────────────────────────────
   function _patchCard(sym, data) {
     const price = parseFloat(Number(
       data.regularMarketPrice || data.ltp || data.price || 0
     ).toFixed(2));
-
     const prev = parseFloat(Number(
       data.chartPreviousClose || data.regularMarketPreviousClose ||
       data.prevClose || data.prev_close || price
     ).toFixed(2));
-
     const diff = parseFloat((price - prev).toFixed(2));
     const pct  = prev > 0 ? parseFloat(((diff / prev) * 100).toFixed(2)) : 0;
 
-    // Price element
     const pe = document.getElementById('price-' + sym);
     if (pe) {
       const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
-
-      // ... પ્રાઈઝ ચેક કર્યા પછી ...
       if (oldPrice > 0 && price > 0 && price.toFixed(2) !== oldPrice.toFixed(2)) {
-        // window._flashCard ને કોલ કરો
         if (typeof _flashCard === 'function') {
           _flashCard(pe.closest('.card') || pe.closest('.wl-card-wrap'), price > oldPrice);
         }
       }
-
       pe.innerHTML = price > 0
         ? '₹' + price.toLocaleString('en-IN', { minimumFractionDigits: 2 })
         : '<span style="color:#4b6280;font-size:13px;">--</span>';
     }
 
-    // Change element
     const ce = document.getElementById('change-' + sym);
     if (ce) {
       const sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
@@ -113,48 +68,35 @@ window._flashCard = function(cardEl, isUp) {
                      : '#64748b';
     }
 
-    // Day bar
     const db = document.getElementById('daybar-' + sym);
     if (db && typeof buildDayBar === 'function') db.innerHTML = buildDayBar(data);
 
-    // 52W bar
     const b5 = document.getElementById('bar52-' + sym);
     if (b5 && typeof build52WBar === 'function') b5.innerHTML = build52WBar(data);
 
-    // 52W label + target badge
     const l5 = document.getElementById('label52-' + sym);
     if (l5 && typeof get52WLabel === 'function') {
       l5.innerHTML = get52WLabel(data) + (typeof getTargetBadge === 'function' ? getTargetBadge(sym, price) : '');
     }
 
-    // Alerts & Targets
     if (typeof checkAlerts      === 'function') checkAlerts(sym, price);
     if (typeof checkTargets     === 'function') checkTargets(sym, price);
     if (typeof checkVolumeSpike === 'function') checkVolumeSpike(sym, data);
-
-    // Update timestamp
     if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[sym] = Date.now();
   }
 
-  // ── Patch ALL visible stocks from cache ───────────────────
   function _patchAllVisible() {
-    const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
-    const group = AppState.currentGroup;
+    const wl     = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
+    const group  = AppState.currentGroup;
     const groups = AppState.groups || {};
-
-    const displayList = (group !== 'ALL' && groups[group])
-      ? wl.filter(s => groups[group].includes(s))
-      : wl;
-
-    displayList.forEach(sym => {
+    const list   = (group !== 'ALL' && groups[group])
+      ? wl.filter(s => groups[group].includes(s)) : wl;
+    list.forEach(sym => {
       const data = AppState.cache[sym]?.data;
-      if (data && document.getElementById('price-' + sym)) {
-        _patchCard(sym, data);
-      }
+      if (data && document.getElementById('price-' + sym)) _patchCard(sym, data);
     });
   }
 
-  // ── Save fetched data to localStorage ─────────────────────
   function _saveToLocalStorage(symbols) {
     if (typeof saveToLocalCache !== 'function') return;
     const toSave = {};
@@ -164,132 +106,79 @@ window._flashCard = function(cardEl, isUp) {
     if (Object.keys(toSave).length > 0) saveToLocalCache(toSave);
   }
 
-  // ── Main fetch + update cycle ─────────────────────────────
   async function _tick() {
-    if (_running) return; // prevent overlap — CRITICAL
+    if (_running) return;
     _running = true;
-
     try {
       const status = getMarketStatus();
+      if (typeof updateGiftNifty === 'function') await updateGiftNifty().catch(() => {});
 
-      // GIFT NIFTY — always update (runs its own logic)
-      if (typeof updateGiftNifty === 'function') {
-        await updateGiftNifty().catch(() => {});
-      }
-
-if (status.open) {
-        // ── MARKET OPEN: fetch fresh prices from GAS ──────────
+      if (status.open) {
         const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
-        const nonGiftIndices = (AppState.indicesList || []).filter(i => i.sym !== 'NIFTY1!').map(i => i.sym);
-        
+        const nonGiftIndices = (AppState.indicesList || [])
+          .filter(i => i.sym !== 'NIFTY1!').map(i => i.sym);
         try {
-          // વોચલિસ્ટ અને ઈન્ડાઈસિસ બંને એકસાથે અપડેટ કરો
           await Promise.all([
-             wl.length > 0 ? batchFetchStocks(wl) : Promise.resolve(),
-             nonGiftIndices.length > 0 ? batchFetchStocks(nonGiftIndices, true) : Promise.resolve()
+            wl.length > 0 ? batchFetchStocks(wl) : Promise.resolve(),
+            nonGiftIndices.length > 0 ? batchFetchStocks(nonGiftIndices, true) : Promise.resolve()
           ]);
-        } catch(e) {
-          console.warn('[LivePrice] GAS fetch failed:', e.message);
-          // fetch fail thay to pan patch continue karse!
-        }
-
-        // Save to localStorage after successful fetch
-        if (wl.length > 0) {
-          _saveToLocalStorage(wl);
-        }
+        } catch(e) { console.warn('[LivePrice] GAS fetch failed:', e.message); }
+        if (wl.length > 0) _saveToLocalStorage(wl);
       }
-      // ── Patch DOM (works for both open & closed) ──────────
+
       _patchAllVisible();
-
-      // ── Update indices header ─────────────────────────────
       if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
+      if (typeof updatePriceTicker   === 'function') updatePriceTicker();
 
-      // ── Update price ticker strip ─────────────────────────
-      if (typeof updatePriceTicker === 'function') updatePriceTicker();
-
-    } catch (e) {
+    } catch(e) {
       console.warn('[LivePrice] Tick error:', e.message);
     } finally {
-      _running = false; // always release lock
+      _running = false;
     }
   }
 
-  // ── GAS Warmup Ping — prevents cold start ─────────────────
   function _startWarmup() {
     if (_warmupTimer) clearInterval(_warmupTimer);
     _warmupTimer = setInterval(() => {
-      if (!getMarketStatus().open) return; // only during market hours
+      if (!getMarketStatus().open) return;
       const urls = typeof getEnabledGASUrls === 'function' ? getEnabledGASUrls() : [];
-      if (urls.length > 0) {
-        fetch(urls[0] + '?type=ping', {
-          signal: AbortSignal.timeout(3000)
-        }).catch(() => {}); // silent fail — just a warmup
-      }
-    }, 45000); // every 45s — enough to keep GAS VM alive
+      if (urls.length > 0) fetch(urls[0] + '?type=ping', { signal: AbortSignal.timeout(3000) }).catch(() => {});
+    }, 45000);
   }
 
-  // ── PUBLIC: Start the engine ──────────────────────────────
   function startLivePriceEngine() {
-    if (_started) {
-      console.log('[LivePrice] Already running — restart');
-      stopLivePriceEngine();
-    }
-
-    _started = true;
-    _running = false;
-
+    if (_started) stopLivePriceEngine();
+    _started = true; _running = false;
     console.log('[LivePrice] 🚀 Engine started');
-
-    // First tick immediately
     _tick();
-
-    // Then repeat every N seconds
     _interval = setInterval(_tick, _getRefreshMs());
-
-    // GAS warmup
     _startWarmup();
   }
 
-  // ── PUBLIC: Stop the engine ───────────────────────────────
   function stopLivePriceEngine() {
     if (_interval)    { clearInterval(_interval);    _interval    = null; }
     if (_warmupTimer) { clearInterval(_warmupTimer); _warmupTimer = null; }
-    _running = false;
-    _started = false;
+    _running = false; _started = false;
     console.log('[LivePrice] 🛑 Engine stopped');
   }
 
-  // ── PUBLIC: Restart with new interval (after settings change) ─
-  function restartLivePriceEngine() {
-    stopLivePriceEngine();
-    startLivePriceEngine();
-  }
-
-  // ── PUBLIC: Patch visible prices (for theme toggle etc.) ──
-  function patchVisiblePrices() {
-    _patchAllVisible();
-  }
-
-  // ── PUBLIC: Manual refresh (bust cache + fetch fresh) ─────
+  function restartLivePriceEngine() { stopLivePriceEngine(); startLivePriceEngine(); }
+  function patchVisiblePrices()     { _patchAllVisible(); }
   async function manualPriceFetch() {
     const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
-    // Bust cache so batchFetchStocks fetches fresh
     wl.forEach(sym => { if (AppState.cache[sym]) AppState.cache[sym].time = 0; });
     await _tick();
   }
 
-  // ── Register to window ────────────────────────────────────
   window.startLivePriceEngine   = startLivePriceEngine;
   window.stopLivePriceEngine    = stopLivePriceEngine;
   window.restartLivePriceEngine = restartLivePriceEngine;
   window.patchVisiblePrices     = patchVisiblePrices;
   window.manualPriceFetch       = manualPriceFetch;
-
-  // Backward compatibility — existing code jo aa functions call kare 6e
   window.updatePrices           = _tick;
   window._patchVisibleWLPrices  = _patchAllVisible;
   window._patchWLCard           = _patchCard;
 
-  console.log('✅ live-price.js loaded | Call startLivePriceEngine() to begin');
+  console.log('✅ live-price.js v1.1 loaded | startLivePriceEngine() to begin');
 
-})(); // IIFE — no global variable pollution
+})();
