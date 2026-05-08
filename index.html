@@ -7,424 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-  /* ========== PROFILE SCREENS CSS ========== */
-.profile-screen-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 99999;
-  min-height: 100vh;
-  background: #0f0f0f;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.profile-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.profile-logo {
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
-}
-
-.profile-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #f0f0f0;
-  margin: 0;
-}
-
-.profile-subtitle {
-  color: #888;
-  font-size: 0.95rem;
-  margin-top: 0.3rem;
-}
-
-/* Profile Cards */
-.profile-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-  max-width: 400px;
-}
-
-.profile-card {
-  background: #1a1a1a;
-  border: 2px solid #2a2a2a;
-  border-radius: 16px;
-  padding: 1.2rem 1.5rem;
-  cursor: pointer;
-  text-align: center;
-  min-width: 110px;
-  transition: all 0.2s ease;
-}
-
-.profile-card:hover {
-  border-color: #00d4aa;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,212,170,0.15);
-}
-
-.profile-card-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00d4aa, #0080ff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 auto 0.6rem;
-}
-
-.profile-card-name {
-  color: #e0e0e0;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.profile-avatar-large {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #00d4aa, #0080ff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 auto 0.5rem;
-}
-
-/* Create Button */
-.profile-create-btn {
-  background: linear-gradient(135deg, #00d4aa, #0080ff);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 0.85rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Rajdhani', sans-serif;
-  letter-spacing: 0.5px;
-  width: 100%;
-  max-width: 320px;
-  margin-top: 0.5rem;
-  transition: opacity 0.2s;
-}
-
-.profile-create-btn:hover { opacity: 0.88; }
-
-/* PIN Dots */
-.pin-dots {
-  display: flex;
-  gap: 1.2rem;
-  margin-bottom: 1rem;
-}
-
-.pin-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid #555;
-  background: transparent;
-  transition: all 0.15s ease;
-}
-
-.pin-dot.filled {
-  background: #00d4aa;
-  border-color: #00d4aa;
-  box-shadow: 0 0 8px rgba(0,212,170,0.5);
-}
-
-/* PIN Numpad */
-.pin-numpad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.8rem;
-  max-width: 280px;
-  width: 100%;
-  margin: 1rem 0;
-}
-
-.pin-numpad button {
-  background: #1a1a1a;
-  border: 1.5px solid #2a2a2a;
-  color: #e0e0e0;
-  border-radius: 12px;
-  padding: 1rem;
-  font-size: 1.4rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Rajdhani', sans-serif;
-  transition: all 0.15s ease;
-}
-
-.pin-numpad button:hover {
-  background: #252525;
-  border-color: #00d4aa;
-  color: #00d4aa;
-}
-
-.pin-numpad button:active {
-  transform: scale(0.94);
-  background: #00d4aa22;
-}
-
-.pin-clear { font-size: 1.1rem !important; color: #ff6b6b !important; }
-
-/* Errors */
-.pin-error {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
-  text-align: center;
-}
-
-/* Forgot + Back */
-.pin-forgot {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 0.9rem;
-  cursor: pointer;
-  margin-top: 0.5rem;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.pin-forgot:hover { color: #00d4aa; }
-
-.pin-back {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 0.9rem;
-  cursor: pointer;
-  margin-top: 1rem;
-  font-family: 'Rajdhani', sans-serif;
-}
-
-.pin-back:hover { color: #aaa; }
-
-/* Create Profile Form */
-.create-profile-form {
-  width: 100%;
-  max-width: 340px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.form-group label {
-  color: #888;
-  font-size: 0.85rem;
-}
-
-.form-group input,
-.form-group select {
-  background: #1a1a1a;
-  border: 1.5px solid #2a2a2a;
-  color: #e0e0e0;
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  font-family: 'Rajdhani', sans-serif;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  border-color: #00d4aa;
-}
-html, body {
-  background: #071428 !important;
-  min-height: 100%;
-  min-height: -webkit-fill-available;
-}
-
-html {
-  height: -webkit-fill-available;
-}
-
-#settings {
-  background: #071428 !important;
-  min-height: 100vh;
-  padding-bottom: 80px;
-}
-.tab {
-  background: #071428;
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-}
-/* Light mode overrides */
-body.light-mode .profile-screen-bg { background:#faf8f5; }
-body.light-mode .profile-title { color:#1c1917; }
-body.light-mode .profile-subtitle { color:#78716c; }
-body.light-mode .profile-card { background:#fff; border-color:#e7e5e4; box-shadow:0 2px 10px rgba(0,0,0,0.06); }
-body.light-mode .profile-card:hover { border-color:#d97706; box-shadow:0 6px 20px rgba(217,119,6,0.15); }
-body.light-mode .profile-card-name { color:#1c1917; }
-body.light-mode .pin-numpad button { background:#fff; border-color:#e7e5e4; color:#1c1917; }
-body.light-mode .pin-numpad button:hover { border-color:#d97706; color:#d97706; }
-body.light-mode .form-group input,
-body.light-mode .form-group select { background:#fff; border-color:#e7e5e4; color:#1c1917; }
-body.light-mode .form-group input:focus,
-body.light-mode .form-group select:focus { border-color:#d97706; }
-
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap');
-
-body { background:#0a0f1a; color:#e2e8f0; font-family:'Rajdhani',sans-serif; transition:background 0.3s,color 0.3s; }
-html { font-size: 112%; }
-html[data-fsize='small'] { font-size: 95%; }
-html[data-fsize='medium'] { font-size: 112%; }
-html[data-fsize='large'] { font-size: 128%; }
-
-.tab { display:none }
-.tab.active { display:block }
-
-.card {background:linear-gradient(145deg,#111827,#1a2332); .card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.2s; }
-.flash-green { animation:flashGreen 0.25s; }
-.flash-red   { animation:flashRed 0.25s; }
-@keyframes flashGreen { 0%{background:rgba(34,197,94,0.35);}100%{background:transparent;} }
-@keyframes flashRed   { 0%{background:rgba(239,68,68,0.35);}100%{background:transparent;} }
-.green{color:#22c55e;font-weight:700;} .red{color:#ef4444;font-weight:700;}
-  border:1px solid rgba(255,255,255,0.06); 
-  border-radius:12px; 
-  padding:8px 10px; 
-  box-shadow:0 4px 12px rgba(0,0,0,0.4); 
-  transition:background 0.2s; 
-}
-.flash-green { animation:flashGreen 0.3s ease-out !important; }
-.flash-red   { animation:flashRed 0.3s ease-out !important; }
-@keyframes flashGreen { 
-  0%   { background:rgba(34,197,94,0.5) !important; } 
-  100% { background:transparent; } 
-}
-@keyframes flashRed { 
-  0%   { background:rgba(239,68,68,0.5) !important; } 
-  100% { background:transparent; } 
-}
-
-.green { color:#22c55e; font-weight:700; } 
-.red { color:#ef4444; font-weight:700; }
-
-.bot-nav-btn { display:flex;flex-direction:column;align-items:center;font-size:9px;color:#4b5563;padding:3px 6px;border-radius:10px;transition:all 0.2s;cursor:pointer;background:transparent;border:none;border-top:2px solid transparent;position:relative; }
-.bot-nav-btn.active { background:transparent;border-top:2px solid currentColor; }
-#nav-watchlist.active { color:#34d399; }
-#nav-indices.active   { color:#38bdf8; }
-#nav-holdings.active  { color:#a78bfa; }
-#nav-history.active   { color:#f59e0b; }
-#nav-news.active      { color:#f472b6; }
-#nav-settings.active  { color:#94a3b8; }
-#nav-learn.active     { color:#fb923c; }
-#nav-learn svg        { stroke:#fb923c; }
-#nav-watchlist svg { stroke:#34d399; }
-#nav-indices svg   { stroke:#38bdf8; }
-#nav-holdings svg  { stroke:#a78bfa; }
-#nav-history svg   { stroke:#f59e0b; }
-#nav-news svg      { stroke:#f472b6; }
-#nav-settings svg  { stroke:#94a3b8; }
-.bot-nav-btn span.icon { font-size:16px; }
-
-#alertPopup { position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#1e3a5f;border:1px solid #38bdf8;border-radius:10px;padding:10px 18px;font-size:13px;color:#fff;z-index:9999;display:none;max-width:300px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(56,189,248,0.3);animation:slideDown 0.3s ease; }
-@keyframes slideDown { from{top:40px;opacity:0;}to{top:60px;opacity:1;} }
-
-.sort-btn { background:#1e2d3d;border:1px solid #2d3f52;color:#94a3b8;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:all 0.15s; }
-.sort-btn:hover { background:#253447;color:#e2e8f0; }
-
-#searchBox { background:#111827;border:1px solid #2d3f52;color:white;border-radius:10px;padding:10px 14px;width:100%;font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;transition:border 0.2s; }
-#searchBox:focus { border-color:#38bdf8; }
-
-#suggestionBox { position:absolute;left:0;right:0;background:#111827;border:1px solid #2d3f52;border-radius:10px;margin-top:4px;z-index:500;overflow:hidden;display:none; }
-.suggestion-item { padding:9px 14px;font-size:13px;cursor:pointer;color:#e2e8f0;border-bottom:1px solid #1e2d3d;font-family:'Rajdhani',sans-serif;font-weight:600;transition:background 0.15s; }
-.suggestion-item:hover { background:#1e3a5f;color:#38bdf8; }
-.suggestion-item:last-child { border-bottom:none; }
-
-.app-header { background:linear-gradient(90deg,#0a0f1a,#0f1e33);border-bottom:1px solid #1e3a5f;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;transition:background 0.3s; }
-.portfolio-card { background:linear-gradient(135deg,#0f1e33,#162744);border:1px solid #1e3a5f;border-radius:14px;padding:14px;transition:background 0.3s; }
-.pcard-inner { background:#0a1628;border-radius:8px;padding:8px 10px;transition:background 0.3s; }
-
-/* Group buttons */
-.group-btn { background:#1e2d3d;border:1px solid #2d3f52;color:#94a3b8;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;transition:all 0.15s; }
-.group-btn.active { background:#1e3a5f;border-color:#38bdf8;color:#38bdf8; }
-
-/* Loader */
-#loaderOverlay { position:fixed;inset:0;background:rgba(10,15,26,0.85);z-index:8500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px; }
-.spinner { width:36px;height:36px;border:3px solid #1e3a5f;border-top:3px solid #38bdf8;border-radius:50%;animation:spin 0.8s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg);} }
-
-@keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.3;} }
-/* Pie chart canvas */
-#pieChart { display:block;margin:0 auto; }
-
-/* SVG Icon System */
-
-/* Tap Action System */
-.wl-card-wrap { position:relative; border-radius:12px; margin-bottom:4px; }
-.wl-actions-panel { display:none; padding:4px 6px; background:#0a1628; border-radius:0 0 10px 10px; border-top:1px solid #1e2d3d; }
-.wl-actions-panel.open {display: block !important;}
-.wl-actions-panel.open > div {display: grid;grid-template-columns: repeat(4, 1fr);gap: 6px;}
-.act-btn {padding: 6px 4px;font-size: 10px;font-weight: 700;border-radius: 6px;cursor: pointer;text-align: center;width: 100%;}
-.act-btn { font-size:10px; font-weight:700; padding:5px 4px; border-radius:6px; border:none; cursor:pointer; font-family:'Rajdhani',sans-serif; text-align:center; width:100%; }
-.tap-hint { font-size:8px; color:#2d3f52; text-align:center; padding:1px 0 2px; }
-
-.icon-svg { display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px; }
-.icon-svg svg { width:100%;height:100%; }
-
-::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:#0a0f1a;} ::-webkit-scrollbar-thumb{background:#1e3a5f;border-radius:4px;}
-
-/* -- FLASH PRICE TICKER -- */
-/* ---- Alert Modal ---- */
-
-/* ---- Target Modal ---- */
-
-/* ---- Remove Modal ---- */
-
-/* ---- Global Market Ticker (globalTicker bar) ---- */
-
-/* ---- Learn tab suggestion / search box ---- */
-/* learnSearchInput + learnSuggBox - dark hardcoded inline styles */
-
-/* ===== END LIGHT MODE ===== */
-#priceTicker{background:#060d1a;border-bottom:1px solid #1e2d3d;overflow:hidden;height:22px;display:flex;align-items:center;}
-#priceTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 40s linear infinite;}
-#priceTicker .ticker-track:hover{animation-play-state:paused;}
-@keyframes tickerScroll{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
-.ticker-item{display:inline-flex;align-items:center;gap:4px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;border-right:1px solid #1e2d3d;}
-.ticker-sym{color:#94a3b8;font-weight:700;}
-.ticker-price{color:#e2e8f0;}
-.ticker-up{color:#22c55e;}
-.ticker-dn{color:#ef4444;}
-#globalTicker{background:#0a0f1a;border-bottom:1px solid #1e3a5f;overflow:hidden;height:20px;display:flex;align-items:center;}
-#globalTicker .ticker-track{display:flex;white-space:nowrap;animation:tickerScroll 60s linear infinite;}
-#globalTicker .ticker-track:hover{animation-play-state:paused;}
-.gticker-label{color:#4b6280;font-size:9px;font-weight:700;margin-right:3px;}
-.gticker-val{color:#e2e8f0;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;}
-.gticker-up{color:#22c55e;font-size:9px;font-family:'JetBrains Mono',monospace;}
-.gticker-dn{color:#ef4444;font-size:9px;font-family:'JetBrains Mono',monospace;}
-.gticker-sep{color:#1e3a5f;padding:0 8px;font-size:10px;}
-</style>
+<link rel="stylesheet" href="style.css">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -472,7 +55,7 @@ html[data-fsize='large'] { font-size: 128%; }
 <body>
 
 <!-- ========== PROFILE SCREEN ========== -->
-<div id="profileScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+<div id="profileScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
   <div class="profile-screen-bg">
     
     <!-- Logo + Title -->
@@ -496,7 +79,7 @@ html[data-fsize='large'] { font-size: 128%; }
 </div>
 
 <!-- ========== PIN SCREEN ========== -->
-<div id="pinScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+<div id="pinScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
   <div class="profile-screen-bg">
 
     <div class="profile-header">
@@ -542,7 +125,7 @@ html[data-fsize='large'] { font-size: 128%; }
 </div>
 
 <!-- ========== CREATE PROFILE SCREEN ========== -->
-<div id="createProfileScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow-y:auto;">
+<div id="createProfileScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow-y:auto;">
   <div class="profile-screen-bg">
 
     <div class="profile-header">
@@ -597,7 +180,7 @@ html[data-fsize='large'] { font-size: 128%; }
 </div>
 
 <!-- ========== FORGOT PIN SCREEN ========== -->
-<div id="forgotPINScreen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
+<div id="forgotPINScreen" data-notheme="1" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:99999; background:#0f0f0f; overflow:hidden;">
   <div class="profile-screen-bg">
 
     <div class="profile-header">
@@ -655,8 +238,9 @@ html[data-fsize='large'] { font-size: 128%; }
     </div>
 
   </div>
-  <!-- Right: refresh + add stacked -->
+  <!-- Right: theme + refresh + add stacked -->
   <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
+    <button onclick="toggleAppTheme()" id="themeToggleBtn" title="Toggle Light/Dark">🌙</button>
     <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
     <button onclick="openAddIndexModal()" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Add Index"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
   </div>
@@ -754,50 +338,6 @@ html[data-fsize='large'] { font-size: 128%; }
 <!-- SETTINGS TAB -->
 <div id="settings" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
 
-<style>
-.s-section-label{font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;padding:12px 16px 5px;text-transform:uppercase;}
-.s-card{background:#0d1f35;border-radius:12px;margin:0 10px 4px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);}
-.s-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.05);}
-.s-row:last-child{border-bottom:none;}
-.s-row-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:10px;flex-shrink:0;}
-.s-row-left{display:flex;align-items:center;flex:1;min-width:0;}
-.s-row-info{flex:1;min-width:0;}
-.s-row-title{font-size:12px;font-weight:700;color:#e2e8f0;}
-.s-row-sub{font-size:10px;color:#64748b;margin-top:1px;}
-.ios-tog{position:relative;width:44px;height:26px;flex-shrink:0;cursor:pointer;}
-.ios-tog input{opacity:0;width:0;height:0;position:absolute;}
-.ios-track{position:absolute;inset:0;border-radius:13px;background:rgba(255,255,255,0.12);transition:background 0.25s;}
-.ios-tog input:checked+.ios-track{background:#34d399;}
-.ios-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform 0.25s;box-shadow:0 1px 3px rgba(0,0,0,0.4);}
-.ios-tog input:checked~.ios-thumb{transform:translateX(18px);}
-.s-pill{border:none;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:opacity 0.15s;}
-.s-pill:active{opacity:0.7;}
-.s-pill-blue{background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;}
-.s-pill-green{background:#065f46;color:#34d399;}
-.s-pill-amber{background:#713f12;color:#fde68a;}
-.s-pill-red{background:#7f1d1d;color:#fca5a5;}
-.s-pill-gray{background:rgba(255,255,255,0.07);color:#94a3b8;}
-.s-ios-toggle{position:relative;display:inline-block;width:34px;height:19px;flex-shrink:0;}
-.s-ios-toggle input{opacity:0;width:0;height:0;}
-.s-ios-slider{position:absolute;cursor:pointer;inset:0;background:#2d3748;border-radius:19px;transition:.25s;}
-.s-ios-slider:before{content:'';position:absolute;height:13px;width:13px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s;}
-.s-ios-toggle input:checked+.s-ios-slider{background:#22c55e;}
-.s-ios-toggle input:checked+.s-ios-slider:before{transform:translateX(15px);}
-.s-ios-toggle input:not(:checked)+.s-ios-slider{background:#4b6280;}
-.s-url-text{font-size:9px;color:#4b6280;font-family:'JetBrains Mono',monospace;word-break:break-all;line-height:1.4;padding:3px 0;}
-.s-key-input{width:100%;background:#0a1628;border:1px solid rgba(52,211,153,0.2);color:#e2e8f0;border-radius:8px;padding:7px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;box-sizing:border-box;outline:none;margin-bottom:6px;}
-.s-collapse-hd{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;user-select:none;}
-.s-collapse-arr{font-size:10px;font-weight:700;transition:transform 0.2s;}
-.s-num-input{width:50px;background:#0a1628;border:1px solid rgba(56,189,248,0.25);color:#e2e8f0;border-radius:8px;padding:5px;font-size:12px;font-family:'JetBrains Mono',monospace;text-align:center;outline:none;}
-.s-badge{font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;}
-.s-danger-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:4px 10px 10px;}
-.s-danger-btn{background:rgba(127,29,29,0.4);color:#fca5a5;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;text-align:center;}
-.s-sync-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:6px 14px 12px;}
-.s-sync-btn{border:none;border-radius:8px;padding:8px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;text-align:center;transition:opacity 0.15s;}
-.s-sync-btn:active{opacity:0.7;}
-.s-account-card{background:linear-gradient(135deg,#0d2a45 0%,#0a1f35 100%);border-radius:12px;margin:6px 10px 4px;padding:12px 14px;border:1px solid rgba(52,211,153,0.12);display:flex;align-items:center;justify-content:space-between;}
-.s-avatar{width:36px;height:36px;border-radius:50%;background:rgba(52,211,153,0.12);border:1.5px solid rgba(52,211,153,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#34d399;margin-right:10px;flex-shrink:0;}
-</style>
 
   <!-- HEADER -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);">
@@ -837,24 +377,23 @@ html[data-fsize='large'] { font-size: 128%; }
       <button onclick="cycleFontSize()" class="s-pill" style="background:rgba(167,139,250,0.15);color:#a78bfa;"><span id="fontSizeLabel">Font: M</span></button>
     </div>
   </div>
-
-  <!-- CLOUD SYNC -->
-  <div class="s-section-label">Cloud Sync <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
+<!-- CLOUD SYNC -->
+<div class="s-section-label">Cloud Sync <span style="color:var(--pos, #22c55e);font-size:9px;font-weight:700;letter-spacing:0;">Firebase</span></div>
   <div class="s-card">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 2px;">
-      <span style="font-size:10px;color:#4b6280;">Last sync: <span id="lastSyncDisplay" style="color:#64748b;">--</span></span>
-      <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></div>
+      <span style="font-size:10px;color:var(--text-muted, #4b6280);">Last sync: <span id="lastSyncDisplay" style="color:var(--text-label, #64748b);">--</span></span>
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--pos, #22c55e);"></div>
     </div>
     <div class="s-sync-row">
-      <button onclick="pushToCloud(true)" class="s-sync-btn" style="background:#1e3a5f;color:#38bdf8;border:1px solid #2d5a8e;">
+      <button onclick="pushToCloud(true)" class="s-sync-btn" style="background:var(--accent-bg, #1e3a5f);color:var(--accent, #38bdf8);border:1px solid var(--accent-border, #2d5a8e);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
         Upload
       </button>
-      <button onclick="pullFromCloud(true)" class="s-sync-btn" style="background:#1a3320;color:#86efac;border:1px solid #166534;">
+      <button onclick="pullFromCloud(true)" class="s-sync-btn" style="background:rgba(34,197,94,0.1);color:var(--pos, #22c55e);border:1px solid rgba(34,197,94,0.3);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 104.08 15.91"/></svg>
         Download
       </button>
-      <button id="syncStatusBtn" onclick="pushToCloud(true)" class="s-sync-btn" style="background:#0f2a1e;color:#38bdf8;border:1px solid #1e3a5f;">
+      <button id="syncStatusBtn" onclick="pushToCloud(true)" class="s-sync-btn" style="background:var(--bg-input, #0f172a);color:var(--accent, #38bdf8);border:1px solid var(--border, #1e2d4a);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:2px;display:block;margin-inline:auto;"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
         Sync
       </button>
@@ -1014,7 +553,7 @@ html[data-fsize='large'] { font-size: 128%; }
   </div>
 </div>
   <!-- ✅ UNIVERSAL AI PROVIDER -->
-<div style="margin-top:16px;background:#0d1f35;border-radius:12px;padding:14px;border:1px solid rgba(56,189,248,0.15);">
+<div style="margin-top:16px;background:var(--bg-card,#0d1f35);border-radius:12px;padding:14px;border:1px solid var(--border,rgba(56,189,248,0.15));">
   <div style="font-size:12px;font-weight:700;color:#38bdf8;margin-bottom:10px;">🌐 Universal AI Provider</div>
   <div style="font-size:10px;color:#4b6280;margin-bottom:10px;">Primary provider set karo — Gemini bandh thay to auto-switch thase</div>
 
@@ -1219,49 +758,48 @@ html[data-fsize='large'] { font-size: 128%; }
 
   <!-- DANGER ZONE -->
   <!-- EXPORT -->
-  <div class="s-section-label">Export <span style="color:#22c55e;font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
+<div class="s-section-label">Export <span style="color:var(--pos, #22c55e);font-size:9px;font-weight:700;letter-spacing:0;">Excel</span></div>
   <div class="s-card">
     <div class="s-row">
       <div class="s-row-left">
         <div class="s-row-icon" style="background:rgba(34,197,94,0.1);">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--pos, #22c55e);"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
         <div class="s-row-info"><div class="s-row-title">Technical Snapshot</div><div class="s-row-sub">Symbol · CMP · BB Upper/Lower · RSI · Volume</div></div>
       </div>
-      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:#14532d;color:#22c55e;border:1px solid #166534;padding:4px 12px;">Export</button>
+      <button onclick="exportTechnicalExcel()" id="exportTechBtn" class="s-pill" style="background:var(--bg-input, #14532d);color:var(--pos, #22c55e);border:1px solid var(--border, #166534);padding:4px 12px;">Export</button>
     </div>
   </div>
 
-  <div class="s-section-label" style="color:#ef4444;">Danger Zone</div>
+  <div class="s-section-label" style="color:var(--neg, #ef4444);">Danger Zone</div>
   <div style="margin:0 10px 4px;">
     <div class="s-danger-grid">
-      <button onclick="clearData('holdings')" class="s-danger-btn">Holdings</button>
-      <button onclick="clearData('history')" class="s-danger-btn">History</button>
-      <button onclick="clearData('alerts')" class="s-danger-btn">Alerts</button>
+      <button onclick="clearData('holdings')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">Holdings</button>
+      <button onclick="clearData('history')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">History</button>
+      <button onclick="clearData('alerts')" class="s-danger-btn" style="background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">Alerts</button>
     </div>
     <div style="padding:0 0 8px;">
-      <button onclick="clearFundCache()" class="s-danger-btn" style="width:100%;margin-top:6px;background:rgba(127,29,29,0.3);">🗑️ Clear Fundamentals Cache</button>
+      <button onclick="clearFundCache()" class="s-danger-btn" style="width:100%;margin-top:6px;background:rgba(239,68,68,0.1);color:var(--neg, #ef4444);border:1px solid rgba(239,68,68,0.3);">🗑️ Clear Fundamentals Cache</button>
     </div>
   </div>
 
-  <div style="text-align:center;font-size:10px;color:#4b6280;padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
+  <div style="text-align:center;font-size:10px;color:var(--text-muted, #4b6280);padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
 </div>
 
-<!-- ERROR BANNER -->
 <div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
-  <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:#fca5a5;box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+  <div style="background:var(--bg-card, #7f1d1d);border:1px solid var(--neg, #ef4444);border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:var(--neg, #fca5a5);box-shadow:0 4px 12px rgba(0,0,0,0.5);">
     ! <span id="errorMsg"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:#fca5a5;cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:var(--neg, #fca5a5);cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
   </div>
 </div>
 
 <div id="news" class="tab" style="padding:0;"></div>
 
 <!-- SEARCH & LEARN TAB — TABBED VERSION -->
-<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:#060e1a;height:calc(100vh - 102px - 64px);">
+<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:var(--bg-app,#060e1a);height:calc(100vh - 102px - 64px);">
 
   <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:#060e1a;z-index:10;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));position:sticky;top:0;background:var(--bg-header,#060e1a);z-index:10;">
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="width:28px;height:28px;background:rgba(251,146,60,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
@@ -1276,7 +814,7 @@ html[data-fsize='large'] { font-size: 128%; }
   </div>
 
   <!-- Main Tab Switcher: Company Financial | Learning -->
-  <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);background:#060e1a;position:sticky;top:53px;z-index:9;">
+  <div style="display:flex;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));background:var(--bg-header,#060e1a);position:sticky;top:53px;z-index:9;">
     <button id="lmain-financial" onclick="switchLearnMain('financial')"
       style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
       📊 Company Financial
@@ -1295,9 +833,9 @@ html[data-fsize='large'] { font-size: 128%; }
       <div style="display:flex;gap:8px;">
         <div style="flex:1;position:relative;">
           <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
-            style="width:100%;background:#0d1f35;border:1px solid rgba(251,146,60,0.3);color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
+            style="width:100%;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.3);color:var(--text-primary,#e2e8f0);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
             oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
-          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:#0d1f35;border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
         </div>
         <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
           ANALYZE
@@ -1406,16 +944,16 @@ html[data-fsize='large'] { font-size: 128%; }
     </div>
 
     <input id="m-price" placeholder="Price (₹)" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;"
       oninput="updateTaxCalc()">
     <input id="m-qty" placeholder="Quantity" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;"
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;"
       oninput="updateTaxCalc()">
     <input id="m-date" type="date" class="w-full p-2 mb-2 rounded-lg text-sm"
-      style="background:#0a1628;border:1px solid #1e3a5f;color:white;outline:none;">
+      style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e3a5f);color:var(--text-primary,#e2e8f0);outline:none;">
 
     <!-- Tax Calculator -->
-    <div id="taxCalcBox" style="background:#0a1628;border:1px solid #1e2d3d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;display:none;">
+    <div id="taxCalcBox" style="background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e2d3d);border-radius:8px;padding:8px;margin-bottom:10px;font-size:11px;display:none;">
       <div style="font-size:10px;font-weight:700;color:#4b6280;margin-bottom:4px;">CHARGES ESTIMATE</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
         <span style="color:#94a3b8;">Trade Value:</span>
@@ -1759,6 +1297,7 @@ html[data-fsize='large'] { font-size: 128%; }
 <script src="auth.js"></script>
 <script src="firebase-sync.js"></script>
 <script src="price.js"></script>
+<script src="live-price.js"></script>
 <script src="indices.js"></script>
 <script src="detail-modal.js"></script>
 <script src="holdings.js"></script>
@@ -1784,5 +1323,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 200);
 });
 </script>
+
+<script src="theme.js"></script>
 </body>
 </html>

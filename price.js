@@ -110,11 +110,11 @@ function buildDayBar(d) {
   const pct = Math.min(100, Math.max(0, ((cur - lo) / range) * 100)).toFixed(0);
   return '<div style="margin:0;">'
     + '<div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;margin-bottom:2px;">'
-    + '<span style="color:#ef4444;">' + lo.toFixed(2) + '</span>'
-    + '<span style="color:#4b6280;font-size:8px;">DAY</span>'
-    + '<span style="color:#22c55e;">' + hi.toFixed(2) + '</span></div>'
-    + '<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
-    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
+    + '<span style="color:var(--neg,#ef4444);">' + lo.toFixed(2) + '</span>'
+    + '<span style="color:var(--text-label,#4b6280);font-size:8px;">DAY</span>'
+    + '<span style="color:var(--pos,#22c55e);">' + hi.toFixed(2) + '</span></div>'
+    + '<div style="background:var(--border,#1e2d3d);border-radius:2px;height:3px;position:relative;">'
+    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--neg,#ef4444),var(--pos,#22c55e));border-radius:2px;"></div>'
     + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:white;border-radius:50%;"></div>'
     + '</div></div>';
 }
@@ -130,12 +130,12 @@ function build52WBar(d) {
   const pct = Math.min(100, Math.max(0, ((cur - lo) / range) * 100)).toFixed(0);
   return '<div style="margin:0;margin-top:4px;">'
     + '<div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;margin-bottom:2px;">'
-    + '<span style="color:#ef4444;">' + lo.toFixed(2) + '</span>'
-    + '<span style="color:#4b6280;font-size:8px;">52W</span>'
-    + '<span style="color:#22c55e;">' + hi.toFixed(2) + '</span></div>'
-    + '<div style="background:#1e2d3d;border-radius:2px;height:3px;position:relative;">'
-    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,#ef4444,#22c55e);border-radius:2px;"></div>'
-    + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:#38bdf8;border-radius:50%;"></div>'
+    + '<span style="color:var(--neg,#ef4444);">' + lo.toFixed(2) + '</span>'
+    + '<span style="color:var(--text-label,#4b6280);font-size:8px;">52W</span>'
+    + '<span style="color:var(--pos,#22c55e);">' + hi.toFixed(2) + '</span></div>'
+    + '<div style="background:var(--border,#1e2d3d);border-radius:2px;height:3px;position:relative;">'
+    + '<div style="position:absolute;left:0;width:' + pct + '%;height:100%;background:linear-gradient(90deg,var(--neg,#ef4444),var(--pos,#22c55e));border-radius:2px;"></div>'
+    + '<div style="position:absolute;left:calc(' + pct + '% - 2px);top:-1px;width:4px;height:4px;background:var(--accent,#38bdf8);border-radius:50%;"></div>'
     + '</div></div>';
 }
 
