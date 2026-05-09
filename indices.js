@@ -469,7 +469,14 @@ function _renderTerminalRows() {
     return;
   }
 
-  rowsEl.innerHTML = rows.map((r, i) => {
+  // Virtual DOM Identity Check
+  const newKeys = rows.map(r => 't-row-' + r.s).join(',');
+  const curKeys = Array.from(rowsEl.children).map(c => c.id).join(',');
+  const canPatch = (newKeys === curKeys) && rowsEl.children.length > 0;
+  
+  let htmlBuffer = [];
+
+  rows.forEach((r, i) => {
     const isUp      = r.pct >= 0;
     const chgCls    = isUp ? 't-pos' : 't-neg';
     const chgPfx    = isUp ? '+' : '';
@@ -514,22 +521,40 @@ function _renderTerminalRows() {
     else if (r.sig === 'SELL') bear++;
     else neu++;
 
-    return `<div class="t-row" style="background:${bg};" onclick="openDetail('${r.s}',false)">
-      <div class="t-cell left">
-        <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
-      </div>
-      <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
-      <div class="t-cell"><span class="${chgCls}">${absStr}</span></div>
-      <div class="t-cell"><span class="${chgCls}">${pctStr}</span></div>
-      <div class="t-cell"><span class="${rsiCls}">${rsiStr}</span></div>
-      <div class="t-cell"><span class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
-      <div class="t-cell"><span style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
-      <div class="t-cell" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
-      <div class="t-cell" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
-      <div class="t-cell" style="color:#ef4444;font-weight:600;">${lbStr}</div>
-      <div class="t-cell"><span class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
-    </div>`;
-  }).join('');
+    // Apply Virtual Patch or Build HTML
+    if (canPatch) {
+      const eLtp = document.getElementById('t-ltp-'+r.s); if (eLtp) eLtp.innerText = ltpStr;
+      const eAbs = document.getElementById('t-abs-'+r.s); if (eAbs) { eAbs.innerText = absStr; eAbs.className = chgCls; }
+      const ePct = document.getElementById('t-pct-'+r.s); if (ePct) { ePct.innerText = pctStr; ePct.className = chgCls; }
+      const eRsi = document.getElementById('t-rsi-'+r.s); if (eRsi) { eRsi.innerText = rsiStr; eRsi.className = rsiCls; }
+      const eMacd = document.getElementById('t-macd-'+r.s); if (eMacd) { eMacd.innerText = macdStr; eMacd.className = macdCls; }
+      const eVol = document.getElementById('t-vol-'+r.s); if (eVol) { eVol.innerText = volStr; eVol.style.cssText = volStyle + 'color:var(--text-sec,#94a3b8);'; }
+      const eSr = document.getElementById('t-sr-'+r.s); if (eSr) eSr.innerText = r.sr;
+      const eUb = document.getElementById('t-ub-'+r.s); if (eUb) eUb.innerText = ubStr;
+      const eLb = document.getElementById('t-lb-'+r.s); if (eLb) eLb.innerText = lbStr;
+      const eSig = document.getElementById('t-sig-'+r.s); if (eSig) { eSig.innerText = r.sig; eSig.className = 'badge ' + sigMap[r.sig]; }
+    } else {
+      htmlBuffer.push(`<div class="t-row" id="t-row-${r.s}" style="background:${bg};" onclick="openDetail('${r.s}',false)">
+        <div class="t-cell left">
+          <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
+        </div>
+        <div class="t-cell"><span id="t-ltp-${r.s}" style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
+        <div class="t-cell"><span id="t-abs-${r.s}" class="${chgCls}">${absStr}</span></div>
+        <div class="t-cell"><span id="t-pct-${r.s}" class="${chgCls}">${pctStr}</span></div>
+        <div class="t-cell"><span id="t-rsi-${r.s}" class="${rsiCls}">${rsiStr}</span></div>
+        <div class="t-cell"><span id="t-macd-${r.s}" class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
+        <div class="t-cell"><span id="t-vol-${r.s}" style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
+        <div class="t-cell" id="t-sr-${r.s}" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
+        <div class="t-cell" id="t-ub-${r.s}" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
+        <div class="t-cell" id="t-lb-${r.s}" style="color:#ef4444;font-weight:600;">${lbStr}</div>
+        <div class="t-cell"><span id="t-sig-${r.s}" class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
+      </div>`);
+    }
+  });
+  if (!canPatch) {
+    rowsEl.innerHTML = htmlBuffer.join('');
+  }
+
 
   // Update summary bar
   const bull$ = document.getElementById('tSumBull');
