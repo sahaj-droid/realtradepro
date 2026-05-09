@@ -117,14 +117,45 @@
         const wl = AppState.watchlists?.[AppState.currentWL]?.stocks || [];
         const nonGiftIndices = (AppState.indicesList || [])
           .filter(i => i.sym !== 'NIFTY1!').map(i => i.sym);
+        
         try {
-          await Promise.all([
-            wl.length > 0 ? batchFetchStocks(wl) : Promise.resolve(),
-            nonGiftIndices.length > 0 ? batchFetchStocks(nonGiftIndices, true) : Promise.resolve()
-          ]);
-        } catch(e) { console.warn('[LivePrice] GAS fetch failed:', e.message); }
+          // 1. Combine and Deduplicate (Single Payload)
+          const fetchSet = new Set();
+          
+          // Add indices directly
+          nonGiftIndices.forEach(sym => fetchSet.add(sym));
+          
+          // Add watchlist stocks & targets with .NS suffix
+          wl.forEach(sym => fetchSet.add(sym + '.NS'));
+          if (AppState.targets) {
+            Object.keys(AppState.targets).forEach(sym => fetchSet.add(sym + '.NS'));
+          }
+          
+          const unifiedArray = Array.from(fetchSet);
+          
+          // 2. Single GAS Call
+          if (unifiedArray.length > 0) {
+            // isIndex = true prevents batchFetchStocks from re-appending .NS
+            await batchFetchStocks(unifiedArray, true);
+            
+            // Clean up cache keys (strip .NS so UI can read them)
+            unifiedArray.forEach(sym => {
+              if (sym.endsWith('.NS')) {
+                const dataObj = AppState.cache[sym];
+                if (dataObj) {
+                  const cleanSym = sym.replace('.NS', '');
+                  AppState.cache[cleanSym] = dataObj;
+                  if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[cleanSym] = Date.now();
+                }
+              }
+            });
+          }
+        } catch(e) { 
+          console.warn('[LivePrice] Unified GAS fetch failed:', e.message); 
+        }
         if (wl.length > 0) _saveToLocalStorage(wl);
       }
+
 
       _patchAllVisible();
       if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
