@@ -81,20 +81,23 @@ function updateHeaderIndices() {
       changeDiv.style.color  = changeColor;
     }
 
-    // Flash on price change
-// Flash on price change
-if (priceDiv && oldPrice > 0 && price !== oldPrice) {
-  // મસ્ત વેરિએબલનો ઉપયોગ
-  const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
-  
-  priceDiv.style.transition = "color 0.2s ease"; // સ્મૂથ કલર ચેન્જ માટે
-  priceDiv.style.color = flashColor;
+    // Flash on price change (Timeout Memory Leak Fixed)
+    if (priceDiv && oldPrice > 0 && price !== oldPrice) {
+      const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
+      priceDiv.style.transition = "color 0.2s ease";
+      priceDiv.style.color = flashColor;
 
-  setTimeout(() => { 
-  priceDiv.style.color = 'var(--text-primary)'; 
-  }, 1200);}
-  });
-}
+      // Clear pending timeouts to prevent overlapping flashes & leaks
+      if (priceDiv._flashTid) clearTimeout(priceDiv._flashTid);
+      
+      priceDiv._flashTid = setTimeout(() => { 
+        // Only update if node is still physically mounted in the DOM
+        if (priceDiv.isConnected) {
+          priceDiv.style.color = 'var(--text-primary)'; 
+        }
+      }, 1200);
+    }
+
 
 // ======================================
 // GIFT NIFTY — DIRECT GAS CALL (TRADINGVIEW)
@@ -221,11 +224,17 @@ function _applyGiftNiftyToChip(cached) {
     const oldPrice = parseFloat(priceDiv.innerText.replace(/,/g, '')) || 0;
     priceDiv.innerText = price.toLocaleString('en-IN', { minimumFractionDigits: 2 });
     
-    // Flash effect
+    // Flash effect (Timeout Memory Leak Fixed)
     if (oldPrice > 0 && price !== oldPrice) {
       priceDiv.style.color = price > oldPrice ? 'var(--pos,var(--pos))' : 'var(--neg)';
-      setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 1200);
+      if (priceDiv._flashTid) clearTimeout(priceDiv._flashTid);
+      priceDiv._flashTid = setTimeout(() => { 
+        if (priceDiv.isConnected) {
+          priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; 
+        }
+      }, 1200);
     }
+
   }
   if (changeDiv) {
     changeDiv.innerText   = sign + change.toFixed(2) + ' (' + sign + changePct.toFixed(2) + '%)';
