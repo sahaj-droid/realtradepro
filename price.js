@@ -394,15 +394,11 @@ for (let s of activeWl) {
   if (pe) {
     const oldPrice = parseFloat(pe.innerText.replace(/[₹,]/g, '')) || 0;
 
-    // ✅ Flash effect — _price ની જગ્યા price વાપરો
-    if (price > oldPrice && oldPrice > 0) {
-      pe.closest('.card')?.classList.remove('flash-red');
-      pe.closest('.card')?.classList.add('flash-green');
-      setTimeout(() => pe.closest('.card')?.classList.remove('flash-green'), 1000);
-    } else if (price < oldPrice && oldPrice > 0) {
-      pe.closest('.card')?.classList.remove('flash-green');
-      pe.closest('.card')?.classList.add('flash-red');
-      setTimeout(() => pe.closest('.card')?.classList.remove('flash-red'), 1000);
+    // ✅ Flash effect — Routed through centralized live-price engine
+    if (oldPrice > 0 && price > 0 && price !== oldPrice) {
+      if (typeof window._flashCard === 'function') {
+        window._flashCard(pe.closest('.card') || pe.closest('.wl-card-wrap'), price > oldPrice);
+      }
     }
 
     pe.innerText = price > 0 ? '₹' + price.toFixed(2) : '--';
