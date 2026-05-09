@@ -111,17 +111,21 @@ async function updateGiftNifty() {
     return;
   }
 
-  // Direct GAS fetch for TradingView data
+  // LAYER 1: Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
     const r = await fetchWithTimeout(_appendToken(apiUrl + '?type=giftNifty'), 6000);
     const data = await r.json();
     
-    if (data && data.price && data.price > 0) {
-      const price  = parseFloat(data.price);
-      const prev   = parseFloat(data.prev_close || data.prevClose || price);
+    let price = parseFloat(String(data.price || '').replace(/[^\d.]/g, ''));
+    let prev = parseFloat(String(data.prev_close || data.prevClose || price).replace(/[^\d.]/g, ''));
+
+    // Fix: If market closed or data dead, lock price to previous close
+    if (isNaN(price) || price <= 0) price = prev;
+
+    if (!isNaN(price) && price > 0) {
       const change = price - prev;
-      const pct    = prev ? (change / prev * 100) : 0;
+      const pct    = prev > 0 ? (change / prev * 100) : 0;
 
       const cached = {
         price:     price.toFixed(2),
@@ -140,11 +144,41 @@ async function updateGiftNifty() {
       });
       
       _applyGiftNiftyToChip(cached);
+      return;
+    } else {
+      throw new Error("Invalid GAS price data");
     }
   } catch(e) {
-    console.warn('[updateGiftNifty] GAS TradingView fetch failed:', e);
+    console.warn('[updateGiftNifty] GAS fetch failed/invalid:', e.message);
+    
+    // LAYER 2: Stale Cache Fallback (Ignores 60s rule to prevent blank UI)
+    if (AppState._giftNiftyCache) {
+      _applyGiftNiftyToChip(AppState._giftNiftyCache);
+      return;
+    }
+    
+    // LAYER 3: Firebase / Python backend fallback
+    const fbData = AppState.cache['__GIFT__']?.data || AppState.cache['NIFTY1!']?.data;
+    if (fbData) {
+      const price = parseFloat(fbData.regularMarketPrice || 0);
+      const prev  = parseFloat(fbData.chartPreviousClose || price);
+      const change = parseFloat(fbData.regularMarketChange || (price - prev));
+      const pct    = parseFloat(fbData.regularMarketChangePercent || (prev > 0 ? (change / prev * 100) : 0));
+      
+      if (price > 0) {
+        const cached = {
+          price: price.toFixed(2),
+          change: change.toFixed(2),
+          changePct: pct.toFixed(2)
+        };
+        AppState._giftNiftyCache = cached;
+        AppState._giftNiftyCacheTime = now; // Pretend it's fresh so we don't spam
+        _applyGiftNiftyToChip(cached);
+      }
+    }
   }
 }
+
 
 function _pushGiftNiftyToCache(data) {
   const price     = parseFloat(data.price) || 0;
@@ -634,15 +668,13 @@ function _patchTerminalPrices() {
 // ======================================
 // PRIVATE HELPERS
 // ======================================
-
-// Resolve index data — for GIFT NIFTY tries both 'NIFTY1!' and '__GIFT__' keys
+// Resolve index data — Normalizes all GIFT NIFTY variations to a unified check
 function _resolveIndexData(sym) {
-  if (sym === 'NIFTY1!') {
+  if (sym === 'NIFTY1!' || sym === '__GIFT__' || sym === 'GIFT NIFTY' || sym === 'GIFTNIFTY') {
     return AppState.cache['NIFTY1!']?.data || AppState.cache['__GIFT__']?.data || null;
   }
   return AppState.cache[sym]?.data || null;
 }
-
 function _calcChipValues(d) {
   const price     = d.regularMarketPrice || 0;
   const prev      = d.chartPreviousClose || d.regularMarketPreviousClose || price;
