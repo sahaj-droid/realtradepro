@@ -90,14 +90,14 @@ function updateHeaderIndices() {
       // Clear pending timeouts to prevent overlapping flashes & leaks
       if (priceDiv._flashTid) clearTimeout(priceDiv._flashTid);
       
-      priceDiv._flashTid = setTimeout(() => { 
-        // Only update if node is still physically mounted in the DOM
+priceDiv._flashTid = setTimeout(() => { 
         if (priceDiv.isConnected) {
           priceDiv.style.color = 'var(--text-primary)'; 
         }
       }, 1200);
     }
-
+  }); // <- આ forEach લૂપ બંધ કરવા માટે
+} // <- આ updateHeaderIndices ફંક્શન બંધ કરવા માટે
 
 // ======================================
 // GIFT NIFTY — DIRECT GAS CALL (TRADINGVIEW)
