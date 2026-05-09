@@ -215,29 +215,31 @@ function startThemeObserver() {
 // ============================================================
 // TOGGLE FUNCTION — called by button onclick
 // ============================================================
-window.toggleAppTheme = function() {
+window.toggleAppTheme = function(e) {
+  // Stop propagation to prevent accidental bubbling to underlying refresh wrappers
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  } else if (window.event) {
+    window.event.stopPropagation();
+    window.event.preventDefault();
+  }
   const isLight = document.body.classList.toggle('light-mode');
   const btn = document.getElementById('themeToggleBtn');
   if (btn) btn.textContent = isLight ? '☀️' : '🌙';
   localStorage.setItem('rtp_theme', isLight ? 'light' : 'dark');
-
   // Sync AppState
   if (typeof AppState !== 'undefined') AppState.isDark = !isLight;
-
-  // Re-render dynamic components — NO renderWL() here!
-  // renderWL() is async and fetches missing stocks → shows "Adding..." loader
-  // Instead: patch DOM in-place (colors only, no fetch)
+  // Purely visual DOM patch (removed destructive renderHold / renderHeaderStrip data re-renders)
   if (typeof _patchVisibleWLPrices === 'function') _patchVisibleWLPrices();
   else if (typeof patchVisiblePrices === 'function') patchVisiblePrices();
-  if (typeof renderHold          === 'function') renderHold();
   if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
-  if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
-
-  // Apply MutationObserver theme to all current + new elements
+  // Apply MutationObserver theme to all current + new elements silently
   setTimeout(applyFullTheme, 50);
   setTimeout(applyFullTheme, 300);
   setTimeout(applyFullTheme, 800);
 };
+
 
 // Start observer on DOM ready
 if (document.readyState === 'loading') {
