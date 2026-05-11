@@ -146,14 +146,24 @@ async function updateGiftNifty() {
       AppState._giftNiftyCache     = cached;
       AppState._giftNiftyCacheTime = now; // ✅ Only update timestamp on successful fetch
 
+      // ✅ KEY FIX: Derive prev_close from price - change_abs
+      // TradingView defines: change_abs = close - prev_close_price
+      // So: prev_close_price = close - change_abs = price - finalChange
+      // GAS/TV does NOT return prev_close as a field we can read, so direct lookup = 0 → price fallback.
+      // Since change_abs is correct (-372), this gives the exact prev_close (e.g. 23862-(-372)=24234)
+      const prevDerived   = (finalChange !== 0) ? (price - finalChange) : 0;
+      const finalPrev     = prevDerived > 0
+        ? prevDerived
+        : parseFloat(data.prev_close || data.prev_close_price || data.prevClose || 0) || price;
+
       _pushGiftNiftyToCache({
         price:      price,
-        prev_close: prev || price,
+        prev_close: finalPrev,        // ✅ 24234, not CMP
         change_abs: finalChange,
         change_pct: finalPct,
-        high:       parseFloat(data.high   || price),   // ✅ pass actual day high from TradingView
-        low:        parseFloat(data.low    || price),   // ✅ pass actual day low from TradingView
-        open:       parseFloat(data.open   || prev || price) // ✅ open (TV doesn't always provide it, fallback to prev_close)
+        high:       parseFloat(data.high || price),
+        low:        parseFloat(data.low  || price),
+        open:       finalPrev         // ✅ open ≈ prev_close (TV doesn't send open for indices)
       });
 
       _applyGiftNiftyToChip(cached);
