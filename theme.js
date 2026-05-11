@@ -100,6 +100,12 @@ function _fixInlineStyle(el, isLight) {
   if (!el || !el.style) return;
   if (el.dataset && el.dataset.notheme) return;
   if (el.closest && el.closest('[data-notheme]')) return;
+
+  // ✅ FIX: Skip display-critical overlay elements — theme patching their inline
+  // styles was mangling display:flex/none causing loader/modal to get stuck
+  const skipIds = ['loaderOverlay','modal','detailModal','exitModal','wlNameModal','alertPopup','infoTipBox'];
+  if (el.id && skipIds.includes(el.id)) return;
+
   // Skip if already processed in this mode
   if (isLight && el._rtpDone === 'light') return;
   if (!isLight && el._rtpDone === 'dark') return;
@@ -132,6 +138,9 @@ function _fixInlineStyle(el, isLight) {
     _rtpProcessing = false;
 
   } else {
+    // ✅ FIX: Dark mode restore — must set _rtpProcessing=true BEFORE setAttribute
+    // otherwise the MutationObserver fires on the style change and re-enters, causing
+    // infinite cascade which was blocking the loader when switching Light→Dark
     if (el._rtpOrigCss !== undefined) {
       _rtpProcessing = true;
       el.setAttribute('style', el._rtpOrigCss);
