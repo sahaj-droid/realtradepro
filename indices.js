@@ -132,7 +132,8 @@ async function updateGiftNifty() {
       const pct       = parseFloat(data.change     || data.change_pct    || 0);
 
       // Fallback: if GAS sends prev_close, verify change_abs is non-zero, else recalc
-      const prev = parseFloat(data.prev_close || data.prevClose || 0);
+      // prev_close_price is TradingView's exact field name — GAS may pass it verbatim
+      const prev = parseFloat(data.prev_close || data.prev_close_price || data.prevClose || 0);
       const finalChange = (changeAbs !== 0) ? changeAbs : (prev > 0 ? price - prev : 0);
       const finalPct    = (pct !== 0)       ? pct       : (prev > 0 ? (finalChange / prev * 100) : 0);
 
@@ -149,7 +150,10 @@ async function updateGiftNifty() {
         price:      price,
         prev_close: prev || price,
         change_abs: finalChange,
-        change_pct: finalPct
+        change_pct: finalPct,
+        high:       parseFloat(data.high   || price),   // ✅ pass actual day high from TradingView
+        low:        parseFloat(data.low    || price),   // ✅ pass actual day low from TradingView
+        open:       parseFloat(data.open   || prev || price) // ✅ open (TV doesn't always provide it, fallback to prev_close)
       });
 
       _applyGiftNiftyToChip(cached);
@@ -168,15 +172,23 @@ function _pushGiftNiftyToCache(data) {
   const prev      = parseFloat(data.prev_close || price);
   const changeAbs = parseFloat(data.change_abs || (price - prev));
   const changePct = parseFloat(data.change_pct || (prev > 0 ? ((price - prev) / prev * 100) : 0));
+  // ✅ FIX: Use actual high/low/open from TradingView response.
+  // Previously hardcoded to `price`, causing OPEN, PREV CLOSE, DAY HIGH, DAY LOW
+  // to all show the same value as CMP in the detail modal.
+  const high      = parseFloat(data.high  || price);
+  const low       = parseFloat(data.low   || price);
+  const open      = parseFloat(data.open  || prev || price); // TV doesn't always send open; prev_close is best fallback
 
   AppState.cache['NIFTY1!'] = {
     data: {
       regularMarketPrice:         price,
+      regularMarketOpen:          open,         // ✅ was missing entirely
       chartPreviousClose:         prev,
+      regularMarketPreviousClose: prev,         // ✅ alias for detail modal compat
       regularMarketChange:        parseFloat(changeAbs.toFixed(2)),
       regularMarketChangePercent: parseFloat(changePct.toFixed(2)),
-      regularMarketDayHigh:       price,
-      regularMarketDayLow:        price,
+      regularMarketDayHigh:       high,         // ✅ was hardcoded to price
+      regularMarketDayLow:        low,          // ✅ was hardcoded to price
       _source: 'GAS_TradingView'
     },
     time: Date.now()
