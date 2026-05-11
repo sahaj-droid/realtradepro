@@ -81,23 +81,20 @@ function updateHeaderIndices() {
       changeDiv.style.color  = changeColor;
     }
 
-    // Flash on price change (Timeout Memory Leak Fixed)
-    if (priceDiv && oldPrice > 0 && price !== oldPrice) {
-      const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
-      priceDiv.style.transition = "color 0.2s ease";
-      priceDiv.style.color = flashColor;
+    // Flash on price change
+// Flash on price change
+if (priceDiv && oldPrice > 0 && price !== oldPrice) {
+  // મસ્ત વેરિએબલનો ઉપયોગ
+  const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
+  
+  priceDiv.style.transition = "color 0.2s ease"; // સ્મૂથ કલર ચેન્જ માટે
+  priceDiv.style.color = flashColor;
 
-      // Clear pending timeouts to prevent overlapping flashes & leaks
-      if (priceDiv._flashTid) clearTimeout(priceDiv._flashTid);
-      
-priceDiv._flashTid = setTimeout(() => { 
-        if (priceDiv.isConnected) {
-          priceDiv.style.color = 'var(--text-primary)'; 
-        }
-      }, 1200);
-    }
-  }); // <- આ forEach લૂપ બંધ કરવા માટે
-} // <- આ updateHeaderIndices ફંક્શન બંધ કરવા માટે
+  setTimeout(() => { 
+  priceDiv.style.color = 'var(--text-primary)'; 
+  }, 1200);}
+  });
+}
 
 // ======================================
 // GIFT NIFTY — DIRECT GAS CALL (TRADINGVIEW)
@@ -107,28 +104,26 @@ let _giftNiftyInterval = null;
 
 async function updateGiftNifty() {
   const now = Date.now();
-  
-  // 60s cache check
-  if (AppState._giftNiftyCache && (now - AppState._giftNiftyCacheTime) < 60000) {
+
+  // 60s cache check — ONLY skip if we have a valid cached price AND it's truly fresh
+  const cacheAge = now - (AppState._giftNiftyCacheTime || 0);
+  const hasValidCache = AppState._giftNiftyCache && parseFloat(AppState._giftNiftyCache.price) > 0;
+  if (hasValidCache && cacheAge < 60000) {
     _applyGiftNiftyToChip(AppState._giftNiftyCache);
     return;
   }
 
-  // LAYER 1: Direct GAS fetch for TradingView data
+  // Direct GAS fetch for TradingView data
   try {
     const apiUrl = getActiveGASUrl();
     const r = await fetchWithTimeout(_appendToken(apiUrl + '?type=giftNifty'), 6000);
     const data = await r.json();
-    
-    let price = parseFloat(String(data.price || '').replace(/[^\d.]/g, ''));
-    let prev = parseFloat(String(data.prev_close || data.prevClose || price).replace(/[^\d.]/g, ''));
 
-    // Fix: If market closed or data dead, lock price to previous close
-    if (isNaN(price) || price <= 0) price = prev;
-
-    if (!isNaN(price) && price > 0) {
+    if (data && data.price && data.price > 0) {
+      const price  = parseFloat(data.price);
+      const prev   = parseFloat(data.prev_close || data.prevClose || price);
       const change = price - prev;
-      const pct    = prev > 0 ? (change / prev * 100) : 0;
+      const pct    = prev ? (change / prev * 100) : 0;
 
       const cached = {
         price:     price.toFixed(2),
@@ -137,51 +132,25 @@ async function updateGiftNifty() {
       };
 
       AppState._giftNiftyCache     = cached;
-      AppState._giftNiftyCacheTime = now;
+      AppState._giftNiftyCacheTime = now; // ✅ Only update timestamp on successful fetch
 
-      _pushGiftNiftyToCache({ 
-        price: price, 
-        prev_close: prev, 
-        change_abs: change, 
-        change_pct: pct 
+      _pushGiftNiftyToCache({
+        price: price,
+        prev_close: prev,
+        change_abs: change,
+        change_pct: pct
       });
-      
+
       _applyGiftNiftyToChip(cached);
-      return;
     } else {
-      throw new Error("Invalid GAS price data");
+      console.warn('[updateGiftNifty] GAS returned no price data:', data);
+      // Do NOT update _giftNiftyCacheTime — allow retry on next tick
     }
   } catch(e) {
-    console.warn('[updateGiftNifty] GAS fetch failed/invalid:', e.message);
-    
-    // LAYER 2: Stale Cache Fallback (Ignores 60s rule to prevent blank UI)
-    if (AppState._giftNiftyCache) {
-      _applyGiftNiftyToChip(AppState._giftNiftyCache);
-      return;
-    }
-    
-    // LAYER 3: Firebase / Python backend fallback
-    const fbData = AppState.cache['__GIFT__']?.data || AppState.cache['NIFTY1!']?.data;
-    if (fbData) {
-      const price = parseFloat(fbData.regularMarketPrice || 0);
-      const prev  = parseFloat(fbData.chartPreviousClose || price);
-      const change = parseFloat(fbData.regularMarketChange || (price - prev));
-      const pct    = parseFloat(fbData.regularMarketChangePercent || (prev > 0 ? (change / prev * 100) : 0));
-      
-      if (price > 0) {
-        const cached = {
-          price: price.toFixed(2),
-          change: change.toFixed(2),
-          changePct: pct.toFixed(2)
-        };
-        AppState._giftNiftyCache = cached;
-        AppState._giftNiftyCacheTime = now; // Pretend it's fresh so we don't spam
-        _applyGiftNiftyToChip(cached);
-      }
-    }
+    console.warn('[updateGiftNifty] GAS TradingView fetch failed:', e);
+    // Do NOT update _giftNiftyCacheTime — allow retry on next tick
   }
 }
-
 
 function _pushGiftNiftyToCache(data) {
   const price     = parseFloat(data.price) || 0;
@@ -217,24 +186,18 @@ function _applyGiftNiftyToChip(cached) {
   const change    = parseFloat(cached.change);
   const changePct = parseFloat(cached.changePct);
   const isUp      = change >= 0;
-  const color     = isUp ? 'var(--pos,var(--pos))' : 'var(--neg)';
+  const color     = isUp ? 'var(--pos,#22c55e)' : 'var(--neg,#ef4444)';  // ✅ fixed: was var(--pos,var(--pos))
   const sign      = isUp ? '+' : '';
 
   if (priceDiv) {
     const oldPrice = parseFloat(priceDiv.innerText.replace(/,/g, '')) || 0;
     priceDiv.innerText = price.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    
-    // Flash effect (Timeout Memory Leak Fixed)
-    if (oldPrice > 0 && price !== oldPrice) {
-      priceDiv.style.color = price > oldPrice ? 'var(--pos,var(--pos))' : 'var(--neg)';
-      if (priceDiv._flashTid) clearTimeout(priceDiv._flashTid);
-      priceDiv._flashTid = setTimeout(() => { 
-        if (priceDiv.isConnected) {
-          priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; 
-        }
-      }, 1200);
-    }
 
+    // Flash effect
+    if (oldPrice > 0 && price !== oldPrice) {
+      priceDiv.style.color = price > oldPrice ? 'var(--pos,#22c55e)' : 'var(--neg,#ef4444)';
+      setTimeout(() => { priceDiv.style.color = 'var(--text-primary,#e2e8f0)'; }, 1200);
+    }
   }
   if (changeDiv) {
     changeDiv.innerText   = sign + change.toFixed(2) + ' (' + sign + changePct.toFixed(2) + '%)';
@@ -243,10 +206,12 @@ function _applyGiftNiftyToChip(cached) {
 }
 
 function startGiftNiftyUpdates() {
-  if (_giftNiftyInterval) clearInterval(_giftNiftyInterval);
-  updateGiftNifty();
-  // Set to 60 seconds as requested
-  _giftNiftyInterval = setInterval(updateGiftNifty, 60000);
+  // ✅ FIX: No separate interval needed — live-price.js engine already calls
+  // updateGiftNifty() on every tick (every 6-8s). The 60s cache inside
+  // updateGiftNifty() throttles actual GAS fetches to once per minute.
+  // A separate 60s interval here was causing race conditions.
+  if (_giftNiftyInterval) { clearInterval(_giftNiftyInterval); _giftNiftyInterval = null; }
+  updateGiftNifty(); // Fire immediately on start
 }
 
 
@@ -512,14 +477,7 @@ function _renderTerminalRows() {
     return;
   }
 
-  // Virtual DOM Identity Check
-  const newKeys = rows.map(r => 't-row-' + r.s).join(',');
-  const curKeys = Array.from(rowsEl.children).map(c => c.id).join(',');
-  const canPatch = (newKeys === curKeys) && rowsEl.children.length > 0;
-  
-  let htmlBuffer = [];
-
-  rows.forEach((r, i) => {
+  rowsEl.innerHTML = rows.map((r, i) => {
     const isUp      = r.pct >= 0;
     const chgCls    = isUp ? 't-pos' : 't-neg';
     const chgPfx    = isUp ? '+' : '';
@@ -564,40 +522,22 @@ function _renderTerminalRows() {
     else if (r.sig === 'SELL') bear++;
     else neu++;
 
-    // Apply Virtual Patch or Build HTML
-    if (canPatch) {
-      const eLtp = document.getElementById('t-ltp-'+r.s); if (eLtp) eLtp.innerText = ltpStr;
-      const eAbs = document.getElementById('t-abs-'+r.s); if (eAbs) { eAbs.innerText = absStr; eAbs.className = chgCls; }
-      const ePct = document.getElementById('t-pct-'+r.s); if (ePct) { ePct.innerText = pctStr; ePct.className = chgCls; }
-      const eRsi = document.getElementById('t-rsi-'+r.s); if (eRsi) { eRsi.innerText = rsiStr; eRsi.className = rsiCls; }
-      const eMacd = document.getElementById('t-macd-'+r.s); if (eMacd) { eMacd.innerText = macdStr; eMacd.className = macdCls; }
-      const eVol = document.getElementById('t-vol-'+r.s); if (eVol) { eVol.innerText = volStr; eVol.style.cssText = volStyle + 'color:var(--text-sec,#94a3b8);'; }
-      const eSr = document.getElementById('t-sr-'+r.s); if (eSr) eSr.innerText = r.sr;
-      const eUb = document.getElementById('t-ub-'+r.s); if (eUb) eUb.innerText = ubStr;
-      const eLb = document.getElementById('t-lb-'+r.s); if (eLb) eLb.innerText = lbStr;
-      const eSig = document.getElementById('t-sig-'+r.s); if (eSig) { eSig.innerText = r.sig; eSig.className = 'badge ' + sigMap[r.sig]; }
-    } else {
-      htmlBuffer.push(`<div class="t-row" id="t-row-${r.s}" style="background:${bg};" onclick="openDetail('${r.s}',false)">
-        <div class="t-cell left">
-          <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
-        </div>
-        <div class="t-cell"><span id="t-ltp-${r.s}" style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
-        <div class="t-cell"><span id="t-abs-${r.s}" class="${chgCls}">${absStr}</span></div>
-        <div class="t-cell"><span id="t-pct-${r.s}" class="${chgCls}">${pctStr}</span></div>
-        <div class="t-cell"><span id="t-rsi-${r.s}" class="${rsiCls}">${rsiStr}</span></div>
-        <div class="t-cell"><span id="t-macd-${r.s}" class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
-        <div class="t-cell"><span id="t-vol-${r.s}" style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
-        <div class="t-cell" id="t-sr-${r.s}" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
-        <div class="t-cell" id="t-ub-${r.s}" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
-        <div class="t-cell" id="t-lb-${r.s}" style="color:#ef4444;font-weight:600;">${lbStr}</div>
-        <div class="t-cell"><span id="t-sig-${r.s}" class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
-      </div>`);
-    }
-  });
-  if (!canPatch) {
-    rowsEl.innerHTML = htmlBuffer.join('');
-  }
-
+    return `<div class="t-row" style="background:${bg};" onclick="openDetail('${r.s}',false)">
+      <div class="t-cell left">
+        <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
+      </div>
+      <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
+      <div class="t-cell"><span class="${chgCls}">${absStr}</span></div>
+      <div class="t-cell"><span class="${chgCls}">${pctStr}</span></div>
+      <div class="t-cell"><span class="${rsiCls}">${rsiStr}</span></div>
+      <div class="t-cell"><span class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
+      <div class="t-cell"><span style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
+      <div class="t-cell" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
+      <div class="t-cell" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
+      <div class="t-cell" style="color:#ef4444;font-weight:600;">${lbStr}</div>
+      <div class="t-cell"><span class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
+    </div>`;
+  }).join('');
 
   // Update summary bar
   const bull$ = document.getElementById('tSumBull');
@@ -677,13 +617,15 @@ function _patchTerminalPrices() {
 // ======================================
 // PRIVATE HELPERS
 // ======================================
-// Resolve index data — Normalizes all GIFT NIFTY variations to a unified check
+
+// Resolve index data — for GIFT NIFTY tries both 'NIFTY1!' and '__GIFT__' keys
 function _resolveIndexData(sym) {
-  if (sym === 'NIFTY1!' || sym === '__GIFT__' || sym === 'GIFT NIFTY' || sym === 'GIFTNIFTY') {
+  if (sym === 'NIFTY1!') {
     return AppState.cache['NIFTY1!']?.data || AppState.cache['__GIFT__']?.data || null;
   }
   return AppState.cache[sym]?.data || null;
 }
+
 function _calcChipValues(d) {
   const price     = d.regularMarketPrice || 0;
   const prev      = d.chartPreviousClose || d.regularMarketPreviousClose || price;
@@ -691,7 +633,7 @@ function _calcChipValues(d) {
   const pct       = prev ? (change / prev * 100) : 0;
   const isUp      = change >= 0;
   const sign      = isUp ? '+' : '';
-  const color     = isUp ? 'var(--pos,var(--pos))' : '#var(--neg)';
+  const color     = isUp ? 'var(--pos,#22c55e)' : 'var(--neg,#ef4444)';  // ✅ fixed: was var(--pos,var(--pos)) and #var(--neg)
   return {
     price,
     priceStr:    price.toFixed(2),
