@@ -64,6 +64,12 @@ function updateHeaderIndices() {
   chips.forEach((chip, i) => {
     if (i >= indices.length) return;
     const idx = indices[i];
+
+    // ✅ FIX: Skip GIFT NIFTY chip — it is managed exclusively by _applyGiftNiftyToChip()
+    // which uses toLocaleString() for proper comma formatting (23,983.00).
+    // updateHeaderIndices() was overwriting it with toFixed() (23983.00) causing mismatch.
+    if (idx.sym === 'NIFTY1!') return;
+
     const d   = _resolveIndexData(idx.sym);
     if (!d || !d.regularMarketPrice) return;
 
@@ -82,17 +88,14 @@ function updateHeaderIndices() {
     }
 
     // Flash on price change
-// Flash on price change
-if (priceDiv && oldPrice > 0 && price !== oldPrice) {
-  // મસ્ત વેરિએબલનો ઉપયોગ
-  const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
-  
-  priceDiv.style.transition = "color 0.2s ease"; // સ્મૂથ કલર ચેન્જ માટે
-  priceDiv.style.color = flashColor;
-
-  setTimeout(() => { 
-  priceDiv.style.color = 'var(--text-primary)'; 
-  }, 1200);}
+    if (priceDiv && oldPrice > 0 && price !== oldPrice) {
+      const flashColor = price > oldPrice ? 'var(--pos)' : 'var(--neg)';
+      priceDiv.style.transition = "color 0.2s ease";
+      priceDiv.style.color = flashColor;
+      setTimeout(() => { 
+        priceDiv.style.color = 'var(--text-primary)'; 
+      }, 1200);
+    }
   });
 }
 
@@ -120,25 +123,33 @@ async function updateGiftNifty() {
     const data = await r.json();
 
     if (data && data.price && data.price > 0) {
-      const price  = parseFloat(data.price);
-      const prev   = parseFloat(data.prev_close || data.prevClose || price);
-      const change = price - prev;
-      const pct    = prev ? (change / prev * 100) : 0;
+      const price = parseFloat(data.price);
+
+      // ✅ FIX: Use pre-calculated change_abs and change (pct%) directly from GAS/TradingView response.
+      // GAS returns TradingView fields: change_abs (absolute change) and change (pct%).
+      // Do NOT recalculate from prev_close — that field is unreliable and causes 0.00 change.
+      const changeAbs = parseFloat(data.change_abs || data.change_abs_val || 0);
+      const pct       = parseFloat(data.change     || data.change_pct    || 0);
+
+      // Fallback: if GAS sends prev_close, verify change_abs is non-zero, else recalc
+      const prev = parseFloat(data.prev_close || data.prevClose || 0);
+      const finalChange = (changeAbs !== 0) ? changeAbs : (prev > 0 ? price - prev : 0);
+      const finalPct    = (pct !== 0)       ? pct       : (prev > 0 ? (finalChange / prev * 100) : 0);
 
       const cached = {
         price:     price.toFixed(2),
-        change:    change.toFixed(2),
-        changePct: pct.toFixed(2)
+        change:    finalChange.toFixed(2),
+        changePct: finalPct.toFixed(2)
       };
 
       AppState._giftNiftyCache     = cached;
       AppState._giftNiftyCacheTime = now; // ✅ Only update timestamp on successful fetch
 
       _pushGiftNiftyToCache({
-        price: price,
-        prev_close: prev,
-        change_abs: change,
-        change_pct: pct
+        price:      price,
+        prev_close: prev || price,
+        change_abs: finalChange,
+        change_pct: finalPct
       });
 
       _applyGiftNiftyToChip(cached);
