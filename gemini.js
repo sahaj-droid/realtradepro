@@ -167,10 +167,10 @@ async function directGeminiCall(prompt, useSearch = false) {
 }
 
 // ========================================
-// 💬 GEMINI MULTI-TURN CHAT (3.1 -> 2.0 -> Groq Fallback)
+// 💬 GEMINI MULTI-TURN CHAT (3.1 -> 3.5 -> Groq Fallback)
 // ========================================
 async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
-    const models = ['gemini-3.1-flash-lite-preview', 'gemini-2.0-flash'];
+    const models = ['gemini-3.1-flash-lite-preview', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length > 0) {
@@ -357,11 +357,11 @@ window.getApiStatus = function () {
     };
 };
 // ========================================
-// 🌊 GEMINI MULTI-TURN STREAMING (3.1 -> 2.0 -> Groq Fallback)
+// 🌊 GEMINI MULTI-TURN STREAMING (3.1 -> 3.5 -> Groq Fallback)
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
-    // 🚀 તમારી ડિમાન્ડ મુજબ: પહેલા 3.1, પછી 2.0 
-    const models = ['gemini-3.1-flash-lite-preview', 'gemini-2.0-flash'];
+    // 🚀 તમારી ડિમાન્ડ મુજબ: પહેલા 3.1, પછી 3.5 
+    const models = ['gemini-3.1-flash-lite-preview', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) return { ok: false };
@@ -390,7 +390,7 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
 
             if (!response.ok) {
                 console.warn(`⚠️ ${modelName} failed (${response.status}). Trying next model...`);
-                continue; // જો 3.1 ફેલ થાય તો સીધું 2.0 પર જશે
+                continue; // જો 3.1 ફેલ થાય તો સીધું 3.5 પર જશે
             }
 
             const reader = response.body.getReader();
@@ -426,7 +426,7 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
         }
     }
 
-    // જો Gemini 3.1 અને 2.0 બંને ફેલ થાય, તો જ Groq પાસે જશે
+    // જો Gemini 3.1 અને 3.5 બંને ફેલ થાય, તો જ Groq પાસે જશે
     console.log("🔄 Both Gemini models failed for stream → Falling back to Groq/OpenRouter...");
     return await directGeminiCallMultiTurn(priorHistory, currentPrompt);
 }
