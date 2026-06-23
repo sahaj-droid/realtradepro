@@ -299,36 +299,47 @@ async function renderTerminal() {
   wrap.innerHTML = `
 <style>
 #terminalContainer { font-family:'Rajdhani',sans-serif; }
-#terminalContainer .t-hdr {
-  position:sticky;top:0;z-index:10;
-  background:var(--bg-header,#0d1425);
-  border-bottom:1px solid var(--border,#1e2d4a);
-  padding:8px 10px 0 10px;
-}
-#terminalContainer .t-toprow {
-  display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+/* ── Sticky Title Bar (TERMINAL label + Refresh) ── */
+#terminalContainer .t-title-bar {
+  position:sticky;top:0;z-index:20;
+  background:var(--bg-header,#080e1a);
+  border-bottom:2px solid var(--accent-border,#1e3a5f);
+  padding:7px 10px;
+  display:flex;align-items:center;justify-content:space-between;
 }
 #terminalContainer .t-title {
-  font-size:11px;font-weight:800;color:var(--accent,#38bdf8);letter-spacing:1px;
+  font-size:11px;font-weight:800;color:var(--accent,#38bdf8);letter-spacing:2px;
+  text-shadow: 0 0 12px rgba(56,189,248,0.4);
 }
 #terminalContainer .t-count {
   font-size:9px;color:var(--text-label,#4b6280);
-  background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);
+  background:var(--bg-card,#0d1627);border:1px solid var(--border,#1e2d4a);
   border-radius:8px;padding:1px 8px;margin-left:6px;
 }
 #terminalContainer .t-rfbtn {
   background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);
   border:1px solid var(--accent-border,#2d5a8e);
   padding:3px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;
+  transition:background 0.2s;
+}
+#terminalContainer .t-rfbtn:hover { background:#2a4f7a; }
+/* ── Horizontal Scroll Wrapper — col headers + rows scroll TOGETHER ── */
+#terminalContainer .t-scroll-wrap {
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
 }
 #terminalContainer .t-cols {
   display:grid;grid-template-columns:${colWidths};
-  gap:2px;padding:5px 6px;border-bottom:1px solid var(--border,#1e2d4a);
+  min-width:max-content;
+  gap:0;padding:4px 8px;
+  border-bottom:2px solid var(--accent-border,#1e3a5f);
+  background:var(--bg-header,#080e1a);
 }
 #terminalContainer .t-col-hdr {
   font-size:8px;font-weight:700;color:var(--text-label,#4b6280);
-  letter-spacing:0.5px;cursor:pointer;padding:2px 3px;border-radius:3px;
+  letter-spacing:0.8px;cursor:pointer;padding:3px 4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color 0.15s;
+  text-transform:uppercase;
 }
 #terminalContainer .t-col-hdr:hover { color:var(--accent,#38bdf8); }
 #terminalContainer .t-col-hdr.active { color:var(--accent,#38bdf8); }
@@ -336,70 +347,72 @@ async function renderTerminal() {
 #terminalContainer .t-col-hdr.center { text-align:center; }
 #terminalContainer .t-row {
   display:grid;grid-template-columns:${colWidths};
-  gap:2px;align-items:center;padding:6px 6px;
-  border-bottom:1px solid var(--border,#0f1829);
-  cursor:pointer;transition:background 0.1s;
+  min-width:max-content;
+  gap:0;align-items:center;padding:7px 8px;
+  border-bottom:1px solid rgba(30,45,74,0.9);
+  border-left:2px solid transparent;
+  cursor:pointer;transition:background 0.12s, border-left-color 0.15s;
 }
-#terminalContainer .t-row:hover { background:var(--bg-card2,#0d1a2e) !important; }
+#terminalContainer .t-row:hover {
+  background:rgba(56,189,248,0.06) !important;
+  border-left-color:var(--accent,#38bdf8);
+}
 #terminalContainer .t-sym {
   font-size:11px;font-weight:800;color:var(--accent,#38bdf8);letter-spacing:0.3px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-#terminalContainer .t-sec {
-  font-size:8px;color:var(--text-label,#4b6280);margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 #terminalContainer .t-cell {
   text-align:center;font-size:10px;color:var(--text-primary,#e2e8f0);
   font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;
+  padding:0 2px;
 }
 #terminalContainer .t-cell.left { text-align:left; }
 #terminalContainer .t-muted { color:var(--text-label,#4b6280); }
-#terminalContainer .t-pos { color:var(--pos,#38bdf8); font-weight:700; }
+#terminalContainer .t-pos { color:#22c55e; font-weight:700; }
 #terminalContainer .t-neg { color:#ef4444; font-weight:700; }
 #terminalContainer .badge {
   display:inline-block;font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700;
+  letter-spacing:0.5px;
 }
-#terminalContainer .badge-buy  { background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8); }
-#terminalContainer .badge-sell { background:rgba(239,68,68,0.12);color:#ef4444; }
-#terminalContainer .badge-hold { background:rgba(245,158,11,0.12);color:#f59e0b; }
-#terminalContainer .badge-watch{ background:rgba(167,139,250,0.12);color:#a78bfa; }
+#terminalContainer .badge-buy  { background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3); }
+#terminalContainer .badge-sell { background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3); }
+#terminalContainer .badge-hold { background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.3); }
+#terminalContainer .badge-watch{ background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid rgba(167,139,250,0.3); }
 #terminalContainer .rsi-ob { color:#ef4444;font-weight:700; }
 #terminalContainer .rsi-os { color:var(--accent,#38bdf8);font-weight:700; }
 #terminalContainer .rsi-ok { color:var(--text-sec,#94a3b8);font-weight:700; }
-#terminalContainer .bb-upper{ color:var(--accent,#38bdf8);font-weight:600; }
-#terminalContainer .bb-lower{ color:#ef4444;font-weight:600; }
-#terminalContainer .bb-mid  { color:#f59e0b;font-weight:600; }
 #terminalContainer .t-sumbar {
   display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
-  padding:8px 10px;background:var(--bg-header,#0d1425);
-  border-top:1px solid var(--border,#1e2d4a);
+  padding:8px 10px;background:var(--bg-header,#080e1a);
+  border-top:2px solid var(--accent-border,#1e3a5f);
 }
 #terminalContainer .t-sum-card {
-  background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);
+  background:var(--bg-card,#0d1627);border:1px solid var(--border,#1e2d4a);
   border-radius:8px;padding:5px 8px;text-align:center;
 }
 #terminalContainer .t-sum-lbl { font-size:8px;color:var(--text-label,#4b6280);text-transform:uppercase;letter-spacing:0.5px; }
 #terminalContainer .t-sum-val { font-size:14px;font-weight:800;margin-top:1px; }
 </style>
 
-<div class="t-hdr">
-  <div class="t-toprow">
-    <div style="display:flex;align-items:center;">
-      <span class="t-title">⬡ TERMINAL</span>
-      <span class="t-count" id="terminalCount"></span>
-    </div>
-    <button class="t-rfbtn" onclick="refreshTerminal()" id="terminalRefreshBtn">↻ Refresh</button>
+<!-- ── Sticky Title Bar only ── -->
+<div class="t-title-bar">
+  <div style="display:flex;align-items:center;">
+    <span class="t-title">⬡ TERMINAL</span>
+    <span class="t-count" id="terminalCount"></span>
   </div>
-  <div class="t-cols" id="terminalColHdrs"></div>
+  <button class="t-rfbtn" onclick="refreshTerminal()" id="terminalRefreshBtn">↻ Refresh</button>
 </div>
 
-<div id="terminalRows" style="padding-bottom:8px;"></div>
+<!-- ── Scroll Wrapper: col headers + rows scroll together horizontally ── -->
+<div class="t-scroll-wrap">
+  <div class="t-cols" id="terminalColHdrs"></div>
+  <div id="terminalRows" style="padding-bottom:8px;"></div>
+</div>
 
 <div class="t-sumbar">
   <div class="t-sum-card">
     <div class="t-sum-lbl">Bullish</div>
-    <div class="t-sum-val" style="color:var(--accent,#38bdf8);" id="tSumBull">0</div>
+    <div class="t-sum-val" style="color:#22c55e;" id="tSumBull">0</div>
   </div>
   <div class="t-sum-card">
     <div class="t-sum-lbl">Bearish</div>
@@ -515,7 +528,7 @@ function _renderTerminalRows() {
     const chgCls    = isUp ? 't-pos' : 't-neg';
     const chgPfx    = isUp ? '+' : '';
     const absPfx    = isUp ? '▲' : '▼';
-    const bg        = i % 2 === 0 ? 'var(--bg-app,#0a0e1a)' : 'var(--bg-card,#111827)';
+    const bg = i % 2 === 0 ? 'var(--bg-app,#06090f)' : 'var(--bg-card,#0d1627)';
 
     // Price + change
     const ltpStr  = '₹' + (r.price >= 1000 ? r.price.toFixed(0) : r.price.toFixed(2));
@@ -559,14 +572,14 @@ function _renderTerminalRows() {
       <div class="t-cell left">
         <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
       </div>
-      <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:600;">${ltpStr}</span></div>
+      <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:700;">${ltpStr}</span></div>
       <div class="t-cell"><span class="${chgCls}">${absStr}</span></div>
-      <div class="t-cell"><span class="${chgCls}">${pctStr}</span></div>
+      <div class="t-cell"><span class="${chgCls}" style="font-weight:800;">${pctStr}</span></div>
       <div class="t-cell"><span class="${rsiCls}">${rsiStr}</span></div>
       <div class="t-cell"><span class="${macdCls}" style="font-size:9px;">${macdStr}</span></div>
       <div class="t-cell"><span style="${volStyle}color:var(--text-sec,#94a3b8);">${volStr}</span></div>
       <div class="t-cell" style="font-size:9px;color:var(--text-label,#4b6280);">${r.sr}</div>
-      <div class="t-cell" style="color:var(--accent,#38bdf8);font-weight:600;">${ubStr}</div>
+      <div class="t-cell" style="color:#22c55e;font-weight:600;">${ubStr}</div>
       <div class="t-cell" style="color:#ef4444;font-weight:600;">${lbStr}</div>
       <div class="t-cell"><span class="badge ${sigMap[r.sig]}">${r.sig}</span></div>
     </div>`;
