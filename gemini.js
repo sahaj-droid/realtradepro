@@ -18,7 +18,10 @@ window.getGeminiKeys = function () {
 // 🚀 GEMINI CALL — Single Turn (with Search Grounding)
 // ========================================
 async function directGeminiCall(prompt, useSearch = false) {
-    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    // Search Grounding mate gemini-2.5-flash-lite — baaki chat/insights mate regular models
+    const models = useSearch
+        ? ['gemini-2.5-flash-lite']
+        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -225,7 +228,10 @@ window.getApiStatus = function () {
 // 🌊 GEMINI MULTI-TURN STREAMING — Full Multi-Key Support
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
-    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    // Search Grounding mate gemini-2.5-flash-lite — baaki chat/insights mate regular models
+    const models = useSearch
+        ? ['gemini-2.5-flash-lite']
+        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) return { ok: false };
@@ -302,5 +308,5 @@ window.directGeminiCallMultiTurn           = directGeminiCallMultiTurn;
 window.directGeminiCallWithFile            = directGeminiCallWithFile;
 window.directGeminiCallStreamMultiTurn     = directGeminiCallStreamMultiTurn;
 
-console.log('✅ Gemini Module Loaded | Models: gemini-3.1-flash-lite → gemini-3.5-flash | Multi-Key Rotation | Streaming: Fixed');
+console.log('✅ Gemini Module Loaded | Chat: gemini-3.1-flash-lite → gemini-3.5-flash | Search: gemini-2.5-flash-lite | Multi-Key | Streaming: Fixed');
 console.log('📊 API Status:', getApiStatus());
