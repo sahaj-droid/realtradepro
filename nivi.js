@@ -982,4 +982,4 @@ window._tabClearFile = _tabClearFile;
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
 
-console.log('✅ nivi.js loaded | File Upload: ON | Fallback: Groq → OpenRouter');
+console.log('✅ nivi.js loaded | File Upload: ON | Gemini Only Mode');

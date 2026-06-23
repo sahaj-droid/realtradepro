@@ -1,6 +1,6 @@
 // ========================================
 // SETTINGS MODULE — RealTradePro v3.0
-// Handles: API URLs, Refresh/Cache settings, Notifications, Data Clear, Gemini/Tavily Keys, Google Sheets, FF2 URL
+// Handles: API URLs, Refresh/Cache settings, Notifications, Data Clear, Gemini Keys, Google Sheets, FF2 URL
 // ========================================
 
 // ======================================
@@ -353,28 +353,6 @@ function initGeminiKeyDisplay() {
   if (el) el.innerHTML = keys.length > 0
     ? '<span style="color:var(--pos, #34d399);">✓ ' + keys.length + ' Gemini key(s) — Active</span>'
     : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
-
-  const gk = localStorage.getItem('groqApiKey');
-  const grEl = document.getElementById('groq-key-status');
-  if (grEl) grEl.innerHTML = gk
-    ? '<span style="color:var(--accent-purple, #a78bfa);">✓ Groq Key saved — Active</span>'
-    : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
-
-  const ok = localStorage.getItem('openRouterApiKey');
-  const orEl = document.getElementById('or-key-status');
-  if (orEl) orEl.innerHTML = ok
-    ? '<span style="color:var(--warn, #fb923c);">✓ OpenRouter Key saved — Active</span>'
-    : '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
-
-  const savedModels = (localStorage.getItem('openRouterModels') || '').split(',').filter(Boolean);
-  const f1 = document.getElementById('or-model-1');
-  const f2 = document.getElementById('or-model-2');
-  const f3 = document.getElementById('or-model-3');
-  if (f1) f1.value = savedModels[0] || '';
-  if (f2) f2.value = savedModels[1] || '';
-  if (f3) f3.value = savedModels[2] || '';
-
-  _loadUniversalProviderUI();
 }
 
 function saveGeminiKey() {
@@ -394,64 +372,7 @@ function clearGeminiKey() {
   showPopup('Gemini key cleared');
 }
 
-function saveGroqKey() {
-  const val = (document.getElementById('set-groq-key').value || '').trim();
-  if (!val) { showPopup('Enter Groq'); return; }
-  localStorage.setItem('groqApiKey', val);
-  document.getElementById('set-groq-key').value = '';
-  document.getElementById('groq-key-row').style.display = 'none';
-  const el = document.getElementById('groq-key-status');
-  if (el) el.innerHTML = '<span style="color:var(--accent-purple, #a78bfa);">✓ Groq Key saved — Active</span>';
-  showPopup('✅ Groq key saved! Fallback 1 ready.');
-}
 
-function clearGroqKey() {
-  localStorage.removeItem('groqApiKey');
-  const el = document.getElementById('groq-key-status');
-  if (el) el.innerHTML = '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
-  showPopup('Groq key cleared');
-}
-
-function saveORKey() {
-  const val = (document.getElementById('set-or-key').value || '').trim();
-  if (!val) { showPopup('Enter OpenRouter key'); return; }
-  localStorage.setItem('openRouterApiKey', val);
-  document.getElementById('set-or-key').value = '';
-  document.getElementById('or-key-row').style.display = 'none';
-  const el = document.getElementById('or-key-status');
-  if (el) el.innerHTML = '<span style="color:var(--warn, #fb923c);">✓ OpenRouter Key saved — Active</span>';
-  showPopup('✅ OpenRouter key saved! Fallback 2 ready.');
-}
-
-function clearORKey() {
-  localStorage.removeItem('openRouterApiKey');
-  const el = document.getElementById('or-key-status');
-  if (el) el.innerHTML = '<span style="color:var(--text-muted, #4b6280);">No key saved</span>';
-  showPopup('OpenRouter key cleared');
-}
-
-function saveORModels() {
-  const m1 = (document.getElementById('or-model-1').value || '').trim();
-  const m2 = (document.getElementById('or-model-2').value || '').trim();
-  const m3 = (document.getElementById('or-model-3').value || '').trim();
-  const models = [m1, m2, m3].filter(Boolean);
-  if (models.length === 0) { showPopup('Enter one model!'); return; }
-  localStorage.setItem('openRouterModels', models.join(','));
-  const st = document.getElementById('or-models-status');
-  if (st) { st.textContent = '✅ ' + models.length + ' model(s) saved'; setTimeout(() => st.textContent = '', 3000); }
-  showPopup('✅ OpenRouter models saved: ' + models.length);
-}
-
-function clearORModels() {
-  localStorage.removeItem('openRouterModels');
-  ['or-model-1','or-model-2','or-model-3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  const st = document.getElementById('or-models-status');
-  if (st) { st.textContent = '🗑 Models reset'; setTimeout(() => st.textContent = '', 2000); }
-  showPopup('OpenRouter models reset');
-}
 
 function getSheetId() { return localStorage.getItem('sheetId') || DEFAULT_SHEET_ID; }
 function isSheetEnabled() { return localStorage.getItem('sheetEnabled') === 'true'; }
@@ -541,100 +462,7 @@ function sToggle(bodyId, arrId) {
   a.textContent = hidden ? '▼' : '▶';
 }
 
-function _loadUniversalProviderUI() {
-  const config = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
 
-  const primStatus = document.getElementById('uni-primary-status');
-  if (primStatus) {
-    if (config?.primary?.provider) {
-      const p = config.primary;
-      primStatus.innerHTML = `<span style="color:var(--pos, #34d399);">✓ ${p.provider.toUpperCase()} — ${p.model || 'default'}</span>`;
-    } else {
-      primStatus.innerHTML = '<span style="color:var(--text-muted, #4b6280);">Not set — existing chain use thase</span>';
-    }
-  }
-
-  const fallStatus = document.getElementById('uni-fallback-status');
-  if (fallStatus) {
-    if (config?.fallback?.provider) {
-      const f = config.fallback;
-      fallStatus.innerHTML = `<span style="color:var(--warn, #fb923c);">✓ ${f.provider.toUpperCase()} — ${f.model || 'default'}</span>`;
-    } else {
-      fallStatus.innerHTML = '<span style="color:var(--text-muted, #4b6280);">Not set</span>';
-    }
-  }
-
-  if (config?.primary) {
-    const pp = document.getElementById('uni-primary-provider');
-    const pm = document.getElementById('uni-primary-model');
-    const pk = document.getElementById('uni-primary-key');
-    if (pp) pp.value = config.primary.provider || 'groq';
-    if (pm) pm.value = config.primary.model   || '';
-    if (pk) pk.value = ''; 
-  }
-  if (config?.fallback) {
-    const fp = document.getElementById('uni-fallback-provider');
-    const fm = document.getElementById('uni-fallback-model');
-    const fk = document.getElementById('uni-fallback-key');
-    if (fp) fp.value = config.fallback.provider || 'openrouter';
-    if (fm) fm.value = config.fallback.model    || '';
-    if (fk) fk.value = '';
-  }
-}
-
-function saveUniversalProvider() {
-  const pp = (document.getElementById('uni-primary-provider')?.value || '').trim().toLowerCase();
-  const pm = (document.getElementById('uni-primary-model')?.value    || '').trim();
-  const pk = (document.getElementById('uni-primary-key')?.value      || '').trim();
-
-  const fp = (document.getElementById('uni-fallback-provider')?.value || '').trim().toLowerCase();
-  const fm = (document.getElementById('uni-fallback-model')?.value    || '').trim();
-  const fk = (document.getElementById('uni-fallback-key')?.value      || '').trim();
-
-  if (!pp || !pk) { showPopup('Primary provider ane key joie!'); return; }
-
-  const config = {};
-  config.primary = { provider: pp, model: pm, apiKey: pk };
-
-  const existing = typeof getAIProviderConfig === 'function' ? getAIProviderConfig() : null;
-  if (!pk && existing?.primary?.apiKey) config.primary.apiKey = existing.primary.apiKey;
-
-  if (fp && fk) {
-    config.fallback = { provider: fp, model: fm, apiKey: fk };
-  } else if (fp && existing?.fallback?.apiKey) {
-    config.fallback = { provider: fp, model: fm, apiKey: existing.fallback.apiKey };
-  }
-
-  if (typeof setAIProviderConfig === 'function') setAIProviderConfig(config);
-
-  const pkEl = document.getElementById('uni-primary-key');
-  const fkEl = document.getElementById('uni-fallback-key');
-  if (pkEl) pkEl.value = '';
-  if (fkEl) fkEl.value = '';
-
-  _loadUniversalProviderUI();
-  showPopup(`✅ Universal AI saved! Primary: ${pp.toUpperCase()}`);
-}
-
-function clearUniversalProvider() {
-  localStorage.removeItem('aiProviderConfig');
-  _loadUniversalProviderUI();
-  showPopup('🗑 Universal AI config cleared — existing chain active');
-}
-
-function onUniProviderChange(which) {
-  const provEl  = document.getElementById(`uni-${which}-provider`);
-  const modelEl = document.getElementById(`uni-${which}-model`);
-  if (!provEl || !modelEl) return;
-
-  const defaults = {
-    groq:       'llama-3.1-8b-instant',
-    openrouter: 'meta-llama/llama-3.1-8b-instruct:free',
-    gemini:     'gemini-2.0-flash-lite',
-    nvidia:     'meta/llama-3.1-8b-instruct'
-  };
-  modelEl.placeholder = defaults[provEl.value] || 'model name';
-}
 
 window.toggleGASUrl = toggleGASUrl;
 window.loadSettingsUI = loadSettingsUI;
@@ -661,12 +489,6 @@ window.clearAllData = clearAllData;
 window.initGeminiKeyDisplay = initGeminiKeyDisplay;
 window.saveGeminiKey = saveGeminiKey;
 window.clearGeminiKey = clearGeminiKey;
-window.saveGroqKey = saveGroqKey;
-window.clearGroqKey = clearGroqKey;
-window.saveORKey = saveORKey;
-window.clearORKey = clearORKey;
-window.saveORModels = saveORModels;
-window.clearORModels = clearORModels;
 window.startSheetEdit = startSheetEdit;
 window.cancelSheetEdit = cancelSheetEdit;
 window.saveSheetId = saveSheetId;
@@ -677,8 +499,5 @@ window.startFF2Edit  = startFF2Edit;
 window.cancelFF2Edit = cancelFF2Edit;
 window.saveFF2Url    = saveFF2Url;
 window.sToggle = sToggle;
-window.saveUniversalProvider  = saveUniversalProvider;
-window.clearUniversalProvider = clearUniversalProvider;
-window.onUniProviderChange    = onUniProviderChange;
 
-console.log('✅ settings.js loaded successfully');
+console.log('✅ settings.js loaded successfully | Gemini Only');
