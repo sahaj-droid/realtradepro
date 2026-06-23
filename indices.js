@@ -392,6 +392,12 @@ async function renderTerminal() {
 }
 #terminalContainer .t-sum-lbl { font-size:8px;color:var(--text-label,#4b6280);text-transform:uppercase;letter-spacing:0.5px; }
 #terminalContainer .t-sum-val { font-size:14px;font-weight:800;margin-top:1px; }
+/* ── Frozen First Column (SYMBOL) ── */
+#terminalContainer .t-col-first {
+  position:sticky;left:0;z-index:5;
+  box-shadow:3px 0 8px rgba(0,0,0,0.5);
+  border-right:1px solid var(--accent-border,#1e3a5f);
+}
 </style>
 
 <!-- ── Sticky Title Bar only ── -->
@@ -442,9 +448,10 @@ async function renderTerminal() {
 function _renderTerminalColHdrs() {
   const hdrEl = document.getElementById('terminalColHdrs');
   if (!hdrEl) return;
-  hdrEl.innerHTML = _T_COLS.map(c => `
+  hdrEl.innerHTML = _T_COLS.map((c, i) => `
     <span id="tch-${c.id}" onclick="terminalSort('${c.id}')"
-      class="t-col-hdr ${c.align} ${_terminalSort.col === c.id ? 'active' : ''}">
+      class="t-col-hdr ${c.align} ${_terminalSort.col === c.id ? 'active' : ''}${i === 0 ? ' t-col-first' : ''}"
+      ${i === 0 ? 'style="background:var(--bg-header,#080e1a);"' : ''}>
       ${c.label}${_terminalSort.col === c.id ? (_terminalSort.dir === 'desc' ? ' ▼' : ' ▲') : ''}
     </span>`).join('');
 }
@@ -569,7 +576,7 @@ function _renderTerminalRows() {
     else neu++;
 
     return `<div class="t-row" style="background:${bg};" onclick="openDetail('${r.s}',false)">
-      <div class="t-cell left">
+      <div class="t-cell left t-col-first" style="background:${bg};">
         <div class="t-sym">${r.s}${r.volSpike ? ' <span style="font-size:7px;background:rgba(167,139,250,0.2);color:#a78bfa;padding:1px 3px;border-radius:3px;">VOL</span>' : ''}</div>
       </div>
       <div class="t-cell"><span style="color:var(--text-primary,#e2e8f0);font-weight:700;">${ltpStr}</span></div>
