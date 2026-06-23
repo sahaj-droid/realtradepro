@@ -45,7 +45,8 @@ async function directGeminiCall(prompt, useSearch = false) {
                 };
 
                 if (useSearch) {
-                    body.tools = [{ googleSearch: {} }];
+                    // ✅ Correct REST API syntax for Google Search Grounding
+                    body.tools = [{ google_search: {} }];
                 }
 
                 const response = await fetch(url, {
@@ -243,7 +244,8 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
     };
 
     if (useSearch) {
-        body.tools = [{ googleSearch: {} }];
+        // ✅ Correct REST API syntax for Google Search Grounding
+        body.tools = [{ google_search: {} }];
     }
 
     // ✅ ALL keys try karo (not just keys[0])
