@@ -107,7 +107,7 @@ async function _openRouterCall(messages) {
 // 🚀 GEMINI CALL — Single Turn (with Search Grounding)
 // ========================================
 async function directGeminiCall(prompt, useSearch = false) {
-    const modelName = 'gemini-3.1-flash-lite-preview';
+    const modelName = 'gemini-3.1-flash-lite';
     const keys = getGeminiKeys();
 
     // --- Try Gemini ---
@@ -170,7 +170,7 @@ async function directGeminiCall(prompt, useSearch = false) {
 // 💬 GEMINI MULTI-TURN CHAT (3.1 -> 3.5 -> Groq Fallback)
 // ========================================
 async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
-    const models = ['gemini-3.1-flash-lite-preview', 'gemini-3.5-flash'];
+    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length > 0) {
@@ -227,7 +227,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
 // Gemini natively reads files as base64
 // ========================================
 async function directGeminiCallWithFile(prompt, fileBase64, mimeType) {
-    const modelName = 'gemini-3.1-flash-lite-preview';
+    const modelName = 'gemini-3.1-flash-lite';
     const keys = getGeminiKeys();
 
     const filePart = {
@@ -361,7 +361,7 @@ window.getApiStatus = function () {
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
     // 🚀 તમારી ડિમાન્ડ મુજબ: પહેલા 3.1, પછી 3.5 
-    const models = ['gemini-3.1-flash-lite-preview', 'gemini-3.5-flash'];
+    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) return { ok: false };
