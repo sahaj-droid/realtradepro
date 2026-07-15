@@ -18,10 +18,10 @@ window.getGeminiKeys = function () {
 // 🚀 GEMINI CALL — Single Turn (with Search Grounding)
 // ========================================
 async function directGeminiCall(prompt, useSearch = false) {
-    // Search Grounding mate gemini-2.5-flash-lite — baaki chat/insights mate regular models
+    // Search Grounding mate — primary + fallbacks
     const models = useSearch
-        ? ['gemini-2.5-flash-lite']
-        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+        ? ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
+        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.0-flash'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -45,8 +45,11 @@ async function directGeminiCall(prompt, useSearch = false) {
                 };
 
                 if (useSearch) {
-                    // ✅ Correct REST API syntax for Google Search Grounding
-                    body.tools = [{ google_search: {} }];
+                    // Gemini 2.x+ uses googleSearch (camelCase), 1.5 uses google_search
+                    const isV2Plus = modelName.startsWith('gemini-2') || modelName.startsWith('gemini-3');
+                    body.tools = isV2Plus
+                        ? [{ googleSearch: {} }]
+                        : [{ google_search: {} }];
                 }
 
                 const response = await fetch(url, {
@@ -64,7 +67,7 @@ async function directGeminiCall(prompt, useSearch = false) {
                     console.warn(`⚠️ Key rate limited on ${modelName}, trying next...`);
                     continue;
                 }
-                console.warn(`Gemini error (${modelName}):`, data.error?.message);
+                console.warn(`Gemini error (${modelName}): [${response.status}]`, data.error?.message || JSON.stringify(data.error));
             } catch (err) {
                 console.error(`Gemini call error (${modelName}):`, err.message);
             }
