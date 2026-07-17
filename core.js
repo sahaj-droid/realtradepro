@@ -55,13 +55,11 @@ async function startApp() {
   try {
     const startWl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl;
 
-    // ✅ MARKETDATA: GAS call sirf market open hoy tyare
+    // ✅ MARKETDATA: Always fetch once on load since Python script is stopped
     const _mktOpen = typeof isMarketOpen === 'function' ? isMarketOpen() : true;
-    if (_mktOpen) {
-      // 1. Watchlist prices — GAS thi fresh data
-      await batchFetchStocks(startWl);
-    }
-    // Market closed hoy to initMarketData() already Firebase/LocalCache inject kari chuke — skip GAS
+    
+    // 1. Watchlist prices — GAS thi fresh data on load
+    await batchFetchStocks(startWl);
 
     renderWL();
     if (typeof updatePriceTicker === 'function') updatePriceTicker();

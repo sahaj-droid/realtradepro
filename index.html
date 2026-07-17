@@ -307,19 +307,22 @@
           placeholder="Search symbol (e.g. RELIANCE, TATASTEEL...)"
           oninput="aiChartSuggest(this.value)"
           onkeydown="if(event.key==='Enter'){const b=document.getElementById('aichart-sugbox');if(b)b.style.display='none';loadAIChart();}"
-          style="flex:1; background:#0a1628; border:1px solid #1e3a5f; color:#e2e8f0; border-radius:8px; padding:9px 12px; outline:none; font-family:'Rajdhani',sans-serif; font-size:13px;">
-        <button onclick="loadAIChart()" style="background:#065f46; color:#34d399; border:none; border-radius:8px; padding:9px 18px; font-weight:700; font-family:'Rajdhani',sans-serif; font-size:13px; cursor:pointer; flex-shrink:0;">🔍 Load</button>
+          style="flex:1; background:#1e1b4b; border:1px solid #4c1d95; color:#e2e8f0; border-radius:8px; padding:9px 12px; outline:none; font-family:'Rajdhani',sans-serif; font-size:13px; box-shadow: 0 0 10px rgba(76,29,149,0.2);">
+        <button onclick="loadAIChart()" style="background:linear-gradient(135deg, #6d28d9, #4c1d95); color:#ddd6fe; border:1px solid #7c3aed; border-radius:8px; padding:9px 18px; font-weight:700; font-family:'Rajdhani',sans-serif; font-size:13px; cursor:pointer; flex-shrink:0; box-shadow: 0 0 10px rgba(109,40,217,0.4);">✨ Analyze</button>
       </div>
       <!-- Suggestion dropdown -->
-      <div id="aichart-sugbox" style="display:none; position:absolute; top:100%; left:0; right:0; background:#0f1e33; border:1px solid #1e3a5f; border-radius:0 0 8px 8px; z-index:500; max-height:220px; overflow-y:auto;"></div>
+      <div id="aichart-sugbox" style="display:none; position:absolute; top:100%; left:0; right:0; background:#1e1b4b; border:1px solid #4c1d95; border-radius:0 0 8px 8px; z-index:500; max-height:220px; overflow-y:auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);"></div>
     </div>
 
-    <div id="aichart-container" style="width:100%; height:320px; background:#0f1e33; border:1px solid #1e3a5f; border-radius:8px; margin-bottom:10px;"></div>
+    <div id="aichart-container" style="width:100%; height:320px; background:#0f172a; border:1px solid #334155; border-radius:8px; margin-bottom:10px; position:relative; overflow:hidden;"></div>
 
-    <div id="aichart-insights" style="background:linear-gradient(160deg,#0a1a10,#0f2a1a); border:1px solid #065f46; border-radius:12px; padding:12px; display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <h3 style="color:#34d399; font-weight:bold; margin:0; font-family:'Rajdhani',sans-serif;">✨ AI Market Insights</h3>
-        <span id="aichart-loading" style="display:none;" class="spinner"></span>
+    <div id="aichart-insights" style="background:linear-gradient(160deg,#1e1b4b,#2e1065); border:1px solid #5b21b6; border-radius:12px; padding:12px; display:none; box-shadow: inset 0 0 20px rgba(139,92,246,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(139,92,246,0.2); padding-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:18px;">🧠</span>
+          <h3 style="color:#a78bfa; font-weight:bold; margin:0; font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:0.5px;">NIVI AI Analysis</h3>
+        </div>
+        <span id="aichart-loading" style="display:none;" class="spinner" style="border-top-color:#a78bfa;"></span>
       </div>
       <div id="aichart-report" style="color:#e2e8f0; font-size:13px; line-height:1.6; font-family:'Rajdhani',sans-serif;"></div>
     </div>
@@ -1211,24 +1214,24 @@
 </div><!-- end mainApp -->
 <script src="appstate.js"></script>
 <script src="utils.js"></script>
-<script src="api.js"></script>
+<script src="api.js?v=2"></script>
 <script src="auth.js"></script>
 <script src="firebase-sync.js"></script>
 <script src="price.js"></script>
 <script src="live-price.js"></script>
-<script src="indices.js?v=2"></script>
+<script src="indices.js?v=5"></script>
 <script src="detail-modal.js"></script>
 <script src="holdings.js"></script>
 <script src="trades.js"></script>
 <script src="alerts.js"></script>
 <script src="technical.js"></script>
 <script src="gemini.js"></script>
-<script src="nivi.js"></script>
+<script src="nivi.js?v=2"></script>
 <script src="learn.js"></script>
 <script src="settings.js"></script>
 <script src="marketdata.js"></script>
-<script src="core.js"></script>
-<script src="ai-chart.js?v=10"></script>
+<script src="core.js?v=2"></script>
+<script src="ai-chart.js?v=11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {

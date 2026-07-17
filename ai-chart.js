@@ -81,7 +81,7 @@ async function loadAIChart() {
   if (sugbox) sugbox.style.display = 'none';
 
   const container = document.getElementById('aichart-container');
-  container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:10px;"><div class="spinner"></div><span style="color:#34d399;font-family:Rajdhani,sans-serif;">Fetching candles...</span></div>';
+  container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;gap:10px;"><div class="spinner" style="border-top-color:#a78bfa;"></div><span style="color:#a78bfa;font-family:Rajdhani,sans-serif;font-weight:bold;letter-spacing:0.5px;">Fetching candles...</span></div>';
   document.getElementById('aichart-insights').style.display = 'none';
   document.getElementById('aichart-report').innerHTML = '';
 

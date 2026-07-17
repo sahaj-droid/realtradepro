@@ -404,7 +404,10 @@ async function renderTerminal() {
     <span class="t-title">⬡ TERMINAL</span>
     <span class="t-count" id="terminalCount"></span>
   </div>
-  <button class="t-rfbtn" onclick="refreshTerminal()" id="terminalRefreshBtn">↻ Refresh</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="terminalSyncIndicator" style="display:none;align-items:center;gap:4px;font-size:10px;color:#a78bfa;background:rgba(167,139,250,0.1);padding:2px 6px;border-radius:4px;border:1px solid rgba(167,139,250,0.3);"><div class="spinner" style="width:10px;height:10px;border-width:1.5px;border-top-color:#a78bfa;margin:0;"></div> Syncing...</span>
+    <button class="t-rfbtn" onclick="refreshTerminal()" id="terminalRefreshBtn">↻ Refresh</button>
+  </div>
 </div>
 
 <!-- ── Scroll Wrapper: col headers + rows scroll together horizontally ── -->
@@ -478,10 +481,12 @@ function _renderTerminalRows() {
 
     let rsi = null, macd = null, bb = null;
     const hist = AppState._histCache?.[s] || window._histCache?.[s];
-    if (hist && hist.close && hist.close.length >= 30) {
-      rsi  = calcRSI(hist.close);
-      macd = calcMACD(hist.close);
-      bb   = calcBollinger(hist.close);
+    if (hist && hist.close && hist.close.length >= 20) {
+      let liveCloses = [...hist.close];
+      if (price > 0) liveCloses[liveCloses.length - 1] = price; // Inject LIVE price for perfect BB match
+      rsi  = calcRSI(liveCloses);
+      macd = calcMACD(liveCloses);
+      bb   = calcBollinger(liveCloses);
     }
 
     // Signal logic
@@ -616,7 +621,83 @@ function terminalSort(col) {
 }
  
 // ======================================
-// REFRESH TERMINAL — fetch histcache from Firebase
+// CLIENT-SIDE AUTO SYNC FOR HISTCACHE
+// ======================================
+window.autoSyncHistCache = async function() {
+  try {
+    const db = firebase.firestore();
+    const metaRef = db.collection('histcache_meta').doc('sync_status');
+    const metaSnap = await metaRef.get();
+    
+    // Get today's date in IST
+    const today = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", year: 'numeric', month: '2-digit', day: '2-digit' }).split(',')[0];
+    
+    let lastUpdated = '';
+    if (metaSnap.exists) {
+      lastUpdated = metaSnap.data().last_updated_date_v2 || '';
+    }
+
+    if (lastUpdated === today) {
+      console.log('[AutoSync] Histcache already synced today (' + today + '). Skipping.');
+      return;
+    }
+
+    console.log('[AutoSync] Starting background sync for today (' + today + ')...');
+    
+    // Show sync indicator in UI
+    const syncInd = document.getElementById('terminalSyncIndicator');
+    if (syncInd) syncInd.style.display = 'flex';
+
+    // Get active watchlist (up to 50 stocks)
+    const wl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl || [];
+    const stocksToSync = wl.slice(0, 50);
+
+    for (const sym of stocksToSync) {
+      if (!sym || sym.includes('!') || sym.includes('^')) continue; // skip indices
+
+      try {
+        // Fetch 30 days of data (force=true to bypass localStorage)
+        const hist = await window.fetchHistory(sym, '30d', '1d', true);
+        if (hist && hist.close && hist.close.length > 0) {
+          // Update Firestore
+          await db.collection('histcache').doc(sym).set({
+            data: {
+              close: hist.close,
+              volume: hist.volume || []
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          // Also update local cache so it reflects immediately
+          if (!window._histCache) window._histCache = {};
+          window._histCache[sym] = { close: hist.close, volume: hist.volume || [] };
+        }
+      } catch (err) {
+        console.warn(`[AutoSync] Failed to sync ${sym}:`, err);
+      }
+      
+      // Wait 2 seconds between calls to avoid API rate limits
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    // Mark as done for today
+    await metaRef.set({ last_updated_date_v2: today }, { merge: true });
+    console.log('[AutoSync] Completed syncing for today.');
+
+    if (syncInd) syncInd.style.display = 'none';
+    
+    // Re-render terminal if active
+    if (AppState._curTab === 'indices') {
+      _renderTerminalRows();
+    }
+
+  } catch (err) {
+    console.error('[AutoSync] Global error:', err);
+    const syncInd = document.getElementById('terminalSyncIndicator');
+    if (syncInd) syncInd.style.display = 'none';
+  }
+};
+
 // ======================================
 async function refreshTerminal() {
   const btn = document.getElementById('terminalRefreshBtn');
@@ -648,6 +729,12 @@ try {
       const wl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl || [];
       await batchFetchStocks(wl);
     }
+    
+    // Trigger background auto-sync check
+    setTimeout(() => {
+      if (window.autoSyncHistCache) window.autoSyncHistCache();
+    }, 2000);
+
   } catch(e) {
     console.warn('[Terminal] refresh error:', e);
   }

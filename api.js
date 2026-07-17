@@ -209,14 +209,16 @@ function formatVolume(v) {
 // ======================================
 // FETCH HISTORY
 // ======================================
-async function fetchHistory(sym, range = '30d', interval = '1d') {
+async function fetchHistory(sym, range = '30d', interval = '1d', force = false) {
   const DAY_KEY = 'histData_' + sym + '_' + range + '_' + interval;
   const today = new Date().toISOString().split('T')[0];
 
-  try {
-    const stored = JSON.parse(localStorage.getItem(DAY_KEY) || 'null');
-    if (stored && stored.date === today && stored.data) return stored.data;
-  } catch (e) {}
+  if (!force) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(DAY_KEY) || 'null');
+      if (stored && stored.date === today && stored.data) return stored.data;
+    } catch (e) {}
+  }
 
   const urls = getEnabledGASUrls().slice(0, 3);
   for (let apiUrl of urls) {

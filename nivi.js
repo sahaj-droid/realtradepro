@@ -197,7 +197,7 @@ async function renderNews() {
   const smartChips = _buildSmartChips();
   const chipsHtml = smartChips.map(c =>
     `<button onclick="_tabChip('${c.q.replace(/'/g, "\\'")}')"
-      style="flex-shrink:0;background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);border:1px solid rgba(56,189,248,0.3);border-radius:16px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
+      style="flex-shrink:0;background:rgba(139,92,246,0.1);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
   ).join('');
 
   el.innerHTML = `
@@ -206,7 +206,7 @@ async function renderNews() {
     <div style="flex-shrink:0;padding-bottom:6px;">
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
         <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
-          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid var(--accent-bg,#1e3a5f);background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);">
+          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #7c3aed;background:rgba(124,58,237,0.2);color:#ddd6fe;">
           💬 Nivi Chat
         </button>
         <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
@@ -223,14 +223,14 @@ async function renderNews() {
     <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
       <div style="flex-shrink:0;">
-        <div id="tab-brief-card" style="display:none;background:var(--bg-card,#0d1f35);border:1px solid rgba(56,189,248,0.2);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
+        <div id="tab-brief-card" style="display:none;background:#1e1b4b;border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
           <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
             ${buildMoverChips()}
           </div>
           <div id="tab-brief-body" style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
             <div style="text-align:center;padding:8px 0;">
-              <div class="spinner" style="margin:0 auto 5px;"></div>
-              <div style="font-size:11px;color:var(--accent,#38bdf8);font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
+              <div class="spinner" style="margin:0 auto 5px;border-top-color:#a78bfa;"></div>
+              <div style="font-size:11px;color:#a78bfa;font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
             </div>
           </div>
           <div id="tab-brief-time" style="font-size:9px;color:var(--text-label,#4b6280);margin-top:4px;"></div>
@@ -349,7 +349,7 @@ function _niviSubTab(tab) {
   if (chatSection) chatSection.style.display = isChat ? 'flex' : 'none';
   if (newsSection) newsSection.style.display = isChat ? 'none' : 'flex';
   
-  const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid var(--accent-bg,#1e3a5f);background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);';
+  const active   = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid #7c3aed;background:rgba(124,58,237,0.2);color:#ddd6fe;';
   const inactive = 'flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:Rajdhani,sans-serif;border:1px solid var(--border,#1e2d4a);background:transparent;color:var(--text-label,#4b6280);';
   
   const chatBtn = document.getElementById('nivi-subtab-chat');
@@ -726,15 +726,15 @@ area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-it
   area.innerHTML = AppState._tabChatHistory.map(msg => {
     if (msg.role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div style="background:var(--accent-bg,#1e3a5f);color:var(--text-primary,#e2e8f0);border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;">${escapeHtml(msg.text)}</div>
+        <div style="background:linear-gradient(135deg, #4c1d95, #3b0764);color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;box-shadow:0 2px 10px rgba(76,29,149,0.2);">${escapeHtml(msg.text)}</div>
       </div>`;
     } else {
       const formatted = _formatNiviResponse(msg.text);
       return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
-        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--accent,#38bdf8);background:var(--bg-card,#0d1f35);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg viewBox="0 0 28 28" width="12" height="12" fill="var(--accent,#38bdf8)"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #a855f7;background:#1e1b4b;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 28 28" width="12" height="12" fill="#c084fc"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
         </div>
-        <div style="background:var(--bg-card,#0d1f35);border:1px solid rgba(56,189,248,0.2);color:var(--text-primary,#e2e8f0);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;">${formatted}</div>
+        <div style="background:linear-gradient(160deg, #1e1b4b, #2e1065);border:1px solid rgba(139,92,246,0.3);color:var(--text-primary,#e2e8f0);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;box-shadow:inset 0 0 15px rgba(139,92,246,0.05);">${formatted}</div>
       </div>`;
     }
   }).join('');
