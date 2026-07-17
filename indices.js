@@ -126,14 +126,12 @@ async function updateGiftNifty() {
       const price = parseFloat(data.price);
 
       // ✅ FIX: Use pre-calculated change_abs and change (pct%) directly from GAS/TradingView response.
-      // GAS returns TradingView fields: change_abs (absolute change) and change (pct%).
-      // Do NOT recalculate from prev_close — that field is unreliable and causes 0.00 change.
-      const changeAbs = parseFloat(data.change_abs || data.change_abs_val || 0);
-      const pct       = parseFloat(data.change     || data.change_pct    || 0);
+      // Code.gs returns { price, change, changePct, high, low, prev_close }
+      const changeAbs = parseFloat(data.change || 0);
+      const pct       = parseFloat(data.changePct || 0);
 
-      // Fallback: if GAS sends prev_close, verify change_abs is non-zero, else recalc
-      // prev_close_price is TradingView's exact field name — GAS may pass it verbatim
-      const prev = parseFloat(data.prev_close || data.prev_close_price || data.prevClose || 0);
+      // Fallback if change is somehow zero
+      const prev = parseFloat(data.prev_close || data.prevClose || 0);
       const finalChange = (changeAbs !== 0) ? changeAbs : (prev > 0 ? price - prev : 0);
       const finalPct    = (pct !== 0)       ? pct       : (prev > 0 ? (finalChange / prev * 100) : 0);
 
