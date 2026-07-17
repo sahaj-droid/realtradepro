@@ -272,9 +272,11 @@ ${candleLines}
 === YOUR TASKS ===
 
 1. 📰 NEWS CHECK (Search Google NOW):
-   - Search: "${sym} NSE stock news 2025"
+   - Search: "${sym} NSE stock news ${new Date().toISOString().split('T')[0]}"
    - What are the latest corporate events? (Earnings, merger, promoter activity, FII/DII buying)
    - Any upcoming results date or major announcements?
+
+2. 📊 TECHNICAL ANALYSIS:
 
 2. 📊 TECHNICAL ANALYSIS:
    - Key Support levels (2-3 levels with approximate price)
