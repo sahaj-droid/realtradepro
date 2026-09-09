@@ -1,5 +1,5 @@
 // ========================================
-// AI CHART MODULE — v2
+// AI CHART MODULE — V2
 // TradingView Lightweight Charts + Gemini AI
 // ========================================
 
