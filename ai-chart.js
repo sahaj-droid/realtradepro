@@ -1,5 +1,5 @@
 // ========================================
-// AI CHART MODULE — V2
+// AI CHART MODULE — v2
 // TradingView Lightweight Charts + Gemini AI
 // ========================================
 
@@ -150,11 +150,19 @@ async function loadAIChart() {
     return;
   }
 
+  const isLight = document.body.classList.contains('light-mode');
+  
   const chartOpts = {
-    layout:  { background: { color: '#0f1e33' }, textColor: '#94a3b8' },
-    grid:    { vertLines: { color: 'rgba(30,58,95,0.5)' }, horzLines: { color: 'rgba(30,58,95,0.5)' } },
-    timeScale: { timeVisible: true, borderColor: '#1e3a5f' },
-    rightPriceScale: { borderColor: '#1e3a5f' },
+    layout:  { 
+      background: { color: isLight ? '#ffffff' : '#0f1e33' }, 
+      textColor: isLight ? '#475569' : '#94a3b8' 
+    },
+    grid:    { 
+      vertLines: { color: isLight ? '#f1f5f9' : 'rgba(30,58,95,0.5)' }, 
+      horzLines: { color: isLight ? '#f1f5f9' : 'rgba(30,58,95,0.5)' } 
+    },
+    timeScale: { timeVisible: true, borderColor: isLight ? '#e2e8f0' : '#1e3a5f' },
+    rightPriceScale: { borderColor: isLight ? '#e2e8f0' : '#1e3a5f' },
     crosshair: { mode: 1 },
     width: container.clientWidth || 320,
     height: container.clientHeight || 320

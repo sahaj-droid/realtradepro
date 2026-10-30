@@ -143,6 +143,11 @@ function openProfileDrawer() {
   if (drawer) {
     drawer.classList.add('open');
     drawer.style.display = 'flex';
+    const s = document.getElementById('settings');
+    if (s) {
+      s.classList.add('active');
+      s.style.display = 'block';
+    }
     updateHeaderProfileUI();
     if (typeof loadSettingsUI === 'function') loadSettingsUI();
   }
@@ -156,20 +161,9 @@ function closeProfileDrawer() {
   }
 }
 
-function updateHeaderProfileUI() {
-  const nameEl = document.getElementById('headerProfileName');
-  const avatarEl = document.getElementById('headerAvatarLetter');
-  const dNameEl = document.getElementById('drawerUserName');
-  const dAvatarEl = document.getElementById('drawerAvatarLetter');
-  
-  const name = (AppState.currentUser && AppState.currentUser.name) ? AppState.currentUser.name : 'Sahaj';
-  const initial = name.charAt(0).toUpperCase();
-
-  if (nameEl) nameEl.textContent = name;
-  if (avatarEl) avatarEl.textContent = initial;
-  if (dNameEl) dNameEl.textContent = name;
-  if (dAvatarEl) dAvatarEl.textContent = initial;
-}
+window.openProfileDrawer = openProfileDrawer;
+window.closeProfileDrawer = closeProfileDrawer;
+window.updateHeaderProfileUI = updateHeaderProfileUI;
 
 // ======================================
 // MARKETS SUB-TABS (FII/DII/IPO, Indices, Financials)

@@ -197,20 +197,20 @@ async function renderNews() {
   const smartChips = _buildSmartChips();
   const chipsHtml = smartChips.map(c =>
     `<button onclick="_tabChip('${c.q.replace(/'/g, "\\'")}')"
-      style="flex-shrink:0;background:rgba(139,92,246,0.1);color:#c4b5fd;border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
+      style="flex-shrink:0;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:16px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
   ).join('');
 
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:448px;top:${_top}px;bottom:${_bot}px;overflow:hidden;padding:8px 12px 0 12px;box-sizing:border-box;background:var(--bg-app,#0a0f1a);z-index:1;">
+  <div style="display:flex;flex-direction:column;height:calc(100vh - ${_top}px - ${_bot}px);max-width:448px;margin:0 auto;padding:8px 12px 0 12px;box-sizing:border-box;background:var(--bg-app);position:relative;">
 
     <div style="flex-shrink:0;padding-bottom:6px;">
       <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
         <button id="nivi-subtab-chat" onclick="_niviSubTab('chat')"
-          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #7c3aed;background:rgba(124,58,237,0.2);color:#ddd6fe;">
+          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);">
           💬 Nivi Chat
         </button>
         <button id="nivi-subtab-news" onclick="_niviSubTab('news')"
-          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid var(--border,#1e2d4a);background:transparent;color:var(--text-label,#4b6280);">
+          style="flex:1;padding:6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid var(--border);background:transparent;color:var(--text-label);">
           📰 AI Insights
         </button>
         <button onclick="_tabClearHistory()" title="Chat clear karo"
@@ -223,36 +223,36 @@ async function renderNews() {
     <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
 
       <div style="flex-shrink:0;">
-        <div id="tab-brief-card" style="display:none;background:#1e1b4b;border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:8px 12px;margin-bottom:6px;">
+        <div id="tab-brief-card" style="display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:6px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
           <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:6px;">
             ${buildMoverChips()}
           </div>
-          <div id="tab-brief-body" style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
+          <div id="tab-brief-body" style="font-size:12px;color:var(--text-primary);line-height:1.8;font-family:'Noto Sans Devanagari','Mangal',sans-serif;">
             <div style="text-align:center;padding:8px 0;">
-              <div class="spinner" style="margin:0 auto 5px;border-top-color:#a78bfa;"></div>
-              <div style="font-size:11px;color:#a78bfa;font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
+              <div class="spinner" style="margin:0 auto 5px;border-top-color:var(--accent);"></div>
+              <div style="font-size:11px;color:var(--accent);font-family:'Rajdhani',sans-serif;">Nivi soch rahi hai...</div>
             </div>
           </div>
-          <div id="tab-brief-time" style="font-size:9px;color:var(--text-label,#4b6280);margin-top:4px;"></div>
+          <div id="tab-brief-time" style="font-size:9px;color:var(--text-label);margin-top:4px;"></div>
         </div>
       </div>
 
       <div id="tab-chat-area" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px 0 6px 0;-webkit-overflow-scrolling:touch;min-height:0;">
       </div>
 
-      <div style="flex-shrink:0;padding:8px 0 10px 0;border-top:1px solid var(--border,#1e2d4a);background:var(--bg-app,#0a0f1a);">
+      <div style="flex-shrink:0;padding:8px 0 10px 0;border-top:1px solid var(--border);background:var(--bg-app);">
 
         <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px;scrollbar-width:none;">
           <button onclick="_tabToggleMood()"
-            style="flex-shrink:0;background:rgba(56,189,248,0.08);color:var(--accent,#38bdf8);border:1px solid rgba(56,189,248,0.25);border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+            style="flex-shrink:0;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:16px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
             📊 Market Mood
           </button>
           ${chipsHtml}
         </div>
 
-<div id="tab-file-preview" style="display:none;align-items:center;gap:8px;margin-bottom:6px;background:var(--bg-card,#0d1f35);border:1px solid rgba(56,189,248,0.25);border-radius:10px;padding:6px 10px;">
-          <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><rect x="3" y="2" width="10" height="14" rx="2" stroke="var(--accent,#38bdf8)" stroke-width="1.4"/><path d="M7 6h4M7 9h4M7 12h2" stroke="var(--accent,#38bdf8)" stroke-width="1.2" stroke-linecap="round"/></svg>
-          <span id="tab-file-name" style="font-size:11px;color:var(--accent,#38bdf8);font-family:'Rajdhani',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+<div id="tab-file-preview" style="display:none;align-items:center;gap:8px;margin-bottom:6px;background:var(--bg-card);border:1px solid var(--accent-border);border-radius:10px;padding:6px 10px;">
+          <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><rect x="3" y="2" width="10" height="14" rx="2" stroke="var(--accent)" stroke-width="1.4"/><path d="M7 6h4M7 9h4M7 12h2" stroke="var(--accent)" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span id="tab-file-name" style="font-size:11px;color:var(--accent);font-family:'Rajdhani',sans-serif;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
           <button onclick="_tabClearFile()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;">✕</button>
         </div>
 
@@ -261,8 +261,8 @@ async function renderNews() {
           <!-- 🚀 બ્રહ્માસ્ત્ર જુગાડ: Invisible Overlay (100% Mobile Safe) -->
           <div style="position:relative; flex-shrink:0; width:42px; height:42px;">
             <!-- આ દેખાતું બટન છે -->
-            <div style="width:100%; height:100%; background:rgba(56,189,248,0.08); color:var(--accent,#38bdf8); border:1px solid rgba(56,189,248,0.2); border-radius:12px; display:flex; align-items:center; justify-content:center;">
-              <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="var(--accent,#38bdf8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="width:100%; height:100%; background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-border); border-radius:12px; display:flex; align-items:center; justify-content:center;">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <!-- આ અદ્રશ્ય ફાઈલ ઇનપુટ છે જે બટન પર ઢંકાયેલું છે -->
             <input type="file" id="tab-file-input"
@@ -277,9 +277,9 @@ async function renderNews() {
               rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_tabSend();}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,90)+'px';"
-              style="width:100%;background:var(--bg-input,#0a1628);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--text-primary,#e2e8f0);font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.5;box-sizing:border-box;min-height:42px;max-height:90px;overflow-y:auto;transition:border-color 0.2s;display:block;vertical-align:middle;"
-              onfocus="this.style.borderColor='var(--accent,#38bdf8)'"
-              onblur="this.style.borderColor='var(--border,#1e2d4a)'">
+              style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--text-primary);font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.5;box-sizing:border-box;min-height:42px;max-height:90px;overflow-y:auto;transition:border-color 0.2s;display:block;vertical-align:middle;"
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--border)'">
             </textarea>
           </div>
           <button onclick="_tabSend()"
@@ -691,11 +691,11 @@ function _formatNiviResponse(text) {
   html = html.replace(/^\s*[\*\-]\s*$/gm, '');
   // ૨. Bold (**text**) ને Block (div) ની જગ્યાએ Inline (span) બનાવ્યું
   // જેથી બુલેટ પોઇન્ટની અંદર બોલ્ડ ટેક્સ્ટ આવે તો નવી લાઈન કે મોટો સ્પેસ ના પડે.
-  html = html.replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:700;color:var(--accent,#38bdf8);letter-spacing:0.3px;">$1</span>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:700;color:var(--accent);letter-spacing:0.3px;">$1</span>');
   // ૩. Numbered list: "1. " or "1) "
-  html = html.replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:6px;margin-bottom:6px;"><span style="color:#38bdf8;font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$2</span></div>');
+  html = html.replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:6px;margin-bottom:6px;"><span style="color:var(--accent);font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:12px;color:var(--text-primary);line-height:1.6;">$2</span></div>');
   // ૪. Bullet points: "- " or "* " or "• " 
-  html = html.replace(/^\s*[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:4px;margin-bottom:4px;"><span style="color:var(--accent,#38bdf8);flex-shrink:0;font-size:10px;margin-top:3px;">●</span><span style="font-size:12px;color:var(--text-primary,#e2e8f0);line-height:1.6;">$1</span></div>');
+  html = html.replace(/^\s*[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:4px;margin-bottom:4px;"><span style="color:var(--accent);flex-shrink:0;font-size:10px;margin-top:3px;">●</span><span style="font-size:12px;color:var(--text-primary);line-height:1.6;">$1</span></div>');
   // ૫. વધારાની ખાલી જગ્યાઓ (Extra Newlines) ક્લિયર કરવા
   html = html.replace(/\n{3,}/g, '\n\n'); // ૩+ લાઈન હોય તો માત્ર ૨ જ રાખશે
   html = html.replace(/\n\n/g, '<div style="margin-top:8px;"></div>');
@@ -726,15 +726,15 @@ area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-it
   area.innerHTML = AppState._tabChatHistory.map(msg => {
     if (msg.role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div style="background:linear-gradient(135deg, #4c1d95, #3b0764);color:#e2e8f0;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;box-shadow:0 2px 10px rgba(76,29,149,0.2);">${escapeHtml(msg.text)}</div>
+        <div style="background:var(--accent);color:#fff;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">${escapeHtml(msg.text)}</div>
       </div>`;
     } else {
       const formatted = _formatNiviResponse(msg.text);
       return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
-        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #a855f7;background:#1e1b4b;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg viewBox="0 0 28 28" width="12" height="12" fill="#c084fc"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--accent);background:var(--bg-app);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg viewBox="0 0 28 28" width="12" height="12" fill="var(--accent)"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
         </div>
-        <div style="background:linear-gradient(160deg, #1e1b4b, #2e1065);border:1px solid rgba(139,92,246,0.3);color:var(--text-primary,#e2e8f0);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;box-shadow:inset 0 0 15px rgba(139,92,246,0.05);">${formatted}</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.05);">${formatted}</div>
       </div>`;
     }
   }).join('');

@@ -238,16 +238,16 @@ function _buildWLCard(s, d) {
     <div class="wl-card-wrap" id="wrap-${s}" style="margin-bottom:6px;">
       <div class="card glass-card p-3 flex items-center justify-between cursor-pointer hover:scale-[1.01]" onclick="toggleActions('${s}')" style="position:relative;margin:0;">
         <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:10px; background:none; border:none; cursor:pointer; z-index:10; padding:2px 6px;">✕</button>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="event.stopPropagation();openDetail('${s}',false)">
           <div class="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0" style="background:${av.bg}; border:1px solid ${av.border}; color:${av.color};">
             ${initials}
           </div>
           <div>
             <div class="flex items-center gap-1.5">
-              <span onclick="event.stopPropagation();openDetail('${s}',false)" class="font-bold text-sm tracking-tight text-[var(--text-main)] hover:text-sky-400 cursor-pointer" style="font-family:'Rajdhani',sans-serif;">${s}</span>
+              <span class="font-bold text-sm tracking-tight text-[var(--text-main)] hover:text-sky-400" style="font-family:'Rajdhani',sans-serif;">${s}</span>
               <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">NSE</span>
             </div>
-            <div class="text-[11px] text-[var(--text-dim)]" style="font-family:'Rajdhani',sans-serif;">${compName}</div>
+            <div class="text-[11px] text-[var(--text-dim)] hover:text-sky-300" style="font-family:'Rajdhani',sans-serif;">${compName}</div>
           </div>
         </div>
         <div class="text-right shrink-0">
@@ -298,10 +298,6 @@ function _patchWLCard(s, d) {
     ce.innerText = _price > 0 ? `${sign}${Math.abs(diff).toFixed(2)} (${isUp ? '+' : ''}${pct.toFixed(2)}%)` : '--';
     ce.className = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'badge-pos' : 'badge-neg'}`;
   }
-}
-  if (db) db.innerHTML = buildDayBar(d);
-  if (b5) b5.innerHTML = build52WBar(d);
-  if (l5) l5.innerHTML = get52WLabel(d) + getTargetBadge(s, _price);
 }
 
 // ======================================

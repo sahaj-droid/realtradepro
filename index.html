@@ -624,7 +624,7 @@
 </div>
 
 <!-- DETAILS MODAL -->
-<div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="z-index:200;">
+<div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="display:none;z-index:9998;" onclick="if(event.target===this)closeDetail()">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:12px;width:min(360px,96vw);max-height:92vh;display:flex;flex-direction:column;">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">

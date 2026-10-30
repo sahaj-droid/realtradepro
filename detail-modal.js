@@ -7,68 +7,84 @@
 // OPEN STOCK DETAIL MODAL
 // ======================================
 async function openDetail(sym, isIndex) {
-  // Show modal immediately with cached data
-  let d = AppState.cache[sym]?.data || await fetchFull(sym, isIndex);
-  if (!d) return;
-  
+  const detailModal = document.getElementById("detailModal");
+  if (detailModal) {
+    detailModal.classList.remove("hidden");
+    detailModal.style.display = "flex";
+  }
+  document.body.style.overflow = 'hidden';
+
   const dTitle = document.getElementById("d-title");
   if (dTitle) dTitle.innerText = sym;
-  
+
   // Reset all tabs
   switchDetailTab('price');
-  
-  // Reset section contents
+
+  // Reset section contents with clean loading states
   const fundamentalsSection = document.getElementById("fundamentalsSection");
   const techSection = document.getElementById("techSection");
   const smartAlertSection = document.getElementById("smartAlertSection");
   const bbSection = document.getElementById("bbSection");
   const quickLinksSection = document.getElementById("quickLinksSection");
-  
+  const dBody = document.getElementById("d-body");
+  const chartDiv = document.getElementById("d-chart");
+
+  if (dBody) dBody.innerHTML = '<div style="font-size:11px;color:#94a3b8;text-align:center;padding:16px;">Loading data for ' + sym + '...</div>';
+  if (chartDiv) chartDiv.innerHTML = '';
   if (fundamentalsSection) fundamentalsSection.innerHTML = '<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div>';
   if (techSection) techSection.innerHTML = '<div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div>';
   if (smartAlertSection) smartAlertSection.innerHTML = '';
   if (bbSection) bbSection.innerHTML = '';
   if (quickLinksSection) quickLinksSection.innerHTML = '';
-  
+
   AppState._bbSym = sym;
-  
-  // TradingView button
+
+  // TradingView buttons
   const tvBtn = document.getElementById("d-tv-btn");
   if (tvBtn) tvBtn.onclick = () => chart(sym, isIndex ? true : false);
   const tvBtn2 = document.getElementById("d-tv-btn2");
   if (tvBtn2) tvBtn2.onclick = () => chart(sym, isIndex ? true : false);
-  
-  // Price tab content
-  const dBody = document.getElementById("d-body");
-  if (dBody) {
-    dBody.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-          <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketOpen && d.regularMarketOpen > 1 ? d.regularMarketOpen : (d.chartPreviousClose || 0)).toFixed(2)}</div></div>
-          <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-          <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.chartPreviousClose || 0).toFixed(2)}</div></div>
-        </div>
-        <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-          <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayHigh || 0).toFixed(2)}</div></div>
-          <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-          <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayLow || 0).toFixed(2)}</div></div>
-        </div>
-        <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-          <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekHigh || 0).toFixed(2)}</div></div>
-          <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-          <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekLow || 0).toFixed(2)}</div></div>
-        </div>
-      </div>`;
+
+  // Resolve cached or live data
+  let d = AppState.cache[sym]?.data;
+  if (!d && (sym === 'NIFTY1!' || sym === 'GIFT NIFTY')) {
+    d = AppState.cache['__GIFT__']?.data || AppState.cache['NIFTY1!']?.data;
   }
-  
-  const chartDiv = document.getElementById("d-chart");
-  if (chartDiv) chartDiv.innerHTML = '';
-  
-  const detailModal = document.getElementById("detailModal");
-  if (detailModal) detailModal.classList.remove("hidden");
-  
-  document.body.style.overflow = 'hidden';
-  
+  if (!d) {
+    try {
+      d = await fetchFull(sym, isIndex);
+    } catch (e) {
+      console.warn('fetchFull error for', sym, e);
+    }
+  }
+
+  if (d) {
+    if (dBody) {
+      dBody.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketOpen && d.regularMarketOpen > 1 ? d.regularMarketOpen : (d.chartPreviousClose || 0)).toFixed(2)}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.chartPreviousClose || 0).toFixed(2)}</div></div>
+          </div>
+          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayHigh || 0).toFixed(2)}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayLow || 0).toFixed(2)}</div></div>
+          </div>
+          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
+            <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekHigh || 0).toFixed(2)}</div></div>
+            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekLow || 0).toFixed(2)}</div></div>
+          </div>
+        </div>`;
+    }
+  } else {
+    if (dBody) {
+      dBody.innerHTML = '<div style="font-size:11px;color:#f59e0b;text-align:center;padding:16px;">Live quote temporarily unavailable for ' + sym + '</div>';
+    }
+  }
+
   if (!isIndex) {
     renderSmartAlertSuggestions(sym, d);
     renderQuickLinks(sym, isIndex);
@@ -234,7 +250,10 @@ async function openDetail(sym, isIndex) {
 // ======================================
 function closeDetail() {
   const detailModal = document.getElementById("detailModal");
-  if (detailModal) detailModal.classList.add("hidden");
+  if (detailModal) {
+    detailModal.classList.add("hidden");
+    detailModal.style.display = "none";
+  }
   document.body.style.overflow = '';
 }
 
