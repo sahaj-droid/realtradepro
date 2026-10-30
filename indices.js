@@ -12,8 +12,8 @@ function renderHeaderStrip() {
 
   const indices = AppState.indicesList || [
     { sym: '^NSEI',    name: 'NIFTY 50'   },
-    { sym: '^BSESN',   name: 'SENSEX'     },
     { sym: 'NIFTY1!',  name: 'GIFT NIFTY' },
+    { sym: '^BSESN',   name: 'SENSEX'     },
     { sym: '^NSEBANK', name: 'BANK NIFTY' }
   ];
 
@@ -49,8 +49,8 @@ function updateHeaderIndices() {
 
   const indices = AppState.indicesList || [
     { sym: '^NSEI',    name: 'NIFTY 50'   },
-    { sym: '^BSESN',   name: 'SENSEX'     },
     { sym: 'NIFTY1!',  name: 'GIFT NIFTY' },
+    { sym: '^BSESN',   name: 'SENSEX'     },
     { sym: '^NSEBANK', name: 'BANK NIFTY' }
   ];
 

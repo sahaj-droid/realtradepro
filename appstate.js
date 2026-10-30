@@ -54,8 +54,8 @@ const AppState = {
   // -- Indices --
 indicesList: [
   { sym: '^NSEI',    name: 'NIFTY 50'   },
+  { sym: 'NIFTY1!',  name: 'GIFT NIFTY' },
   { sym: '^BSESN',   name: 'SENSEX'     },
-  { sym: 'NIFTY1!',  name: 'GIFT NIFTY' },  // ✅ FIX: was 'GIFTNIFTY' — must match key used in indices.js
   { sym: '^NSEBANK', name: 'BANK NIFTY' },
 ],
 

@@ -147,6 +147,7 @@ async function verifyPIN() {
       await loadUserData();
       const lbl = document.getElementById('currentUserLabel');
       if (lbl) lbl.textContent = profile.name;
+      if (typeof updateHeaderProfileUI === "function") updateHeaderProfileUI();
     } else {
       document.getElementById('pinError').style.display = 'block';
       AppState.currentPINEntry = '';
@@ -325,6 +326,7 @@ async function loadUserData() {
     if (label && AppState.currentUser) {
       label.textContent = AppState.currentUser.name;
     }
+    if (typeof updateHeaderProfileUI === "function") updateHeaderProfileUI();
     
     const avatarEl = document.getElementById('settingsAvatarLetter');
     if (avatarEl && AppState.currentUser) {

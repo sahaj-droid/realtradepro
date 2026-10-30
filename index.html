@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=3.0">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -230,42 +230,36 @@
 <div id="mainApp" class="max-w-md mx-auto pb-24">
 
 <div id="fixedHeader" style="position:sticky;top:0;z-index:99;width:100%;">
-<!-- HEADER -->
-<div class="app-header" style="padding:6px 10px;">
-<!-- Indices: scrollable strip + add button -->
-  <div style="display:flex;flex:1;align-items:center;min-width:0;overflow:hidden;">
-    <div id="headerStrip" style="display:flex;gap:0;flex:1;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:center;" onscroll="this.style.cssText=this.style.cssText">
-    <!-- chips rendered by renderHeaderStrip() -->
+  <div class="modern-app-header">
+    <!-- Top Row: Market Status & Live Clock + Actions (Theme, Refresh, [👤 Sahaj]) -->
+    <div class="header-top-row">
+      <div class="header-status-badge">
+        <span class="header-pulse-dot"></span>
+        <span id="marketStatus">Checking...</span>
+        <span style="color:var(--text-dim,#64748b);">·</span>
+        <span id="liveClock" style="font-family:'JetBrains Mono',monospace;color:var(--accent,#38bdf8);font-size:11px;">--:--:--</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onclick="toggleAppTheme()" id="themeToggleBtn" title="Toggle Light/Dark" style="background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);color:var(--text-sec,#94a3b8);width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;">🌙</button>
+        <button onclick="manualRefresh()" id="refreshBtn" title="Refresh Prices" style="background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);color:var(--accent,#38bdf8);width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
+        <!-- 👤 Sahaj Profile Pill Button -->
+        <button id="headerProfileBtn" onclick="openProfileDrawer()" class="profile-pill-btn" title="Profile & Settings">
+          <div id="headerAvatarLetter" class="profile-pill-avatar">S</div>
+          <span id="headerProfileName" class="profile-pill-name">Sahaj</span>
+        </button>
+      </div>
     </div>
 
+    <!-- Bottom Row: 4 Indices Strip (NIFTY 50, GIFT NIFTY, SENSEX, BANK NIFTY) + Add Button -->
+    <div class="header-indices-row">
+      <div id="headerStrip" class="header-chip-strip">
+        <!-- Chips rendered live by renderHeaderStrip() in indices.js -->
+      </div>
+      <button onclick="openAddIndexModal()" style="background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);color:var(--accent,#38bdf8);width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Add Index">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
   </div>
-  <!-- Right: theme + refresh + add stacked -->
-  <div style="display:grid;grid-template-columns:1fr;gap:3px;margin-left:8px;flex-shrink:0;">
-    <button onclick="toggleAppTheme()" id="themeToggleBtn" title="Toggle Light/Dark">🌙</button>
-    <button onclick="manualRefresh()" id="refreshBtn" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:13px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
-    <button onclick="openAddIndexModal()" style="background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;" title="Add Index"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-  </div>
-</div>
-
-<!-- MARKET STATUS + LIVE CLOCK BAR -->
-<div style="background:#0f1e33;border-bottom:1px solid #1e2d3d;padding:3px 16px;display:flex;align-items:center;justify-content:space-between;">
-  <div id="marketStatus" style="font-size:10px;font-weight:700;font-family:'Rajdhani',sans-serif;">Checking...</div>
-  <div id="liveClock" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#38bdf8;">--:--:--</div>
-</div>
-
-
-<!-- FLASH PRICE TICKER -->
-<div id="priceTicker" style="display:none;">
-  <div class="ticker-track" id="tickerTrack">
-    <span class="ticker-item"><span class="ticker-sym">LOADING</span><span class="ticker-price">--</span></span>
-  </div>
-</div>
-<!-- GLOBAL MARKETS TICKER -->
-<div id="globalTicker">
-  <div class="ticker-track" id="globalTickerTrack">
-    <span class="ticker-item"><span class="gticker-label">Loading global markets...</span></span>
-  </div>
-</div>
 </div><!-- end fixedHeader -->
 
 <!-- SEARCH + SUGGESTIONS -->
@@ -285,7 +279,7 @@
     <button onclick="sortAZ()" class="sort-btn">A-Z</button>
     <button onclick="sortPrice()" class="sort-btn">Price</button>
     <button onclick="sortPercent()" class="sort-btn">%</button>
-    <button onclick="triggerWatchlistCSVImport()" style="margin-left:auto;background:#1e3a5f;border:1px solid #2d5a8e;color:#38bdf8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;">&#128229; CSV</button>
+    
   </div>
   <!-- Watchlist Tabs: fixed 3 + add, left-right scrollable, rename on long press -->
   <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;align-items:center;" id="wlTabsBar">
@@ -295,10 +289,195 @@
 
 <!-- TABS -->
 <div id="watchlist" class="tab active p-3 space-y-[5px]"></div>
-<div id="indices" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);"></div>
+<!-- ============================================== -->
+<!-- TAB 2: 🏛️ MARKETS (FII/DII/IPO, INDICES, FINANCIALS) -->
+<!-- ============================================== -->
+<div id="markets" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 105px - 64px);">
+  <div style="padding:8px 12px 0;position:sticky;top:0;background:var(--bg-app,#0a0e1a);z-index:20;">
+    <div class="subtabs-bar">
+      <button id="msub-fiidii" onclick="switchMarketsSubTab('fiidii')" class="subtab-btn active">🏛️ FII / DII &amp; IPO</button>
+      <button id="msub-indices" onclick="switchMarketsSubTab('indices')" class="subtab-btn">⚡ Indices &amp; Breadth</button>
+      <button id="msub-financials" onclick="switchMarketsSubTab('financials')" class="subtab-btn">📊 Financials</button>
+    </div>
+  </div>
 
-<div id="aichart" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
-  <div style="padding:10px 14px;">
+  <!-- Panel 1: FII/DII & IPO Tracker -->
+  <div id="markets-panel-fiidii" style="display:block;padding:0 12px 100px;">
+    <div id="marketFlowContent"></div>
+  </div>
+
+  <!-- Panel 2: Indices & Terminal Rows -->
+  <div id="markets-panel-indices" style="display:none;padding:0 12px 100px;">
+    <div id="indices" style="padding:0;"></div>
+  </div>
+
+  <!-- Panel 3: Financials -->
+  <div id="markets-panel-financials" style="display:none;padding:0 12px 100px;">
+    <div id="learn" style="padding:0;">
+      <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));position:sticky;top:0;background:var(--bg-header,#060e1a);z-index:10;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:28px;height:28px;background:rgba(251,146,60,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      </div>
+      <span style="font-size:13px;font-weight:700;color:#fb923c;letter-spacing:1px;">SEARCH & LEARN</span>
+    </div>
+    <div style="display:flex;gap:4px;" id="learnLangBtns">
+      <button onclick="setLearnLang('hi')" id="ll-hi" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:rgba(251,146,60,0.2);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">HI</button>
+      <button onclick="setLearnLang('gu')" id="ll-gu" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);">GU</button>
+      <button onclick="setLearnLang('en')" id="ll-en" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);">EN</button>
+    </div>
+  </div>
+
+  <!-- Main Tab Switcher: Company Financial | Learning -->
+  <div style="display:flex;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));background:var(--bg-header,#060e1a);position:sticky;top:53px;z-index:9;">
+    <button id="lmain-financial" onclick="switchLearnMain('financial')"
+      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
+      📊 Company Financial
+    </button>
+    <button id="lmain-marketflow" onclick="switchLearnMain('marketflow')"
+      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748b;letter-spacing:0.5px;transition:all 0.15s;">
+      🏛️ FII / DII & IPO
+    </button>
+  </div>
+
+  <!-- PANEL: Company Financial -->
+  <div id="lpanel-financial" style="display:flex;flex-direction:column;">
+
+    <!-- Search Bar -->
+    <div style="padding:12px 14px 0;">
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;position:relative;">
+          <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
+            style="width:100%;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.3);color:var(--text-primary,#e2e8f0);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
+            oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
+          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
+        </div>
+        <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+          ANALYZE
+        </button>
+        <button onclick="downloadLearnPDF(document.getElementById('learnSearchInput').value.trim().toUpperCase())" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+          PDF
+        </button>
+      </div>
+      <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
+    </div>
+
+    <!-- Sub-Tab Pills (hidden until data loads) -->
+    <div id="learnSubTabs" style="display:none;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none;">
+      <div style="display:flex;gap:6px;min-width:max-content;">
+        <button id="lst-fundamentals" onclick="switchLearnTab('fundamentals')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;transition:all 0.15s;">
+          📊 Fundamentals
+        </button>
+        <button id="lst-technicals" onclick="switchLearnTab('technicals')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          ⚡ Technicals
+        </button>
+        <button id="lst-shareholding" onclick="switchLearnTab('shareholding')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          👥 Shareholding
+        </button>
+        <button id="lst-quarterly" onclick="switchLearnTab('quarterly')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          📅 Quarterly
+        </button>
+        <button id="lst-cashflow" onclick="switchLearnTab('cashflow')"
+          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
+          💰 Cash Flow
+        </button>
+        <button id="lst-corporate" onclick="switchLearnTab('corporate')"
+        style="background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif;">
+        Corporate
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div id="learnResults" style="padding:10px 14px 100px;"></div>
+
+  </div><!-- end lpanel-financial -->
+
+  <!-- PANEL: Learning (Market School) -->
+  <div id="lpanel-marketflow" style="display:none;padding:10px 14px 100px;">
+    <div id="marketFlowContent"></div>
+  </div><!-- end lpanel-school -->
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- TAB 3: 💼 PORTFOLIO (HOLDINGS + TRADE HISTORY) -->
+<!-- ============================================== -->
+<div id="portfolio" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 105px - 64px);">
+  <div style="padding:8px 12px 0;position:sticky;top:0;background:var(--bg-app,#0a0e1a);z-index:20;">
+    <div class="subtabs-bar">
+      <button id="psub-holdings" onclick="switchPortfolioSubTab('holdings')" class="subtab-btn active">📦 Holdings</button>
+      <button id="psub-history" onclick="switchPortfolioSubTab('history')" class="subtab-btn">📜 Trade History</button>
+    </div>
+  </div>
+
+  <!-- Panel 1: Holdings -->
+  <div id="portfolio-panel-holdings" style="display:block;padding:0 12px 100px;">
+    <div id="holdings" style="padding:0;" class="space-y-3">
+      <div class="portfolio-card">
+    <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;text-align:center;">PORTFOLIO SUMMARY</div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">INVESTMENT</div><div id="totalInvestment" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">CURRENT VALUE</div><div id="currentValue" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">UNREALIZED P&amp;L</div><div id="totalPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">RETURN %</div><div id="returnPercent" style="font-size:15px;font-weight:700;">0%</div></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3" style="margin-top:10px;">
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">REALIZED P&amp;L</div><div id="realizedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">TOTAL P&amp;L</div><div id="combinedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+    </div>
+  </div>
+  <!-- Portfolio Diversity Pie Chart -->
+  <div class="card">
+    <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;">PORTFOLIO DIVERSITY</div>
+    <canvas id="pieChart" width="260" height="260"></canvas>
+    <div id="pieLegend" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
+  </div>
+  <div id="holdingsList"></div>
+    </div>
+  </div>
+
+  <!-- Panel 2: Trade History -->
+  <div id="portfolio-panel-history" style="display:none;padding:0 12px 100px;">
+    <div id="history" style="padding:0;" class="space-y-[5px]">
+      <!-- All 5 buttons in one scrollable line -->
+  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
+    <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
+    <button onclick="backupData()" style="background:#166534;color:#86efac;border:1px solid #166534;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Backup</button>
+    <button onclick="triggerRestore()" style="background:#713f12;color:#fde68a;border:1px solid #713f12;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Restore</button>
+    <button id="histViewList" onclick="setHistView('list')" style="background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">List</button>
+    <button id="histViewCal" onclick="setHistView('calendar')" style="background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Calendar</button>
+  </div>
+  <!-- hidden file inputs -->
+  <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
+  <div id="historyList"></div>
+  <div id="historyCalendar" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- TAB 4: 🧠 NIVI AI STUDIO (AI CHART + CHAT) -->
+<!-- ============================================== -->
+<div id="nivi" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 105px - 64px);">
+  <div style="padding:8px 12px 0;position:sticky;top:0;background:var(--bg-app,#0a0e1a);z-index:20;">
+    <div class="subtabs-bar">
+      <button id="nsub-chart" onclick="switchNiviSubTab('chart')" class="subtab-btn active">📈 AI Candle Chart</button>
+      <button id="nsub-chat" onclick="switchNiviSubTab('chat')" class="subtab-btn">💬 Nivi Copilot Chat</button>
+    </div>
+  </div>
+
+  <!-- Panel 1: AI Chart -->
+  <div id="nivi-panel-chart" style="display:block;padding:0 12px 100px;">
+    <div id="aichart" style="padding:0;">
+      <div style="padding:10px 14px;">
+        <div style="padding:10px 14px;">
 
     <!-- Search with suggestion dropdown -->
     <div id="aichart-search-wrap" style="position:relative; margin-bottom:10px;">
@@ -326,54 +505,60 @@
       </div>
       <div id="aichart-report" style="color:var(--text-primary); font-size:13px; line-height:1.6; font-family:'Rajdhani',sans-serif;"></div>
     </div>
-
-  </div>
-</div>
-
-<div id="holdings" class="tab p-3 space-y-3">
-  <div class="portfolio-card">
-    <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;text-align:center;">PORTFOLIO SUMMARY</div>
-    <div class="grid grid-cols-2 gap-3">
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">INVESTMENT</div><div id="totalInvestment" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">CURRENT VALUE</div><div id="currentValue" style="font-size:15px;font-weight:700;color:#e2e8f0;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">UNREALIZED P&amp;L</div><div id="totalPL" style="font-size:15px;font-weight:700;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">RETURN %</div><div id="returnPercent" style="font-size:15px;font-weight:700;">0%</div></div>
-    </div>
-    <div class="grid grid-cols-2 gap-3" style="margin-top:10px;">
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">REALIZED P&amp;L</div><div id="realizedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
-      <div class="pcard-inner" style="text-align:center;"><div style="font-size:10px;color:#4b6280;">TOTAL P&amp;L</div><div id="combinedPL" style="font-size:15px;font-weight:700;">₹0</div></div>
+      </div>
     </div>
   </div>
-  <!-- Portfolio Diversity Pie Chart -->
-  <div class="card">
-    <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;">PORTFOLIO DIVERSITY</div>
-    <canvas id="pieChart" width="260" height="260"></canvas>
-    <div id="pieLegend" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
+
+  <!-- Panel 2: Nivi Chat -->
+  <div id="nivi-panel-chat" style="display:none;padding:0 12px 100px;">
+    <div id="news" style="padding:0;"></div>
   </div>
-  <div id="holdingsList"></div>
 </div>
-
-<div id="history" class="tab p-3 space-y-[5px]">
-  <!-- All 5 buttons in one scrollable line -->
-  <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
-    <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
-    <button onclick="backupData()" style="background:#166534;color:#86efac;border:1px solid #166534;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Backup</button>
-    <button onclick="triggerRestore()" style="background:#713f12;color:#fde68a;border:1px solid #713f12;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Restore</button>
-    <button id="histViewList" onclick="setHistView('list')" style="background:#1e3a5f;color:#38bdf8;border:1px solid #38bdf8;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">List</button>
-    <button id="histViewCal" onclick="setHistView('calendar')" style="background:#1e2d3d;color:#94a3b8;border:1px solid #2d3f52;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Calendar</button>
+<div id="alerts" class="tab p-3 space-y-[5px]" style="display:none;"></div><div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
+  <div style="background:var(--bg-card, #7f1d1d);border:1px solid var(--neg, #ef4444);border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:var(--neg, #fca5a5);box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+    ! <span id="errorMsg"></span>
+    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:var(--neg, #fca5a5);cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
   </div>
-  <!-- hidden file inputs -->
-  <input type="file" id="csvImportInput" accept=".csv" style="display:none;" onchange="handleCSVImport(event)">
-  <div id="historyList"></div>
-  <div id="historyCalendar" style="display:none;"></div>
 </div>
-<div id="alerts"  class="tab p-3 space-y-[5px]"></div>
+<div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;align-items:center;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid rgba(251,146,60,0.3);border-radius:16px;padding:20px;width:300px;max-width:92vw;position:relative;">
+    <button onclick="document.getElementById('learnInfoModal').style.display='none'" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;line-height:1;">×</button>
+    <div id="learnInfoTitle" style="font-size:14px;font-weight:700;color:#fb923c;margin-bottom:10px;padding-right:20px;"></div>
+    <div id="learnInfoBody" style="font-size:12px;color:#cbd5e1;line-height:1.6;"></div>
+    <div id="learnInfoFormula" style="font-size:11px;color:#34d399;margin-top:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;"></div>
+  </div>
+<div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
+  <div style="background:#0f1e33;border:1px solid rgba(239,68,68,0.3);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;box-sizing:border-box;">
+    <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 16px;"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div id="dangerModalTitle" style="font-size:15px;font-weight:700;color:#e2e8f0;">Clear Data?</div>
+        <div style="font-size:11px;color:#64748b;margin-top:1px;">This cannot be undone</div>
+      </div>
 
-<!-- SETTINGS TAB -->
-<div id="settings" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
+<!-- ============================================== -->
+<!-- 👤 PROFILE & SETTINGS BOTTOM DRAWER -->
+<!-- ============================================== -->
+<div id="profileDrawer" onclick="if(event.target===this)closeProfileDrawer()">
+  <div class="profile-drawer-container">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);position:sticky;top:0;background:var(--bg-app,#0a0e1a);z-index:10;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="profile-pill-avatar" id="drawerAvatarLetter" style="width:28px;height:28px;font-size:13px;">S</div>
+        <div>
+          <div id="drawerUserName" style="font-size:14px;font-weight:700;color:#34d399;font-family:'Rajdhani',sans-serif;line-height:1.2;">Sahaj</div>
+          <div style="font-size:10px;color:#64748b;">Profile &amp; Settings</div>
+        </div>
+      </div>
+      <button onclick="closeProfileDrawer()" style="background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);border-radius:8px;color:#94a3b8;font-size:13px;cursor:pointer;padding:4px 10px;">✕</button>
+    </div>
 
-
-  <!-- HEADER -->
+    <!-- Settings Body -->
+    <div id="settings" style="padding:0 12px 30px;">
+      <!-- HEADER -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.07);">
     <div style="display:flex;align-items:center;gap:8px;">
       <div style="width:28px;height:28px;background:rgba(148,163,184,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;">
@@ -704,156 +889,41 @@
   </div>
 
   <div style="text-align:center;font-size:10px;color:var(--text-muted, #4b6280);padding:10px 14px 80px;letter-spacing:1px;">REAL TRADER PRO · v2.2</div>
-</div>
-
-<div id="errorBanner" style="display:none;position:fixed;top:56px;left:50%;transform:translateX(-50%);z-index:8000;max-width:320px;width:90%;">
-  <div style="background:var(--bg-card, #7f1d1d);border:1px solid var(--neg, #ef4444);border-radius:10px;padding:8px 14px;text-align:center;font-size:11px;font-weight:600;color:var(--neg, #fca5a5);box-shadow:0 4px 12px rgba(0,0,0,0.5);">
-    ! <span id="errorMsg"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="margin-left:8px;background:none;border:none;color:var(--neg, #fca5a5);cursor:pointer;font-size:13px;vertical-align:middle;">x</button>
-  </div>
-</div>
-
-<div id="news" class="tab" style="padding:0;"></div>
-
-<!-- SEARCH & LEARN TAB — TABBED VERSION -->
-<div id="learn" class="tab" style="padding:0;overflow-y:auto;background:var(--bg-app,#060e1a);height:calc(100vh - 102px - 64px);">
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));position:sticky;top:0;background:var(--bg-header,#060e1a);z-index:10;">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <div style="width:28px;height:28px;background:rgba(251,146,60,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-      </div>
-      <span style="font-size:13px;font-weight:700;color:#fb923c;letter-spacing:1px;">SEARCH & LEARN</span>
-    </div>
-    <div style="display:flex;gap:4px;" id="learnLangBtns">
-      <button onclick="setLearnLang('hi')" id="ll-hi" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:rgba(251,146,60,0.2);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">HI</button>
-      <button onclick="setLearnLang('gu')" id="ll-gu" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);">GU</button>
-      <button onclick="setLearnLang('en')" id="ll-en" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);">EN</button>
-    </div>
-  </div>
-
-  <!-- Main Tab Switcher: Company Financial | Learning -->
-  <div style="display:flex;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));background:var(--bg-header,#060e1a);position:sticky;top:53px;z-index:9;">
-    <button id="lmain-financial" onclick="switchLearnMain('financial')"
-      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
-      📊 Company Financial
-    </button>
-    <button id="lmain-marketflow" onclick="switchLearnMain('marketflow')"
-      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748b;letter-spacing:0.5px;transition:all 0.15s;">
-      🏛️ FII / DII & IPO
-    </button>
-  </div>
-
-  <!-- PANEL: Company Financial -->
-  <div id="lpanel-financial" style="display:flex;flex-direction:column;">
-
-    <!-- Search Bar -->
-    <div style="padding:12px 14px 0;">
-      <div style="display:flex;gap:8px;">
-        <div style="flex:1;position:relative;">
-          <input id="learnSearchInput" type="text" placeholder="Stock symbol (e.g. RELIANCE)" autocomplete="off" autocapitalize="characters"
-            style="width:100%;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.3);color:var(--text-primary,#e2e8f0);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;font-family:'Rajdhani',sans-serif;box-sizing:border-box;"
-            oninput="learnSearchSuggest(this.value)" onkeydown="if(event.key==='Enter'){fetchLearnStock();document.getElementById('learnSuggBox').style.display='none';}">
-          <div id="learnSuggBox" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card,#0d1f35);border:1px solid rgba(251,146,60,0.2);border-radius:0 0 10px 10px;z-index:50;max-height:160px;overflow-y:auto;"></div>
-        </div>
-        <button onclick="fetchLearnStock()" style="background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
-          ANALYZE
-        </button>
-        <button onclick="downloadLearnPDF(document.getElementById('learnSearchInput').value.trim().toUpperCase())" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:10px 16px;font-size:12px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
-          PDF
-        </button>
-      </div>
-      <div id="learnMsg" style="font-size:11px;color:#64748b;margin-top:6px;min-height:16px;"></div>
     </div>
 
-    <!-- Sub-Tab Pills (hidden until data loads) -->
-    <div id="learnSubTabs" style="display:none;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none;">
-      <div style="display:flex;gap:6px;min-width:max-content;">
-        <button id="lst-fundamentals" onclick="switchLearnTab('fundamentals')"
-          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(251,146,60,0.5);background:rgba(251,146,60,0.15);color:#fb923c;transition:all 0.15s;">
-          📊 Fundamentals
-        </button>
-        <button id="lst-technicals" onclick="switchLearnTab('technicals')"
-          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-          ⚡ Technicals
-        </button>
-        <button id="lst-shareholding" onclick="switchLearnTab('shareholding')"
-          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-          👥 Shareholding
-        </button>
-        <button id="lst-quarterly" onclick="switchLearnTab('quarterly')"
-          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-          📅 Quarterly
-        </button>
-        <button id="lst-cashflow" onclick="switchLearnTab('cashflow')"
-          style="padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#64748b;transition:all 0.15s;">
-          💰 Cash Flow
-        </button>
-        <button id="lst-corporate" onclick="switchLearnTab('corporate')"
-        style="background:transparent;color:#64748b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif;">
-        Corporate
-        </button>
-      </div>
-    </div>
-
-    <!-- Content Area -->
-    <div id="learnResults" style="padding:10px 14px 100px;"></div>
-
-  </div><!-- end lpanel-financial -->
-
-  <!-- PANEL: Learning (Market School) -->
-  <div id="lpanel-marketflow" style="display:none;padding:10px 14px 100px;">
-    <div id="marketFlowContent"></div>
-  </div><!-- end lpanel-school -->
-
-</div>
-
-<div id="learnInfoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;align-items:center;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid rgba(251,146,60,0.3);border-radius:16px;padding:20px;width:300px;max-width:92vw;position:relative;">
-    <button onclick="document.getElementById('learnInfoModal').style.display='none'" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;line-height:1;">×</button>
-    <div id="learnInfoTitle" style="font-size:14px;font-weight:700;color:#fb923c;margin-bottom:10px;padding-right:20px;"></div>
-    <div id="learnInfoBody" style="font-size:12px;color:#cbd5e1;line-height:1.6;"></div>
-    <div id="learnInfoFormula" style="font-size:11px;color:#34d399;margin-top:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;"></div>
-  </div>
-</div>
-  <!-- DANGER CONFIRM MODAL (bottom sheet) -->
-<div id="dangerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:5000;align-items:flex-end;justify-content:center;">
-  <div style="background:#0f1e33;border:1px solid rgba(239,68,68,0.3);border-radius:20px 20px 0 0;padding:20px 20px 36px;width:100%;max-width:480px;box-sizing:border-box;">
-    <div style="width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 16px;"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <div style="width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <div>
-        <div id="dangerModalTitle" style="font-size:15px;font-weight:700;color:#e2e8f0;">Clear Data?</div>
-        <div style="font-size:11px;color:#64748b;margin-top:1px;">This cannot be undone</div>
-      </div>
-    </div>
-    <div id="dangerModalDesc" style="font-size:12px;color:#94a3b8;margin:12px 0 20px;padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;"></div>
-    <div style="display:flex;gap:10px;">
-      <button onclick="closeDangerModal()" style="flex:1;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Cancel</button>
-      <button id="dangerConfirmBtn" style="flex:1;background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Clear</button>
+    <!-- Footer Close -->
+    <div style="padding:10px 16px 24px;border-top:1px solid rgba(255,255,255,0.05);background:var(--bg-app,#0a0e1a);position:sticky;bottom:0;">
+      <button onclick="closeProfileDrawer()" style="width:100%;padding:10px;border-radius:12px;background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);color:var(--text-sec,#94a3b8);font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Close Settings</button>
     </div>
   </div>
 </div>
 
 
-<!-- BOTTOM NAV -->
+<!-- ============================================== -->
+<!-- ⚡ BOTTOM DOCKED 4-TAB NAVIGATION -->
+<!-- ============================================== -->
 <div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
-  <div class="w-full max-w-md flex justify-around px-1 py-2" style="background:var(--bg-nav);border-top:1px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,0.1);gap:0;">
-    <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>Watch</button>
-    <button class="bot-nav-btn" id="nav-indices" onclick="tab('indices')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></span>Terminal</button>
-    <button class="bot-nav-btn" id="nav-aichart" onclick="tab('aichart')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M3 3v18h18"/><path d="M18 9l-5 5-4-4-5 5"/></svg></span>AI Chart</button>
-    <button class="bot-nav-btn" id="nav-holdings" onclick="tab('holdings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></span>Holdings</button>
-    <button class="bot-nav-btn" id="nav-history" onclick="tab('history')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>History</button>
-    <button class="bot-nav-btn" id="nav-news" onclick="tab('news')"><span class="icon"><svg viewBox="0 0 28 28" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><circle cx="14" cy="14" r="13" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.2"/><circle cx="14" cy="14" r="11" fill="none" stroke="#4c1d95" stroke-width="0.6" opacity="0.5"/><rect x="6.5" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><rect x="18" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/><polygon points="10,7.5 13,7.5 22,20.5 19,20.5" fill="#c4b5fd"/><line x1="14" y1="2" x2="14" y2="4.5" stroke="#c4b5fd" stroke-width="1.2" stroke-linecap="round"/><line x1="12.8" y1="2.6" x2="15.2" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/><line x1="15.2" y1="2.6" x2="12.8" y2="3.9" stroke="#c4b5fd" stroke-width="0.8" stroke-linecap="round" opacity="0.6"/></svg></span>Ask Nivi</button>
-    <button class="bot-nav-btn" id="nav-learn" onclick="tab('learn')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></span>Learn</button>
-    <button class="bot-nav-btn" id="nav-settings" onclick="tab('settings')"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span>Settings</button>
+  <div class="w-full max-w-md grid grid-cols-4 px-2 py-2" style="background:var(--bg-nav);border-top:1px solid var(--border);box-shadow:0 -4px 20px rgba(0,0,0,0.15);">
+    <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
+      Watch
+    </button>
+    <button class="bot-nav-btn" id="nav-markets" onclick="tab('markets')">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
+      Markets
+    </button>
+    <button class="bot-nav-btn" id="nav-portfolio" onclick="tab('portfolio')">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>
+      Portfolio
+    </button>
+    <button class="bot-nav-btn" id="nav-nivi" onclick="tab('nivi')">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+      Nivi AI
+    </button>
   </div>
 </div>
 
-  <!-- TRADE MODAL -->
+<!-- TRADE MODAL -->
 <div id="modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center" style="z-index:200;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:20px;width:290px;max-height:90vh;overflow-y:auto;">
     <h2 id="m-title" style="font-size:16px;font-weight:700;margin-bottom:10px;color:#e2e8f0;"></h2>
@@ -1219,7 +1289,7 @@
 <script src="firebase-sync.js"></script>
 <script src="price.js"></script>
 <script src="live-price.js"></script>
-<script src="indices.js?v=5"></script>
+<script src="indices.js?v=6.0"></script>
 <script src="detail-modal.js"></script>
 <script src="holdings.js"></script>
 <script src="trades.js"></script>
@@ -1230,7 +1300,7 @@
 <script src="learn.js?v=6.0"></script>
 <script src="settings.js"></script>
 <script src="marketdata.js"></script>
-<script src="core.js?v=2"></script>
+<script src="core.js?v=3.0"></script>
 <script src="ai-chart.js?v=11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
