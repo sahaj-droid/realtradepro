@@ -231,47 +231,45 @@ function _buildWLCard(s, d) {
   
   const initials = s.length <= 4 ? s : s.substring(0, 3).toUpperCase();
   const compName = _getCompanyDisplayName(s, d);
-  const av = _getStockAvatarStyle(s);
   const isUp = diff >= 0;
 
   return `
-    <div class="wl-card-wrap" id="wrap-${s}" style="margin-bottom:6px;">
-      <div class="card glass-card p-3 flex items-center justify-between cursor-pointer hover:scale-[1.01]" onclick="toggleActions('${s}')" style="position:relative;margin:0;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:10px; background:none; border:none; cursor:pointer; z-index:10; padding:2px 6px;">✕</button>
-        <div class="flex items-center gap-3 cursor-pointer" onclick="event.stopPropagation();openDetail('${s}',false)">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0" style="background:${av.bg}; border:1px solid ${av.border}; color:${av.color};">
+    <div class="wl-card-wrap" id="wrap-${s}" style="margin-bottom:8px;">
+      <div class="card cursor-pointer" onclick="toggleActions('${s}')" style="background:linear-gradient(150deg,#142136,#101a29);border:1px solid #26354b;border-radius:16px;position:relative;margin:0;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:4px; right:6px; color:#8b9bb2; font-size:10px; background:none; border:none; cursor:pointer; z-index:10; padding:2px 6px;" title="Remove">✕</button>
+        <div class="flex items-center gap-3 cursor-pointer" onclick="event.stopPropagation();openDetail('${s}',false)" style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;border-radius:11px;background:#243653;color:#c6d4ff;display:grid;place-items:center;font-size:11px;font-weight:800;letter-spacing:0.5px;flex-shrink:0;">
             ${initials}
           </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <span class="font-bold text-sm tracking-tight text-[var(--text-main)] hover:text-sky-400" style="font-family:'Rajdhani',sans-serif;">${s}</span>
-              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">NSE</span>
-            </div>
-            <div class="text-[11px] text-[var(--text-dim)] hover:text-sky-300" style="font-family:'Rajdhani',sans-serif;">${compName}</div>
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:13px;font-weight:700;color:#f0f5ff;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${compName}</div>
+            <div style="font-size:10px;color:#8b9bb2;margin-top:2px;">${s} · NSE</div>
           </div>
         </div>
-        <div class="text-right shrink-0">
-          <div id="price-${s}" class="mono text-sm font-extrabold text-[var(--text-main)]" onclick="event.stopPropagation();openDetail('${s}',false)" style="cursor:pointer;">
+        <div class="text-right shrink-0" style="margin-left:12px;text-align:right;">
+          <div id="price-${s}" style="font-size:14px;font-weight:800;color:#f0f5ff;font-family:'JetBrains Mono',monospace;cursor:pointer;" onclick="event.stopPropagation();openDetail('${s}',false)">
             ${_price > 0 ? '₹' + _price.toFixed(2) : '--'}
           </div>
-          <div id="change-${s}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'badge-pos' : 'badge-neg'}">
-            ${isUp ? '▲ +' : '▼ '}${Math.abs(diff).toFixed(2)} (${(isUp ? '+' : '') + pct.toFixed(2)}%)
+          <div id="change-${s}" style="margin-top:3px;">
+            <span class="${isUp ? 'badge-pos' : 'badge-neg'}" style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:3px;${isUp ? 'background:#153a31;color:#24d6a0;' : 'background:#3b202b;color:#ff7180;'}">
+              ${isUp ? '▲ +' : '▼ '}${Math.abs(pct).toFixed(2)}%
+            </span>
           </div>
         </div>
       </div>
 
       <!-- Action Panel -->
-      <div class="wl-actions-panel" id="act-${s}" style="display:none; padding:8px; margin-top:4px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px;">
+      <div class="wl-actions-panel" id="act-${s}" style="display:none; padding:10px; margin-top:5px; background:#101a29; border:1px solid #26354b; border-radius:14px;">
         <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-          <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">BUY</button>
-          <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">SELL</button>
-          <button class="act-btn" onclick="openDetail('${s}',false);toggleActions('${s}')" style="background:#1e3a5f; color:#93c5fd; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">CHART</button>
-          <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">NEWS</button>
+          <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#153a31; color:#24d6a0; border:1px solid #1c5244; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">BUY</button>
+          <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#3b202b; color:#ff7180; border:1px solid #572939; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">SELL</button>
+          <button class="act-btn" onclick="openDetail('${s}',false);toggleActions('${s}')" style="background:#17253a; color:#91aaff; border:1px solid #26354b; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">CHART</button>
+          <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#17253a; color:#c6d4ff; border:1px solid #26354b; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">NEWS</button>
         </div>
         <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;">
-          <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">🔔 ALERT</button>
-          <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#1e2d3d; color:#cbd5e1; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">🎯 TARGET</button>
-          <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#065f46; color:#34d399; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">💬 NIVI AI</button>
+          <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#2a2517; color:#fcd34d; border:1px solid #453c20; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">🔔 ALERT</button>
+          <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#111d2d; color:#8b9bb2; border:1px solid #26354b; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">🎯 TARGET</button>
+          <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#1e1b38; color:#c4b5fd; border:1px solid #373063; padding:8px 0; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">💬 NIVI AI</button>
         </div>
       </div>
     </div>`;
@@ -356,18 +354,13 @@ function _patchWLCard(s, d) {
   const _prev = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
   const diff = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
   const pct = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
-  
   const pe = document.getElementById('price-' + s);
   const ce = document.getElementById('change-' + s);
-  
-  if (pe) {
-    pe.innerText = _price > 0 ? '₹' + _price.toFixed(2) : '--';
-  }
+
+  if (pe && _price > 0) pe.innerText = '₹' + _price.toFixed(2);
   if (ce) {
     const isUp = diff >= 0;
-    const sign = isUp ? '▲ +' : '▼ ';
-    ce.innerText = _price > 0 ? `${sign}${Math.abs(diff).toFixed(2)} (${isUp ? '+' : ''}${pct.toFixed(2)}%)` : '--';
-    ce.className = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'badge-pos' : 'badge-neg'}`;
+    ce.innerHTML = `<span class="${isUp ? 'badge-pos' : 'badge-neg'}" style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;display:inline-flex;align-items:center;gap:3px;${isUp ? 'background:#153a31;color:#24d6a0;' : 'background:#3b202b;color:#ff7180;'}">${isUp ? '▲ +' : '▼ '}${Math.abs(pct).toFixed(2)}%</span>`;
   }
 }
 

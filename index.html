@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-<link rel="stylesheet" href="style.css?v=4.1">
+<link rel="stylesheet" href="style.css?v=4.2">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -227,7 +227,7 @@
 
   
 <!-- == MAIN APP == -->
-<div id="mainApp" class="max-w-md mx-auto pb-24">
+<div id="mainApp" class="max-w-[560px] mx-auto pb-24">
 
 <div id="fixedHeader" style="position:sticky;top:0;z-index:99;width:100%;">
   <div class="modern-app-header">
@@ -252,7 +252,7 @@
     <!-- Bottom Row: 4 Indices Strip (NIFTY 50, GIFT NIFTY, SENSEX, BANK NIFTY) + Add Button -->
     <div class="header-indices-row">
       <div id="headerStrip" class="header-chip-strip">
-        <!-- Chips rendered live by renderHeaderStrip() in indices.js?v=7.0 -->
+        <!-- Chips rendered live by renderHeaderStrip() in indices.js?v=7.2 -->
       </div>
       <button onclick="openAddIndexModal()" style="background:var(--bg-card,#111827);border:1px solid var(--border,#1e2d4a);color:var(--accent,#38bdf8);width:28px;height:28px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" title="Add Index">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1274,37 +1274,36 @@
 </div>
 
 <!-- ============================================== -->
-<!-- ⚡ BOTTOM DOCKED 4-TAB NAVIGATION -->
 <!-- ============================================== -->
-<div class="fixed bottom-0 left-0 right-0 flex justify-center" style="z-index:100;">
-  <div class="w-full max-w-md grid grid-cols-4 px-2 py-2" style="background:var(--bg-nav,#0d1425);border-top:1px solid var(--border,#1e2d4a);box-shadow:0 -4px 20px rgba(0,0,0,0.25);">
-    <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
-      Watch
-    </button>
-    <button class="bot-nav-btn" id="nav-markets" onclick="tab('markets')">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span>
-      Markets
-    </button>
-    <button class="bot-nav-btn" id="nav-portfolio" onclick="tab('portfolio')">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></span>
-      Portfolio
-    </button>
-    <button class="bot-nav-btn" id="nav-nivi" onclick="tab('nivi')">
-      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
-      Nivi AI
-    </button>
-  </div>
-</div>
+<!-- ⚡ NORTHSTAR MOBILE BOTTOM DOCKED 4-TAB NAVIGATION -->
+<!-- ============================================== -->
+<nav id="bottomNav" class="bottom-nav">
+  <button class="bot-nav-btn active" id="nav-watchlist" onclick="tab('watchlist')">
+    <span class="navicon">▦</span>
+    Watch
+  </button>
+  <button class="bot-nav-btn" id="nav-markets" onclick="tab('markets')">
+    <span class="navicon">⌕</span>
+    Markets
+  </button>
+  <button class="bot-nav-btn" id="nav-portfolio" onclick="tab('portfolio')">
+    <span class="navicon">◫</span>
+    Portfolio
+  </button>
+  <button class="bot-nav-btn" id="nav-nivi" onclick="tab('nivi')">
+    <span class="navicon">☆</span>
+    Nivi AI
+  </button>
+</nav>
 </div><!-- end mainApp -->
 <script src="appstate.js"></script>
 <script src="utils.js?v=4.1"></script>
 <script src="api.js?v=2"></script>
 <script src="auth.js"></script>
 <script src="firebase-sync.js"></script>
-<script src="price.js?v=4.1"></script>
-<script src="live-price.js?v=4.1"></script>
-<script src="indices.js?v=7.0"></script>
+<script src="price.js?v=4.2"></script>
+<script src="live-price.js?v=4.2"></script>
+<script src="indices.js?v=7.2"></script>
 <script src="detail-modal.js?v=4.0"></script>
 <script src="holdings.js"></script>
 <script src="trades.js"></script>

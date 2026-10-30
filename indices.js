@@ -24,7 +24,7 @@ function renderHeaderStrip() {
     const chip = document.createElement('div');
     chip.className    = 'header-index-chip';
     chip.dataset.sym  = idx.sym; // store sym for targeted updates
-    chip.style.cssText = 'background:var(--bg-card,#0d1f35);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:6px 10px;margin-right:8px;min-width:85px;text-align:center;cursor:pointer;scroll-snap-align:start;flex-shrink:0;transition:background 0.3s,border 0.3s;';
+    chip.style.cssText = 'flex:0 0 157px;background:linear-gradient(145deg,#17253a,#101a29);border:1px solid #26354b;border-radius:14px;padding:12px 14px;cursor:pointer;scroll-snap-align:start;transition:border-color 0.15s ease;text-align:left;flex-shrink:0;';
     chip.onclick = function() { openDetail(idx.sym, true); };
 
     if (d && d.regularMarketPrice) {
@@ -781,18 +781,19 @@ function _calcChipValues(d) {
 }
 
 function _chipHTML(name, priceStr, changeStr, changeColor) {
+  const isUp = !changeStr.includes('-');
   return `
-    <div style="font-size:10px;font-weight:700;color:var(--text-sec,#94a3b8);margin-bottom:2px;">${name}</div>
-    <div style="font-size:14px;font-weight:700;color:var(--text-primary,#e2e8f0);margin-bottom:2px;">${priceStr}</div>
-    <div style="font-size:10px;font-weight:700;color:${changeColor};">${changeStr}</div>
+    <small style="color:#8b9bb2;font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</small>
+    <strong style="display:block;font-size:18px;margin:6px 0 2px;color:#f0f5ff;font-family:'JetBrains Mono',monospace;">${priceStr}</strong>
+    <div style="font-size:11px;font-weight:700;color:${isUp ? '#24d6a0' : '#ff7180'};">${changeStr}</div>
   `;
 }
 
 function _chipEmptyHTML(name) {
   return `
-    <div style="font-size:10px;font-weight:700;color:var(--text-sec,#94a3b8);margin-bottom:2px;">${name}</div>
-    <div style="font-size:12px;font-weight:700;color:var(--text-label,#4b6280);">---</div>
-    <div style="font-size:10px;color:var(--text-label,#4b6280);">--</div>
+    <small style="color:#8b9bb2;font-size:11px;display:block;">${name}</small>
+    <strong style="display:block;font-size:18px;margin:6px 0 2px;color:#63738c;font-family:'JetBrains Mono',monospace;">--</strong>
+    <div style="font-size:11px;color:#63738c;">--</div>
   `;
 }
 
