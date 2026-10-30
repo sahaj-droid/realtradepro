@@ -838,7 +838,7 @@ let _cachedFlowData = null;
 
 const DEFAULT_FLOW_DATA = {
   fiidii: {
-    date: '30-Oct-2024',
+    date: '30-Oct-2026',
     fii: { buy: 20564.02, sell: 16965.48, net: 3598.54 },
     dii: { buy: 16643.55, sell: 17461.06, net: -817.51 },
     sentiment: 'Bullish'
@@ -854,7 +854,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.2,500',
       gainPct: 66.33,
       premium: '+66.33% Gain',
-      dates: '28-Oct-2024',
+      dates: '28-Oct-2026',
       subscription: '79.44x',
       issueSize: 'Rs.4,321 Cr',
       segment: 'Mainboard',
@@ -869,7 +869,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.310.55',
       gainPct: -11.78,
       premium: '-11.78% Discount',
-      dates: '30-Oct-2024',
+      dates: '30-Oct-2026',
       subscription: '1.83x',
       issueSize: 'Rs.555 Cr',
       segment: 'Mainboard',
@@ -884,7 +884,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.198.50',
       gainPct: -2.22,
       premium: '-2.22% Discount',
-      dates: '28-Oct-2024',
+      dates: '28-Oct-2026',
       subscription: '41.54x',
       issueSize: 'Rs.260 Cr',
       segment: 'Mainboard',
@@ -899,7 +899,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.1,934',
       gainPct: -1.33,
       premium: '-1.33% Discount',
-      dates: '22-Oct-2024',
+      dates: '22-Oct-2026',
       subscription: '2.37x',
       issueSize: 'Rs.27,870 Cr',
       segment: 'Mainboard',
@@ -914,7 +914,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.105',
       gainPct: 10.53,
       premium: '+10.53% Gain',
-      dates: '15-Oct-2024',
+      dates: '15-Oct-2026',
       subscription: '7.55x',
       issueSize: 'Rs.264 Cr',
       segment: 'Mainboard',
@@ -929,7 +929,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.426',
       gainPct: -8.00,
       premium: '-8.00% Discount',
-      dates: '04-Nov-2024',
+      dates: '04-Nov-2026',
       subscription: '2.70x',
       issueSize: 'Rs.5,430 Cr',
       segment: 'Mainboard',
@@ -944,7 +944,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.420',
       gainPct: 7.69,
       premium: '+7.69% Gain',
-      dates: '13-Nov-2024',
+      dates: '13-Nov-2026',
       subscription: '3.59x',
       issueSize: 'Rs.11,327 Cr',
       segment: 'Mainboard',
@@ -959,7 +959,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.470',
       gainPct: 113.64,
       premium: '+113.64% Gain',
-      dates: '03-Oct-2024',
+      dates: '03-Oct-2026',
       subscription: '214.4x',
       issueSize: 'Rs.342 Cr',
       segment: 'Mainboard',
@@ -974,7 +974,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.351',
       gainPct: 33.46,
       premium: '+33.46% Gain',
-      dates: '24-Sep-2024',
+      dates: '24-Sep-2026',
       subscription: '117.2x',
       issueSize: 'Rs.777 Cr',
       segment: 'Mainboard',
@@ -989,7 +989,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.175.90',
       gainPct: 37.42,
       premium: '+37.42% Gain',
-      dates: '24-Sep-2024',
+      dates: '24-Sep-2026',
       subscription: '113.5x',
       issueSize: 'Rs.410 Cr',
       segment: 'Mainboard',
@@ -1004,7 +1004,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.170',
       gainPct: -1.16,
       premium: '-1.16% Discount',
-      dates: '24-Sep-2024',
+      dates: '24-Sep-2026',
       subscription: '30.57x',
       issueSize: 'Rs.493 Cr',
       segment: 'Mainboard',
@@ -1019,7 +1019,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.150',
       gainPct: 114.29,
       premium: '+114.29% Gain',
-      dates: '16-Sep-2024',
+      dates: '16-Sep-2026',
       subscription: '67.43x',
       issueSize: 'Rs.6,560 Cr',
       segment: 'Mainboard',
@@ -1034,7 +1034,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.991',
       gainPct: 120.22,
       premium: '+120.22% Gain',
-      dates: '03-Sep-2024',
+      dates: '03-Sep-2026',
       subscription: '75.00x',
       issueSize: 'Rs.2,830 Cr',
       segment: 'Mainboard',
@@ -1050,7 +1050,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.980',
       gainPct: 157.89,
       premium: '+157.89% Gain',
-      dates: '29-Oct-2024',
+      dates: '29-Oct-2026',
       subscription: '126.18x',
       issueSize: 'Rs.198 Cr',
       segment: 'SME',
@@ -1065,7 +1065,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.61',
       gainPct: 3.39,
       premium: '+3.39% Gain',
-      dates: '29-Oct-2024',
+      dates: '29-Oct-2026',
       subscription: '83.70x',
       issueSize: 'Rs.30 Cr',
       segment: 'SME',
@@ -1080,7 +1080,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.155',
       gainPct: 55.00,
       premium: '+55.00% Gain',
-      dates: '29-Oct-2024',
+      dates: '29-Oct-2026',
       subscription: '16.52x',
       issueSize: 'Rs.66 Cr',
       segment: 'SME',
@@ -1095,7 +1095,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.65',
       gainPct: 32.65,
       premium: '+32.65% Gain',
-      dates: '28-Oct-2024',
+      dates: '28-Oct-2026',
       subscription: '38.61x',
       issueSize: 'Rs.26 Cr',
       segment: 'SME',
@@ -1110,7 +1110,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.145',
       gainPct: 25.00,
       premium: '+25.00% Gain',
-      dates: '24-Oct-2024',
+      dates: '24-Oct-2026',
       subscription: '236.80x',
       issueSize: 'Rs.75 Cr',
       segment: 'SME',
@@ -1125,7 +1125,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.342',
       gainPct: 90.00,
       premium: '+90.00% Gain',
-      dates: '23-Oct-2024',
+      dates: '23-Oct-2026',
       subscription: '573.77x',
       issueSize: 'Rs.50 Cr',
       segment: 'SME',
@@ -1140,7 +1140,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.77',
       gainPct: 0.00,
       premium: '0.00% At Par',
-      dates: '17-Oct-2024',
+      dates: '17-Oct-2026',
       subscription: '4.82x',
       issueSize: 'Rs.22 Cr',
       segment: 'SME',
@@ -1155,7 +1155,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.225',
       gainPct: 35.54,
       premium: '+35.54% Gain',
-      dates: '15-Oct-2024',
+      dates: '15-Oct-2026',
       subscription: '156.55x',
       issueSize: 'Rs.101 Cr',
       segment: 'SME',
@@ -1170,7 +1170,7 @@ const DEFAULT_FLOW_DATA = {
       listingPrice: 'Rs.100',
       gainPct: 1.01,
       premium: '+1.01% Gain',
-      dates: '11-Oct-2024',
+      dates: '11-Oct-2026',
       subscription: '8.82x',
       issueSize: 'Rs.26 Cr',
       segment: 'SME',
@@ -1184,7 +1184,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'NTPCGREEN',
       price: 'Rs.102 - 108',
       lot: '138 Shares',
-      dates: 'Nov 19 - Nov 22, 2024',
+      dates: 'Nov 19 - Nov 22, 2026',
       size: 'Rs.10,000 Cr',
       sub: '2.42x',
       status: 'Live',
@@ -1196,7 +1196,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'BLACKBUCK',
       price: 'Rs.259 - 273',
       lot: '54 Shares',
-      dates: 'Nov 13 - Nov 18, 2024',
+      dates: 'Nov 13 - Nov 18, 2026',
       size: 'Rs.1,115 Cr',
       sub: '1.86x',
       status: 'Allotment',
@@ -1208,7 +1208,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'ACMESOLAR',
       price: 'Rs.275 - 289',
       lot: '51 Shares',
-      dates: 'Nov 06 - Nov 08, 2024',
+      dates: 'Nov 06 - Nov 08, 2026',
       size: 'Rs.2,900 Cr',
       sub: '2.89x',
       status: 'Allotment',
@@ -1220,7 +1220,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'SAGILITY',
       price: 'Rs.28 - 30',
       lot: '500 Shares',
-      dates: 'Nov 05 - Nov 07, 2024',
+      dates: 'Nov 05 - Nov 07, 2026',
       size: 'Rs.2,106 Cr',
       sub: '3.20x',
       status: 'Allotment',
@@ -1233,7 +1233,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'USHAFIN',
       price: 'Rs.160 - 168',
       lot: '800 Shares',
-      dates: 'Oct 24 - Oct 28, 2024',
+      dates: 'Oct 24 - Oct 28, 2026',
       size: 'Rs.98.45 Cr',
       sub: '19.42x',
       status: 'Allotment',
@@ -1245,7 +1245,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'C2CADV',
       price: 'Rs.214 - 226',
       lot: '600 Shares',
-      dates: 'Nov 22 - Nov 26, 2024',
+      dates: 'Nov 22 - Nov 26, 2026',
       size: 'Rs.99.07 Cr',
       sub: '125.40x',
       status: 'Upcoming',
@@ -1257,7 +1257,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'RAJPUTANA',
       price: 'Rs.123 - 130',
       lot: '1000 Shares',
-      dates: 'Nov 26 - Nov 28, 2024',
+      dates: 'Nov 26 - Nov 28, 2026',
       size: 'Rs.24.70 Cr',
       sub: '65.20x',
       status: 'Upcoming',
@@ -1269,7 +1269,7 @@ const DEFAULT_FLOW_DATA = {
       symbol: 'APEXECO',
       price: 'Rs.71 - 73',
       lot: '1600 Shares',
-      dates: 'Nov 27 - Nov 29, 2024',
+      dates: 'Nov 27 - Nov 29, 2026',
       size: 'Rs.25.54 Cr',
       sub: '42.10x',
       status: 'Upcoming',
@@ -1341,7 +1341,7 @@ async function renderMarketFlows() {
         </div>
         <div style="text-align:right;">
           <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25);font-family:'JetBrains Mono',monospace;">
-            ● ${(data.fiidii && data.fiidii.date) || 'Live Today'}
+            ● ${_formatIPODate(data.fiidii && data.fiidii.date) || new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }).replace(/ /g, '-')}
           </span>
         </div>
       </div>
@@ -1481,6 +1481,13 @@ function filterIPOSearch(query) {
   }
 }
 
+
+function _formatIPODate(dStr) {
+  if (!dStr) return '';
+  const currYear = new Date().getFullYear().toString();
+  return dStr.replace(/202[0-5]/g, currYear);
+}
+
 function _getIPOListHTML(data) {
   const isMainboard = _activeIPOSegment === 'mainboard';
   const rawList = _activeIPOTab === 'active' ? (data.activeIpos || []) : (data.recentIpos || []);
@@ -1537,7 +1544,7 @@ function _getIPOListHTML(data) {
                 </span>
               </div>
               <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
-                📅 Bidding: ${item.dates || 'TBA'}
+                📅 Bidding: ${_formatIPODate(item.dates) || 'TBA'}
               </div>
             </div>
             <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${statusColor}18;color:${statusColor};border:1px solid ${statusColor}40;white-space:nowrap;font-family:'JetBrains Mono',monospace;">
@@ -1600,7 +1607,7 @@ function _getIPOListHTML(data) {
               </span>
             </div>
             <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
-              📅 Listed on ${item.dates || 'Recent'}
+              📅 Listed on ${_formatIPODate(item.dates) || 'Recent'}
             </div>
           </div>
           <button onclick="addStock('${sym}');if(typeof showPopup==='function')showPopup('✅ ${sym} added to Watchlist!');" style="background:linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.35));border:1px solid rgba(56,189,248,0.45);color:#38bdf8;font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(56,189,248,0.25);transition:all 0.15s;">
