@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // API MODULE — RealTradePro v3.0
 // ========================================
 
@@ -11,6 +11,13 @@ const GLOBAL_SYMS = {
   'GOLD': 'GC=F', 
   'USD/INR': 'INR=X', 
   'VIX': '^INDIAVIX'
+};
+
+// ✅ BSE-only stocks alias map
+// Stocks listed ONLY on BSE use .BO suffix with BSE scrip code on Yahoo Finance
+// Format: 'WATCHLIST_SYMBOL': 'YAHOO_TICKER'
+const BSE_ONLY_SYMBOLS = {
+  'NSE': '544937.BO',   // NSE India Ltd — listed only on BSE (scrip 544937)
 };
 
 // GAS API URLs
@@ -99,7 +106,12 @@ function fetchWithTimeout(url, ms = 8000) {
 // ======================================
 async function batchFetchStocks(symbols, isIndex = false) {
   if (!symbols || symbols.length === 0) return;
-  const syms = symbols.map(s => isIndex ? s : s + '.NS').join(',');
+  // ✅ FIX: BSE-only symbols (e.g. NSE) get their alias, others get .NS suffix
+  const syms = symbols.map(s => {
+    if (isIndex) return s;
+    const alias = BSE_ONLY_SYMBOLS && BSE_ONLY_SYMBOLS[s.toUpperCase()];
+    return alias ? alias : s + '.NS';
+  }).join(',');
   const urls = getEnabledGASUrls();
   for (let apiUrl of urls) {
     try {
@@ -110,7 +122,7 @@ async function batchFetchStocks(symbols, isIndex = false) {
       Object.entries(j).forEach(([sym, gasData]) => {
         const normalized = _N(gasData);
         if (!normalized) return;
-        const cacheKey = isIndex ? sym : sym.replace('.NS', '');
+        const cacheKey = isIndex ? sym : sym.replace('.NS', '').replace('.BO', '');
         AppState.cache[cacheKey] = { data: normalized, time: Date.now() };
         if (AppState.lastUpdatedMap) AppState.lastUpdatedMap[cacheKey] = Date.now();
         stored++;
@@ -122,7 +134,9 @@ async function batchFetchStocks(symbols, isIndex = false) {
 
 async function fetchFull(sym, isIndex = false) {
   const key = sym;
-  const symbol = isIndex ? sym : sym + '.NS';
+  // ✅ FIX: BSE-only stocks (e.g. NSE India) use alias from BSE_ONLY_SYMBOLS
+  const _bseAlias = !isIndex && typeof BSE_ONLY_SYMBOLS !== 'undefined' && BSE_ONLY_SYMBOLS[sym.toUpperCase()];
+  const symbol = isIndex ? sym : (_bseAlias ? _bseAlias : sym + '.NS');
   const encodedSymbol = symbol.replace(/\^/g, '%5E');
   if (AppState.cache[key] && (Date.now() - AppState.cache[key].time < (AppState.CACHE_TIME || 60000))) {
     return AppState.cache[key].data;
