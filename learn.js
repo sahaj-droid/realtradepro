@@ -1838,6 +1838,60 @@ function _formatIPODate(dStr) {
   return dStr.replace(/202[0-5]/g, currYear);
 }
 
+
+function _getIPOStatusInfo(item) {
+  const rawStatus = (item.status || '').toLowerCase().trim();
+  
+  if (rawStatus.includes('out') || rawStatus === 'allotted') {
+    return {
+      label: '● Allotment Out',
+      color: '#10b981',
+      bg: 'rgba(16,185,129,0.15)',
+      border: 'rgba(16,185,129,0.35)',
+      priority: 2
+    };
+  }
+  
+  if (rawStatus.includes('allotment') || rawStatus.includes('awaited') || rawStatus.includes('allot')) {
+    return {
+      label: '● Allotment Today',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.15)',
+      border: 'rgba(245,158,11,0.35)',
+      priority: 2
+    };
+  }
+  
+  if (rawStatus === 'live' || rawStatus.includes('bidding') || rawStatus === 'open') {
+    return {
+      label: '● Live Bidding',
+      color: '#22c55e',
+      bg: 'rgba(34,197,94,0.15)',
+      border: 'rgba(34,197,94,0.35)',
+      priority: 1
+    };
+  }
+  
+  if (rawStatus === 'closed' || rawStatus.includes('ended')) {
+    return {
+      label: '● Bidding Closed',
+      color: '#ef4444',
+      bg: 'rgba(239,68,68,0.15)',
+      border: 'rgba(239,68,68,0.35)',
+      priority: 3
+    };
+  }
+  
+  // Default Upcoming
+  return {
+    label: '⏳ Upcoming',
+    color: '#38bdf8',
+    bg: 'rgba(56,189,248,0.15)',
+    border: 'rgba(56,189,248,0.35)',
+    priority: 4
+  };
+}
+
 function _getIPOListHTML(data) {
   const isMainboard = _activeIPOSegment === 'mainboard';
   const rawList = _activeIPOTab === 'active' ? (data.activeIpos || []) : (data.recentIpos || []);
@@ -1876,30 +1930,33 @@ function _getIPOListHTML(data) {
 
   // --- RENDER ACTIVE & UPCOMING ---
   if (_activeIPOTab === 'active') {
+    // Sort so Live and Allotment are prioritized at top
+    list.sort((a, b) => {
+      const pA = _getIPOStatusInfo(a).priority || 5;
+      const pB = _getIPOStatusInfo(b).priority || 5;
+      return pA - pB;
+    });
+
     return list.map(item => {
-      const isLive = item.status === 'Live';
-      const isAllotment = item.status === 'Allotment';
-      const statusColor = isLive ? '#22c55e' : (isAllotment ? '#f59e0b' : '#38bdf8');
-      const statusLabel = isLive ? '● Live Bidding' : (isAllotment ? '● Allotment' : '⏳ Upcoming');
+      const stInfo = _getIPOStatusInfo(item);
 
       return `
         <div style="background:linear-gradient(145deg, rgba(15,23,42,0.75) 0%, rgba(24,37,63,0.85) 100%);border:1px solid rgba(255,255,255,0.08);border-left:3.5px solid ${borderAccent};box-shadow:0 4px 18px rgba(0,0,0,0.3);border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:all 0.2s;">
-          <!-- Top Row -->
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-            <div style="flex:1;padding-right:8px;">
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
-                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
-                  ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
-                </span>
-              </div>
-              <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
-                📅 Bidding: ${_formatIPODate(item.dates) || 'TBA'}
-              </div>
+          <!-- Top Row: Completely INLINE name, exchange, status, and dates -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:200px;">
+              <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
+              <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
+                ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
+              </span>
+              <!-- INLINE STATUS PILL -->
+              <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:${stInfo.bg};color:${stInfo.color};border:1px solid ${stInfo.border};font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">
+                ${stInfo.label}
+              </span>
             </div>
-            <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${statusColor}18;color:${statusColor};border:1px solid ${statusColor}40;white-space:nowrap;font-family:'JetBrains Mono',monospace;">
-              ${statusLabel}
-            </span>
+            <div style="font-size:9px;color:#94a3b8;font-family:'JetBrains Mono',monospace;white-space:nowrap;">
+              📅 ${_formatIPODate(item.dates) || 'TBA'}
+            </div>
           </div>
 
           <!-- Middle Bento Stats Grid -->
@@ -1914,7 +1971,7 @@ function _getIPOListHTML(data) {
             </div>
             <div>
               <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Subscription</div>
-              <div style="font-size:11px;font-weight:700;color:#22c55e;margin-top:1px;">${item.sub ? '🔥 ' + item.sub : '--'}</div>
+              <div style="font-size:11px;font-weight:700;color:#22c55e;margin-top:1px;">${item.sub && item.sub !== '--' ? '🔥 ' + item.sub : '--'}</div>
             </div>
             <div>
               <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Issue Size</div>
@@ -1925,7 +1982,9 @@ function _getIPOListHTML(data) {
           <!-- Bottom Footer -->
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#64748b;">
             <span>Category: <b style="color:#cbd5e1;">${isMainboard ? 'Mainboard' : 'SME Platform'}</b></span>
-            <span style="color:#38bdf8;font-style:italic;">Apply via UPI Broker</span>
+            <span style="color:#38bdf8;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+              ${stInfo.label.includes('Allotment') ? '🔍 Check Allotment Live' : (stInfo.label.includes('Live') ? '⚡ Apply via Broker (Groww/Zerodha)' : '⏳ Bidding Opens Soon')}
+            </span>
           </div>
         </div>
       `;
@@ -1937,32 +1996,36 @@ function _getIPOListHTML(data) {
     const sym = item.symbol || item.nseSymbol || item.bseCode || '';
     const gain = item.gainPct !== undefined ? item.gainPct : (parseFloat((item.premium || '').replace(/[^0-9\.\-]/g, '')) || 0);
     const isGain = gain > 0;
-    const isPar = gain === 0;
+    const isPar = gain === 0 || (item.premium && item.premium.toLowerCase().includes('par'));
     const gainColor = isGain ? '#22c55e' : (isPar ? '#f59e0b' : '#ef4444');
     const gainIcon = isGain ? (gain >= 50 ? '🚀' : '▲') : (isPar ? '●' : '▼');
-    const gainText = isGain ? `+${gain.toFixed(2)}%` : `${gain.toFixed(2)}%`;
+    const gainText = isPar ? 'At Par' : (isGain ? `+${gain.toFixed(2)}%` : `${gain.toFixed(2)}%`);
 
     return `
       <div style="background:linear-gradient(145deg, rgba(15,23,42,0.75) 0%, rgba(24,37,63,0.85) 100%);border:1px solid rgba(255,255,255,0.08);border-left:3.5px solid ${borderAccent};box-shadow:0 4px 18px rgba(0,0,0,0.3);border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:all 0.2s;">
-        <!-- Top Row -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-          <div style="flex:1;padding-right:8px;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <span style="font-size:12px;font-weight:800;color:${borderAccent};font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);">
-                ${sym}
-              </span>
-              <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
-              <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
-                ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
-              </span>
-            </div>
-            <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
-              📅 Listed on ${_formatIPODate(item.dates) || 'Recent'}
-            </div>
+        <!-- Top Row: Completely INLINE symbol, name, exchange, gain pill, and action -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:200px;">
+            <span style="font-size:12px;font-weight:800;color:${borderAccent};font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);">
+              ${sym}
+            </span>
+            <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
+            <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
+              ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
+            </span>
+            <!-- INLINE GAIN PILL -->
+            <span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:${gainColor}18;color:${gainColor};border:1px solid ${gainColor}35;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;">
+              ${gainIcon} ${gainText}
+            </span>
           </div>
-          <button onclick="addStock('${sym}');if(typeof showPopup==='function')showPopup('✅ ${sym} added to Watchlist!');" style="background:linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.35));border:1px solid rgba(56,189,248,0.45);color:#38bdf8;font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(56,189,248,0.25);transition:all 0.15s;">
-            + Watchlist
-          </button>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:9px;color:#94a3b8;font-family:'JetBrains Mono',monospace;white-space:nowrap;">
+              📅 ${_formatIPODate(item.dates) || 'Recent'}
+            </span>
+            <button onclick="addStock('${sym}');if(typeof showPopup==='function')showPopup('✅ ${sym} added to Watchlist!');" style="background:linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.35));border:1px solid rgba(56,189,248,0.45);color:#38bdf8;font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(56,189,248,0.25);transition:all 0.15s;">
+              + Watchlist
+            </button>
+          </div>
         </div>
 
         <!-- Middle Bento Stats Grid -->
@@ -1987,9 +2050,9 @@ function _getIPOListHTML(data) {
 
         <!-- Bottom Return Badge -->
         <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;background:${gainColor}12;border:1px solid ${gainColor}30;padding:4px 10px;border-radius:6px;">
-          <span style="font-size:9px;color:#94a3b8;font-weight:600;">Listing Day Gain / Return:</span>
+          <span style="font-size:9px;color:#94a3b8;font-weight:600;">Listing Day Return:</span>
           <span style="font-size:11px;font-weight:800;color:${gainColor};font-family:'JetBrains Mono',monospace;">
-            ${gainIcon} ${gainText} ${isGain ? 'GAIN' : (isPar ? 'PAR' : 'DISC')}
+            ${item.premium || (gainIcon + ' ' + gainText)}
           </span>
         </div>
       </div>
