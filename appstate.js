@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // APP STATE — Single source of truth
 // ========================================
 
@@ -213,6 +213,8 @@ const NIFTY50_STOCKS=[
 ];
 
 const POPULAR_STOCKS=[
+  // ✅ Newly listed IPO stocks
+  'NSE','JPL',
   'RELTD','ICICIAMC','OLECTRA','KAYNES','BALUFORGE','SUBROS','PWL','GARUDA',
   'JWL','TENNIND','LEMONTREE','SHARDACROP','BSE','GROWW','TRANSRAILL','HBLENGINE',
   'TARIL','SHAKTIPUMP','WAAREEENER','REMSONSIND','SURYAROSNI','VIKRAN','ADANIENSOL','ADANIPOWER',

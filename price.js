@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // PRICES MODULE — RealTradePro v3.0
 // ========================================
 
@@ -11,14 +11,19 @@ async function addStock(sym) {
   showLoader("Adding " + sym + "...");
   let d = await fetchFull(sym);
   hideLoader();
-  if (!d || !d.regularMarketPrice) {
-    showPopup("Invalid Stock: " + sym);
+  // ✅ FIX: New IPO stocks may not have price data on Yahoo immediately after listing.
+  // We allow adding if any data is returned; live engine will populate price later.
+  if (!d) {
+    showPopup("❌ Not found: " + sym + " — Check symbol & try again");
     return;
+  }
+  if (!d.regularMarketPrice) {
+    showPopup("⚠️ " + sym + " added! Price will load shortly (newly listed stock)");
   }
   AppState.cache[sym] = { data: d, time: Date.now() };
   const cur = AppState.watchlists[AppState.currentWL];
   if (cur.stocks.includes(sym)) {
-    if (AppState.dupWarnEnabled) showPopup(sym + ' already in ' + cur.name);
+    if (AppState.dupWarnEnabled) showPopup(sym + " already in " + cur.name);
     document.getElementById("searchBox").value = "";
     return;
   }
@@ -27,7 +32,7 @@ async function addStock(sym) {
   saveWatchlists();
   document.getElementById("searchBox").value = "";
   hideSuggestions();
-  if (typeof renderWL === 'function') renderWL();
+  if (typeof renderWL === "function") renderWL();
 }
 
 // ======================================
@@ -440,7 +445,8 @@ async function fetchYahooSuggestions(val, box) {
       .filter(r => {
         const sym = r.symbol || '';
         const exch = (r.exchange || r.exchDisp || '').toUpperCase();
-        const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch);
+        // ✅ FIX: New IPOs may have blank exchange — allow if symbol looks Indian (.NS/.BO) OR no exchange info
+        const isIndian = sym.endsWith('.NS') || sym.endsWith('.BO') || INDIAN_EXCHANGES.has(exch) || exch === '';
         const cleanSym = sym.replace('.NS', '').replace('.BO', '');
         const notInWL = !alreadyIn.has(cleanSym);
         return isIndian && notInWL;
