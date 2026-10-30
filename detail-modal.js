@@ -61,21 +61,39 @@ async function openDetail(sym, isIndex) {
   if (d) {
     if (dBody) {
       dBody.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:3px;">
-          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">OPEN</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketOpen && d.regularMarketOpen > 1 ? d.regularMarketOpen : (d.chartPreviousClose || 0)).toFixed(2)}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">PREV CLOSE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.chartPreviousClose || 0).toFixed(2)}</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">OPEN</div>
+              <div style="font-size:14px;font-weight:800;color:#f0f5ff;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.regularMarketOpen && d.regularMarketOpen > 1 ? d.regularMarketOpen : (d.chartPreviousClose || 0)).toFixed(2)}</div>
+            </div>
+            <div style="width:1px;height:24px;background:#26354b;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">PREV CLOSE</div>
+              <div style="font-size:14px;font-weight:800;color:#f0f5ff;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.chartPreviousClose || 0).toFixed(2)}</div>
+            </div>
           </div>
-          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayHigh || 0).toFixed(2)}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">DAY LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.regularMarketDayLow || 0).toFixed(2)}</div></div>
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">DAY HIGH</div>
+              <div style="font-size:14px;font-weight:800;color:#24d6a0;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.regularMarketDayHigh || 0).toFixed(2)}</div>
+            </div>
+            <div style="width:1px;height:24px;background:#26354b;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">DAY LOW</div>
+              <div style="font-size:14px;font-weight:800;color:#ff7180;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.regularMarketDayLow || 0).toFixed(2)}</div>
+            </div>
           </div>
-          <div style="background:#0a1628;border-radius:7px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;">
-            <div style="flex:1;min-width:0;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W HIGH</div><div style="font-size:14px;font-weight:700;color:#22c55e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekHigh || 0).toFixed(2)}</div></div>
-            <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
-            <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:11px;color:#4b6280;line-height:1.2;">52W LOW</div><div style="font-size:14px;font-weight:700;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">₹${(d.fiftyTwoWeekLow || 0).toFixed(2)}</div></div>
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">52W HIGH</div>
+              <div style="font-size:14px;font-weight:800;color:#24d6a0;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.fiftyTwoWeekHigh || 0).toFixed(2)}</div>
+            </div>
+            <div style="width:1px;height:24px;background:#26354b;flex-shrink:0;"></div>
+            <div style="flex:1;min-width:0;text-align:right;">
+              <div style="font-size:10px;color:#8b9bb2;font-weight:600;letter-spacing:0.5px;">52W LOW</div>
+              <div style="font-size:14px;font-weight:800;color:#ff7180;font-family:'JetBrains Mono',monospace;margin-top:2px;">₹${(d.fiftyTwoWeekLow || 0).toFixed(2)}</div>
+            </div>
           </div>
         </div>`;
     }
@@ -142,8 +160,8 @@ async function openDetail(sym, isIndex) {
       const volLabel = volRatio ? volRatio >= 2 ? 'Very High' : volRatio >= 1.5 ? 'High' : volRatio >= 1 ? 'Normal' : 'Low' : '--';
       const price = AppState.cache[sym]?.data?.regularMarketPrice || 0;
       const atrPct = atr && price > 0 ? parseFloat((atr / price * 100).toFixed(2)) : null;
-      const rsiColor = rsi ? rsi < 30 ? '#22c55e' : rsi > 70 ? '#ef4444' : '#38bdf8' : '#94a3b8';
-      const macdColor = macd ? (macd.trend === 'bullish' ? '#22c55e' : '#ef4444') : '#94a3b8';
+      const rsiColor = rsi ? rsi < 30 ? '#24d6a0' : rsi > 70 ? '#ff7180' : '#91aaff' : '#8b9bb2';
+      const macdColor = macd ? (macd.trend === 'bullish' ? '#24d6a0' : '#ff7180') : '#8b9bb2';
       const dot = (c) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
       const dmaKey = (l) => l.includes('20') ? 'DMA20' : l.includes('50') ? 'DMA50' : 'DMA200';
       const maRow = (label, val) => val ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
@@ -158,23 +176,23 @@ async function openDetail(sym, isIndex) {
       ts.innerHTML = `
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;display:flex;align-items:center;">${dot(rsiColor)}RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi ? rsi.toFixed(1) : '--'} <span style="font-size:9px;">${rsi ? rsi < 30 ? 'Oversold' : rsi > 70 ? 'Overbought' : 'Neutral' : ''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;display:flex;align-items:center;justify-content:flex-end;">${dot(macdColor)}MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd ? macd.macd : '--'} <span style="font-size:9px;">${macd ? macd.trend : ''}</span></div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;">
             <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">MOVING AVERAGES vs CMP ₹${price.toFixed(0)}</div>
             ${maRow('DMA 20', ma20)}
             ${maRow('DMA 50', ma50)}
             ${maRow('DMA 200', ma200)}
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">ATR (14)</div><div style="font-size:13px;font-weight:700;color:#f59e0b;">${atr ? '₹' + atr : '--'} <span style="font-size:9px;color:#94a3b8;">${atrPct ? '(' + atrPct + '%)' : ''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">VOLUME</div><div style="font-size:13px;font-weight:700;color:${volColor};">${volLabel} <span style="font-size:9px;">${volRatio ? volRatio + 'x' : ''}</span></div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">INSIDE BAR${iBtn('INSIDE')}</div><div style="font-size:12px;font-weight:700;color:${insideBar ? '#f59e0b' : '#4b6280'};">${insideBar ? 'Yes' : 'No'}</div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">NARROW RANGE${iBtn('NARROW')}</div><div style="font-size:12px;font-weight:700;color:${narrowRange ? '#f59e0b' : '#4b6280'};">${narrowRange ? 'Yes' : 'No'}</div></div>
@@ -217,8 +235,8 @@ async function openDetail(sym, isIndex) {
       const ma50 = closes.length >= 50 ? closes.slice(-50).reduce((a, b) => a + b, 0) / 50 : null;
       const ma200 = closes.length >= 200 ? closes.slice(-200).reduce((a, b) => a + b, 0) / 200 : null;
       const price = d.regularMarketPrice || 0;
-      const rsiColor = rsi ? rsi < 30 ? '#22c55e' : rsi > 70 ? '#ef4444' : '#38bdf8' : '#94a3b8';
-      const macdColor = macd ? (macd.trend === 'bullish' ? '#22c55e' : '#ef4444') : '#94a3b8';
+      const rsiColor = rsi ? rsi < 30 ? '#24d6a0' : rsi > 70 ? '#ff7180' : '#91aaff' : '#8b9bb2';
+      const macdColor = macd ? (macd.trend === 'bullish' ? '#24d6a0' : '#ff7180') : '#8b9bb2';
       const dmaKey = (l) => l.includes('20') ? 'DMA20' : l.includes('50') ? 'DMA50' : 'DMA200';
       const dot = (c) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px;flex-shrink:0;"></span>`;
       const maRow = (label, val) => val ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
@@ -229,12 +247,12 @@ async function openDetail(sym, isIndex) {
       ts.innerHTML = `
         <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TECHNICAL (30D)</div>
         <div style="display:flex;flex-direction:column;gap:4px;">
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;">RSI (14)${iBtn('RSI')}</div><div style="font-size:13px;font-weight:700;color:${rsiColor};white-space:nowrap;">${rsi || '--'} <span style="font-size:9px;">${rsi ? rsi < 30 ? 'Oversold' : rsi > 70 ? 'Overbought' : 'Neutral' : ''}</span></div></div>
             <div style="width:1px;height:28px;background:#1e2d3d;flex-shrink:0;"></div>
             <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;">MACD${iBtn('MACD')}</div><div style="font-size:13px;font-weight:700;color:${macdColor};white-space:nowrap;">${macd ? macd.macd : '--'} <span style="font-size:9px;">${macd ? macd.trend : ''}</span></div></div>
           </div>
-          <div style="background:#0a1628;border-radius:6px;padding:5px 10px;">
+          <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;">
             <div style="font-size:9px;color:#4b6280;margin-bottom:4px;">MOVING AVERAGES vs CMP ₹${price.toFixed(0)}</div>
             ${maRow('DMA 20', ma20)}
             ${maRow('DMA 50', ma50)}
@@ -268,13 +286,13 @@ function switchDetailTab(tab) {
     if (el) el.style.display = t === tab ? 'block' : 'none';
     if (btn) {
       if (t === tab) {
-        btn.style.background = '#065f46';
-        btn.style.color = '#34d399';
-        btn.style.borderColor = '#065f46';
+        btn.style.background = '#2a3d5e';
+        btn.style.color = '#ffffff';
+        btn.style.fontWeight = '700';
       } else {
         btn.style.background = 'transparent';
-        btn.style.color = '#4b6280';
-        btn.style.borderColor = '#1e3a5f';
+        btn.style.color = '#8b9bb2';
+        btn.style.fontWeight = '600';
       }
     }
   });
@@ -298,22 +316,22 @@ function _renderFundamentalsHTML(fs, fund, isCached, sym) {
   fs.innerHTML = `
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">FUNDAMENTALS${cacheLabel}</div>
     <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:8px;">
-      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+      <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">P/E (TTM)${iBtn('PE')}</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.pe || '--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD P/E</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fpe_v}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+      <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">EPS (TTM)${iBtn('EPS')}</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.eps || '--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">FORWARD EPS</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${feps_v}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+      <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">MKT CAP</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.marketCap || '--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">BOOK VALUE</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${bv_v}</div></div>
       </div>
-      <div style="background:#0a1628;border-radius:6px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+      <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;gap:6px;">
         <div style="flex:1;min-width:0;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">VOLUME</div><div style="font-size:11px;font-weight:700;white-space:nowrap;">${fund.volume || '--'}</div></div>
         <div style="width:1px;height:22px;background:#1e2d3d;flex-shrink:0;"></div>
         <div style="flex:1;min-width:0;text-align:right;"><div style="font-size:9px;color:#4b6280;line-height:1.2;">DIV YIELD</div><div style="font-size:11px;font-weight:700;white-space:nowrap;color:${dy_v !== '--' ? '#22c55e' : '#e2e8f0'};">${dy_v}</div></div>
@@ -345,9 +363,9 @@ function renderQuickLinks(sym, isIndex) {
     el.innerHTML = `
       <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
-        <button onclick="window.open('https://www.nseindia.com/market-data/live-market-indices','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE Indices</button>
-        <button onclick="window.open('https://www.moneycontrol.com/markets/indian-indices/','_blank')" style="background:#0f2a40;color:#f97316;border:1px solid #7c2d12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
-        <button onclick="window.open('https://www.tradingview.com/chart/?symbol=${tvSym}','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">TradingView</button>
+        <button onclick="window.open('https://www.nseindia.com/market-data/live-market-indices','_blank')" style="background:#111d2d;color:#91aaff;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE Indices</button>
+        <button onclick="window.open('https://www.moneycontrol.com/markets/indian-indices/','_blank')" style="background:#111d2d;color:#fb923c;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
+        <button onclick="window.open('https://www.tradingview.com/chart/?symbol=${tvSym}','_blank')" style="background:#111d2d;color:#24d6a0;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">TradingView</button>
       </div>`;
     return;
   }
@@ -355,14 +373,14 @@ function renderQuickLinks(sym, isIndex) {
   el.innerHTML = `
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">QUICK LINKS</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">
-      <button onclick="window.open('https://www.nseindia.com/get-quotes/equity?symbol=${sym}','_blank')" style="background:#0f2a40;color:#38bdf8;border:1px solid #1e3a5f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE</button>
-      <button onclick="window.open('https://www.bseindia.com/stock-share-price/${sym}/','_blank')" style="background:#0f2a40;color:#fbbf24;border:1px solid #713f12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">BSE</button>
-      <button onclick="window.open('https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${sym}','_blank')" style="background:#0f2a40;color:#a78bfa;border:1px solid #2d1a5e;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Filings</button>
-      <button onclick="window.open('https://www.screener.in/company/${sym}/','_blank')" style="background:#0f2a40;color:#34d399;border:1px solid #064e3b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Screener</button>
-      <button onclick="window.open('https://www.moneycontrol.com/india/stockpricequote/${sym}','_blank')" style="background:#0f2a40;color:#f97316;border:1px solid #7c2d12;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
-      <button onclick="window.open('https://www.tickertape.in/stocks/${sym}','_blank')" style="background:#0f2a40;color:#fb7185;border:1px solid #4c0519;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
-      <button onclick="window.open('https://tijorifinance.com/company/${sym}','_blank')" style="background:#0f2a40;color:#6ee7b7;border:1px solid #065f46;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
-      <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#0f2a40;color:#fde68a;border:1px solid #78350f;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
+      <button onclick="window.open('https://www.nseindia.com/get-quotes/equity?symbol=${sym}','_blank')" style="background:#111d2d;color:#91aaff;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">NSE</button>
+      <button onclick="window.open('https://www.bseindia.com/stock-share-price/${sym}/','_blank')" style="background:#111d2d;color:#fcd34d;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">BSE</button>
+      <button onclick="window.open('https://www.nseindia.com/companies-listing/corporate-filings-announcements?symbol=${sym}','_blank')" style="background:#111d2d;color:#c4b5fd;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Filings</button>
+      <button onclick="window.open('https://www.screener.in/company/${sym}/','_blank')" style="background:#111d2d;color:#24d6a0;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Screener</button>
+      <button onclick="window.open('https://www.moneycontrol.com/india/stockpricequote/${sym}','_blank')" style="background:#111d2d;color:#fb923c;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">MC</button>
+      <button onclick="window.open('https://www.tickertape.in/stocks/${sym}','_blank')" style="background:#111d2d;color:#ff7180;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Ticker</button>
+      <button onclick="window.open('https://tijorifinance.com/company/${sym}','_blank')" style="background:#111d2d;color:#24d6a0;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Tijori</button>
+      <button onclick="window.open('https://chartink.com/stocks/${sym}.html','_blank')" style="background:#111d2d;color:#fcd34d;border:1px solid #26354b;border-radius:8px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">Chartink</button>
     </div>`;
 }
 
@@ -380,7 +398,7 @@ function renderIndexComposition(sym, el) {
     <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.5px;">TOP CONSTITUENTS</div>
     <div style="display:flex;flex-direction:column;gap:3px;">
       ${comp.map((c, i) => `
-        <div style="background:#0a1628;border-radius:6px;padding:5px 10px;display:flex;justify-content:space-between;align-items:center;">
+        <div style="background:#111d2d;border:1px solid #26354b;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:10px;color:#4b6280;font-weight:700;width:14px;">${i + 1}</span>
             <span style="font-size:12px;font-weight:700;color:#e2e8f0;">${c.name}</span>

@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-<link rel="stylesheet" href="style.css?v=4.2">
+<link rel="stylesheet" href="style.css?v=4.3">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -623,51 +623,61 @@
   </div>
 </div>
 
-<!-- DETAILS MODAL -->
-<div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center" style="display:none;z-index:9998;" onclick="if(event.target===this)closeDetail()">
-  <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:12px;width:min(360px,96vw);max-height:92vh;display:flex;flex-direction:column;">
+<!-- DETAILS MODAL (Northstar Mobile Style) -->
+<div id="detailModal" class="hidden fixed inset-0 flex items-center justify-center p-3" style="display:none;position:fixed;inset:0;background:rgba(8,14,25,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9998;" onclick="if(event.target===this)closeDetail()">
+  <div style="background:linear-gradient(150deg,#142136,#101a29);border:1px solid #26354b;border-radius:20px;padding:16px;width:min(440px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 25px 90px rgba(0,0,0,0.7);">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-shrink:0;">
-      <h2 id="d-title" style="font-size:18px;font-weight:700;color:#38bdf8;margin:0;"></h2>
-      <button onclick="closeDetail()" style="background:#1e2d3d;color:#94a3b8;border:none;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2 id="d-title" style="font-size:20px;font-weight:800;color:#f0f5ff;margin:0;font-family:'Inter',system-ui,sans-serif;letter-spacing:-0.4px;"></h2>
+        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:#243653;color:#c6d4ff;">NSE</span>
+      </div>
+      <button onclick="closeDetail()" style="width:34px;height:34px;border:1px solid #26354b;background:#111d2d;color:#8b9bb2;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;" title="Close">✕</button>
     </div>
-    <!-- Tab buttons -->
-    <div style="display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;">
-      <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #065f46;background:#065f46;color:#34d399;">📈 Price</button>
-      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">📊 Fund</button>
-      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">⚡ Tech</button>
-      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">〰 BB</button>
-      <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:5px 2px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:1px solid #1e3a5f;background:transparent;color:#4b6280;">🔗 Links</button>
+
+    <!-- Tab buttons (Northstar Range Selector Style) -->
+    <div style="display:flex;gap:3px;background:#0c1523;padding:3px;border-radius:10px;border:1px solid #26354b;margin-bottom:12px;flex-shrink:0;">
+      <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:#2a3d5e;color:#ffffff;font-family:'Inter',system-ui,sans-serif;">Price</button>
+      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Fund</button>
+      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Tech</button>
+      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">BB</button>
+      <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Links</button>
     </div>
+
     <!-- Tab content (scrollable) -->
-    <div style="flex:1;overflow-y:auto;min-height:0;">
+    <div style="flex:1;overflow-y:auto;min-height:0;padding-right:2px;">
       <!-- Tab: Price + Chart -->
       <div id="dtab-price" style="display:block;">
         <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
-        <div id="d-chart" style="margin-top:8px;border-radius:10px;overflow:hidden;"></div>
-        <button id="d-tv-btn2" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:8px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:Rajdhani,sans-serif;">📊 View Full Chart on TradingView</button>
+        <div id="d-chart" style="margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #26354b;"></div>
+        <button id="d-tv-btn2" onclick="" style="background:#243653;color:#c6d4ff;border:1px solid #26354b;width:100%;margin-top:10px;padding:10px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',system-ui,sans-serif;transition:all 0.15s ease;">📊 View Full Chart on TradingView</button>
       </div>
+
       <!-- Tab: Fundamentals -->
       <div id="dtab-fund" style="display:none;">
-        <div id="fundamentalsSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading fundamentals...</div></div>
+        <div id="fundamentalsSection"><div style="font-size:11px;color:#8b9bb2;text-align:center;padding:16px;">Loading fundamentals...</div></div>
       </div>
+
       <!-- Tab: Technical -->
       <div id="dtab-tech" style="display:none;">
-        <div id="techSection"><div style="font-size:10px;color:#4b6280;text-align:center;padding:12px;">Loading technical data...</div></div>
-        <div id="smartAlertSection" style="margin-top:8px;"></div>
+        <div id="techSection"><div style="font-size:11px;color:#8b9bb2;text-align:center;padding:16px;">Loading technical data...</div></div>
+        <div id="smartAlertSection" style="margin-top:10px;"></div>
       </div>
+
       <!-- Tab: Bollinger -->
       <div id="dtab-bb" style="display:none;">
         <div id="bbSection"></div>
       </div>
+
       <!-- Tab: Links -->
       <div id="dtab-links" style="display:none;">
         <div id="quickLinksSection"></div>
-        <button id="d-tv-btn" onclick="" style="background:#1e3a5f;color:#93c5fd;width:100%;margin-top:10px;padding:8px;border-radius:8px;font-weight:700;font-size:13px;border:1px solid #2d5a8e;cursor:pointer;font-family:'Rajdhani',sans-serif;">📊 View Full Chart on TradingView</button>
+        <button id="d-tv-btn" onclick="" style="background:#243653;color:#c6d4ff;border:1px solid #26354b;width:100%;margin-top:10px;padding:10px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',system-ui,sans-serif;transition:all 0.15s ease;">📊 View Full Chart on TradingView</button>
       </div>
     </div>
   </div>
 </div>
+
 <!-- ADD INDEX MODAL -->
 <div id="addIdxOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:350;align-items:center;justify-content:center;">
   <div style="background:#0f1e33;border:1px solid #1e3a5f;border-radius:16px;padding:16px;width:min(340px,94vw);">
@@ -1301,10 +1311,10 @@
 <script src="api.js?v=2"></script>
 <script src="auth.js"></script>
 <script src="firebase-sync.js"></script>
-<script src="price.js?v=4.2"></script>
-<script src="live-price.js?v=4.2"></script>
+<script src="price.js?v=4.3"></script>
+<script src="live-price.js?v=4.3"></script>
 <script src="indices.js?v=7.2"></script>
-<script src="detail-modal.js?v=4.0"></script>
+<script src="detail-modal.js?v=4.3"></script>
 <script src="holdings.js"></script>
 <script src="trades.js"></script>
 <script src="alerts.js?v=4.1"></script>
