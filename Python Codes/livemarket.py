@@ -297,6 +297,9 @@ def update_livemarket():
         except Exception as e:
             print(f"❌ Firebase Push Fail: {e}")
 
+    # Update Market Flows (FII/DII & IPOs)
+    update_market_flows(db)
+
     # ── Summary ──
     print("\n" + "=" * 55)
     print(f"  DONE! Total: {len(primary_list)} | Zero-price: {zero_count}")
@@ -305,3 +308,70 @@ def update_livemarket():
 
 if __name__ == "__main__":
     update_livemarket()
+
+# ── Step 6: Market Flows (FII/DII & IPOs) ──
+def update_market_flows(db):
+    print("🏛️ Fetching FII/DII & IPO data from NSE...")
+    import requests
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+    s = requests.Session()
+    s.headers.update(headers)
+    
+    flow_doc = {}
+    try:
+        s.get('https://www.nseindia.com', timeout=10)
+        
+        # 1. FII / DII
+        r_fii = s.get('https://www.nseindia.com/api/fiidiiTradeReact', timeout=10)
+        if r_fii.status_code == 200:
+            arr = r_fii.json()
+            dii = next((x for x in arr if x.get('category') == 'DII'), {})
+            fii = next((x for x in arr if 'FII' in x.get('category', '')), {})
+            flow_doc['fiidii'] = {
+                'date': dii.get('date', ''),
+                'dii': {
+                    'buy': float(dii.get('buyValue', 0)),
+                    'sell': float(dii.get('sellValue', 0)),
+                    'net': float(dii.get('netValue', 0))
+                },
+                'fii': {
+                    'buy': float(fii.get('buyValue', 0)),
+                    'sell': float(fii.get('sellValue', 0)),
+                    'net': float(fii.get('netValue', 0))
+                }
+            }
+            print("  ✅ FII/DII data fetched")
+            
+        # 2. IPOs
+        r_ipo = s.get('https://www.nseindia.com/api/ipo-current-issue', timeout=10)
+        if r_ipo.status_code == 200:
+            ipos = r_ipo.json()
+            active = []
+            for ip in ipos[:5]:
+                active.append({
+                    'name': ip.get('companyName', ''),
+                    'symbol': ip.get('symbol', ''),
+                    'price': ip.get('issuePrice', ''),
+                    'dates': f"{ip.get('issueStartDate', '')} - {ip.get('issueEndDate', '')}",
+                    'size': f"{float(ip.get('issueSize', 0))/10000000:.1f} Cr" if ip.get('issueSize') else '',
+                    'sub': f"{float(ip.get('noOfTime', 0)):.2f}x" if ip.get('noOfTime') else '1.0x',
+                    'status': ip.get('status', 'Active')
+                })
+            flow_doc['activeIpos'] = active
+            print("  ✅ IPO data fetched")
+            
+        if db and flow_doc:
+            db.collection('market_stats').document('fiidii').set(flow_doc, merge=True)
+            print("  ✅ Pushed market flows to Firebase (market_stats/fiidii)")
+            
+        try:
+            import ipoji_sync
+            ipoji_sync.sync_ipoji_to_firebase(db)
+        except Exception as e_ipo:
+            print(f"  ❌ IPO Ji sync failed: {e_ipo}")
+    except Exception as e:
+        print(f"  ❌ Market flow update failed: {e}")

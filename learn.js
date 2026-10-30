@@ -1,4 +1,4 @@
-// ========================================
+﻿// ========================================
 // LEARN MODULE — RealTradePro v3.0
 // Handles: Learn tab, fundamentals, technicals, quarterly, shareholding, corporate actions, market school
 // ========================================
@@ -35,24 +35,24 @@ function switchLearnMain(tab) {
   const isFinancial = tab === 'financial';
 
   const finPanel = document.getElementById('lpanel-financial');
-  const schPanel = document.getElementById('lpanel-school');
+  const flowPanel = document.getElementById('lpanel-marketflow');
   if (finPanel) finPanel.style.display = isFinancial ? 'flex' : 'none';
-  if (schPanel) schPanel.style.display = isFinancial ? 'none' : 'block';
+  if (flowPanel) flowPanel.style.display = isFinancial ? 'none' : 'block';
 
   const finBtn = document.getElementById('lmain-financial');
-  const schBtn = document.getElementById('lmain-school');
+  const flowBtn = document.getElementById('lmain-marketflow');
   if (finBtn) {
     finBtn.style.borderBottomColor = isFinancial ? '#fb923c' : 'transparent';
     finBtn.style.background = isFinancial ? 'rgba(251,146,60,0.08)' : 'transparent';
     finBtn.style.color = isFinancial ? '#fb923c' : 'var(--text-muted, #64748b)';
   }
-  if (schBtn) {
-    schBtn.style.borderBottomColor = !isFinancial ? '#fb923c' : 'transparent';
-    schBtn.style.background = !isFinancial ? 'rgba(251,146,60,0.08)' : 'transparent';
-    schBtn.style.color = !isFinancial ? '#fb923c' : 'var(--text-muted, #64748b)';
+  if (flowBtn) {
+    flowBtn.style.borderBottomColor = !isFinancial ? '#fb923c' : 'transparent';
+    flowBtn.style.background = !isFinancial ? 'rgba(251,146,60,0.08)' : 'transparent';
+    flowBtn.style.color = !isFinancial ? '#fb923c' : 'var(--text-muted, #64748b)';
   }
 
-  if (!isFinancial) renderMarketSchool();
+  if (!isFinancial && typeof renderMarketFlows === 'function') renderMarketFlows();
 }
 
 function switchLearnTab(tabName) {
@@ -829,288 +829,817 @@ const LEARN_INFO = {
   },
 };
 // ======================================
-// MARKET SCHOOL DATA
+// FII / DII & IPO TRACKER MODULE (PREMIUM ULTRA EDITION v4.0)
 // ======================================
-var CANDLE_SVG = {
-  basics: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" width="120" height="100">
-    <!-- Green bullish candle -->
-    <line x1="30" y1="10" x2="30" y2="25" stroke="#22c55e" stroke-width="2"/>
-    <rect x="22" y="25" width="16" height="35" fill="#22c55e" rx="1"/>
-    <line x1="30" y1="60" x2="30" y2="75" stroke="#22c55e" stroke-width="2"/>
-    <text x="30" y="88" text-anchor="middle" fill="#64748b" font-size="8" font-family="Rajdhani">Bullish</text>
-    <!-- Red bearish candle -->
-    <line x1="90" y1="15" x2="90" y2="30" stroke="#ef4444" stroke-width="2"/>
-    <rect x="82" y="30" width="16" height="35" fill="#ef4444" rx="1"/>
-    <line x1="90" y1="65" x2="90" y2="80" stroke="#ef4444" stroke-width="2"/>
-    <text x="90" y="92" text-anchor="middle" fill="#64748b" font-size="8" font-family="Rajdhani">Bearish</text>
-    <!-- Labels -->
-    <text x="6" y="28" fill="#94a3b8" font-size="7" font-family="Rajdhani">High</text>
-    <text x="6" y="42" fill="#94a3b8" font-size="7" font-family="Rajdhani">Open</text>
-    <text x="6" y="58" fill="#94a3b8" font-size="7" font-family="Rajdhani">Close</text>
-    <text x="6" y="72" fill="#94a3b8" font-size="7" font-family="Rajdhani">Low</text>
-  </svg>`,
+let _activeIPOSegment = 'mainboard'; // 'mainboard' or 'sme'
+let _activeIPOTab = 'recent'; // 'recent' or 'active'
+let _ipoSearchQuery = '';
+let _cachedFlowData = null;
 
-  doji: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" width="120" height="100">
-    <!-- Standard Doji -->
-    <line x1="30" y1="10" x2="30" y2="85" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="20" y="46" width="20" height="4" fill="#f59e0b" rx="1"/>
-    <text x="30" y="96" text-anchor="middle" fill="#64748b" font-size="8" font-family="Rajdhani">Doji</text>
-    <!-- Gravestone Doji -->
-    <line x1="90" y1="10" x2="90" y2="50" stroke="#f59e0b" stroke-width="2"/>
-    <rect x="80" y="48" width="20" height="4" fill="#f59e0b" rx="1"/>
-    <line x1="90" y1="52" x2="90" y2="58" stroke="#f59e0b" stroke-width="2"/>
-    <text x="90" y="70" text-anchor="middle" fill="#64748b" font-size="7" font-family="Rajdhani">Gravestone</text>
-    <!-- Open=Close label -->
-    <text x="30" y="38" text-anchor="middle" fill="#f59e0b" font-size="7" font-family="Rajdhani">Open≈Close</text>
-  </svg>`,
-
-  hammer: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" width="120" height="100">
-    <!-- Hammer (green) -->
-    <rect x="22" y="30" width="16" height="14" fill="#22c55e" rx="1"/>
-    <line x1="30" y1="44" x2="30" y2="82" stroke="#22c55e" stroke-width="2"/>
-    <line x1="30" y1="28" x2="30" y2="30" stroke="#22c55e" stroke-width="2"/>
-    <text x="30" y="94" text-anchor="middle" fill="#64748b" font-size="8" font-family="Rajdhani">Hammer ✅</text>
-    <!-- Hanging Man (red) -->
-    <rect x="82" y="30" width="16" height="14" fill="#ef4444" rx="1"/>
-    <line x1="90" y1="44" x2="90" y2="82" stroke="#ef4444" stroke-width="2"/>
-    <line x1="90" y1="28" x2="90" y2="30" stroke="#ef4444" stroke-width="2"/>
-    <text x="90" y="94" text-anchor="middle" fill="#64748b" font-size="7" font-family="Rajdhani">Hanging Man ❌</text>
-    <!-- Arrow down for context -->
-    <text x="18" y="22" fill="#94a3b8" font-size="8" font-family="Rajdhani">↓Downtrend</text>
-    <text x="72" y="22" fill="#94a3b8" font-size="8" font-family="Rajdhani">↑Uptrend</text>
-  </svg>`,
-
-  engulfing: `<svg viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg" width="120" height="110">
-    <!-- Bullish Engulfing -->
-    <text x="30" y="10" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="Rajdhani">Bullish</text>
-    <rect x="24" y="30" width="12" height="20" fill="#ef4444" rx="1"/>
-    <rect x="16" y="20" width="16" height="40" fill="none" stroke="#22c55e" stroke-width="1" stroke-dasharray="2" rx="1"/>
-    <rect x="18" y="22" width="12" height="36" fill="#22c55e" rx="1"/>
-    <text x="30" y="74" text-anchor="middle" fill="#22c55e" font-size="7" font-family="Rajdhani">Green covers Red</text>
-    <!-- Bearish Engulfing -->
-    <text x="90" y="10" text-anchor="middle" fill="#94a3b8" font-size="7" font-family="Rajdhani">Bearish</text>
-    <rect x="84" y="30" width="12" height="20" fill="#22c55e" rx="1"/>
-    <rect x="76" y="20" width="16" height="40" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="2" rx="1"/>
-    <rect x="78" y="22" width="12" height="36" fill="#ef4444" rx="1"/>
-    <text x="90" y="74" text-anchor="middle" fill="#ef4444" font-size="7" font-family="Rajdhani">Red covers Green</text>
-  </svg>`
+const DEFAULT_FLOW_DATA = {
+  fiidii: {
+    date: '30-Oct-2024',
+    fii: { buy: 20564.02, sell: 16965.48, net: 3598.54 },
+    dii: { buy: 16643.55, sell: 17461.06, net: -817.51 },
+    sentiment: 'Bullish'
+  },
+  recentIpos: [
+    // --- MAINBOARD RECENT LISTINGS ---
+    {
+      name: 'Waaree Energies Limited',
+      symbol: 'WAAREEENER',
+      nseSymbol: 'WAAREEENER',
+      bseCode: '544277',
+      offerPrice: 'Rs.1,503',
+      listingPrice: 'Rs.2,500',
+      gainPct: 66.33,
+      premium: '+66.33% Gain',
+      dates: '28-Oct-2024',
+      subscription: '79.44x',
+      issueSize: 'Rs.4,321 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Godavari Biorefineries Limited',
+      symbol: 'GODAVARI',
+      nseSymbol: 'GODAVARI',
+      bseCode: '544279',
+      offerPrice: 'Rs.352',
+      listingPrice: 'Rs.310.55',
+      gainPct: -11.78,
+      premium: '-11.78% Discount',
+      dates: '30-Oct-2024',
+      subscription: '1.83x',
+      issueSize: 'Rs.555 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Deepak Builders & Engineers',
+      symbol: 'DEEPAK',
+      nseSymbol: 'DEEPAK',
+      bseCode: '544278',
+      offerPrice: 'Rs.203',
+      listingPrice: 'Rs.198.50',
+      gainPct: -2.22,
+      premium: '-2.22% Discount',
+      dates: '28-Oct-2024',
+      subscription: '41.54x',
+      issueSize: 'Rs.260 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Hyundai Motor India Limited',
+      symbol: 'HYUNDAI',
+      nseSymbol: 'HYUNDAI',
+      bseCode: '544274',
+      offerPrice: 'Rs.1,960',
+      listingPrice: 'Rs.1,934',
+      gainPct: -1.33,
+      premium: '-1.33% Discount',
+      dates: '22-Oct-2024',
+      subscription: '2.37x',
+      issueSize: 'Rs.27,870 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Garuda Construction and Engg',
+      symbol: 'GARUDA',
+      nseSymbol: 'GARUDA',
+      bseCode: '544272',
+      offerPrice: 'Rs.95',
+      listingPrice: 'Rs.105',
+      gainPct: 10.53,
+      premium: '+10.53% Gain',
+      dates: '15-Oct-2024',
+      subscription: '7.55x',
+      issueSize: 'Rs.264 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Afcons Infrastructure Limited',
+      symbol: 'AFCONS',
+      nseSymbol: 'AFCONS',
+      bseCode: '544280',
+      offerPrice: 'Rs.463',
+      listingPrice: 'Rs.426',
+      gainPct: -8.00,
+      premium: '-8.00% Discount',
+      dates: '04-Nov-2024',
+      subscription: '2.70x',
+      issueSize: 'Rs.5,430 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Swiggy Limited',
+      symbol: 'SWIGGY',
+      nseSymbol: 'SWIGGY',
+      bseCode: '544285',
+      offerPrice: 'Rs.390',
+      listingPrice: 'Rs.420',
+      gainPct: 7.69,
+      premium: '+7.69% Gain',
+      dates: '13-Nov-2024',
+      subscription: '3.59x',
+      issueSize: 'Rs.11,327 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'KRN Heat Exchanger & Refrigeration',
+      symbol: 'KRN',
+      nseSymbol: 'KRN',
+      bseCode: '544265',
+      offerPrice: 'Rs.220',
+      listingPrice: 'Rs.470',
+      gainPct: 113.64,
+      premium: '+113.64% Gain',
+      dates: '03-Oct-2024',
+      subscription: '214.4x',
+      issueSize: 'Rs.342 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Northern Arc Capital Limited',
+      symbol: 'NORTHARC',
+      nseSymbol: 'NORTHARC',
+      bseCode: '544258',
+      offerPrice: 'Rs.263',
+      listingPrice: 'Rs.351',
+      gainPct: 33.46,
+      premium: '+33.46% Gain',
+      dates: '24-Sep-2024',
+      subscription: '117.2x',
+      issueSize: 'Rs.777 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Arkade Developers Limited',
+      symbol: 'ARKADE',
+      nseSymbol: 'ARKADE',
+      bseCode: '544259',
+      offerPrice: 'Rs.128',
+      listingPrice: 'Rs.175.90',
+      gainPct: 37.42,
+      premium: '+37.42% Gain',
+      dates: '24-Sep-2024',
+      subscription: '113.5x',
+      issueSize: 'Rs.410 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Western Carriers (India)',
+      symbol: 'WESTERN',
+      nseSymbol: 'WESTERN',
+      bseCode: '544260',
+      offerPrice: 'Rs.172',
+      listingPrice: 'Rs.170',
+      gainPct: -1.16,
+      premium: '-1.16% Discount',
+      dates: '24-Sep-2024',
+      subscription: '30.57x',
+      issueSize: 'Rs.493 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Bajaj Housing Finance Limited',
+      symbol: 'BAJAJHFL',
+      nseSymbol: 'BAJAJHFL',
+      bseCode: '544252',
+      offerPrice: 'Rs.70',
+      listingPrice: 'Rs.150',
+      gainPct: 114.29,
+      premium: '+114.29% Gain',
+      dates: '16-Sep-2024',
+      subscription: '67.43x',
+      issueSize: 'Rs.6,560 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Premier Energies Limited',
+      symbol: 'PREMIERENE',
+      nseSymbol: 'PREMIERENE',
+      bseCode: '544238',
+      offerPrice: 'Rs.450',
+      listingPrice: 'Rs.991',
+      gainPct: 120.22,
+      premium: '+120.22% Gain',
+      dates: '03-Sep-2024',
+      subscription: '75.00x',
+      issueSize: 'Rs.2,830 Cr',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    // --- SME RECENT LISTINGS ---
+    {
+      name: 'Danish Power Limited',
+      symbol: 'DANISH',
+      nseSymbol: 'DANISH',
+      bseCode: '',
+      offerPrice: 'Rs.380',
+      listingPrice: 'Rs.980',
+      gainPct: 157.89,
+      premium: '+157.89% Gain',
+      dates: '29-Oct-2024',
+      subscription: '126.18x',
+      issueSize: 'Rs.198 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'United Heat Transfer Limited',
+      symbol: 'UNITEDHEAT',
+      nseSymbol: 'UNITEDHEAT',
+      bseCode: '',
+      offerPrice: 'Rs.59',
+      listingPrice: 'Rs.61',
+      gainPct: 3.39,
+      premium: '+3.39% Gain',
+      dates: '29-Oct-2024',
+      subscription: '83.70x',
+      issueSize: 'Rs.30 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'OBSC Perfection Limited',
+      symbol: 'OBSC',
+      nseSymbol: 'OBSC',
+      bseCode: '',
+      offerPrice: 'Rs.100',
+      listingPrice: 'Rs.155',
+      gainPct: 55.00,
+      premium: '+55.00% Gain',
+      dates: '29-Oct-2024',
+      subscription: '16.52x',
+      issueSize: 'Rs.66 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Premium Plast Limited',
+      symbol: 'PREMIUM',
+      nseSymbol: 'PREMIUM',
+      bseCode: '',
+      offerPrice: 'Rs.49',
+      listingPrice: 'Rs.65',
+      gainPct: 32.65,
+      premium: '+32.65% Gain',
+      dates: '28-Oct-2024',
+      subscription: '38.61x',
+      issueSize: 'Rs.26 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Freshara Agro Exports Limited',
+      symbol: 'FRESHARA',
+      nseSymbol: 'FRESHARA',
+      bseCode: '',
+      offerPrice: 'Rs.116',
+      listingPrice: 'Rs.145',
+      gainPct: 25.00,
+      premium: '+25.00% Gain',
+      dates: '24-Oct-2024',
+      subscription: '236.80x',
+      issueSize: 'Rs.75 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Lakshya Powertech Limited',
+      symbol: 'LAKSHYA',
+      nseSymbol: 'LAKSHYA',
+      bseCode: '',
+      offerPrice: 'Rs.180',
+      listingPrice: 'Rs.342',
+      gainPct: 90.00,
+      premium: '+90.00% Gain',
+      dates: '23-Oct-2024',
+      subscription: '573.77x',
+      issueSize: 'Rs.50 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Pranik Logistics Limited',
+      symbol: 'PRANIK',
+      nseSymbol: 'PRANIK',
+      bseCode: '',
+      offerPrice: 'Rs.77',
+      listingPrice: 'Rs.77',
+      gainPct: 0.00,
+      premium: '0.00% At Par',
+      dates: '17-Oct-2024',
+      subscription: '4.82x',
+      issueSize: 'Rs.22 Cr',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Shiv Texchem Limited',
+      symbol: 'SHIVTEX',
+      nseSymbol: '',
+      bseCode: '544268',
+      offerPrice: 'Rs.166',
+      listingPrice: 'Rs.225',
+      gainPct: 35.54,
+      premium: '+35.54% Gain',
+      dates: '15-Oct-2024',
+      subscription: '156.55x',
+      issueSize: 'Rs.101 Cr',
+      segment: 'SME',
+      exchange: 'BSE SME'
+    },
+    {
+      name: 'Khyati Global Ventures',
+      symbol: 'KHYATI',
+      nseSymbol: '',
+      bseCode: '544267',
+      offerPrice: 'Rs.99',
+      listingPrice: 'Rs.100',
+      gainPct: 1.01,
+      premium: '+1.01% Gain',
+      dates: '11-Oct-2024',
+      subscription: '8.82x',
+      issueSize: 'Rs.26 Cr',
+      segment: 'SME',
+      exchange: 'BSE SME'
+    }
+  ],
+  activeIpos: [
+    // --- MAINBOARD ACTIVE & UPCOMING ---
+    {
+      name: 'NTPC Green Energy Limited',
+      symbol: 'NTPCGREEN',
+      price: 'Rs.102 - 108',
+      lot: '138 Shares',
+      dates: 'Nov 19 - Nov 22, 2024',
+      size: 'Rs.10,000 Cr',
+      sub: '2.42x',
+      status: 'Live',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Zinka Logistics (BlackBuck)',
+      symbol: 'BLACKBUCK',
+      price: 'Rs.259 - 273',
+      lot: '54 Shares',
+      dates: 'Nov 13 - Nov 18, 2024',
+      size: 'Rs.1,115 Cr',
+      sub: '1.86x',
+      status: 'Allotment',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'ACME Solar Holdings Limited',
+      symbol: 'ACMESOLAR',
+      price: 'Rs.275 - 289',
+      lot: '51 Shares',
+      dates: 'Nov 06 - Nov 08, 2024',
+      size: 'Rs.2,900 Cr',
+      sub: '2.89x',
+      status: 'Allotment',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    {
+      name: 'Sagility India Limited',
+      symbol: 'SAGILITY',
+      price: 'Rs.28 - 30',
+      lot: '500 Shares',
+      dates: 'Nov 05 - Nov 07, 2024',
+      size: 'Rs.2,106 Cr',
+      sub: '3.20x',
+      status: 'Allotment',
+      segment: 'Mainboard',
+      exchange: 'NSE / BSE'
+    },
+    // --- SME ACTIVE & UPCOMING ---
+    {
+      name: 'Usha Financial Services Limited',
+      symbol: 'USHAFIN',
+      price: 'Rs.160 - 168',
+      lot: '800 Shares',
+      dates: 'Oct 24 - Oct 28, 2024',
+      size: 'Rs.98.45 Cr',
+      sub: '19.42x',
+      status: 'Allotment',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'C2C Advanced Systems Limited',
+      symbol: 'C2CADV',
+      price: 'Rs.214 - 226',
+      lot: '600 Shares',
+      dates: 'Nov 22 - Nov 26, 2024',
+      size: 'Rs.99.07 Cr',
+      sub: '125.40x',
+      status: 'Upcoming',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Rajputana Biodiesel Limited',
+      symbol: 'RAJPUTANA',
+      price: 'Rs.123 - 130',
+      lot: '1000 Shares',
+      dates: 'Nov 26 - Nov 28, 2024',
+      size: 'Rs.24.70 Cr',
+      sub: '65.20x',
+      status: 'Upcoming',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    },
+    {
+      name: 'Apex Ecotech Limited',
+      symbol: 'APEXECO',
+      price: 'Rs.71 - 73',
+      lot: '1600 Shares',
+      dates: 'Nov 27 - Nov 29, 2024',
+      size: 'Rs.25.54 Cr',
+      sub: '42.10x',
+      status: 'Upcoming',
+      segment: 'SME',
+      exchange: 'NSE SME'
+    }
+  ]
 };
 
-var MARKET_SCHOOL = {
-  technical: {
-    icon: '⚡', color: '#38bdf8',
-    label: { hi: 'Technical Analysis', gu: 'Technical Analysis', en: 'Technical Analysis' },
-    topics: {
-      rsi: {
-        label: 'RSI (Relative Strength Index)',
-        hi: { what: 'RSI एक momentum indicator है जो 0–100 के बीच होता है। यह बताता है कि stock overbought है या oversold।', formula: 'RSI = 100 − [100 ÷ (1 + RS)] जहाँ RS = Average Gain ÷ Average Loss (14 दिन)', levels: '< 30 = Oversold (खरीदने का मौका) | 30–70 = Normal | > 70 = Overbought (बेचने का मौका)', tip: '💡 जब RSI 30 से नीचे हो और कोई strong fundamental stock हो, तो यह एक अच्छा entry point हो सकता है।', example: 'RELIANCE का RSI 28 है — इसका मतलब stock oversold zone में है, reversal आ सकता है।' },
-        gu: { what: 'RSI એ 0–100 ની વચ્ચે રહેતો momentum indicator છે. Stock overbought છે કે oversold — આ બતાવે.', formula: 'RSI = 100 − [100 ÷ (1 + RS)] જ્યાં RS = Avg Gain ÷ Avg Loss (14 દિવસ)', levels: '< 30 = Oversold (ખરીદીની તક) | 30–70 = Normal | > 70 = Overbought (સાવધ)', tip: '💡 RSI 30 ની નીચે હોય ને stock fundamentally strong હોય, તો entry લઈ શકાય.', example: 'RELIANCE નો RSI 28 છે — Stock oversold zone મા છે, reversal શક્ય છે.' },
-        en: { what: 'RSI is a momentum indicator ranging 0–100. It tells if a stock is overbought or oversold.', formula: 'RSI = 100 − [100 ÷ (1 + RS)] where RS = Avg Gain ÷ Avg Loss (14 days)', levels: '< 30 = Oversold (buying opportunity) | 30–70 = Normal | > 70 = Overbought (caution)', tip: '💡 When RSI < 30 and stock has strong fundamentals, it can be a great entry point.', example: 'RELIANCE RSI is 28 — stock is in oversold zone, reversal likely.' }
-      },
-      macd: {
-        label: 'MACD',
-        hi: { what: 'MACD (Moving Average Convergence Divergence) दो EMAs का फर्क है। Trend और momentum दोनों दिखाता है।', formula: 'MACD Line = EMA(12) − EMA(26) | Signal Line = EMA(9) of MACD', levels: 'MACD > Signal = Bullish | MACD < Signal = Bearish | Histogram = दोनों का फर्क', tip: '💡 जब MACD Line, Signal Line को ऊपर से cross करे — यह Bullish Crossover है। खरीदने का संकेत।', example: 'MACD: 2.5, Signal: 1.8 → MACD > Signal → Bullish trend' },
-        gu: { what: 'MACD બે EMAs નો ફરક છે. Trend અને momentum બંને બતાવે છે.', formula: 'MACD Line = EMA(12) − EMA(26) | Signal Line = EMA(9) of MACD', levels: 'MACD > Signal = Bullish | MACD < Signal = Bearish', tip: '💡 MACD Line, Signal Line ને ઉપરથી cross કરે — Bullish Crossover — ખરીદીનો સંકેત.', example: 'MACD: 2.5, Signal: 1.8 → MACD > Signal → Bullish trend' },
-        en: { what: 'MACD is the difference between two EMAs. Shows both trend and momentum.', formula: 'MACD Line = EMA(12) − EMA(26) | Signal Line = EMA(9) of MACD', levels: 'MACD > Signal = Bullish | MACD < Signal = Bearish | Histogram = difference', tip: '💡 When MACD crosses above Signal Line — Bullish Crossover — buy signal.', example: 'MACD: 2.5, Signal: 1.8 → MACD > Signal → Bullish trend' }
-      },
-      ma: {
-        label: 'MA / DMA (Moving Average)',
-        hi: { what: 'Moving Average (MA) एक निश्चित दिनों के closing prices का औसत है। Trend की दिशा समझने के लिए।', formula: 'MA20 = Last 20 days close का average | MA50 = Last 50 days | MA200 = Last 200 days', levels: 'Price > MA200 = Long-term Bullish | Price < MA200 = Bearish | Golden Cross (MA50>MA200) = Strong Bull', tip: '💡 MA20 short-term trend, MA50 medium-term, MA200 long-term trend बताता है। Price अगर तीनों से ऊपर हो — very bullish।', example: 'Price: ₹500, MA20: ₹480, MA50: ₹460 → Price above all MAs → Bullish' },
-        gu: { what: 'Moving Average (MA) ચોક્કસ દિવસોના closing prices નો સરેરાશ છે. Trend ની દિશા સમજવા.', formula: 'MA20 = છેલ્લા 20 દિવસ | MA50 = 50 દિવસ | MA200 = 200 દિવસ', levels: 'Price > MA200 = Long-term Bullish | Golden Cross (MA50>MA200) = Strong Bull', tip: '💡 MA20 short-term, MA50 medium-term, MA200 long-term trend. Price ત્રણેથી ઉપર = very bullish.', example: 'Price: ₹500, MA20: ₹480 → Price above MA → Bullish' },
-        en: { what: 'Moving Average (MA) is the average of closing prices over N days. Used to identify trend direction.', formula: 'MA20 = Last 20 days avg | MA50 = 50 days | MA200 = 200 days', levels: 'Price > MA200 = Long-term Bullish | Golden Cross (MA50>MA200) = Strong Bull', tip: '💡 MA20=short-term, MA50=medium, MA200=long-term. Price above all three = very bullish.', example: 'Price: ₹500, MA20: ₹480 → Price above MA → Bullish' }
-      },
-      bollinger: {
-        label: 'Bollinger Bands (BB)',
-        hi: { what: 'Bollinger Bands 3 lines हैं — Middle (MA20), Upper Band, Lower Band। Volatility measure करने के लिए।', formula: 'Middle = MA20 | Upper = MA20 + 2×SD | Lower = MA20 − 2×SD', levels: 'Price touches Upper Band = Overbought | Price touches Lower Band = Oversold | Bands squeeze = Big move आने वाला', tip: '💡 जब Bands बहुत narrow हों (squeeze) — बड़ा move आने वाला है। Direction MACD/RSI से confirm करो।', example: 'Price Lower Band को touch कर रहा है + RSI < 30 → Strong buy signal' },
-        gu: { what: 'Bollinger Bands 3 lines છે — Middle (MA20), Upper, Lower. Volatility measure કરવા.', formula: 'Middle = MA20 | Upper = MA20 + 2×SD | Lower = MA20 − 2×SD', levels: 'Upper touch = Overbought | Lower touch = Oversold | Squeeze = મોટો move આવવાનો', tip: '💡 Bands ખૂબ narrow (squeeze) — મોટો move આવવાનો. Direction MACD/RSI થી confirm કરો.', example: 'Price Lower Band touch + RSI < 30 → Strong buy signal' },
-        en: { what: 'Bollinger Bands are 3 lines — Middle (MA20), Upper Band, Lower Band. Used to measure volatility.', formula: 'Middle = MA20 | Upper = MA20 + 2×SD | Lower = MA20 − 2×SD', levels: 'Upper touch = Overbought | Lower touch = Oversold | Squeeze = Big move incoming', tip: '💡 When Bands squeeze (narrow) — a big move is coming. Confirm direction with MACD/RSI.', example: 'Price touches Lower Band + RSI < 30 → Strong buy signal' }
-      },
-      volume: {
-        label: 'Volume',
-        hi: { what: 'Volume = एक दिन में कितने shares खरीदे-बेचे गए। Price move की ताकत बताता है।', formula: 'Volume Ratio = Today Volume ÷ Average Volume (30 days)', levels: 'Volume > 2x avg + Price Up = Strong Bullish | Volume high + Price Down = Strong Selling | Low volume move = weak signal', tip: '💡 बिना volume के price move पर भरोसा मत करो। High volume = conviction।', example: 'Avg volume: 1L shares, Today: 3L shares + Price +3% → Strong Bullish breakout' },
-        gu: { what: 'Volume = એક દિવસમાં કેટલા shares ખરીદ-વેચ થયા. Price move ની તાકાત બતાવે.', formula: 'Volume Ratio = Today Volume ÷ Average Volume (30 days)', levels: 'Volume > 2x avg + Price Up = Strong Bullish | Volume high + Price Down = Strong Selling', tip: '💡 Volume વગર price move પર ભરોસો ન કરો. High volume = conviction.', example: 'Avg volume: 1L, Today: 3L + Price +3% → Strong Bullish breakout' },
-        en: { what: 'Volume = number of shares traded in a day. Shows the strength behind a price move.', formula: 'Volume Ratio = Today Volume ÷ Average Volume (30 days)', levels: 'Volume > 2x avg + Price Up = Strong Bullish | High volume + Price Down = Strong Selling', tip: '💡 Never trust a price move without volume. High volume = conviction.', example: 'Avg vol: 1L, Today: 3L + Price +3% → Strong Bullish breakout' }
-      },
-      supplydemand: {
-        label: 'Supply & Demand',
-        hi: { what: 'Supply = Sellers | Demand = Buyers। जब Demand > Supply → Price बढ़ता है। जब Supply > Demand → Price गिरता है।', formula: 'Support Zone = जहाँ Demand मजबूत हो (Price बार-बार bounce करे) | Resistance Zone = जहाँ Supply मजबूत हो', levels: 'Price Support तोड़े = Bearish breakout | Price Resistance तोड़े = Bullish breakout', tip: '💡 Support zone के पास Buy करो, Resistance zone के पास Sell करो। Volume से confirm करो।', example: '₹500 पर Stock 3 बार bounce हुआ → ₹500 = Strong Support Zone' },
-        gu: { what: 'Supply = Sellers | Demand = Buyers. Demand > Supply → Price વધે. Supply > Demand → Price ઘટે.', formula: 'Support Zone = જ્યાં Demand strong (Price bar-bar bounce) | Resistance = જ્યાં Supply strong', levels: 'Price Support તોડે = Bearish | Price Resistance તોડે = Bullish breakout', tip: '💡 Support zone પાસે Buy, Resistance પાસે Sell. Volume થી confirm કરો.', example: '₹500 પર Stock 3 વાર bounce → ₹500 = Strong Support Zone' },
-        en: { what: 'Supply = Sellers | Demand = Buyers. When Demand > Supply → Price rises. When Supply > Demand → Price falls.', formula: 'Support = where Demand is strong (price bounces repeatedly) | Resistance = where Supply is strong', levels: 'Price breaks Support = Bearish | Price breaks Resistance = Bullish breakout', tip: '💡 Buy near Support zones, Sell near Resistance. Always confirm with Volume.', example: 'Stock bounced 3 times at ₹500 → ₹500 = Strong Support Zone' }
-      }
-    }
-  },
-  fundamental: {
-    icon: '📊', color: '#fb923c',
-    label: { hi: 'Fundamental Analysis', gu: 'Fundamental Analysis', en: 'Fundamental Analysis' },
-    topics: {
-      pe: {
-        label: 'P/E Ratio',
-        hi: { what: 'P/E Ratio बताता है कि ₹1 कमाने के लिए आप कितने रुपये दे रहे हैं।', formula: 'P/E = Share Price ÷ EPS (Earnings Per Share)', levels: '< 15 = Cheap | 15–30 = Fair | > 30 = Expensive (लेकिन growth stocks के लिए high P/E normal)', tip: '💡 अकेले P/E से निर्णय मत लो। Industry average से compare करो।', example: 'Price ₹300, EPS ₹15 → P/E = 20 → Fair valuation' },
-        gu: { what: 'P/E Ratio બતાવે છે ₹1 કમાવા માટે કેટલા રૂપિયા ચૂકવો છો.', formula: 'P/E = Share Price ÷ EPS', levels: '< 15 = સસ્તો | 15–30 = ઠીક | > 30 = મોંઘો', tip: '💡 P/E એકલું ન જુઓ. Industry average સાથે compare કરો.', example: 'Price ₹300, EPS ₹15 → P/E = 20 → Fair valuation' },
-        en: { what: 'P/E Ratio tells how much you pay for ₹1 of earnings.', formula: 'P/E = Share Price ÷ EPS', levels: '< 15 = Cheap | 15–30 = Fair | > 30 = Expensive', tip: '💡 Never use P/E alone. Compare with industry average.', example: 'Price ₹300, EPS ₹15 → P/E = 20 → Fair valuation' }
-      },
-      eps: {
-        label: 'EPS (Earnings Per Share)',
-        hi: { what: 'EPS = प्रत्येक Share पर कंपनी ने कितना मुनाफा कमाया। जितना बढ़ता EPS, उतनी healthy company।', formula: 'EPS = Net Profit ÷ Total Shares Outstanding', levels: '> 0 = Profitable | बढ़ता EPS = Healthy growth | गिरता EPS = Warning sign', tip: '💡 पिछले 5 साल का EPS growth देखो। Consistent growth = quality company।', example: 'Net Profit: ₹1000 Cr, Shares: 100 Cr → EPS = ₹10' },
-        gu: { what: 'EPS = દરેક Share પર કેટલો નફો. વધતો EPS = healthy company.', formula: 'EPS = Net Profit ÷ Total Shares', levels: '> 0 = Profitable | વધતો = Healthy | ઘટતો = Warning', tip: '💡 છેલ્લા 5 વર્ષનો EPS growth જુઓ. Consistent growth = quality.', example: 'Net Profit ₹1000 Cr, Shares 100 Cr → EPS = ₹10' },
-        en: { what: 'EPS = profit earned per share. Growing EPS = healthy company.', formula: 'EPS = Net Profit ÷ Total Shares Outstanding', levels: '> 0 = Profitable | Growing = Healthy | Declining = Warning', tip: '💡 Check 5-year EPS growth trend. Consistent growth = quality company.', example: 'Net Profit ₹1000 Cr, Shares 100 Cr → EPS = ₹10' }
-      },
-      roe: {
-        label: 'ROE (Return on Equity)',
-        hi: { what: 'ROE = कंपनी अपने shareholders के पैसे पर कितना return दे रही है।', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', levels: '≥ 15% = Good | 8–15% = Average | < 8% = Weak', tip: '💡 ROE > 15% वाली companies Warren Buffett को पसंद हैं।', example: 'Net Profit ₹500 Cr, Equity ₹2500 Cr → ROE = 20% → Excellent' },
-        gu: { what: 'ROE = Shareholders ના પૈસા પર company કેટલો return આપે છે.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', levels: '≥ 15% = સારું | 8–15% = Average | < 8% = નબળું', tip: '💡 ROE > 15% ની companies Warren Buffett ને ગમે છે.', example: 'Net Profit ₹500 Cr, Equity ₹2500 Cr → ROE = 20% → Excellent' },
-        en: { what: 'ROE = how much return the company generates on shareholders\'s money.', formula: 'ROE = (Net Profit ÷ Total Equity) × 100', levels: '≥ 15% = Good | 8–15% = Average | < 8% = Weak', tip: '💡 Warren Buffett loves companies with ROE > 15%.', example: 'Net Profit ₹500 Cr, Equity ₹2500 Cr → ROE = 20% → Excellent' }
-      },
-      roce: {
-        label: 'ROCE (Return on Capital Employed)',
-        hi: { what: 'ROCE = कंपनी अपनी कुल deployed capital पर कितना return दे रही है। ROE से ज्यादा complete picture।', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', levels: '≥ 15% = Good | 8–15% = Average | < 8% = Weak', tip: '💡 ROCE > Cost of Capital होना जरूरी है। नहीं तो company value destroy कर रही है।', example: 'EBIT ₹300 Cr, Capital ₹1500 Cr → ROCE = 20%' },
-        gu: { what: 'ROCE = company total capital પર કેટલો return. ROE કરતાં complete picture.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', levels: '≥ 15% = સારું | 8–15% = Average | < 8% = નબળું', tip: '💡 ROCE > Cost of Capital હોવો જ જોઈએ.', example: 'EBIT ₹300 Cr, Capital ₹1500 Cr → ROCE = 20%' },
-        en: { what: 'ROCE = return on total capital deployed. More complete picture than ROE.', formula: 'ROCE = (EBIT ÷ Capital Employed) × 100', levels: '≥ 15% = Good | 8–15% = Average | < 8% = Weak', tip: '💡 ROCE must be > Cost of Capital, otherwise company destroys value.', example: 'EBIT ₹300 Cr, Capital ₹1500 Cr → ROCE = 20%' }
-      },
-      debtequity: {
-        label: 'Debt-to-Equity (D/E)',
-        hi: { what: 'D/E Ratio = कंपनी ने अपनी Equity के मुकाबले कितना Debt लिया है।', formula: 'D/E = Total Debt ÷ Total Equity', levels: '< 0.5 = Low debt (safe) | 0.5–1 = Moderate | > 1 = High debt (risky)', tip: '💡 Capital intensive industries (infra, steel) में high D/E normal होता है। Sector-wise compare करो।', example: 'Debt ₹500 Cr, Equity ₹1000 Cr → D/E = 0.5 → Comfortable' },
-        gu: { what: 'D/E = Company equity સામે કેટલું debt.', formula: 'D/E = Total Debt ÷ Total Equity', levels: '< 0.5 = Safe | 0.5–1 = Moderate | > 1 = High risk', tip: '💡 Capital intensive sectors (infra, steel) મા high D/E normal. Sector-wise compare.', example: 'Debt ₹500 Cr, Equity ₹1000 Cr → D/E = 0.5 → Comfortable' },
-        en: { what: 'D/E Ratio = how much debt the company has vs its equity.', formula: 'D/E = Total Debt ÷ Total Equity', levels: '< 0.5 = Safe | 0.5–1 = Moderate | > 1 = High risk', tip: '💡 Capital intensive industries have higher D/E — always compare within sector.', example: 'Debt ₹500 Cr, Equity ₹1000 Cr → D/E = 0.5 → Comfortable' }
-      }
-    }
-  },
-  candles: {
-    icon: '🕯️', color: '#a78bfa',
-    label: { hi: 'Candlestick Patterns', gu: 'Candlestick Patterns', en: 'Candlestick Patterns' },
-    topics: {
-      basics: {
-        label: 'Candlestick Basics', svg: 'basics',
-        hi: { what: 'Candlestick chart ek din का OHLC (Open, High, Low, Close) data show करता है। Body + Wick।', formula: 'Green/White candle = Close > Open (Bullish) | Red/Black candle = Close < Open (Bearish)', levels: 'Long body = Strong move | Short body = Indecision | Long wick = Rejection of price level', tip: '💡 हर candle एक कहानी बताती है — Open कहाँ था, High-Low range क्या था, Close कहाँ था।', example: 'Open ₹100, High ₹110, Low ₹95, Close ₹108 → Green candle, bullish day' },
-        gu: { what: 'Candlestick chart એક દિવસ ની OHLC data show કરે. Body + Wick.', formula: 'Green candle = Close > Open (Bullish) | Red candle = Close < Open (Bearish)', levels: 'Long body = Strong move | Short body = Indecision | Long wick = Price rejection', tip: '💡 દરેક candle એક story છે — Open, High, Low, Close ની.', example: 'Open ₹100, High ₹110, Low ₹95, Close ₹108 → Green candle' },
-        en: { what: 'Candlestick shows OHLC (Open, High, Low, Close) for one day. Has Body + Wick.', formula: 'Green candle = Close > Open (Bullish) | Red candle = Close < Open (Bearish)', levels: 'Long body = Strong move | Short body = Indecision | Long wick = Price rejection', tip: '💡 Every candle tells a story — where price opened, went, and closed.', example: 'Open ₹100, High ₹110, Low ₹95, Close ₹108 → Green bullish candle' }
-      },
-      doji: {
-        label: 'Doji', svg: 'doji',
-        hi: { what: 'Doji तब बनता है जब Open और Close लगभग बराबर हों। Indecision — buyers और sellers बराबर ताकत में।', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend में Doji = Reversal का signal | Downtrend में Doji = Possible reversal up', tip: '💡 Doji को अकेले मत देखो — अगले candle की confirmation का इंतज़ार करो।', example: 'Stock लगातार बढ़ रहा था, फिर Doji बना → अगला दिन Red candle → Trend reversal' },
-        gu: { what: 'Doji ત્યારે બને જ્યારે Open ≈ Close. Indecision — buyers-sellers સરખી ताकत.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Uptrend mā Doji = Reversal signal | Downtrend mā Doji = Possible bounce', tip: '💡 Doji ની confirmation next candle thī levo.', example: 'Stock વધી રહ્યો, Doji બન્યો → next day Red → Trend reversal' },
-        en: { what: 'Doji forms when Open ≈ Close. Shows indecision between buyers and sellers.', formula: 'Open ≈ Close | Long upper + lower wicks', levels: 'Doji in Uptrend = Reversal signal | Doji in Downtrend = Possible bounce', tip: '💡 Never trade Doji alone — wait for next candle confirmation.', example: 'Stock was rising, Doji formed → next day Red candle → Trend reversal' }
-      },
-      hammer: {
-        label: 'Hammer & Hanging Man', svg: 'hammer',
-        hi: { what: 'Hammer: Downtrend के बाद बनता है — छोटी body, लंबी lower wick। Bulls ने Bears को हराया। Bullish reversal।', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Downtrend में Hammer = Strong Bullish reversal | Uptrend में same shape = Hanging Man (Bearish)', tip: '💡 Hammer के बाद अगला दिन Green candle आए तो entry लो। Stop loss: Hammer का low।', example: 'Stock गिर रहा था → Hammer बना at ₹200 → अगला दिन ₹215 open → Entry!' },
-        gu: { what: 'Hammer: Downtrend પછી — નાની body, લાંબી lower wick. Bulls એ Bears ને હરાવ્યા.', formula: 'Lower wick ≥ 2× body | Little/no upper wick', levels: 'Downtrend mā Hammer = Bullish reversal | Uptrend mā same = Hanging Man (Bearish)', tip: '💡 Hammer પછી next day Green candle → Entry. Stop loss: Hammer low.', example: 'Stock ઘટ્યો → Hammer ₹200 → next day ₹215 → Entry!' },
-        en: { what: 'Hammer: forms after downtrend — small body, long lower wick. Bulls beat Bears. Bullish reversal.', formula: 'Lower wick ≥ 2× body | Little or no upper wick', levels: 'Hammer in Downtrend = Bullish reversal | Same in Uptrend = Hanging Man (Bearish)', tip: '💡 After Hammer, next green candle = entry. Stop loss at Hammer\'s low.', example: 'Stock fell → Hammer at ₹200 → next day opens ₹215 → Entry!' }
-      },
-      engulfing: {
-        label: 'Engulfing Pattern', svg: 'engulfing',
-        hi: { what: 'Bullish Engulfing: छोटी Red candle के बाद बड़ी Green candle जो उसे पूरा ढक ले। Strong reversal।', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Support zone पर Bullish Engulfing = Very Strong Buy | Resistance पर Bearish Engulfing = Strong Sell', tip: '💡 Volume साथ में high हो तो signal और strong होता है।', example: 'Red candle: ₹100→₹95 | Green candle: ₹94→₹103 → Bullish Engulfing → Buy!' },
-        gu: { what: 'Bullish Engulfing: નાની Red candle પછી મોટી Green candle જે તેને ઢઢ. Strong reversal.', formula: 'Bullish: Green body > prev Red | Bearish: Red body > prev Green', levels: 'Support zone + Engulfing = Very Strong Buy signal', tip: '💡 Volume high હોય તો signal stronger.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' },
-        en: { what: 'Bullish Engulfing: large Green candle completely covers previous Red candle. Strong reversal.', formula: 'Bullish: Green body > prev Red body | Bearish: Red body > prev Green body', levels: 'Bullish Engulfing at support = Very Strong Buy signal', tip: '💡 High volume with engulfing = very strong signal.', example: 'Red: ₹100→₹95 | Green: ₹94→₹103 → Bullish Engulfing → Buy!' }
-      }
-    }
-  },
-  indices: {
-    icon: '📈', color: '#34d399',
-    label: { hi: 'Indices & Market', gu: 'Indices & Market', en: 'Indices & Market' },
-    topics: {
-      nifty: {
-        label: 'Nifty 50 & Sensex',
-        hi: { what: 'Nifty 50 = NSE के top 50 companies का index। Sensex = BSE के top 30। पूरे market की health बताते हैं।', formula: 'Index = Weighted average of market cap of constituent stocks', levels: 'Nifty > previous high = Market bullish | Nifty < 200 DMA = Market bearish zone', tip: '💡 Individual stocks देखने से पहले overall market (Nifty) का trend देखो।', example: 'Nifty 22000 से 23000 पर = 4.5% rally → Overall bullish market' },
-        gu: { what: 'Nifty 50 = NSE ની top 50 companies. Sensex = BSE ની top 30. Market ની health.', formula: 'Index = Market cap weighted average', levels: 'Nifty > previous high = Bullish | Nifty < 200 DMA = Bearish zone', tip: '💡 Individual stocks પહેલા overall market (Nifty) trend જુઓ.', example: 'Nifty 22000 → 23000 = 4.5% rally → Bullish market' },
-        en: { what: 'Nifty 50 = index of top 50 NSE companies. Sensex = top 30 BSE. Shows overall market health.', formula: 'Index = Weighted average of constituent market caps', levels: 'Nifty > prev high = Bullish | Nifty < 200 DMA = Bearish', tip: '💡 Always check Nifty trend before picking individual stocks.', example: 'Nifty 22000 → 23000 = 4.5% rally → Bullish market' }
-      },
-      sectors: {
-        label: 'Sectors & Rotation',
-        hi: { what: 'Stock market अलग-अलग sectors में बँटा है — IT, Banking, Pharma, Auto, FMCG आदि। हर cycle में अलग sector outperform करता है।', formula: 'Sector Rotation: Economy cycle के हिसाब से पैसा एक sector से दूसरे में जाता है।', levels: 'Recovery: Auto, Banking | Growth: IT, Capital Goods | Slowdown: FMCG, Pharma | Recession: Gold, Utilities', tip: '💡 जो sector अभी strong है उसमें जाओ — trend is your friend।', example: 'RBI rate cut → Banking sector rally → Bank Nifty outperform' },
-        gu: { what: 'Market અલગ sectors મા — IT, Banking, Pharma, Auto, FMCG. દરેક cycle mā અલગ sector outperform.', formula: 'Sector Rotation: Economy cycle અનુસાર પૈસો sector change કરે.', levels: 'Recovery: Auto, Banking | Growth: IT | Slowdown: FMCG, Pharma', tip: '💡 Je sector strong che tyā jāv — trend is your friend.', example: 'RBI rate cut → Banking rally → Bank Nifty outperform' },
-        en: { what: 'Market is divided into sectors — IT, Banking, Pharma, Auto, FMCG etc. Different sectors outperform in different economic cycles.', formula: 'Sector Rotation: money flows from one sector to another based on economy cycle.', levels: 'Recovery: Auto/Banking | Growth: IT | Slowdown: FMCG/Pharma | Recession: Gold', tip: '💡 Follow the strongest sector — trend is your friend.', example: 'RBI rate cut → Banking sector rallies → Bank Nifty outperforms' }
-      },
-      fii_dii: {
-        label: 'FII & DII',
-        hi: { what: 'FII (Foreign Institutional Investors) = विदेशी संस्थागत निवेशक। DII = घरेलू (MF, LIC)। इनकी buying-selling market move करती है।', formula: 'FII Buy > FII Sell = Net Inflow (bullish) | FII Sell > Buy = Net Outflow (bearish)', levels: 'FII strong buying = Market rally likely | FII selling + DII buying = Market may hold', tip: '💡 FII data daily NSE website पर आता है। DII counterbalance करते हैं।', example: 'FII ने ₹5000 Cr खरीदा → Market 1% ऊपर' },
-        gu: { what: 'FII = Foreign Institutional Investors. DII = Domestic (MF, LIC). એમની buying-selling market move કરે.', formula: 'FII Buy > Sell = Net Inflow (bullish) | FII Sell > Buy = Outflow (bearish)', levels: 'FII buying = Rally likely | FII selling + DII buying = Market may hold', tip: '💡 FII data daily NSE website par malshe.', example: 'FII ₹5000 Cr kharidhyu → Market 1% upar' },
-        en: { what: 'FII = Foreign Institutional Investors. DII = Domestic (MF, LIC). Their buying/selling moves the market.', formula: 'FII Buy > Sell = Net Inflow (bullish) | FII Sell > Buy = Outflow (bearish)', levels: 'Strong FII buying = Rally likely | FII selling + DII buying = Market may hold', tip: '💡 Check daily FII/DII data on NSE website.', example: 'FII bought ₹5000 Cr → Market up 1%' }
-      }
+async function renderMarketFlows() {
+  const container = document.getElementById('marketFlowContent');
+  if (!container) return;
+
+  let data = _cachedFlowData || DEFAULT_FLOW_DATA;
+  if (!_cachedFlowData && window.db) {
+    try {
+      const [snapFlow, snapIpo] = await Promise.all([
+        window.db.collection('market_stats').doc('fiidii').get().catch(() => null),
+        window.db.collection('market_stats').doc('ipos').get().catch(() => null)
+      ]);
+      const flowData = snapFlow && snapFlow.exists ? snapFlow.data() : {};
+      const ipoData = snapIpo && snapIpo.exists ? snapIpo.data() : {};
+      _cachedFlowData = Object.assign({}, DEFAULT_FLOW_DATA, flowData, ipoData);
+      data = _cachedFlowData;
+    } catch(e) {
+      console.warn('Firebase flow fetch note:', e);
     }
   }
-};
 
-// ======================================
-// MARKET SCHOOL RENDER
-// ======================================
-function renderMarketSchool() {
-  const el = document.getElementById('marketSchoolContent');
-  if (!el) return;
-  const lang = AppState._learnLang;
+  // Calculate segment totals
+  const allRecent = data.recentIpos || [];
+  const allActive = data.activeIpos || [];
+  
+  const mainRecent = allRecent.filter(x => (x.segment || 'Mainboard').toLowerCase() === 'mainboard');
+  const mainActive = allActive.filter(x => (x.segment || 'Mainboard').toLowerCase() === 'mainboard');
+  const smeRecent = allRecent.filter(x => (x.segment || '').toLowerCase() === 'sme');
+  const smeActive = allActive.filter(x => (x.segment || '').toLowerCase() === 'sme');
 
-  if (!AppState._msCategory) {
-    _renderMSHome(el, lang);
-  } else if (!AppState._msTopic) {
-    _renderMSCategory(el, lang);
-  } else {
-    _renderMSTopic(el, lang);
-  }
-}
+  const countMainboardTotal = mainRecent.length + mainActive.length;
+  const countSMETotal = smeRecent.length + smeActive.length;
 
-function _renderMSHome(el, lang) {
-  const cats = Object.keys(MARKET_SCHOOL);
-  let html = `<div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text-muted, #64748b);font-weight:700;letter-spacing:1px;margin-bottom:8px;">SELECT CATEGORY</div>`;
+  const currentSegmentRecent = _activeIPOSegment === 'sme' ? smeRecent : mainRecent;
+  const currentSegmentActive = _activeIPOSegment === 'sme' ? smeActive : mainActive;
 
-  cats.forEach(catKey => {
-    const cat = MARKET_SCHOOL[catKey];
-    const count = Object.keys(cat.topics).length;
-    html += `
-    <div onclick="AppState._msCategory='${catKey}';AppState._msTopic=null;renderMarketSchool();"
-      style="background:var(--bg-card, #0d1f35);border:1px solid var(--border, rgba(255,255,255,0.07));border-left:3px solid ${cat.color};border-radius:12px;padding:14px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all 0.15s;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:26px;">${cat.icon}</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text-primary, #e2e8f0);">${cat.label[lang]||cat.label.en}</div>
-          <div style="font-size:10px;color:var(--text-muted, #64748b);margin-top:2px;">${count} topics</div>
+  const isMainboard = _activeIPOSegment === 'mainboard';
+  const themeColor = isMainboard ? '#38bdf8' : '#f59e0b';
+  const themeRgb = isMainboard ? '56,189,248' : '245,158,11';
+
+  const fii = (data.fiidii && data.fiidii.fii) || { buy: 0, sell: 0, net: 0 };
+  const dii = (data.fiidii && data.fiidii.dii) || { buy: 0, sell: 0, net: 0 };
+  const totalNet = (fii.net || 0) + (dii.net || 0);
+  const netInflowColor = totalNet >= 0 ? '#22c55e' : '#ef4444';
+
+  let html = `
+    <!-- INSTITUTIONAL FLOW CARD (FII / DII) -->
+    <div style="background:linear-gradient(145deg, rgba(13,31,53,0.95) 0%, rgba(8,20,36,0.98) 100%);border:1px solid rgba(56,189,248,0.2);box-shadow:0 8px 32px rgba(0,0,0,0.4);border-radius:16px;padding:16px;margin-bottom:18px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg, #38bdf8, #818cf8, #fb923c);"></div>
+
+      <!-- Card Top Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;">
+            🏛️
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#f8fafc;letter-spacing:0.8px;font-family:'Rajdhani',sans-serif;text-transform:uppercase;">Institutional Activity</div>
+            <div style="font-size:9px;color:#64748b;font-family:'JetBrains Mono',monospace;">FII & DII Cash Flow • Live NSE</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.25);font-family:'JetBrains Mono',monospace;">
+            ● ${(data.fiidii && data.fiidii.date) || 'Live Today'}
+          </span>
         </div>
       </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
+
+      <!-- Dual FII vs DII Cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <!-- FII Card -->
+        <div style="background:rgba(15,23,42,0.65);border:1px solid rgba(56,189,248,0.15);border-radius:12px;padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">FII / FPI</span>
+            <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:${fii.net >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};color:${fii.net >= 0 ? '#22c55e' : '#ef4444'};">
+              ${fii.net >= 0 ? 'BUYER' : 'SELLER'}
+            </span>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:${fii.net >= 0 ? '#22c55e' : '#ef4444'};font-family:'JetBrains Mono',monospace;">
+            ${fii.net >= 0 ? '+' : ''}₹${Number(fii.net || 0).toLocaleString('en-IN', {maximumFractionDigits:2})} <span style="font-size:10px;font-weight:600;color:#94a3b8;">Cr</span>
+          </div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:9px;color:#64748b;font-family:'JetBrains Mono',monospace;border-top:1px solid rgba(255,255,255,0.04);padding-top:4px;">
+            <span>Buy: ₹${Number(fii.buy || 0).toLocaleString('en-IN', {maximumFractionDigits:0})} Cr</span>
+            <span>Sell: ₹${Number(fii.sell || 0).toLocaleString('en-IN', {maximumFractionDigits:0})} Cr</span>
+          </div>
+        </div>
+
+        <!-- DII Card -->
+        <div style="background:rgba(15,23,42,0.65);border:1px solid rgba(251,146,60,0.15);border-radius:12px;padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;color:#fb923c;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">DII (DOMESTIC)</span>
+            <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:${dii.net >= 0 ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'};color:${dii.net >= 0 ? '#22c55e' : '#ef4444'};">
+              ${dii.net >= 0 ? 'BUYER' : 'SELLER'}
+            </span>
+          </div>
+          <div style="font-size:18px;font-weight:800;color:${dii.net >= 0 ? '#22c55e' : '#ef4444'};font-family:'JetBrains Mono',monospace;">
+            ${dii.net >= 0 ? '+' : ''}₹${Number(dii.net || 0).toLocaleString('en-IN', {maximumFractionDigits:2})} <span style="font-size:10px;font-weight:600;color:#94a3b8;">Cr</span>
+          </div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:9px;color:#64748b;font-family:'JetBrains Mono',monospace;border-top:1px solid rgba(255,255,255,0.04);padding-top:4px;">
+            <span>Buy: ₹${Number(dii.buy || 0).toLocaleString('en-IN', {maximumFractionDigits:0})} Cr</span>
+            <span>Sell: ₹${Number(dii.sell || 0).toLocaleString('en-IN', {maximumFractionDigits:0})} Cr</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Sentiment Footer Bar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);border-radius:8px;padding:7px 12px;border:1px solid rgba(255,255,255,0.04);">
+        <span style="font-size:10px;color:#94a3b8;font-weight:600;">Combined Net Flow:</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;font-weight:800;color:${netInflowColor};font-family:'JetBrains Mono',monospace;">
+            ${totalNet >= 0 ? '+' : ''}₹${Number(totalNet).toLocaleString('en-IN', {maximumFractionDigits:2})} Cr
+          </span>
+          <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${netInflowColor}18;color:${netInflowColor};">
+            ${totalNet >= 0 ? '🚀 Bullish Inflow' : '⚠️ Net Outflow'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IPO CENTRAL TRACKER CONTAINER (PREMIUM) -->
+    <div style="background:linear-gradient(145deg, rgba(13,31,53,0.92) 0%, rgba(8,20,36,0.96) 100%);border:1px solid rgba(255,255,255,0.08);box-shadow:0 8px 32px rgba(0,0,0,0.35);border-radius:16px;padding:16px;margin-bottom:20px;">
+      
+      <!-- Top Title + Pulse -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:8px;background:rgba(251,146,60,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;">
+            🚀
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#f8fafc;letter-spacing:0.8px;font-family:'Rajdhani',sans-serif;text-transform:uppercase;">IPO Central & Analytics</div>
+            <div style="font-size:9px;color:#64748b;font-family:'JetBrains Mono',monospace;">Powered by IPO Ji Live Feeds</div>
+          </div>
+        </div>
+        <span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25);font-family:'JetBrains Mono',monospace;">
+          ● LIVE TRACKER
+        </span>
+      </div>
+
+      <!-- PRIMARY SEGMENT TABS (MAINBOARD vs SME SEPARATE TABS) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(0,0,0,0.4);padding:4px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);margin-bottom:14px;">
+        <!-- MAINBOARD TAB BUTTON -->
+        <button onclick="switchIPOSegment('mainboard')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;border-radius:9px;cursor:pointer;border:1px solid ${isMainboard ? 'rgba(56,189,248,0.5)' : 'transparent'};background:${isMainboard ? 'linear-gradient(135deg, rgba(56,189,248,0.25) 0%, rgba(14,165,233,0.12) 100%)' : 'transparent'};color:${isMainboard ? '#38bdf8' : '#64748b'};font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.5px;transition:all 0.2s;box-shadow:${isMainboard ? '0 2px 10px rgba(56,189,248,0.2)' : 'none'};">
+          <span>🏛️ Mainboard IPO</span>
+          <span style="font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;background:${isMainboard ? 'rgba(56,189,248,0.3)' : 'rgba(255,255,255,0.06)'};color:${isMainboard ? '#e0f2fe' : '#64748b'};font-family:'JetBrains Mono',monospace;">
+            ${countMainboardTotal}
+          </span>
+        </button>
+
+        <!-- SME TAB BUTTON -->
+        <button onclick="switchIPOSegment('sme')" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 0;border-radius:9px;cursor:pointer;border:1px solid ${!isMainboard ? 'rgba(245,158,11,0.5)' : 'transparent'};background:${!isMainboard ? 'linear-gradient(135deg, rgba(245,158,11,0.25) 0%, rgba(217,119,6,0.12) 100%)' : 'transparent'};color:${!isMainboard ? '#f59e0b' : '#64748b'};font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.5px;transition:all 0.2s;box-shadow:${!isMainboard ? '0 2px 10px rgba(245,158,11,0.2)' : 'none'};">
+          <span>🏢 SME Platform</span>
+          <span style="font-size:9px;font-weight:800;padding:1px 6px;border-radius:10px;background:${!isMainboard ? 'rgba(245,158,11,0.3)' : 'rgba(255,255,255,0.06)'};color:${!isMainboard ? '#fef3c7' : '#64748b'};font-family:'JetBrains Mono',monospace;">
+            ${countSMETotal}
+          </span>
+        </button>
+      </div>
+
+      <!-- SUB-FILTERS: Recently Listed vs Active & Upcoming -->
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="display:flex;gap:4px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);padding:3px;border-radius:9px;">
+          <button onclick="switchIPOTab('recent')" style="font-size:10px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:${_activeIPOTab === 'recent' ? `rgba(${themeRgb},0.2)` : 'transparent'};color:${_activeIPOTab === 'recent' ? themeColor : '#64748b'};font-family:'Rajdhani',sans-serif;transition:all 0.15s;">
+            📈 Recently Listed (${currentSegmentRecent.length})
+          </button>
+          <button onclick="switchIPOTab('active')" style="font-size:10px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;background:${_activeIPOTab === 'active' ? `rgba(${themeRgb},0.2)` : 'transparent'};color:${_activeIPOTab === 'active' ? themeColor : '#64748b'};font-family:'Rajdhani',sans-serif;transition:all 0.15s;">
+            ⚡ Active & Upcoming (${currentSegmentActive.length})
+          </button>
+        </div>
+
+        <!-- Quick Instant Search -->
+        <div style="flex:1;min-width:140px;max-width:220px;position:relative;">
+          <input type="text" id="ipoSearchInput" value="${_ipoSearchQuery}" oninput="filterIPOSearch(this.value)" placeholder="🔍 Search ${isMainboard ? 'Mainboard' : 'SME'}..." style="width:100%;box-sizing:border-box;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:6px 10px;font-size:10px;color:#f1f5f9;outline:none;font-family:'Rajdhani',sans-serif;">
+        </div>
+      </div>
+
+      <!-- IPO Cards Content Area -->
+      <div id="ipoContentArea">
+        ${_getIPOListHTML(data)}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function switchIPOSegment(seg) {
+  _activeIPOSegment = seg;
+  _ipoSearchQuery = '';
+  renderMarketFlows();
+}
+
+function switchIPOTab(tab) {
+  _activeIPOTab = tab;
+  renderMarketFlows();
+}
+
+function filterIPOSearch(query) {
+  _ipoSearchQuery = (query || '').toLowerCase().trim();
+  const area = document.getElementById('ipoContentArea');
+  if (area) {
+    area.innerHTML = _getIPOListHTML(_cachedFlowData || DEFAULT_FLOW_DATA);
+  }
+}
+
+function _getIPOListHTML(data) {
+  const isMainboard = _activeIPOSegment === 'mainboard';
+  const rawList = _activeIPOTab === 'active' ? (data.activeIpos || []) : (data.recentIpos || []);
+
+  // 1. Filter by segment (Mainboard vs SME)
+  let list = rawList.filter(item => {
+    const s = (item.segment || 'Mainboard').toLowerCase();
+    return isMainboard ? (s === 'mainboard') : (s === 'sme');
   });
-  html += '</div>';
-  el.innerHTML = html;
+
+  // 2. Filter by search query
+  if (_ipoSearchQuery) {
+    list = list.filter(item => {
+      const q = _ipoSearchQuery;
+      return (item.name || '').toLowerCase().includes(q) ||
+             (item.symbol || '').toLowerCase().includes(q) ||
+             (item.nseSymbol || '').toLowerCase().includes(q) ||
+             (item.bseCode || '').toLowerCase().includes(q);
+    });
+  }
+
+  if (list.length === 0) {
+    return `
+      <div style="text-align:center;padding:35px 20px;background:rgba(0,0,0,0.2);border-radius:12px;border:1px dashed rgba(255,255,255,0.08);margin-top:8px;">
+        <div style="font-size:28px;margin-bottom:8px;">📂</div>
+        <div style="font-size:12px;font-weight:700;color:#94a3b8;font-family:'Rajdhani',sans-serif;">No ${isMainboard ? 'Mainboard' : 'SME'} IPOs Found</div>
+        <div style="font-size:10px;color:#64748b;margin-top:3px;">Try adjusting your search query or switch tabs</div>
+      </div>
+    `;
+  }
+
+  const borderAccent = isMainboard ? '#38bdf8' : '#f59e0b';
+  const tagBg = isMainboard ? 'rgba(56,189,248,0.12)' : 'rgba(245,158,11,0.12)';
+  const tagBorder = isMainboard ? 'rgba(56,189,248,0.25)' : 'rgba(245,158,11,0.25)';
+  const tagText = isMainboard ? '#38bdf8' : '#f59e0b';
+
+  // --- RENDER ACTIVE & UPCOMING ---
+  if (_activeIPOTab === 'active') {
+    return list.map(item => {
+      const isLive = item.status === 'Live';
+      const isAllotment = item.status === 'Allotment';
+      const statusColor = isLive ? '#22c55e' : (isAllotment ? '#f59e0b' : '#38bdf8');
+      const statusLabel = isLive ? '● Live Bidding' : (isAllotment ? '● Allotment' : '⏳ Upcoming');
+
+      return `
+        <div style="background:linear-gradient(145deg, rgba(15,23,42,0.75) 0%, rgba(24,37,63,0.85) 100%);border:1px solid rgba(255,255,255,0.08);border-left:3.5px solid ${borderAccent};box-shadow:0 4px 18px rgba(0,0,0,0.3);border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:all 0.2s;">
+          <!-- Top Row -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div style="flex:1;padding-right:8px;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
+                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
+                  ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
+                </span>
+              </div>
+              <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
+                📅 Bidding: ${item.dates || 'TBA'}
+              </div>
+            </div>
+            <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;background:${statusColor}18;color:${statusColor};border:1px solid ${statusColor}40;white-space:nowrap;font-family:'JetBrains Mono',monospace;">
+              ${statusLabel}
+            </span>
+          </div>
+
+          <!-- Middle Bento Stats Grid -->
+          <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px 10px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;">
+            <div>
+              <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Price Band</div>
+              <div style="font-size:11px;font-weight:700;color:#fb923c;margin-top:1px;">${item.price || '--'}</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Lot Size</div>
+              <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-top:1px;">${item.lot || '--'}</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Subscription</div>
+              <div style="font-size:11px;font-weight:700;color:#22c55e;margin-top:1px;">${item.sub ? '🔥 ' + item.sub : '--'}</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Issue Size</div>
+              <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-top:1px;">${item.size || '--'}</div>
+            </div>
+          </div>
+
+          <!-- Bottom Footer -->
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;color:#64748b;">
+            <span>Category: <b style="color:#cbd5e1;">${isMainboard ? 'Mainboard' : 'SME Platform'}</b></span>
+            <span style="color:#38bdf8;font-style:italic;">Apply via UPI Broker</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // --- RENDER RECENTLY LISTED ---
+  return list.map(item => {
+    const sym = item.symbol || item.nseSymbol || item.bseCode || '';
+    const gain = item.gainPct !== undefined ? item.gainPct : (parseFloat((item.premium || '').replace(/[^0-9\.\-]/g, '')) || 0);
+    const isGain = gain > 0;
+    const isPar = gain === 0;
+    const gainColor = isGain ? '#22c55e' : (isPar ? '#f59e0b' : '#ef4444');
+    const gainIcon = isGain ? (gain >= 50 ? '🚀' : '▲') : (isPar ? '●' : '▼');
+    const gainText = isGain ? `+${gain.toFixed(2)}%` : `${gain.toFixed(2)}%`;
+
+    return `
+      <div style="background:linear-gradient(145deg, rgba(15,23,42,0.75) 0%, rgba(24,37,63,0.85) 100%);border:1px solid rgba(255,255,255,0.08);border-left:3.5px solid ${borderAccent};box-shadow:0 4px 18px rgba(0,0,0,0.3);border-radius:12px;padding:12px 14px;margin-bottom:10px;transition:all 0.2s;">
+        <!-- Top Row -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div style="flex:1;padding-right:8px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:800;color:${borderAccent};font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.1);">
+                ${sym}
+              </span>
+              <span style="font-size:13px;font-weight:700;color:#f8fafc;font-family:'Rajdhani',sans-serif;letter-spacing:0.3px;">${item.name}</span>
+              <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${tagBg};color:${tagText};border:1px solid ${tagBorder};font-family:'JetBrains Mono',monospace;">
+                ${item.exchange || (isMainboard ? 'MAINBOARD' : 'SME')}
+              </span>
+            </div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:3px;font-family:'JetBrains Mono',monospace;">
+              📅 Listed on ${item.dates || 'Recent'}
+            </div>
+          </div>
+          <button onclick="addStock('${sym}');if(typeof showPopup==='function')showPopup('✅ ${sym} added to Watchlist!');" style="background:linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.35));border:1px solid rgba(56,189,248,0.45);color:#38bdf8;font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(56,189,248,0.25);transition:all 0.15s;">
+            + Watchlist
+          </button>
+        </div>
+
+        <!-- Middle Bento Stats Grid -->
+        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono',monospace;">
+          <div>
+            <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Offer Price</div>
+            <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-top:1px;">${item.offerPrice || '--'}</div>
+          </div>
+          <div>
+            <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Listing Price</div>
+            <div style="font-size:11px;font-weight:700;color:${borderAccent};margin-top:1px;">${item.listingPrice || '--'}</div>
+          </div>
+          <div>
+            <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Subscription</div>
+            <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-top:1px;">${item.subscription ? '🔥 ' + item.subscription : '--'}</div>
+          </div>
+          <div>
+            <div style="font-size:8px;color:#64748b;text-transform:uppercase;">Issue Size</div>
+            <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-top:1px;">${item.issueSize || '--'}</div>
+          </div>
+        </div>
+
+        <!-- Bottom Return Badge -->
+        <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;background:${gainColor}12;border:1px solid ${gainColor}30;padding:4px 10px;border-radius:6px;">
+          <span style="font-size:9px;color:#94a3b8;font-weight:600;">Listing Day Gain / Return:</span>
+          <span style="font-size:11px;font-weight:800;color:${gainColor};font-family:'JetBrains Mono',monospace;">
+            ${gainIcon} ${gainText} ${isGain ? 'GAIN' : (isPar ? 'PAR' : 'DISC')}
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
-function _renderMSCategory(el, lang) {
-  const cat = MARKET_SCHOOL[AppState._msCategory];
-  if (!cat) { AppState._msCategory = null; renderMarketSchool(); return; }
-
-  let html = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-    <button onclick="AppState._msCategory=null;AppState._msTopic=null;renderMarketSchool();" style="background:var(--border, rgba(255,255,255,0.06));border:1px solid var(--border, rgba(255,255,255,0.1));color:var(--text-sec, #94a3b8);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">← Back</button>
-    <span style="font-size:14px;">${cat.icon}</span>
-    <span style="font-size:13px;font-weight:700;color:${cat.color};">${cat.label[lang]||cat.label.en}</span>
-  </div>`;
-
-  Object.keys(cat.topics).forEach(topicKey => {
-    const topic = cat.topics[topicKey];
-    const content = topic[lang] || topic.en;
-    html += `
-    <div onclick="AppState._msTopic='${topicKey}';renderMarketSchool();"
-      style="background:var(--bg-card, #0d1f35);border:1px solid var(--border, rgba(255,255,255,0.07));border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
-      <div><div style="font-size:12px;font-weight:700;color:var(--text-primary, #e2e8f0);">${topic.label}</div><div style="font-size:10px;color:var(--text-muted, #64748b);margin-top:2px;">${content.what.substring(0,60)}...</div></div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${cat.color}" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>`;
-  });
-  el.innerHTML = html;
-}
-
-function _renderMSTopic(el, lang) {
-  const cat = MARKET_SCHOOL[AppState._msCategory];
-  const topic = cat?.topics[AppState._msTopic];
-  if (!topic) { AppState._msTopic = null; renderMarketSchool(); return; }
-  const L = topic[lang] || topic.en;
-
-  const html = `
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-    <button onclick="AppState._msTopic=null;renderMarketSchool();" style="background:var(--border, rgba(255,255,255,0.06));border:1px solid var(--border, rgba(255,255,255,0.1));color:var(--text-sec, #94a3b8);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;">← Back</button>
-    <span style="font-size:13px;font-weight:700;color:${cat.color};">${topic.label}</span>
-  </div>
-  <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">📖 WHAT IS IT?</span></div><div style="padding:12px 14px;font-size:13px;color:var(--text-primary, #cbd5e1);line-height:1.7;">${L.what}</div></div>
-  <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">🔢 FORMULA</span></div><div style="padding:12px 14px;font-size:12px;color:var(--pos, #34d399);font-family:'JetBrains Mono',monospace;line-height:1.8;background:rgba(52,211,153,0.04);">${L.formula}</div></div>
-  <div style="background:var(--bg-card, #0d1f35);border-radius:12px;overflow:hidden;border:1px solid var(--border, rgba(255,255,255,0.07));margin-bottom:10px;"><div style="background:var(--bg-header, rgba(255,255,255,0.03));padding:10px 14px;border-bottom:1px solid var(--border, rgba(255,255,255,0.05));"><span style="font-size:10px;font-weight:700;color:var(--text-muted, #64748b);letter-spacing:1px;">📊 LEVELS</span></div><div style="padding:12px 14px;font-size:12px;color:var(--warn, #f59e0b);line-height:1.8;">${L.levels}</div></div>`;
-  el.innerHTML = html;
-}
 
 // ======================================
 // DOWNLOAD LEARN PDF
@@ -1326,7 +1855,10 @@ window.learnSearchSuggest = learnSearchSuggest;
 window.renderLearnReport = renderLearnReport;
 window.showLearnInfo = showLearnInfo;
 window.closeLearnInfo = closeLearnInfo;
-window.renderMarketSchool = renderMarketSchool;
+window.renderMarketFlows = renderMarketFlows;
+window.switchIPOTab = switchIPOTab;
+window.switchIPOSegment = switchIPOSegment;
+window.filterIPOSearch = filterIPOSearch;
 window.downloadLearnPDF = downloadLearnPDF;
 
 console.log('✅ learn.js loaded successfully');
