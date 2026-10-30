@@ -17,7 +17,7 @@ const GLOBAL_SYMS = {
 // Stocks listed ONLY on BSE use .BO suffix with BSE scrip code on Yahoo Finance
 // Format: 'WATCHLIST_SYMBOL': 'YAHOO_TICKER'
 const BSE_ONLY_SYMBOLS = {
-  'NSE': '544937.BO',   // NSE India Ltd — listed only on BSE (scrip 544937)
+  'NSE': 'NSE.BO',   // NSE India Ltd — listed only on BSE (scrip 544937)
 };
 
 // GAS API URLs
