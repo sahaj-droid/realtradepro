@@ -51,7 +51,7 @@ async function startApp() {
     await initMarketData();
   }
 
-  showLoader('Loading...');
+  if (typeof showLoader === 'function') showLoader('Loading...');
 
   try {
     const startWl = AppState.watchlists[AppState.currentWL]?.stocks || AppState.wl;
@@ -87,7 +87,7 @@ async function startApp() {
     if (typeof runAllTechnicalAlerts === 'function') runAllTechnicalAlerts();
   }, 3000);
 
-  hideLoader();
+  if (typeof hideLoader === 'function') hideLoader();
   startRefresh();
 }
 
@@ -105,7 +105,7 @@ async function manualRefresh() {
   const btn = document.getElementById('refreshBtn');
   if (btn) { btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none'; }
 
-  showLoader('Refreshing...');
+  if (typeof showLoader === 'function') showLoader('Refreshing...');
 
   // Bust cache
   for (let k in AppState.cache) AppState.cache[k].time = 0;
@@ -124,7 +124,7 @@ async function manualRefresh() {
   if (typeof renderHeaderStrip   === 'function') renderHeaderStrip();
   if (typeof updateHeaderIndices === 'function') updateHeaderIndices();
 
-  hideLoader();
+  if (typeof hideLoader === 'function') hideLoader();
   if (btn) { btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
 
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
@@ -138,6 +138,21 @@ async function manualRefresh() {
 // ======================================
 // PROFILE & SETTINGS DRAWER
 // ======================================
+function updateHeaderProfileUI() {
+  const nameEl = document.getElementById('headerProfileName');
+  const avatarEl = document.getElementById('headerAvatarLetter');
+  const dNameEl = document.getElementById('drawerUserName');
+  const dAvatarEl = document.getElementById('drawerAvatarLetter');
+  
+  const name = (AppState.currentUser && AppState.currentUser.name) ? AppState.currentUser.name : 'Sahaj';
+  const initial = name.charAt(0).toUpperCase();
+
+  if (nameEl) nameEl.textContent = name;
+  if (avatarEl) avatarEl.textContent = initial;
+  if (dNameEl) dNameEl.textContent = name;
+  if (dAvatarEl) dAvatarEl.textContent = initial;
+}
+
 function openProfileDrawer() {
   const drawer = document.getElementById('profileDrawer');
   if (drawer) {

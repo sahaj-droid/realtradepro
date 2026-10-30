@@ -278,6 +278,77 @@ function _buildWLCard(s, d) {
 }
 
 // ======================================
+// RENDER WATCHLIST
+// ======================================
+async function renderWL() {
+  let displayList = AppState.watchlists[AppState.currentWL] ? [...AppState.watchlists[AppState.currentWL].stocks] : [];
+  if (AppState.currentGroup !== 'ALL' && AppState.groups[AppState.currentGroup]) {
+    displayList = displayList.filter(s => AppState.groups[AppState.currentGroup].includes(s));
+  }
+  
+  const watchlistDiv = document.getElementById("watchlist");
+  if (!watchlistDiv) return;
+  
+  if (!displayList.length) {
+    const wlName = (AppState.watchlists[AppState.currentWL] && AppState.watchlists[AppState.currentWL].name) ? AppState.watchlists[AppState.currentWL].name : 'Watchlist';
+    watchlistDiv.innerHTML = '<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">Search stock above to add to ' + wlName + '</div>';
+    return;
+  }
+
+  let html = "";
+  const needFetch = [];
+
+  for (let s of displayList) {
+    const d = AppState.cache[s]?.data;
+    if (d) {
+      html += _buildWLCard(s, d);
+    } else {
+      needFetch.push(s);
+      const initials = s.length <= 4 ? s : s.substring(0, 3).toUpperCase();
+      const compName = _getCompanyDisplayName(s, null);
+      const av = _getStockAvatarStyle(s);
+      html += `
+        <div class="wl-card-wrap" id="wrap-${s}" style="margin-bottom:6px;">
+          <div class="card glass-card p-3 flex items-center justify-between" style="position:relative;margin:0;">
+            <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:10px; background:none; border:none; cursor:pointer; z-index:10; padding:2px 6px;">✕</button>
+            <div class="flex items-center gap-3 cursor-pointer" onclick="event.stopPropagation();openDetail('${s}',false)">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0" style="background:${av.bg}; border:1px solid ${av.border}; color:${av.color};">
+                ${initials}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-sm tracking-tight text-[var(--text-main)]" style="font-family:'Rajdhani',sans-serif;">${s}</span>
+                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">NSE</span>
+                </div>
+                <div class="text-[11px] text-[var(--text-dim)]" style="font-family:'Rajdhani',sans-serif;">${compName}</div>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div id="price-${s}" class="mono text-sm font-extrabold text-[var(--text-sec,#94a3b8)]">...</div>
+              <div id="change-${s}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">--</div>
+            </div>
+          </div>
+          <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
+        </div>`;
+    }
+  }
+  
+  watchlistDiv.innerHTML = html;
+
+  if (needFetch.length > 0) {
+    for (let s of needFetch) {
+      try {
+        const d = await fetchFull(s);
+        if (d) {
+          const wrap = document.getElementById('wrap-' + s);
+          if (wrap) wrap.outerHTML = _buildWLCard(s, d);
+        }
+      } catch(e) { /* silent */ }
+    }
+  }
+}
+
+// ======================================
 // PATCH WL CARD (for live updates)
 // ======================================
 function _patchWLCard(s, d) {

@@ -432,7 +432,8 @@ function updatePriceTicker() {
     items.push({sym:label, price, chg, pct});
   });
 
-  AppState.wl.forEach(sym => {
+  const _stocks = (AppState.watchlists && AppState.watchlists[AppState.currentWL]?.stocks) || AppState.wl || [];
+  _stocks.forEach(sym => {
     const d = AppState.cache[sym]?.data;
     if(!d) return;
     const price = d.regularMarketPrice;
@@ -487,3 +488,9 @@ window.showPopup = showPopup;
 window.getMarketStatus = getMarketStatus;
 window.confirmWLName = confirmWLName;
 window.closeWLNameModal = closeWLNameModal;
+window.showLoader = showLoader;
+window.hideLoader = hideLoader;
+window.updateMarketStatus = updateMarketStatus;
+window.startClock = startClock;
+window.updateMarketStatus = updateMarketStatus;
+window.startClock = startClock;

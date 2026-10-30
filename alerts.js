@@ -345,7 +345,8 @@ async function checkTechnicalAlerts(sym) {
 }
 
 async function runAllTechnicalAlerts() {
-  for (let s of AppState.wl) {
+  const wl = (AppState.watchlists && AppState.watchlists[AppState.currentWL]?.stocks) || AppState.wl || [];
+  for (let s of wl) {
     await checkTechnicalAlerts(s);
   }
 }
