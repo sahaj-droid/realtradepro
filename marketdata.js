@@ -54,18 +54,18 @@ function getMarketStatus() {
   const preOpen = 9 * 60 + 0;
 
   if (day === 0 || day === 6) {
-    return { open: false, label: '🔴 Weekend', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
+    return { open: false, label: 'Weekend', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
   }
   if (mins >= open && mins < close) {
-    return { open: true,  label: '🟢 Market Open',   color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
+    return { open: true,  label: 'Market Open',   color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
   }
   if (mins >= preOpen && mins < open) {
-    return { open: false, label: '🟡 Pre-Open',      color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' };
+    return { open: false, label: 'Pre-Open',      color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' };
   }
   if (mins >= close) {
-    return { open: false, label: '🔴 Market Closed', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
+    return { open: false, label: 'Market Closed', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
   }
-  return   { open: false, label: '🔴 Market Closed', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
+  return   { open: false, label: 'Market Closed', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
 }
 
 // ======================================

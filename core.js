@@ -142,6 +142,7 @@ function openProfileDrawer() {
   const drawer = document.getElementById('profileDrawer');
   if (drawer) {
     drawer.classList.add('open');
+    drawer.style.display = 'flex';
     updateHeaderProfileUI();
     if (typeof loadSettingsUI === 'function') loadSettingsUI();
   }
@@ -149,7 +150,10 @@ function openProfileDrawer() {
 
 function closeProfileDrawer() {
   const drawer = document.getElementById('profileDrawer');
-  if (drawer) drawer.classList.remove('open');
+  if (drawer) {
+    drawer.classList.remove('open');
+    drawer.style.display = 'none';
+  }
 }
 
 function updateHeaderProfileUI() {

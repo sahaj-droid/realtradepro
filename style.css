@@ -1102,3 +1102,37 @@ body.light-mode .portfolio-card [style*="color:#94a3b8"] {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+
+/* ========================================================
+   v3.0 Modern Card & Badge Tokens (Matching demo_ui.html)
+   ======================================================== */
+.glass-card {
+  background: var(--bg-card, #111827) !important;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08)) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.glass-card:hover {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+.badge-pos {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 7px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+.badge-neg {
+  background: rgba(244, 63, 94, 0.12) !important;
+  color: #f43f5e !important;
+  border: 1px solid rgba(244, 63, 94, 0.25) !important;
+  border-radius: 6px !important;
+  padding: 2px 7px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}

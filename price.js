@@ -182,117 +182,99 @@ function checkTargets(sym, currentPrice) {
 // ======================================
 // BUILD WATCHLIST CARD (With Action Panel)
 // ======================================
+// ======================================
+// BUILD WATCHLIST CARD (v3.0 Modern Clean UI)
+// ======================================
+function _getCompanyDisplayName(s, d) {
+  if (d && (d.shortName || d.longName || d.name || d.companyName)) {
+    return d.shortName || d.longName || d.name || d.companyName;
+  }
+  const KNOWN_NAMES = {
+    'RELIANCE': 'Reliance Industries Ltd.',
+    'HDFCBANK': 'HDFC Bank Ltd.',
+    'TATASTEEL': 'Tata Steel Ltd.',
+    'TATAPOWER': 'Tata Power Company Ltd.',
+    'SBIN': 'State Bank of India',
+    'INFY': 'Infosys Limited',
+    'TCS': 'Tata Consultancy Services',
+    'ICICIBANK': 'ICICI Bank Ltd.',
+    'JPL': 'Jupiter Life Line Hospitals',
+    'TRAVELFOOD': 'Travel Food Services Ltd.',
+    'DCI': 'DC Infotech & Communication',
+    'SBIFUNDS': 'SBI Mutual Fund',
+    'PARAS': 'Paras Defence & Space Tech',
+    'WAAREE': 'Waaree Energies Ltd.',
+    'NTPCGREEN': 'NTPC Green Energy Ltd.'
+  };
+  return KNOWN_NAMES[s.toUpperCase()] || (s + ' Equity');
+}
+
+function _getStockAvatarStyle(s) {
+  const palettes = [
+    { bg: 'rgba(56, 189, 248, 0.12)', border: 'rgba(56, 189, 248, 0.3)', color: '#38bdf8' },
+    { bg: 'rgba(99, 102, 241, 0.12)', border: 'rgba(99, 102, 241, 0.3)', color: '#818cf8' },
+    { bg: 'rgba(168, 85, 247, 0.12)', border: 'rgba(168, 85, 247, 0.3)', color: '#c084fc' },
+    { bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)', color: '#fbbf24' },
+    { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.3)', color: '#34d399' },
+    { bg: 'rgba(236, 72, 153, 0.12)', border: 'rgba(236, 72, 153, 0.3)', color: '#f472b6' }
+  ];
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = (hash << 5) - hash + s.charCodeAt(i);
+  return palettes[Math.abs(hash) % palettes.length];
+}
+
 function _buildWLCard(s, d) {
   const _price = d.regularMarketPrice || d.ltp || 0;
   const _prev = d.chartPreviousClose || d.prev_close || d.regularMarketPreviousClose || 0;
   const diff = d.regularMarketChange || ((_price && _prev) ? parseFloat((_price - _prev).toFixed(2)) : 0);
   const pct = d.regularMarketChangePercent || ((_prev > 0 && diff) ? parseFloat((diff / _prev * 100).toFixed(2)) : 0);
   
+  const initials = s.length <= 4 ? s : s.substring(0, 3).toUpperCase();
+  const compName = _getCompanyDisplayName(s, d);
+  const av = _getStockAvatarStyle(s);
+  const isUp = diff >= 0;
+
   return `
-    <div class="wl-card-wrap" id="wrap-${s}">
-      <div class="card" onclick="toggleActions('${s}')" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; z-index:10; padding:4px;">✕</button>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-          <div style="width:75px; flex-shrink:0;">
-            <span onclick="event.stopPropagation();openDetail('${s}',false)" style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700; cursor:pointer; color:#38bdf8; text-decoration:underline;">${s}</span>
+    <div class="wl-card-wrap" id="wrap-${s}" style="margin-bottom:6px;">
+      <div class="card glass-card p-3 flex items-center justify-between cursor-pointer hover:scale-[1.01]" onclick="toggleActions('${s}')" style="position:relative;margin:0;">
+        <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:2px; right:4px; color:#ef4444; font-size:10px; background:none; border:none; cursor:pointer; z-index:10; padding:2px 6px;">✕</button>
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0" style="background:${av.bg}; border:1px solid ${av.border}; color:${av.color};">
+            ${initials}
           </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div id="daybar-${s}" style="width:100%; max-width:140px;">${buildDayBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="price-${s}" style="font-family:'JetBrains Mono',monospace; font-size:17px; font-weight:700; color:#e2e8f0;">${_price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>'}</div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <div id="label52-${s}" style="width:75px; flex-shrink:0; font-size:9px; line-height:1.2; color:#94a3b8; font-weight:600;">
-            ${get52WLabel(d)}${getTargetBadge(s, _price)}
-          </div>
-          <div style="flex:1; min-width:0; display:flex; justify-content:center;">
-            <div id="bar52-${s}" style="width:100%; max-width:140px;">${build52WBar(d)}</div>
-          </div>
-          <div style="width:105px; flex-shrink:0; text-align:right;">
-            <div id="change-${s}" style="font-size:13px; font-weight:700; color:${diff >= 0 ? '#22c55e' : '#ef4444'}; white-space:nowrap;">
-              ${_price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>'}
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span onclick="event.stopPropagation();openDetail('${s}',false)" class="font-bold text-sm tracking-tight text-[var(--text-main)] hover:text-sky-400 cursor-pointer" style="font-family:'Rajdhani',sans-serif;">${s}</span>
+              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">NSE</span>
             </div>
+            <div class="text-[11px] text-[var(--text-dim)]" style="font-family:'Rajdhani',sans-serif;">${compName}</div>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div id="price-${s}" class="mono text-sm font-extrabold text-[var(--text-main)]" onclick="event.stopPropagation();openDetail('${s}',false)" style="cursor:pointer;">
+            ${_price > 0 ? '₹' + _price.toFixed(2) : '--'}
+          </div>
+          <div id="change-${s}" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'badge-pos' : 'badge-neg'}">
+            ${isUp ? '▲ +' : '▼ '}${Math.abs(diff).toFixed(2)} (${(isUp ? '+' : '') + pct.toFixed(2)}%)
           </div>
         </div>
       </div>
-      <div class="wl-actions-panel" id="act-${s}" style="display:none;">
-        <div>
-          <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:8px 0;">BUY</button>
-          <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:8px 0;">SELL</button>
-          <button class="act-btn" onclick="chart('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#60a5fa; padding:8px 0;">CHART</button>
-          <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#0f2a40; color:#a78bfa; padding:8px 0;">NEWS</button>
+
+      <!-- Action Panel -->
+      <div class="wl-actions-panel" id="act-${s}" style="display:none; padding:8px; margin-top:4px; background:var(--bg-card); border:1px solid var(--border); border-radius:12px;">
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+          <button class="act-btn" onclick="openModal('BUY','${s}',${_price});toggleActions('${s}')" style="background:#166534; color:#86efac; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">BUY</button>
+          <button class="act-btn" onclick="openModal('SELL','${s}',${_price});toggleActions('${s}')" style="background:#7f1d1d; color:#fca5a5; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">SELL</button>
+          <button class="act-btn" onclick="openDetail('${s}',false);toggleActions('${s}')" style="background:#1e3a5f; color:#93c5fd; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">CHART</button>
+          <button class="act-btn" onclick="openNews('${s}');toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">NEWS</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;">
-          <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:8px 0;">ALERT</button>
-          <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#4a1d96; color:#c4b5fd; padding:8px 0;">TARGET</button>
-          <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#065f46; color:#34d399; padding:8px 0;">💬 NIVI AI</button>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:6px;">
+          <button class="act-btn" onclick="setAlert('${s}');toggleActions('${s}')" style="background:#713f12; color:#fde68a; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">🔔 ALERT</button>
+          <button class="act-btn" onclick="setTarget('${s}',${_price});toggleActions('${s}')" style="background:#1e2d3d; color:#cbd5e1; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">🎯 TARGET</button>
+          <button class="act-btn" onclick="openNivi('${s}');toggleActions('${s}')" style="background:#065f46; color:#34d399; padding:7px 0; border-radius:8px; font-weight:700; font-size:11px; font-family:'Rajdhani',sans-serif;">💬 NIVI AI</button>
         </div>
-      </div>
-      </div>
       </div>
     </div>`;
-}
-
-// ======================================
-// RENDER WATCHLIST
-// ======================================
-async function renderWL() {
-  let displayList = AppState.watchlists[AppState.currentWL] ? [...AppState.watchlists[AppState.currentWL].stocks] : [];
-  if (AppState.currentGroup !== 'ALL' && AppState.groups[AppState.currentGroup]) {
-    displayList = displayList.filter(s => AppState.groups[AppState.currentGroup].includes(s));
-  }
-  
-  const watchlistDiv = document.getElementById("watchlist");
-  if (!watchlistDiv) return;
-  
-  if (!displayList.length) {
-    watchlistDiv.innerHTML = '<div style="text-align:center;color:#4b6280;padding:30px;font-size:13px;">Search stock above to add to ' + AppState.watchlists[AppState.currentWL].name + '</div>';
-    return;
-  }
-
-  let html = "";
-  const needFetch = [];
-
-  for (let s of displayList) {
-    const d = AppState.cache[s]?.data;
-    if (d) {
-      html += _buildWLCard(s, d);
-    } else {
-      needFetch.push(s);
-      html += `<div class="wl-card-wrap" id="wrap-${s}">
-        <div class="card" style="padding:10px; position:relative; cursor:pointer; margin-bottom:3px;">
-          <button onclick="event.stopPropagation();removeStock('${s}')" style="position:absolute; top:1px; right:2px; color:#ef4444; font-size:6px; background:none; border:none; cursor:pointer; padding:4px;">✕</button>
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
-            <div style="width:75px;"><span style="font-size:14px; font-weight:700; color:#38bdf8;">${s}</span></div>
-            <div style="flex:1;"></div>
-            <div style="width:105px; text-align:right;"><div style="font-size:17px; font-weight:700; color:#4b6280;">...</div></div>
-          </div>
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <div style="width:75px;"></div>
-            <div style="flex:1;"></div>
-            <div style="width:105px; text-align:right;"><div style="font-size:13px; color:#4b6280;">--</div></div>
-          </div>
-        </div>
-        <div class="wl-actions-panel" id="act-${s}" style="display:none;"></div>
-      </div>`;
-    }
-  }
-  
-  watchlistDiv.innerHTML = html;
-
-  if (needFetch.length > 0) {
-    for (let s of needFetch) {
-      try {
-        const d = await fetchFull(s);
-        if (d && document.getElementById('price-' + s)) {
-          const wrap = document.getElementById('wrap-' + s);
-          if (wrap) wrap.outerHTML = _buildWLCard(s, d);
-        }
-      } catch(e) { /* silent */ }
-    }
-  }
 }
 
 // ======================================
@@ -306,15 +288,17 @@ function _patchWLCard(s, d) {
   
   const pe = document.getElementById('price-' + s);
   const ce = document.getElementById('change-' + s);
-  const db = document.getElementById('daybar-' + s);
-  const b5 = document.getElementById('bar52-' + s);
-  const l5 = document.getElementById('label52-' + s);
   
-  if (pe) pe.innerHTML = _price > 0 ? '₹' + _price.toFixed(2) : '<span style="color:#4b6280;font-size:13px;">--</span>';
-  if (ce) {
-    ce.innerHTML = _price > 0 ? (diff >= 0 ? '+' : '') + '₹' + Math.abs(diff).toFixed(2) + ' (' + (diff >= 0 ? '+' : '') + pct.toFixed(2) + '%)' : '<span style="color:#4b6280;">--</span>';
-    ce.style.color = diff >= 0 ? '#22c55e' : '#ef4444';
+  if (pe) {
+    pe.innerText = _price > 0 ? '₹' + _price.toFixed(2) : '--';
   }
+  if (ce) {
+    const isUp = diff >= 0;
+    const sign = isUp ? '▲ +' : '▼ ';
+    ce.innerText = _price > 0 ? `${sign}${Math.abs(diff).toFixed(2)} (${isUp ? '+' : ''}${pct.toFixed(2)}%)` : '--';
+    ce.className = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isUp ? 'badge-pos' : 'badge-neg'}`;
+  }
+}
   if (db) db.innerHTML = buildDayBar(d);
   if (b5) b5.innerHTML = build52WBar(d);
   if (l5) l5.innerHTML = get52WLabel(d) + getTargetBadge(s, _price);

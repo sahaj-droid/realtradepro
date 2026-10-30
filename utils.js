@@ -219,9 +219,11 @@ function getMarketStatus(){
 function updateMarketStatus(){
   const el = document.getElementById("marketStatus");
   if(!el) return;
-  const s = getMarketStatus();
-  el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s.color};margin-right:4px;${s.open ? 'animation:blink 1s infinite' : ''}"></span>${s.label}`;
-  el.style.color = s.color;
+  const s = typeof getMarketStatus === 'function' ? getMarketStatus() : { open: false, label: 'Market Closed', color: '#ef4444' };
+  const cleanLabel = (s.label || 'Market Closed').replace(/^[🔴🟢🟡●\s]+/, '');
+  const dotColor = s.color || (s.open ? '#10b981' : '#ef4444');
+  el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${dotColor};margin-right:5px;${s.open ? 'animation:blink 1.5s infinite;' : ''}"></span>${cleanLabel}`;
+  el.style.color = dotColor;
 }
 
 // ========================================
