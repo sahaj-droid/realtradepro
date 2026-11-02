@@ -321,6 +321,16 @@ function _switchTab(t) {
   const filterBar = document.getElementById('filterBar');
   if (filterBar) filterBar.style.display = (targetTab === 'watchlist') ? 'block' : 'none';
 
+  // Dynamic header for Nivi AI: hide indices strip to maximize vertical chat space
+  const indicesRow = document.querySelector('.header-indices-row');
+  if (indicesRow) {
+    indicesRow.style.display = (targetTab === 'nivi') ? 'none' : 'flex';
+  }
+  if (targetTab !== 'nivi') {
+    const niviEl = document.getElementById('nivi');
+    if (niviEl) niviEl.classList.remove('nivi-fullscreen');
+  }
+
   AppState._curTab = targetTab;
 
   if (subAction) {

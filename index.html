@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-<link rel="stylesheet" href="style.css?v=4.3">
+<link rel="stylesheet" href="style.css?v=4.4">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -460,7 +460,7 @@
 <!-- ============================================== -->
 <!-- TAB 4: 🧠 NIVI AI STUDIO (AI CHART, CHAT & INSIGHTS) -->
 <!-- ============================================== -->
-<div id="nivi" class="tab" style="padding:0;overflow:hidden;height:calc(100vh - 105px - 64px);">
+<div id="nivi" class="tab" style="padding:0;overflow:hidden;height:calc(100vh - 46px - 60px);">
   <div style="padding:8px 12px 0;background:var(--bg-app,#0a0e1a);z-index:20;flex-shrink:0;">
     <div class="subtabs-bar">
       <button id="nsub-chart" onclick="switchNiviSubTab('chart')" class="subtab-btn active">📈 AI Candle Chart</button>
@@ -502,7 +502,7 @@
   </div>
 
   <!-- Panel 2: Nivi Chat (fixed full height, middle scrolls, input pinned at bottom) -->
-  <div id="nivi-panel-chat" style="display:none;height:calc(100% - 46px);padding:0;box-sizing:border-box;overflow:hidden;">
+  <div id="nivi-panel-chat" style="display:none;height:calc(100% - 46px);padding:0;box-sizing:border-box;overflow:hidden;flex:1;min-height:0;">
     <div id="news" style="padding:0;height:100%;display:flex;flex-direction:column;overflow:hidden;width:100%;"></div>
   </div>
 
@@ -1413,11 +1413,11 @@
 <script src="alerts.js?v=4.1"></script>
 <script src="technical.js"></script>
 <script src="gemini.js"></script>
-<script src="nivi.js?v=2"></script>
+<script src="nivi.js?v=3.0"></script>
 <script src="learn.js?v=6.0"></script>
 <script src="settings.js"></script>
 <script src="marketdata.js?v=4.0"></script>
-<script src="core.js?v=4.1"></script>
+<script src="core.js?v=4.2"></script>
 <script src="ai-chart.js?v=11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

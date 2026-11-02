@@ -192,23 +192,31 @@ function renderNews() {
   const smartChips = _buildSmartChips();
   const chipsHtml = smartChips.map(c =>
     `<button onclick="_tabChip('${c.q.replace(/'/g, "\\'")}')"
-      style="flex-shrink:0;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:16px;padding:4px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;letter-spacing:0.2px;">${c.label}</button>`
+      style="flex-shrink:0;background:rgba(56,189,248,0.08);color:var(--accent,#38bdf8);border:1px solid rgba(56,189,248,0.25);border-radius:14px;padding:4px 10px;font-size:10.5px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;transition:all 0.2s;">${c.label}</button>`
   ).join('');
 
   el.innerHTML = `
-  <div style="display:flex;flex-direction:column;height:100%;max-width:480px;width:100%;margin:0 auto;padding:4px 12px 6px;box-sizing:border-box;position:relative;overflow:hidden;">
+  <div style="display:flex;flex-direction:column;height:100%;max-width:100%;width:100%;margin:0 auto;padding:4px 8px 6px;box-sizing:border-box;position:relative;overflow:hidden;">
 
-    <!-- Chat Header with Clear button -->
-    <div style="flex-shrink:0;padding-bottom:6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:16px;">🧠</span>
-        <span style="font-size:13px;font-weight:700;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">NIVI COPILOT</span>
+    <!-- Chat Header with Live pulse, Fullscreen & Clear buttons -->
+    <div style="flex-shrink:0;padding:2px 2px 6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span class="nivi-pulse-dot"></span>
+        <span style="font-size:14px;font-weight:800;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:1px;">NIVI COPILOT</span>
+        <span style="font-size:8.5px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:1px 6px;border-radius:8px;font-weight:700;letter-spacing:0.5px;">LIVE</span>
       </div>
-      <button onclick="_tabClearHistory()" title="Chat clear karo"
-        style="background:transparent;color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:'Rajdhani',sans-serif;">
-        <svg viewBox="0 0 16 16" width="11" height="11" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4H5z" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Clear
-      </button>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button id="niviFullscreenBtn" onclick="_toggleNiviFullscreen()" title="Fullscreen reading mode"
+          style="background:rgba(56,189,248,0.1);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);border-radius:8px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:'Rajdhani',sans-serif;transition:all 0.2s;">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+          Expand
+        </button>
+        <button onclick="_tabClearHistory()" title="Chat clear karo"
+          style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:'Rajdhani',sans-serif;transition:all 0.2s;">
+          <svg viewBox="0 0 16 16" width="10" height="10" fill="none"><path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4H5z" stroke="#ef4444" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Clear
+        </button>
+      </div>
     </div>
 
     <div id="nivi-section-chat" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;">
@@ -234,11 +242,21 @@ function renderNews() {
       </div>
 
       <!-- Pinned Bottom Bar -->
-      <div style="flex-shrink:0;padding:6px 0 4px 0;border-top:1px solid var(--border);background:var(--bg-app);">
+      <div style="flex-shrink:0;padding:4px 0 2px 0;border-top:1px solid rgba(255,255,255,0.08);background:var(--bg-app);">
 
-        <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:2px;scrollbar-width:none;">
+        <!-- Collapsible Prompt Chips Bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+          <button id="toggleChipsBtn" onclick="_toggleChatChips()"
+            style="background:transparent;border:none;color:var(--text-sec,#94a3b8);font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;padding:2px 4px;font-family:'Rajdhani',sans-serif;">
+            <span>💡 Quick Prompts</span>
+            <span id="chipsChevron" style="font-size:9px;">▼</span>
+          </button>
+          <span style="font-size:9px;color:rgba(148,163,184,0.5);font-family:'Rajdhani',sans-serif;">Gemini 3.8 Intelligence</span>
+        </div>
+
+        <div id="tab-chips-container" style="display:${AppState._tabChatHistory && AppState._tabChatHistory.length > 0 ? 'none' : 'flex'};gap:5px;overflow-x:auto;margin-bottom:6px;padding-bottom:3px;scrollbar-width:none;">
           <button onclick="_tabToggleMood()"
-            style="flex-shrink:0;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:16px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
+            style="flex-shrink:0;background:rgba(192,132,252,0.12);color:#c084fc;border:1px solid rgba(192,132,252,0.3);border-radius:14px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;white-space:nowrap;">
             📊 Market Mood
           </button>
           ${chipsHtml}
@@ -252,8 +270,8 @@ function renderNews() {
 
         <div style="display:flex;gap:6px;align-items:center;">
           <div style="position:relative;flex-shrink:0;width:38px;height:38px;">
-            <div style="width:100%;height:100%;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="width:100%;height:100%;background:rgba(56,189,248,0.1);color:var(--accent,#38bdf8);border:1px solid rgba(56,189,248,0.25);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none"><path d="M4 10.5V6a4 4 0 018 0v7a2.5 2.5 0 01-5 0V7a1 1 0 012 0v6" stroke="var(--accent,#38bdf8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <input type="file" id="tab-file-input"
               accept=".pdf,.js,.html,.htm,.css,.txt,.md,.json,.csv,.png,.jpg,.jpeg,.webp"
@@ -263,23 +281,23 @@ function renderNews() {
 
           <div style="flex:1;position:relative;">
             <textarea id="tab-nivi-input"
-              placeholder="Ask anything to Nivi 🙂"
+              placeholder="Ask anything to Nivi (e.g. NBCC Target & Analysis)..."
               rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();_tabSend();}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px';"
-              style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:12px;padding:9px 12px;font-size:12px;color:var(--text-primary);font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.4;box-sizing:border-box;min-height:38px;max-height:80px;overflow-y:auto;transition:border-color 0.2s;display:block;vertical-align:middle;"
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--border)'">
+              style="width:100%;background:rgba(15,23,42,0.7);border:1px solid rgba(56,189,248,0.25);border-radius:12px;padding:9px 12px;font-size:13px;color:var(--text-primary,#f1f5f9);font-family:'Rajdhani',sans-serif;outline:none;resize:none;line-height:1.4;box-sizing:border-box;min-height:38px;max-height:80px;overflow-y:auto;transition:all 0.2s;display:block;"
+              onfocus="this.style.borderColor='var(--accent,#38bdf8)';this.style.boxShadow='0 0 10px rgba(56,189,248,0.2)';"
+              onblur="this.style.borderColor='rgba(56,189,248,0.25)';this.style.boxShadow='none';">
             </textarea>
           </div>
           <button onclick="_tabSend()"
-            style="background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);border:none;border-radius:12px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;min-height:38px;height:38px;display:flex;align-items:center;gap:4px;align-self:flex-end;">
-            <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><path d="M2 10l16-8-6 8 6 8-16-8z" fill="var(--accent,#38bdf8)"/></svg>
+            style="background:linear-gradient(135deg,#0284c7,#2563eb);color:#ffffff;border:none;border-radius:12px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;min-height:38px;height:38px;display:flex;align-items:center;gap:4px;box-shadow:0 2px 10px rgba(2,132,199,0.3);transition:all 0.2s;">
+            <svg viewBox="0 0 20 20" width="14" height="14" fill="none"><path d="M2 10l16-8-6 8 6 8-16-8z" fill="#ffffff"/></svg>
             Send
           </button>
         </div>
-        <div style="font-size:9px;color:var(--text-label,#4b6280);margin-top:4px;font-family:'Rajdhani',sans-serif;text-align:center;">
-          ⚠️ Nivi = AI assistant · Not SEBI registered advisor · Research yourself
+        <div style="font-size:8.5px;color:rgba(148,163,184,0.6);margin-top:3px;font-family:'Rajdhani',sans-serif;text-align:center;letter-spacing:0.3px;">
+          ⚠️ Nivi AI is for research &amp; education · Not SEBI advice · Verify yourself
         </div>
       </div>
 
@@ -467,15 +485,22 @@ async function _tabAsk(question) {
   // 2. સ્ટ્રીમિંગ માટે એક ટેમ્પરરી બબલ બનાવો
   const streamingMsgId = 'nivi-stream-' + Date.now();
   const loadingHtml = `
-    <div id="wrapper-${streamingMsgId}" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
-      <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--accent,#38bdf8);background:var(--bg-card,#0d1f35);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg viewBox="0 0 28 28" width="12" height="12" fill="var(--accent,#38bdf8)"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+    <div id="wrapper-${streamingMsgId}" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 10px rgba(139,92,246,0.3);margin-top:2px;">
+        <svg viewBox="0 0 28 28" width="13" height="13" fill="#ffffff"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
       </div>
-      <div id="${streamingMsgId}" style="background:var(--bg-card,#0d1f35);border:1px solid rgba(56,189,248,0.2);color:var(--text-primary,#e2e8f0);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;">
-        <span style="color:var(--accent,#38bdf8);font-size:12px;animation: pulse 1.5s infinite;">વિચારી રહી છું... ⚡</span>
+      <div class="nivi-ai-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:5px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;font-weight:700;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">NIVI AI</span>
+            <span style="font-size:8.5px;background:rgba(192,132,252,0.12);color:#c084fc;border:1px solid rgba(192,132,252,0.25);padding:1px 5px;border-radius:6px;font-weight:700;">PRO</span>
+          </div>
+        </div>
+        <div id="${streamingMsgId}" style="line-height:1.65;">
+          <span style="color:var(--accent,#38bdf8);font-size:12px;animation: pulse 1.5s infinite;">વિચારી રહી છું... ⚡</span>
+        </div>
       </div>
     </div>`;
-  
   area.insertAdjacentHTML('beforeend', loadingHtml);
   area.scrollTop = area.scrollHeight;
 
@@ -634,25 +659,37 @@ ${modularPrompt}
 }
 
 // ======================================
-// FORMAT NIVI RESPONSE — Beautify AI output (FIXED SPACING)
+// FORMAT NIVI RESPONSE — Beautify AI output with KPI badges & clean typography
 // ======================================
 function _formatNiviResponse(text) {
   if (!text) return '';
   
   let html = text;
 
-  // ૧. ક્યારેક AI ખાલી લાઈનમાં એકલો '*' આપી દે છે, તેને હટાવવા:
+  // ૧. ખાલી લાઈનમાં એકલો '*' કે '-' હટાવવો
   html = html.replace(/^\s*[\*\-]\s*$/gm, '');
-  // ૨. Bold (**text**) ને Block (div) ની જગ્યાએ Inline (span) બનાવ્યું
-  // જેથી બુલેટ પોઇન્ટની અંદર બોલ્ડ ટેક્સ્ટ આવે તો નવી લાઈન કે મોટો સ્પેસ ના પડે.
-  html = html.replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:700;color:var(--accent);letter-spacing:0.3px;">$1</span>');
-  // ૩. Numbered list: "1. " or "1) "
-  html = html.replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:6px;margin-bottom:6px;"><span style="color:var(--accent);font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:12px;color:var(--text-primary);line-height:1.6;">$2</span></div>');
-  // ૪. Bullet points: "- " or "* " or "• " 
-  html = html.replace(/^\s*[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin-top:4px;margin-bottom:4px;"><span style="color:var(--accent);flex-shrink:0;font-size:10px;margin-top:3px;">●</span><span style="font-size:12px;color:var(--text-primary);line-height:1.6;">$1</span></div>');
-  // ૫. વધારાની ખાલી જગ્યાઓ (Extra Newlines) ક્લિયર કરવા
-  html = html.replace(/\n{3,}/g, '\n\n'); // ૩+ લાઈન હોય તો માત્ર ૨ જ રાખશે
-  html = html.replace(/\n\n/g, '<div style="margin-top:8px;"></div>');
+
+  // ૨. KPI Badges & Trading Stat Tags
+  html = html.replace(/\b(Target|ટાર્ગેટ|પ્રાઇસ ટાર્ગેટ|Price Target)[:：]\s*(₹?\s*[\d\.\,]+)/gi, '<span class="nivi-kpi-target">🎯 Target: $2</span>');
+  html = html.replace(/\b(Stoploss|Stop Loss|સ્ટોપલોસ|SL)[:：]\s*(₹?\s*[\d\.\,]+)/gi, '<span class="nivi-kpi-stoploss">🛑 Stoploss: $2</span>');
+  html = html.replace(/\b(RSI)[:：]\s*([\d\.]+)/gi, '<span class="nivi-kpi-rsi">📊 RSI: $2</span>');
+  html = html.replace(/\b(Bullish|તેજી)\b/gi, '<span class="nivi-tag-bullish">▲ $1</span>');
+  html = html.replace(/\b(Bearish|મંદી)\b/gi, '<span class="nivi-tag-bearish">▼ $1</span>');
+
+  // ૩. Bold (**text**) ને Inline (span) બનાવવું
+  html = html.replace(/\*\*(.+?)\*\*/g, '<span style="font-weight:700;color:var(--accent,#38bdf8);letter-spacing:0.3px;">$1</span>');
+
+  // ૪. Numbered list: "1. " or "1) "
+  html = html.replace(/^(\d+)[.)]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin:3px 0;"><span style="color:var(--accent,#38bdf8);font-weight:700;font-size:11px;flex-shrink:0;">$1.</span><span style="font-size:13px;color:var(--text-primary,#f1f5f9);line-height:1.5;">$2</span></div>');
+
+  // ૫. Bullet points: "- " or "* " or "• " 
+  html = html.replace(/^\s*[•\-\*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin:3px 0;"><span style="color:var(--accent,#38bdf8);flex-shrink:0;font-size:10px;margin-top:4px;">●</span><span style="font-size:13px;color:var(--text-primary,#f1f5f9);line-height:1.5;">$1</span></div>');
+
+  // ૬. વધારાની ખાલી જગ્યાઓ (Extra Newlines) ક્લિયર કરવી
+  html = html.replace(/\n{3,}/g, '\n\n');
+  html = html.replace(/\n\n/g, '<div style="margin-top:6px;"></div>');
+  html = html.replace(/\n*(<div[^>]*>)/g, '$1');
+  html = html.replace(/(<\/div>)\n*/g, '$1');
   html = html.replace(/\n/g, '<br>');
   return html;
 }
@@ -662,33 +699,46 @@ function _tabRenderChat() {
   if (!area) return;
 
   if (AppState._tabChatHistory.length === 0) {
-area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:20px 10px;text-align:center;">
-        <svg viewBox="0 0 28 28" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="14" cy="14" r="13" fill="#1e1b4b" stroke="#7c3aed" stroke-width="1.2"/>
-          <circle cx="14" cy="14" r="11" fill="none" stroke="#4c1d95" stroke-width="0.6" opacity="0.5"/>
-          <rect x="6.5" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/>
-          <rect x="18" y="7.5" width="3.5" height="13" rx="1" fill="#a78bfa"/>
-          <polygon points="10,7.5 13,7.5 22,20.5 19,20.5" fill="#c4b5fd"/>
-          <line x1="14" y1="2" x2="14" y2="4.5" stroke="#c4b5fd" stroke-width="1.2" stroke-linecap="round"/>
-        </svg>
-        <div style="font-size:18px;font-weight:800;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:2px;">NIVI</div>
-        <div style="font-size:11px;color:var(--text-label,#4b6280);">Stock analysis · Portfolio review</div>
+    area.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:30px 10px;text-align:center;">
+        <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(168,85,247,0.2));border:1px solid rgba(168,85,247,0.4);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(168,85,247,0.25);">
+          <svg viewBox="0 0 28 28" width="28" height="28" fill="#c084fc"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+        </div>
+        <div style="font-size:20px;font-weight:800;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:2px;">NIVI COPILOT</div>
+        <div style="font-size:12px;color:var(--text-sec,#94a3b8);max-width:320px;">AI Financial Copilot · Powered by Gemini 3.8 &amp; Live Search</div>
       </div>`;
+    const c = document.getElementById('tab-chips-container');
+    if (c) c.style.display = 'flex';
     return;
   }
 
-  area.innerHTML = AppState._tabChatHistory.map(msg => {
+  area.innerHTML = AppState._tabChatHistory.map((msg, idx) => {
     if (msg.role === 'user') {
       return `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-        <div style="background:var(--accent);color:#fff;border-radius:14px 14px 2px 14px;padding:9px 13px;max-width:82%;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">${escapeHtml(msg.text)}</div>
+        <div class="nivi-user-bubble">${escapeHtml(msg.text)}</div>
       </div>`;
     } else {
       const formatted = _formatNiviResponse(msg.text);
-      return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;">
-        <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid var(--accent);background:var(--bg-app);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg viewBox="0 0 28 28" width="12" height="12" fill="var(--accent)"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
+      const msgId = `nivi-msg-${idx}`;
+      const timeStr = msg.ts ? new Date(msg.ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+      return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 10px rgba(139,92,246,0.3);margin-top:2px;">
+          <svg viewBox="0 0 28 28" width="13" height="13" fill="#ffffff"><path d="M14 2C14 2 15.2 10 22 14C15.2 18 14 26 14 26C14 26 12.8 18 6 14C12.8 10 14 2 14 2Z"/></svg>
         </div>
-        <div style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:2px 14px 14px 14px;padding:10px 12px;max-width:85%;font-size:12px;line-height:1.7;font-family:'Noto Sans Devanagari','Rajdhani',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.05);">${formatted}</div>
+        <div class="nivi-ai-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:5px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;font-weight:700;color:#c084fc;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;">NIVI AI</span>
+              <span style="font-size:8.5px;background:rgba(192,132,252,0.12);color:#c084fc;border:1px solid rgba(192,132,252,0.25);padding:1px 5px;border-radius:6px;font-weight:700;">PRO</span>
+            </div>
+            <button onclick="_copyNiviMsg('${msgId}', this)" title="Copy text"
+              style="background:transparent;border:1px solid rgba(148,163,184,0.25);color:var(--text-sec,#94a3b8);border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:'Rajdhani',sans-serif;transition:all 0.2s;">
+              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+          <div id="${msgId}" style="line-height:1.65;">${formatted}</div>
+          ${timeStr ? `<div style="margin-top:6px;font-size:9.5px;color:rgba(148,163,184,0.5);text-align:right;">${timeStr}</div>` : ''}
+        </div>
       </div>`;
     }
   }).join('');
@@ -702,8 +752,8 @@ function _tabShowLoading(show) {
   if (show && !existing) {
     const el = document.createElement('div');
     el.id = 'tab-loading-indicator';
-    el.style.padding = '10px';
-    el.innerHTML = '<span style="color:var(--accent,#38bdf8);font-size:12px;">Nivi is thinking...</span>';
+    el.style.cssText = 'padding:10px;display:flex;align-items:center;gap:8px;';
+    el.innerHTML = '<span class="nivi-pulse-dot"></span><span style="color:var(--accent,#38bdf8);font-size:12px;font-family:\'Rajdhani\',sans-serif;">Nivi is thinking...</span>';
     area.appendChild(el);
     area.scrollTop = area.scrollHeight;
   } else if (!show && existing) {
@@ -715,6 +765,69 @@ function _tabClearHistory() {
   AppState._tabChatHistory = [];
   localStorage.removeItem('niviTabChat');
   _tabRenderChat();
+}
+
+function _toggleNiviFullscreen() {
+  const niviEl = document.getElementById('nivi');
+  if (!niviEl) return;
+  const isFull = niviEl.classList.toggle('nivi-fullscreen');
+  const btn = document.getElementById('niviFullscreenBtn');
+  if (btn) {
+    btn.innerHTML = isFull
+      ? `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg> Collapse`
+      : `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Expand`;
+    btn.title = isFull ? 'Normal View' : 'Fullscreen reading mode';
+    btn.style.background = isFull ? 'rgba(239,68,68,0.15)' : 'rgba(56,189,248,0.1)';
+    btn.style.color = isFull ? '#ef4444' : '#38bdf8';
+    btn.style.borderColor = isFull ? 'rgba(239,68,68,0.3)' : 'rgba(56,189,248,0.3)';
+  }
+  setTimeout(() => {
+    const area = document.getElementById('tab-chat-area');
+    if (area) area.scrollTop = area.scrollHeight;
+  }, 100);
+}
+
+function _toggleChatChips() {
+  const c = document.getElementById('tab-chips-container');
+  const ch = document.getElementById('chipsChevron');
+  if (!c) return;
+  const isHidden = c.style.display === 'none';
+  c.style.display = isHidden ? 'flex' : 'none';
+  if (ch) ch.textContent = isHidden ? '▲' : '▼';
+}
+
+function _copyNiviMsg(msgId, btn) {
+  const target = document.getElementById(msgId);
+  if (!target) return;
+  const text = target.innerText || target.textContent;
+  if (!navigator.clipboard) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    _showCopySuccess(btn);
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    _showCopySuccess(btn);
+  }).catch(() => {
+    _showCopySuccess(btn);
+  });
+}
+
+function _showCopySuccess(btn) {
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '✓ Copied';
+  btn.style.color = '#10b981';
+  btn.style.borderColor = 'rgba(16,185,129,0.5)';
+  setTimeout(() => {
+    btn.innerHTML = orig;
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }, 1800);
 }
 
 function escapeHtml(str) {
@@ -932,6 +1045,9 @@ window._niviModalAsk = _niviModalAsk;
 window._tabAskWithFile = _tabAskWithFile;
 window._tabFileSelected = _tabFileSelected;
 window._tabClearFile = _tabClearFile;
+window._toggleNiviFullscreen = _toggleNiviFullscreen;
+window._toggleChatChips = _toggleChatChips;
+window._copyNiviMsg = _copyNiviMsg;
 
 // AppState init — pendingFile
 if (!AppState._pendingFile) AppState._pendingFile = null;
