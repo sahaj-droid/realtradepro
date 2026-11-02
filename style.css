@@ -66,12 +66,34 @@ body {
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 25px 90px #0008;
+    min-height: auto !important;
   }
   #bottomNav {
     position: sticky !important;
+    bottom: 0 !important;
     max-width: 560px !important;
     margin: auto !important;
     border-radius: 18px 18px 0 0 !important;
+  }
+}
+
+/* Watchlist & Bottom Nav Spacing Fix */
+#watchlist {
+  min-height: auto !important;
+  padding-top: 6px !important;
+  padding-bottom: 2px !important;
+}
+
+#watchlist .wl-card-wrap:last-child {
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 599px) {
+  body {
+    padding-bottom: 65px !important;
+  }
+  #watchlist {
+    padding-bottom: 65px !important;
   }
 }
 
@@ -764,8 +786,6 @@ html {
 }
 .tab {
   background: var(--bg-app, #071428);
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
 }
 /* Light mode overrides */
 /* ---- PROFILE SCREENS — ALWAYS DARK, never affected by light mode ---- */
