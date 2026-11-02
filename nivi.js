@@ -514,10 +514,12 @@ LANGUAGE: ${langInstruction}
 ${modularPrompt}
 `;
 
-  const geminiHistory = AppState._tabChatHistory.slice(0, -1).slice(-10).map(msg => ({
-    role: msg.role === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.text }]
-  }));
+  const geminiHistory = AppState._tabChatHistory.slice(0, -1).slice(-10)
+    .filter(msg => msg && msg.text && !msg.text.startsWith('⚠️'))
+    .map(msg => ({
+      role: (msg.role === 'nivi' || msg.role === 'model') ? 'model' : 'user',
+      parts: [{ text: msg.text }]
+    }));
 
   // 🚀 લાઈવ સર્ચ કરવું છે કે નહિ તે ચેક કરો
   const useLiveSearch = _needsLiveSearch(question);

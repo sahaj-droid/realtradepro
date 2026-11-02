@@ -1,13 +1,15 @@
 // ========================================
-// GEMINI MODULE — 100% Free Quota Supported Models
-// Primary: gemini-2.0-flash (Fast & Free)
-// Fallback: gemini-1.5-flash, gemini-1.5-flash-8b
+// GEMINI MODULE — Google Gemini API Client
+// Standard Chat: Primary gemini-3.8, Fallback gemini-2.5-flash-lite, gemini-2.0-flash, gemini-1.5-flash
+// Web Search / Live Price: gemini-2.5-flash-lite, gemini-2.0-flash, gemini-1.5-flash
 // ========================================
+
+const SEARCH_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const CHAT_MODELS   = ['gemini-3.8', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
 // ========================================
 // 🔑 KEY HELPERS
 // ========================================
-
 window.getGeminiKeys = function () {
     const val = localStorage.getItem('geminiApiKey');
     if (!val || !val.trim()) return [];
@@ -15,13 +17,31 @@ window.getGeminiKeys = function () {
 };
 
 // ========================================
-// 🚀 GEMINI CALL — Single Turn (with Search Grounding)
+// 🛠️ MULTI-TURN SANITIZER (Prevents 400 Bad Request)
+// Ensures strictly alternating user <-> model roles
+// ========================================
+function sanitizeGeminiContents(contents) {
+    const sanitized = [];
+    for (const c of contents) {
+        if (!c || !c.parts || !c.parts[0] || !c.parts[0].text) continue;
+        const text = String(c.parts[0].text).trim();
+        if (!text) continue;
+        const role = (c.role === 'nivi' || c.role === 'model') ? 'model' : 'user';
+
+        if (sanitized.length > 0 && sanitized[sanitized.length - 1].role === role) {
+            sanitized[sanitized.length - 1].parts[0].text += '\n\n' + text;
+        } else {
+            sanitized.push({ role, parts: [{ text }] });
+        }
+    }
+    return sanitized;
+}
+
+// ========================================
+// 🚀 GEMINI CALL — Single Turn
 // ========================================
 async function directGeminiCall(prompt, useSearch = false) {
-    // Search Grounding mate — primary + fallbacks
-    const models = useSearch
-        ? ['gemini-2.0-flash', 'gemini-1.5-flash']
-        : ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+    const models = useSearch ? SEARCH_MODELS : CHAT_MODELS;
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -32,8 +52,7 @@ async function directGeminiCall(prompt, useSearch = false) {
     for (const k of keys) {
         for (const modelName of models) {
             try {
-                await new Promise(r => setTimeout(r, 300));
-
+                await new Promise(r => setTimeout(r, 150));
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`;
 
                 const body = {
@@ -45,7 +64,6 @@ async function directGeminiCall(prompt, useSearch = false) {
                 };
 
                 if (useSearch) {
-                    // Gemini 2.x+ uses googleSearch (camelCase), 1.5 uses google_search
                     const isV2Plus = modelName.startsWith('gemini-2') || modelName.startsWith('gemini-3');
                     body.tools = isV2Plus
                         ? [{ googleSearch: {} }]
@@ -59,17 +77,18 @@ async function directGeminiCall(prompt, useSearch = false) {
                 });
 
                 const data = await response.json();
-                if (response.ok && data.candidates && data.candidates[0]?.content) {
-                    return { ok: true, answer: data.candidates[0].content.parts[0].text };
+                if (response.ok && data.candidates && data.candidates[0]?.content?.parts) {
+                    const text = data.candidates[0].content.parts.map(p => p.text || '').join('');
+                    if (text.trim()) return { ok: true, answer: text };
                 }
 
                 if (response.status === 429) {
-                    console.warn(`⚠️ Key rate limited on ${modelName}, trying next...`);
+                    console.warn(`⚠️ Rate limited on ${modelName}, trying next...`);
                     continue;
                 }
-                console.warn(`Gemini error (${modelName}): [${response.status}]`, data.error?.message || JSON.stringify(data.error));
+                console.warn(`Gemini call error (${modelName}): [${response.status}]`, data.error?.message || '');
             } catch (err) {
-                console.error(`Gemini call error (${modelName}):`, err.message);
+                console.error(`Gemini call exception (${modelName}):`, err.message);
             }
         }
     }
@@ -79,10 +98,10 @@ async function directGeminiCall(prompt, useSearch = false) {
 }
 
 // ========================================
-// 💬 GEMINI MULTI-TURN CHAT
+// 💬 GEMINI MULTI-TURN CHAT (Non-Streaming Fallback)
 // ========================================
-async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+async function directGeminiCallMultiTurn(priorHistory, currentPrompt, useSearch = false) {
+    const models = useSearch ? SEARCH_MODELS : CHAT_MODELS;
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -90,30 +109,39 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
         return { ok: false };
     }
 
+    const rawContents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
+    const contents = sanitizeGeminiContents(rawContents);
+
     for (const k of keys) {
         for (const modelName of models) {
             try {
-                const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`;
+                const body = {
+                    contents,
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+                };
+
+                if (useSearch) {
+                    const isV2Plus = modelName.startsWith('gemini-2') || modelName.startsWith('gemini-3');
+                    body.tools = isV2Plus ? [{ googleSearch: {} }] : [{ google_search: {} }];
+                }
 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents,
-                        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-                    })
+                    body: JSON.stringify(body)
                 });
 
                 const data = await response.json();
-                if (response.ok && data.candidates && data.candidates[0]?.content) {
-                    return { ok: true, answer: data.candidates[0].content.parts[0].text };
+                if (response.ok && data.candidates && data.candidates[0]?.content?.parts) {
+                    const text = data.candidates[0].content.parts.map(p => p.text || '').join('');
+                    if (text.trim()) return { ok: true, answer: text };
                 }
                 if (response.status === 429) {
                     console.warn(`⚠️ Rate limit on ${modelName} (key rotation)...`);
                     continue;
                 }
-                console.warn(`Gemini MultiTurn error (${modelName}):`, data.error?.message);
+                console.warn(`Gemini MultiTurn error (${modelName}): [${response.status}]`, data.error?.message);
             } catch (e) {
                 console.error(`Gemini MultiTurn error (${modelName}):`, e.message);
             }
@@ -128,7 +156,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
 // 📁 FILE READING — PDF, JS, HTML, TXT, Images
 // ========================================
 async function directGeminiCallWithFile(prompt, fileBase64, mimeType) {
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+    const models = CHAT_MODELS;
     const keys = getGeminiKeys();
 
     const filePart = {
@@ -145,7 +173,7 @@ async function directGeminiCallWithFile(prompt, fileBase64, mimeType) {
     for (const k of keys) {
         for (const modelName of models) {
             try {
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 200));
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${k}`;
 
                 const response = await fetch(url, {
@@ -161,8 +189,9 @@ async function directGeminiCallWithFile(prompt, fileBase64, mimeType) {
                 });
 
                 const data = await response.json();
-                if (response.ok && data.candidates && data.candidates[0]?.content) {
-                    return { ok: true, answer: data.candidates[0].content.parts[0].text };
+                if (response.ok && data.candidates && data.candidates[0]?.content?.parts) {
+                    const text = data.candidates[0].content.parts.map(p => p.text || '').join('');
+                    if (text.trim()) return { ok: true, answer: text };
                 }
                 if (response.status === 429) { continue; }
                 console.warn(`Gemini file call error (${modelName}):`, data.error?.message);
@@ -229,32 +258,35 @@ window.getApiStatus = function () {
 };
 
 // ========================================
-// 🌊 GEMINI MULTI-TURN STREAMING — Full Multi-Key Support
+// 🌊 GEMINI MULTI-TURN STREAMING — Full Multi-Key & Multi-Model Support
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
-    // Free tier supported models for streaming chat
-    const models = useSearch
-        ? ['gemini-2.0-flash', 'gemini-1.5-flash']
-        : ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+    const models = useSearch ? SEARCH_MODELS : CHAT_MODELS;
     const keys = getGeminiKeys();
 
     if (keys.length === 0) return { ok: false };
 
-    const contents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
+    const rawContents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
+    const contents = sanitizeGeminiContents(rawContents);
+
     const body = {
         contents,
         generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
     };
 
-    if (useSearch) {
-        // ✅ Correct REST API syntax for Google Search Grounding
-        body.tools = [{ google_search: {} }];
-    }
-
-    // ✅ ALL keys try karo (not just keys[0])
+    // ✅ ALL keys and models in priority order
     for (const k of keys) {
         for (const modelName of models) {
             try {
+                if (useSearch) {
+                    const isV2Plus = modelName.startsWith('gemini-2') || modelName.startsWith('gemini-3');
+                    body.tools = isV2Plus
+                        ? [{ googleSearch: {} }]
+                        : [{ google_search: {} }];
+                } else {
+                    delete body.tools;
+                }
+
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${k}`;
                 const response = await fetch(url, {
                     method: 'POST',
@@ -263,38 +295,44 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
                 });
 
                 if (!response.ok) {
-                    console.warn(`⚠️ ${modelName} failed (${response.status}). Trying next...`);
+                    console.warn(`⚠️ ${modelName} stream failed (${response.status}). Trying next model/key...`);
                     continue;
                 }
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
                 let fullText = '';
+                let buffer = '';
 
                 while (true) {
                     const { value, done } = await reader.read();
                     if (done) break;
 
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
 
                     for (const line of lines) {
-                        const dataStr = line.replace('data: ', '').trim();
-                        if (dataStr) {
-                            try {
-                                const data = JSON.parse(dataStr);
-                                if (data.candidates && data.candidates[0].content) {
-                                    const textPart = data.candidates[0].content.parts.map(p => p.text).join('');
-                                    fullText += textPart;
-                                    if (onChunk) onChunk(fullText);
-                                }
-                            } catch (e) {
-                                // Incomplete JSON chunk, ignore
+                        const trimmed = line.trim();
+                        if (!trimmed.startsWith('data: ')) continue;
+                        const dataStr = trimmed.replace('data: ', '').trim();
+                        if (!dataStr || dataStr === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.candidates && data.candidates[0]?.content?.parts) {
+                                const textPart = data.candidates[0].content.parts.map(p => p.text || '').join('');
+                                fullText += textPart;
+                                if (onChunk) onChunk(fullText);
                             }
+                        } catch (e) {
+                            // Incomplete JSON chunk, will be handled with buffer
                         }
                     }
                 }
-                return { ok: true, answer: fullText };
+
+                if (fullText.trim()) {
+                    return { ok: true, answer: fullText };
+                }
             } catch (e) {
                 console.error(`Stream error (${modelName}):`, e.message);
             }
@@ -302,7 +340,7 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
     }
 
     console.error('❌ All Gemini streaming attempts failed. Falling back to non-stream...');
-    return await directGeminiCallMultiTurn(priorHistory, currentPrompt);
+    return await directGeminiCallMultiTurn(priorHistory, currentPrompt, useSearch);
 }
 
 // ========================================
@@ -313,5 +351,4 @@ window.directGeminiCallMultiTurn           = directGeminiCallMultiTurn;
 window.directGeminiCallWithFile            = directGeminiCallWithFile;
 window.directGeminiCallStreamMultiTurn     = directGeminiCallStreamMultiTurn;
 
-console.log('✅ Gemini Module Loaded | Chat: gemini-3.1-flash-lite → gemini-3.5-flash | Search: gemini-2.5-flash-lite | Multi-Key | Streaming: Fixed');
-console.log('📊 API Status:', getApiStatus());
+console.log('✅ Gemini Module Loaded | Search: gemini-2.5-flash-lite | Chat: gemini-3.8 / gemini-2.5-flash-lite / gemini-2.0-flash');
