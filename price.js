@@ -185,28 +185,59 @@ function checkTargets(sym, currentPrice) {
 // ======================================
 // BUILD WATCHLIST CARD (v3.0 Modern Clean UI)
 // ======================================
+function _cleanName(raw, s) {
+  if (!raw) return s || '';
+  let str = String(raw).trim();
+  str = str.replace(/\bEquity\b/gi, '')
+           .replace(/\bLimited\b/gi, '')
+           .replace(/\bLtd\.?\b/gi, '')
+           .replace(/\bEq\b/gi, '')
+           .replace(/[-–—]\s*$/, '')
+           .replace(/\s{2,}/g, ' ')
+           .trim();
+  return str || s;
+}
+
 function _getCompanyDisplayName(s, d) {
-  if (d && (d.shortName || d.longName || d.name || d.companyName)) {
-    return d.shortName || d.longName || d.name || d.companyName;
-  }
   const KNOWN_NAMES = {
-    'RELIANCE': 'Reliance Industries Ltd.',
-    'HDFCBANK': 'HDFC Bank Ltd.',
-    'TATASTEEL': 'Tata Steel Ltd.',
-    'TATAPOWER': 'Tata Power Company Ltd.',
+    'RELIANCE': 'Reliance Industries',
+    'HDFCBANK': 'HDFC Bank',
+    'TATASTEEL': 'Tata Steel',
+    'TATAPOWER': 'Tata Power',
     'SBIN': 'State Bank of India',
-    'INFY': 'Infosys Limited',
+    'INFY': 'Infosys',
     'TCS': 'Tata Consultancy Services',
-    'ICICIBANK': 'ICICI Bank Ltd.',
+    'ICICIBANK': 'ICICI Bank',
     'JPL': 'Jupiter Life Line Hospitals',
-    'TRAVELFOOD': 'Travel Food Services Ltd.',
+    'TRAVELFOOD': 'Travel Food Services',
     'DCI': 'DC Infotech & Communication',
     'SBIFUNDS': 'SBI Mutual Fund',
     'PARAS': 'Paras Defence & Space Tech',
-    'WAAREE': 'Waaree Energies Ltd.',
-    'NTPCGREEN': 'NTPC Green Energy Ltd.'
+    'WAAREE': 'Waaree Energies',
+    'NTPCGREEN': 'NTPC Green Energy',
+    'TRANSRAILL': 'Transrail Lighting',
+    'IRFC': 'Indian Railway Finance Corp',
+    'NBCC': 'NBCC (India)',
+    'LXCHEM': 'Laxmi Organic Industries',
+    'V2RETAIL': 'V2 Retail',
+    'HSCL': 'Himadri Speciality Chemical',
+    'SUDARSCHEM': 'Sudarshan Chemical',
+    'OLECTRA': 'Olectra Greentech',
+    'ADANIPORTS': 'Adani Ports & SEZ',
+    'ITC': 'ITC Limited'
   };
-  return KNOWN_NAMES[s.toUpperCase()] || (s + ' Equity');
+
+  const cleanSym = s ? s.toUpperCase() : '';
+  if (KNOWN_NAMES[cleanSym]) {
+    return KNOWN_NAMES[cleanSym];
+  }
+
+  if (d && (d.shortName || d.longName || d.name || d.companyName)) {
+    const raw = d.shortName || d.longName || d.name || d.companyName;
+    return _cleanName(raw, s);
+  }
+
+  return s;
 }
 
 function _getStockAvatarStyle(s) {
@@ -242,8 +273,11 @@ function _buildWLCard(s, d) {
             ${initials}
           </div>
           <div style="min-width:0;flex:1;">
-            <div style="font-size:13px;font-weight:700;color:#f0f5ff;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${compName}</div>
-            <div style="font-size:10px;color:#8b9bb2;margin-top:2px;">${s} · NSE</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;font-weight:800;color:#f0f5ff;font-family:'Rajdhani',sans-serif;letter-spacing:0.4px;">${s}</span>
+              <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#1e2d4a;color:#8b9bb2;">NSE</span>
+            </div>
+            <div style="font-size:11px;color:#8b9bb2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${compName}">${compName}</div>
           </div>
         </div>
         <div class="text-right shrink-0" style="margin-left:12px;text-align:right;">

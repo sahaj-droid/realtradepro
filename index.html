@@ -623,58 +623,123 @@
   </div>
 </div>
 
-<!-- DETAILS MODAL (Northstar Mobile Style) -->
-<div id="detailModal" class="hidden fixed inset-0 flex items-center justify-center p-3" style="display:none;position:fixed;inset:0;background:rgba(8,14,25,0.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9998;" onclick="if(event.target===this)closeDetail()">
-  <div style="background:linear-gradient(150deg,#142136,#101a29);border:1px solid #26354b;border-radius:20px;padding:16px;width:min(440px,96vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 25px 90px rgba(0,0,0,0.7);">
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <h2 id="d-title" style="font-size:20px;font-weight:800;color:#f0f5ff;margin:0;font-family:'Inter',system-ui,sans-serif;letter-spacing:-0.4px;"></h2>
-        <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;background:#243653;color:#c6d4ff;">NSE</span>
+<!-- DETAILS MODAL (Full Page Trading App Style) -->
+<div id="detailModal" class="hidden fixed inset-0" style="display:none;position:fixed;inset:0;background:rgba(8,14,25,0.98);z-index:99999;overflow:hidden;">
+  <div class="detail-page-container">
+    
+    <!-- Top Sticky Header -->
+    <header class="detail-header" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+        <button onclick="closeDetail()" style="width:36px;height:36px;border-radius:11px;background:#142136;border:1px solid #26354b;color:#f0f5ff;display:grid;place-items:center;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;transition:all 0.15s ease;" title="Back">
+          ←
+        </button>
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h2 id="d-title" style="font-size:18px;font-weight:800;color:#f0f5ff;margin:0;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;line-height:1.2;"></h2>
+            <span id="d-exch-badge" style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;background:#1e2d4a;color:#8b9bb2;">NSE</span>
+          </div>
+          <div id="d-comp-name" style="font-size:11px;color:#8b9bb2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
       </div>
-      <button onclick="closeDetail()" style="width:34px;height:34px;border:1px solid #26354b;background:#111d2d;color:#8b9bb2;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;" title="Close">✕</button>
+      
+      <!-- Right Header: Live Price & Close Button -->
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <div style="text-align:right;">
+          <div id="d-hdr-price" style="font-size:15px;font-weight:800;color:#f0f5ff;font-family:'JetBrains Mono',monospace;">--</div>
+          <div id="d-hdr-change" style="font-size:10px;font-weight:700;margin-top:1px;">--</div>
+        </div>
+        <button onclick="closeDetail()" style="width:32px;height:32px;border-radius:10px;background:#111d2d;border:1px solid #26354b;color:#8b9bb2;font-size:13px;display:grid;place-items:center;cursor:pointer;" title="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- Subtabs Navigation Bar -->
+    <div class="detail-tabs-nav" style="padding:8px 14px;background:#0c1523;border-bottom:1px solid #1c2b42;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;">
+      <button id="dtab-btn-price" onclick="switchDetailTab('price')" class="detail-tab-btn active">Price & Chart</button>
+      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" class="detail-tab-btn">Technical</button>
+      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" class="detail-tab-btn">Fundamentals</button>
+      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" class="detail-tab-btn">Bollinger</button>
+      <button id="dtab-btn-links" onclick="switchDetailTab('links')" class="detail-tab-btn">Links</button>
     </div>
 
-    <!-- Tab buttons (Northstar Range Selector Style) -->
-    <div style="display:flex;gap:3px;background:#0c1523;padding:3px;border-radius:10px;border:1px solid #26354b;margin-bottom:12px;flex-shrink:0;">
-      <button id="dtab-btn-price" onclick="switchDetailTab('price')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;background:#2a3d5e;color:#ffffff;font-family:'Inter',system-ui,sans-serif;">Price</button>
-      <button id="dtab-btn-fund" onclick="switchDetailTab('fund')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Fund</button>
-      <button id="dtab-btn-tech" onclick="switchDetailTab('tech')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Tech</button>
-      <button id="dtab-btn-bb" onclick="switchDetailTab('bb')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">BB</button>
-      <button id="dtab-btn-links" onclick="switchDetailTab('links')" style="flex:1;padding:6px 2px;border:0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:#8b9bb2;font-family:'Inter',system-ui,sans-serif;">Links</button>
-    </div>
-
-    <!-- Tab content (scrollable) -->
-    <div style="flex:1;overflow-y:auto;min-height:0;padding-right:2px;">
-      <!-- Tab: Price + Chart -->
+    <!-- Scrollable Content Body -->
+    <div id="d-scroll-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 85px 14px;">
+      
+      <!-- TAB 1: CHART & PRICE -->
       <div id="dtab-price" style="display:block;">
-        <div id="d-body" style="font-size:13px;color:#cbd5e1;"></div>
-        <div id="d-chart" style="margin-top:10px;border-radius:12px;overflow:hidden;border:1px solid #26354b;"></div>
-        <button id="d-tv-btn2" onclick="" style="background:#243653;color:#c6d4ff;border:1px solid #26354b;width:100%;margin-top:10px;padding:10px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',system-ui,sans-serif;transition:all 0.15s ease;">📊 View Full Chart on TradingView</button>
+        <!-- Hero Price Card -->
+        <div style="background:linear-gradient(150deg,#142136,#101a29);border:1px solid #26354b;border-radius:16px;padding:14px 16px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="font-size:10px;color:#8b9bb2;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;">CURRENT MARKET PRICE</div>
+              <div id="d-big-price" style="font-size:26px;font-weight:800;color:#f0f5ff;font-family:'JetBrains Mono',monospace;margin-top:2px;">--</div>
+              <div id="d-big-change" style="margin-top:4px;"></div>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:12px;background:#111d2d;border:1px solid #26354b;font-size:10px;color:#8b9bb2;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#24d6a0;display:inline-block;"></span>
+              NSE Live
+            </div>
+          </div>
+        </div>
+
+        <!-- Range Sliders (Day Low/High, 52W Low/High, Open, Prev Close) -->
+        <div id="d-body" style="font-size:13px;color:#cbd5e1;margin-bottom:12px;"></div>
+
+        <!-- Interactive Candlestick Chart Container -->
+        <div style="background:linear-gradient(150deg,#142136,#101a29);border:1px solid #26354b;border-radius:16px;padding:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 4px;">
+            <div style="font-size:12px;font-weight:700;color:#f0f5ff;letter-spacing:0.3px;">Price History (Daily Candles)</div>
+            <div id="d-chart-status" style="font-size:10px;color:#8b9bb2;">Interactive</div>
+          </div>
+          <div id="d-chart" style="height:220px;width:100%;border-radius:10px;overflow:hidden;background:#0c1523;position:relative;"></div>
+        </div>
+
+        <!-- TradingView Button -->
+        <button id="d-tv-btn2" onclick="" style="background:linear-gradient(135deg,#1c335a,#182642);color:#91aaff;border:1px solid #2d4575;width:100%;padding:11px;border-radius:14px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(0,0,0,0.3);transition:all 0.15s ease;">
+          <span>📈 View Full Interactive Chart on TradingView</span>
+        </button>
       </div>
 
-      <!-- Tab: Fundamentals -->
-      <div id="dtab-fund" style="display:none;">
-        <div id="fundamentalsSection"><div style="font-size:11px;color:#8b9bb2;text-align:center;padding:16px;">Loading fundamentals...</div></div>
-      </div>
-
-      <!-- Tab: Technical -->
+      <!-- TAB 2: TECHNICAL -->
       <div id="dtab-tech" style="display:none;">
         <div id="techSection"><div style="font-size:11px;color:#8b9bb2;text-align:center;padding:16px;">Loading technical data...</div></div>
         <div id="smartAlertSection" style="margin-top:10px;"></div>
       </div>
 
-      <!-- Tab: Bollinger -->
+      <!-- TAB 3: FUNDAMENTALS -->
+      <div id="dtab-fund" style="display:none;">
+        <div id="fundamentalsSection"><div style="font-size:11px;color:#8b9bb2;text-align:center;padding:16px;">Loading fundamentals...</div></div>
+      </div>
+
+      <!-- TAB 4: BOLLINGER -->
       <div id="dtab-bb" style="display:none;">
         <div id="bbSection"></div>
       </div>
 
-      <!-- Tab: Links -->
+      <!-- TAB 5: LINKS -->
       <div id="dtab-links" style="display:none;">
         <div id="quickLinksSection"></div>
-        <button id="d-tv-btn" onclick="" style="background:#243653;color:#c6d4ff;border:1px solid #26354b;width:100%;margin-top:10px;padding:10px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',system-ui,sans-serif;transition:all 0.15s ease;">📊 View Full Chart on TradingView</button>
+        <button id="d-tv-btn" onclick="" style="background:linear-gradient(135deg,#1c335a,#182642);color:#91aaff;border:1px solid #2d4575;width:100%;margin-top:10px;padding:11px;border-radius:14px;font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <span>📈 View Full Chart on TradingView</span>
+        </button>
       </div>
+
     </div>
+
+    <!-- Sticky Bottom Action Bar (Zerodha Kite / Groww style) -->
+    <div id="d-action-bar" style="position:absolute;bottom:0;left:0;right:0;background:rgba(11,19,32,0.98);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid #26354b;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:8px;z-index:20;">
+      <button id="d-btn-buy" style="flex:1.2;background:linear-gradient(135deg,#1f9d77,#157357);color:#ffffff;border:none;border-radius:12px;padding:11px 4px;font-size:13px;font-weight:800;letter-spacing:0.5px;cursor:pointer;box-shadow:0 4px 12px rgba(36,214,160,0.25);">BUY</button>
+      <button id="d-btn-sell" style="flex:1.2;background:linear-gradient(135deg,#d94f61,#b52b3e);color:#ffffff;border:none;border-radius:12px;padding:11px 4px;font-size:13px;font-weight:800;letter-spacing:0.5px;cursor:pointer;box-shadow:0 4px 12px rgba(255,113,128,0.25);">SELL</button>
+      <button id="d-btn-alert" style="flex:0.8;background:#142136;color:#fcd34d;border:1px solid #374151;border-radius:12px;padding:9px 2px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:13px;line-height:1;">🔔</span><span>Alert</span>
+      </button>
+      <button id="d-btn-target" style="flex:0.8;background:#142136;color:#38bdf8;border:1px solid #374151;border-radius:12px;padding:9px 2px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:13px;line-height:1;">🎯</span><span>Target</span>
+      </button>
+      <button id="d-btn-nivi" style="flex:0.8;background:#1e1b38;color:#c4b5fd;border:1px solid #373063;border-radius:12px;padding:9px 2px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <span style="font-size:13px;line-height:1;">💬</span><span>Nivi AI</span>
+      </button>
+    </div>
+
   </div>
 </div>
 
