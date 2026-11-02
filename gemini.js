@@ -1,7 +1,7 @@
 // ========================================
-// GEMINI MODULE — Gemini Only (Multi-Key Rotation)
-// Primary: gemini-3.1-flash-lite
-// Fallback: gemini-3.5-flash
+// GEMINI MODULE — 100% Free Quota Supported Models
+// Primary: gemini-2.0-flash (Fast & Free)
+// Fallback: gemini-1.5-flash, gemini-1.5-flash-8b
 // ========================================
 
 // ========================================
@@ -20,8 +20,8 @@ window.getGeminiKeys = function () {
 async function directGeminiCall(prompt, useSearch = false) {
     // Search Grounding mate — primary + fallbacks
     const models = useSearch
-        ? ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
-        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-2.0-flash'];
+        ? ['gemini-2.0-flash', 'gemini-1.5-flash']
+        : ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -82,7 +82,7 @@ async function directGeminiCall(prompt, useSearch = false) {
 // 💬 GEMINI MULTI-TURN CHAT
 // ========================================
 async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
-    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) {
@@ -128,7 +128,7 @@ async function directGeminiCallMultiTurn(priorHistory, currentPrompt) {
 // 📁 FILE READING — PDF, JS, HTML, TXT, Images
 // ========================================
 async function directGeminiCallWithFile(prompt, fileBase64, mimeType) {
-    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
     const keys = getGeminiKeys();
 
     const filePart = {
@@ -232,10 +232,10 @@ window.getApiStatus = function () {
 // 🌊 GEMINI MULTI-TURN STREAMING — Full Multi-Key Support
 // ========================================
 async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onChunk, useSearch = false) {
-    // Search Grounding mate gemini-2.5-flash-lite — baaki chat/insights mate regular models
+    // Free tier supported models for streaming chat
     const models = useSearch
-        ? ['gemini-2.5-flash-lite']
-        : ['gemini-3.1-flash-lite', 'gemini-3.5-flash'];
+        ? ['gemini-2.0-flash', 'gemini-1.5-flash']
+        : ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
     const keys = getGeminiKeys();
 
     if (keys.length === 0) return { ok: false };
