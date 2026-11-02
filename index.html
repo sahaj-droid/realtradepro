@@ -301,18 +301,18 @@
   </div>
 
   <!-- Panel 1: FII/DII & IPO Tracker -->
-  <div id="markets-panel-fiidii" style="display:block;padding:0 12px 100px;">
+  <div id="markets-panel-fiidii" style="display:block;padding:0 12px 24px;">
     <div id="marketFlowContent"></div>
   </div>
 
   <!-- Panel 2: Indices & Terminal Rows -->
-  <div id="markets-panel-indices" style="display:none;padding:0 12px 100px;">
+  <div id="markets-panel-indices" style="display:none;padding:0 12px 24px;">
     <div id="indices" style="padding:0;"></div>
   </div>
 
   <!-- Panel 3: Financials -->
-  <div id="markets-panel-financials" style="display:none;padding:0 12px 100px;">
-    <div id="learn" class="tab" style="padding:0;overflow-y:auto;background:var(--bg-app,#060e1a);height:calc(100vh - 102px - 64px);">
+  <div id="markets-panel-financials" style="display:none;padding:0 12px 24px;">
+    <div id="learn" style="padding:0;background:var(--bg-app,#060e1a);">
 
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));position:sticky;top:0;background:var(--bg-header,#060e1a);z-index:10;">
@@ -329,16 +329,10 @@
     </div>
   </div>
 
-  <!-- Main Tab Switcher: Company Financial | Learning -->
-  <div style="display:flex;border-bottom:1px solid var(--border,rgba(255,255,255,0.07));background:var(--bg-header,#060e1a);position:sticky;top:53px;z-index:9;">
-    <button id="lmain-financial" onclick="switchLearnMain('financial')"
-      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid #fb923c;background:rgba(251,146,60,0.08);color:#fb923c;letter-spacing:0.5px;transition:all 0.15s;">
-      📊 Company Financial
-    </button>
-    <button id="lmain-marketflow" onclick="switchLearnMain('marketflow')"
-      style="flex:1;padding:10px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;border:none;border-bottom:2px solid transparent;background:transparent;color:#64748b;letter-spacing:0.5px;transition:all 0.15s;">
-      🏛️ FII / DII & IPO
-    </button>
+  <!-- Main Tab Switcher: Company Financial | Learning (hidden since top subtabs handle it) -->
+  <div id="learnMainSwitcher" style="display:none;">
+    <button id="lmain-financial" onclick="switchLearnMain('financial')">📊 Company Financial</button>
+    <button id="lmain-marketflow" onclick="switchLearnMain('marketflow')">🏛️ FII / DII & IPO</button>
   </div>
 
   <!-- PANEL: Company Financial -->
@@ -399,8 +393,8 @@
   </div><!-- end lpanel-financial -->
 
   <!-- PANEL: Learning (Market School) -->
-  <div id="lpanel-marketflow" style="display:none;padding:10px 14px 100px;">
-    <div id="marketFlowContent"></div>
+  <div id="lpanel-marketflow" style="display:none;padding:10px 14px 24px;">
+    <div id="marketFlowContentLearn"></div>
   </div><!-- end lpanel-school -->
 
 </div>
@@ -419,8 +413,8 @@
   </div>
 
   <!-- Panel 1: Holdings -->
-  <div id="portfolio-panel-holdings" style="display:block;padding:0 12px 100px;">
-    <div id="holdings" class="tab p-3 space-y-3">
+  <div id="portfolio-panel-holdings" style="display:block;padding:0 12px 24px;">
+    <div id="holdings" class="p-3 space-y-3">
   <div class="portfolio-card">
     <div style="font-size:13px;font-weight:700;color:#94a3b8;margin-bottom:10px;letter-spacing:0.5px;text-align:center;">PORTFOLIO SUMMARY</div>
     <div class="grid grid-cols-2 gap-3">
@@ -445,8 +439,8 @@
   </div>
 
   <!-- Panel 2: Trade History -->
-  <div id="portfolio-panel-history" style="display:none;padding:0 12px 100px;">
-    <div id="history" class="tab p-3 space-y-[5px]">
+  <div id="portfolio-panel-history" style="display:none;padding:0 12px 24px;">
+    <div id="history" class="p-3 space-y-[5px]">
   <!-- All 5 buttons in one scrollable line -->
   <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;white-space:nowrap;">
     <button onclick="exportCSV()" style="background:#1e3a5f;color:#93c5fd;border:1px solid #2d5a8e;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;flex-shrink:0;">Export</button>
@@ -464,55 +458,89 @@
 </div>
 
 <!-- ============================================== -->
-<!-- TAB 4: 🧠 NIVI AI STUDIO (AI CHART + CHAT) -->
+<!-- TAB 4: 🧠 NIVI AI STUDIO (AI CHART, CHAT & INSIGHTS) -->
 <!-- ============================================== -->
-<div id="nivi" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 105px - 64px);">
-  <div style="padding:8px 12px 0;position:sticky;top:0;background:var(--bg-app,#0a0e1a);z-index:20;">
+<div id="nivi" class="tab" style="padding:0;overflow:hidden;height:calc(100vh - 105px - 64px);">
+  <div style="padding:8px 12px 0;background:var(--bg-app,#0a0e1a);z-index:20;flex-shrink:0;">
     <div class="subtabs-bar">
       <button id="nsub-chart" onclick="switchNiviSubTab('chart')" class="subtab-btn active">📈 AI Candle Chart</button>
       <button id="nsub-chat" onclick="switchNiviSubTab('chat')" class="subtab-btn">💬 Nivi Copilot Chat</button>
+      <button id="nsub-insights" onclick="switchNiviSubTab('insights')" class="subtab-btn">📰 AI Insights</button>
     </div>
   </div>
 
-  <!-- Panel 1: AI Chart -->
-  <div id="nivi-panel-chart" style="display:block;padding:0 12px 100px;">
-    <div id="aichart" class="tab" style="padding:0;overflow-y:auto;height:calc(100vh - 102px - 64px);">
-  <div style="padding:10px 14px;">
-
-    <!-- Search with suggestion dropdown -->
-    <div id="aichart-search-wrap" style="position:relative; margin-bottom:10px;">
-      <div style="display:flex; gap:8px;">
-        <input id="aichart-sym" type="text"
-          placeholder="Search symbol (e.g. RELIANCE, TATASTEEL...)"
-          oninput="aiChartSuggest(this.value)"
-          onkeydown="if(event.key==='Enter'){const b=document.getElementById('aichart-sugbox');if(b)b.style.display='none';loadAIChart();}"
-          style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:8px; padding:9px 12px; outline:none; font-family:'Rajdhani',sans-serif; font-size:13px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <button onclick="loadAIChart()" style="background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-border); border-radius:8px; padding:9px 18px; font-weight:700; font-family:'Rajdhani',sans-serif; font-size:13px; cursor:pointer; flex-shrink:0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">✨ Analyze</button>
-      </div>
-      <!-- Suggestion dropdown -->
-      <div id="aichart-sugbox" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:0 0 8px 8px; z-index:500; max-height:220px; overflow-y:auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"></div>
-    </div>
-
-    <div id="aichart-container" style="width:100%; height:320px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; position:relative; overflow:hidden;"></div>
-
-    <div id="aichart-insights" style="background:var(--bg-card); border:1px solid var(--accent-border); border-radius:12px; padding:12px; display:none; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--accent-border); padding-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:18px;">🧠</span>
-          <h3 style="color:var(--accent); font-weight:bold; margin:0; font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:0.5px;">NIVI AI Analysis</h3>
+  <!-- Panel 1: AI Chart (scrollable) -->
+  <div id="nivi-panel-chart" style="display:block;padding:10px 12px 30px;overflow-y:auto;height:calc(100% - 46px);box-sizing:border-box;">
+    <div id="aichart" style="padding:0;">
+      <!-- Search with suggestion dropdown -->
+      <div id="aichart-search-wrap" style="position:relative; margin-bottom:10px;">
+        <div style="display:flex; gap:8px;">
+          <input id="aichart-sym" type="text"
+            placeholder="Search symbol (e.g. RELIANCE, TATASTEEL...)"
+            oninput="aiChartSuggest(this.value)"
+            onkeydown="if(event.key==='Enter'){const b=document.getElementById('aichart-sugbox');if(b)b.style.display='none';loadAIChart();}"
+            style="flex:1; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:8px; padding:9px 12px; outline:none; font-family:'Rajdhani',sans-serif; font-size:13px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+          <button onclick="loadAIChart()" style="background:var(--accent-bg); color:var(--accent); border:1px solid var(--accent-border); border-radius:8px; padding:9px 18px; font-weight:700; font-family:'Rajdhani',sans-serif; font-size:13px; cursor:pointer; flex-shrink:0; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">✨ Analyze</button>
         </div>
-        <span id="aichart-loading" style="display:none;" class="spinner"></span>
+        <!-- Suggestion dropdown -->
+        <div id="aichart-sugbox" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--bg-card); border:1px solid var(--border); border-radius:0 0 8px 8px; z-index:500; max-height:220px; overflow-y:auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1);"></div>
       </div>
-      <div id="aichart-report" style="color:var(--text-primary); font-size:13px; line-height:1.6; font-family:'Rajdhani',sans-serif;"></div>
+
+      <div id="aichart-container" style="width:100%; height:320px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; margin-bottom:10px; position:relative; overflow:hidden;"></div>
+
+      <div id="aichart-insights" style="background:var(--bg-card); border:1px solid var(--accent-border); border-radius:12px; padding:12px; display:none; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--accent-border); padding-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:18px;">🧠</span>
+            <h3 style="color:var(--accent); font-weight:bold; margin:0; font-family:'Rajdhani',sans-serif; font-size:16px; letter-spacing:0.5px;">NIVI AI Analysis</h3>
+          </div>
+          <span id="aichart-loading" style="display:none;" class="spinner"></span>
+        </div>
+        <div id="aichart-report" style="color:var(--text-primary); font-size:13px; line-height:1.6; font-family:'Rajdhani',sans-serif;"></div>
+      </div>
     </div>
-
-  </div>
-</div>
   </div>
 
-  <!-- Panel 2: Nivi Chat -->
-  <div id="nivi-panel-chat" style="display:none;padding:0 12px 100px;">
-    <div id="news" class="tab" style="padding:0;display:block;"></div>
+  <!-- Panel 2: Nivi Chat (fixed full height, middle scrolls, input pinned at bottom) -->
+  <div id="nivi-panel-chat" style="display:none;height:calc(100% - 46px);padding:0;box-sizing:border-box;overflow:hidden;">
+    <div id="news" style="padding:0;height:100%;display:flex;flex-direction:column;overflow:hidden;width:100%;"></div>
+  </div>
+
+  <!-- Panel 3: AI Insights (scrollable) -->
+  <div id="nivi-panel-insights" style="display:none;padding:10px 12px 30px;overflow-y:auto;height:calc(100% - 46px);box-sizing:border-box;">
+    <div style="max-width:480px;margin:0 auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--accent,#38bdf8);font-family:'Rajdhani',sans-serif;letter-spacing:1px;display:flex;align-items:center;gap:6px;">
+          <span>📰</span> MARKET INTELLIGENCE
+        </div>
+        <button onclick="_loadAIInsights(true)" id="insights-refresh-btn"
+          style="background:var(--accent-bg,#1e3a5f);color:var(--accent,#38bdf8);border:1px solid var(--accent-border,#1e3a5f);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Rajdhani',sans-serif;display:flex;align-items:center;gap:4px;">
+          ⟳ Refresh
+        </button>
+      </div>
+
+      <div id="insights-loading" style="display:none;text-align:center;padding:20px 0;">
+        <div class="spinner" style="margin:0 auto 6px;border-top-color:var(--accent);"></div>
+        <div style="font-size:11px;color:var(--text-label,#4b6280);font-family:'Rajdhani',sans-serif;">Nivi is analyzing live market...</div>
+      </div>
+
+      <div id="insights-brief" style="background:var(--bg-card,#0d1f35);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#38bdf8;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">📈 MARKET BRIEF</div>
+        <div id="insights-brief-body" style="font-size:12px;color:var(--text-sec,#94a3b8);font-family:'Rajdhani',sans-serif;line-height:1.6;">Press Refresh to load insights...</div>
+      </div>
+
+      <div id="insights-digest" style="background:var(--bg-card,#0d1f35);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#fb923c;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">📋 WATCHLIST DIGEST</div>
+        <div id="insights-digest-body" style="font-size:12px;color:var(--text-sec,#94a3b8);font-family:'Rajdhani',sans-serif;line-height:1.6;">Press Refresh to load insights...</div>
+      </div>
+
+      <div id="insights-sentiment" style="background:var(--bg-card,#0d1f35);border:1px solid var(--border,#1e2d4a);border-radius:12px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#a78bfa;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;margin-bottom:8px;">🎯 SENTIMENT SCANNER</div>
+        <div id="insights-sentiment-body" style="font-size:12px;color:var(--text-sec,#94a3b8);font-family:'Rajdhani',sans-serif;line-height:1.6;">Press Refresh to load insights...</div>
+      </div>
+
+      <div id="insights-timestamp" style="font-size:9px;color:var(--text-label,#4b6280);text-align:center;padding-bottom:12px;font-family:'Rajdhani',sans-serif;"></div>
+    </div>
   </div>
 </div>
 <div id="alerts" class="tab p-3 space-y-[5px]" style="display:none;"></div>

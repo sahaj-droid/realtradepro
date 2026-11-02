@@ -196,16 +196,24 @@ function switchMarketsSubTab(sub) {
     }
   });
 
-  if (sub === 'fiidii' && typeof initLearnTab === 'function') {
-    initLearnTab();
+  if (sub === 'fiidii') {
+    if (typeof initLearnTab === 'function') initLearnTab();
     if (typeof switchLearnMain === 'function') switchLearnMain('marketflow');
+    if (typeof renderMarketFlows === 'function') renderMarketFlows();
   }
   if (sub === 'indices' && typeof renderIndices === 'function') {
     renderIndices();
   }
-  if (sub === 'financials' && typeof initLearnTab === 'function') {
-    initLearnTab();
+  if (sub === 'financials') {
+    if (typeof initLearnTab === 'function') initLearnTab();
     if (typeof switchLearnMain === 'function') switchLearnMain('financial');
+    const learnInp = document.getElementById('learnSearchInput');
+    if (learnInp) {
+      if (!learnInp.value) {
+        learnInp.value = (AppState.wl && AppState.wl[0]) || 'RELIANCE';
+      }
+      if (typeof fetchLearnStock === 'function') fetchLearnStock();
+    }
   }
 }
 
@@ -230,15 +238,15 @@ function switchPortfolioSubTab(sub) {
 }
 
 // ======================================
-// NIVI AI SUB-TABS (Chart, Chat)
+// NIVI AI SUB-TABS (Chart, Chat, Insights)
 // ======================================
 function switchNiviSubTab(sub) {
-  ['chart', 'chat'].forEach(id => {
+  ['chart', 'chat', 'insights'].forEach(id => {
     const btn = document.getElementById('nsub-' + id);
     const panel = document.getElementById('nivi-panel-' + id);
     if (id === sub) {
       if (btn) btn.classList.add('active');
-      if (panel) panel.style.display = 'block';
+      if (panel) panel.style.display = (id === 'chat') ? 'flex' : 'block';
     } else {
       if (btn) btn.classList.remove('active');
       if (panel) panel.style.display = 'none';
@@ -247,9 +255,19 @@ function switchNiviSubTab(sub) {
 
   if (sub === 'chart' && typeof loadAIChart === 'function') {
     const symInput = document.getElementById('aichart-sym');
-    if (symInput && symInput.value) loadAIChart();
+    if (symInput) {
+      if (!symInput.value) {
+        symInput.value = (AppState.wl && AppState.wl[0]) || 'RELIANCE';
+      }
+      loadAIChart();
+    }
   }
-  if (sub === 'chat' && typeof renderNews === 'function') renderNews();
+  if (sub === 'chat') {
+    if (typeof renderNews === 'function') renderNews();
+  }
+  if (sub === 'insights') {
+    if (typeof renderNewsInsights === 'function') renderNewsInsights();
+  }
 }
 
 // ======================================
@@ -272,15 +290,21 @@ function _switchTab(t) {
   } else if (t === 'indices') {
     targetTab = 'markets';
     subAction = () => switchMarketsSubTab('indices');
-  } else if (t === 'learn') {
+  } else if (t === 'learn' || t === 'financials') {
+    targetTab = 'markets';
+    subAction = () => switchMarketsSubTab('financials');
+  } else if (t === 'fiidii') {
     targetTab = 'markets';
     subAction = () => switchMarketsSubTab('fiidii');
   } else if (t === 'aichart') {
     targetTab = 'nivi';
     subAction = () => switchNiviSubTab('chart');
-  } else if (t === 'news') {
+  } else if (t === 'chat' || t === 'copilot') {
     targetTab = 'nivi';
     subAction = () => switchNiviSubTab('chat');
+  } else if (t === 'news' || t === 'insights') {
+    targetTab = 'nivi';
+    subAction = () => switchNiviSubTab('insights');
   }
 
   document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));

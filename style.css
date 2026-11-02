@@ -851,6 +851,7 @@ html[data-fsize='large'] { font-size: 128%; }
 
 .tab { display:none }
 .tab.active { display:block }
+#nivi.active { display:flex !important; flex-direction:column; }
 
 .card { background:linear-gradient(145deg,#111827,#1a2332); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:background 0.2s; }
 .stk-card {
