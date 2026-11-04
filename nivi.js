@@ -468,11 +468,8 @@ async function _tabChip(question) {
 
 // સ્માર્ટ સર્ચ ડિટેક્ટર: જો યુઝર સમાચાર, કારણ કે રિઝલ્ટ પૂછે તો જ લાઈવ સર્ચ થશે
 function _needsLiveSearch(q) {
-  const text = q.toLowerCase();
-  return text.includes("news") || text.includes("samachar") || text.includes("aaje") || 
-         text.includes("latest") || text.includes("why") || text.includes("kem") || 
-         text.includes("karan") || text.includes("result") || text.includes("રિજલ્ટ") || 
-         text.includes("q4") || text.includes("પરિણામ");
+  // ✅ Always enable Google Search Grounding with gemini-2.5-flash-lite for live stock data & analysis
+  return true;
 }
 
 async function _tabAsk(question) {
@@ -564,7 +561,7 @@ ${verifiedFactsBlock}
 2. VERIFIED FACTS COMPLIANCE: If [VERIFIED DATA] is provided above for ${querySym || 'the stock'}, you MUST base your analysis, Target, Stoploss, RSI, EMA, and Verdict on these exact numbers. DO NOT invent alternate numbers or contradict the rule-based verdict.
 3. FINANCIAL RESULTS: If the user asks for Q1/Q2/Q3/Q4 results, you MUST provide EXACT figures (Revenue in Crores, Net Profit in Crores, EPS). 
 4. NO GENERIC BLUFFING: Do not say "Revenue increased" or "Good profit" without providing the exact numbers.
-5. IF DATA IS MISSING: If exact numbers are not available via your Search Grounding, you MUST reply with: "માફ કરજો, આના સત્તાવાર (Official) આંકડા મને અત્યારે મળ્યા નથી. ખોટી માહિતી આપવા કરતા હું ચૂપ રહેવાનું પસંદ કરીશ."
+5. ACTIONABLE FINANCIAL ANALYSIS: Always provide an actionable analysis with key Levels, Support, Resistance, Target, Stoploss, and overall Buy/Sell/Hold view using live web search and market data. If any specific quarterly data is unavailable, state the available facts and estimates clearly instead of refusing to answer.
 
 ${modularPrompt}
 `;

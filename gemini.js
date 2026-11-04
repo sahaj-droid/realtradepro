@@ -4,20 +4,8 @@
 // Web Search / Live Price: gemini-2.5-flash-lite, gemini-2.0-flash, gemini-1.5-flash
 // ========================================
 
-const SEARCH_MODELS = [
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-3.8-flash',
-    'gemini-3.5-flash-lite'
-];
-
-const CHAT_MODELS = [
-    'gemini-2.5-flash',
-    'gemini-3.8-flash',
-    'gemini-2.5-pro',
-    'gemini-2.5-flash-lite',
-    'gemini-3.5-flash-lite'
-];
+const SEARCH_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const CHAT_MODELS   = ['gemini-3.8', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
 // ========================================
 // 🔑 KEY HELPERS
