@@ -524,17 +524,47 @@ async function _tabAsk(question) {
   const intent = await detectIntentAI(question, false);
   const modularPrompt = buildModularPrompt(question, intent);
 
+  // 🔍 Extract stock symbol if mentioned in query & compute verified facts
+  let querySym = null;
+  if (AppState.wl && AppState.wl.length > 0) {
+    for (const s of AppState.wl) {
+      const clean = s.replace(/\.(NS|BO)$/i, '');
+      const regex = new RegExp(`\\b${clean}\\b`, 'i');
+      if (regex.test(question)) { querySym = clean; break; }
+    }
+  }
+  if (!querySym && AppState.cache) {
+    for (const s of Object.keys(AppState.cache)) {
+      const clean = s.replace(/\.(NS|BO)$/i, '');
+      const regex = new RegExp(`\\b${clean}\\b`, 'i');
+      if (regex.test(question)) { querySym = clean; break; }
+    }
+  }
+
+  let verifiedFactsBlock = '';
+  if (querySym && typeof buildStockFacts === 'function') {
+    try {
+      const facts = await buildStockFacts(querySym);
+      if (facts && facts.verdict && facts.verdict !== 'NO_DATA') {
+        verifiedFactsBlock = '\n' + (typeof factsToPromptBlock === 'function' ? factsToPromptBlock(facts) : JSON.stringify(facts)) + '\n';
+      }
+    } catch (err) {
+      console.warn('buildStockFacts error:', err);
+    }
+  }
+
 const systemPrompt = `[SYSTEM: ELITE FINANCIAL ANALYST — NIVI]
 Mode: ${intent.toUpperCase()}
 Today: ${liveDate}
 User Watchlist: ${wlContext || 'No live data available'}
 LANGUAGE: ${langInstruction}
-
+${verifiedFactsBlock}
 🚨 CRITICAL RULES FOR NIVI:
 1. STRICT NO HALLUCINATION: You are dealing with real money. DO NOT guess any data.
-2. FINANCIAL RESULTS: If the user asks for Q1/Q2/Q3/Q4 results, you MUST provide EXACT figures (Revenue in Crores, Net Profit in Crores, EPS). 
-3. NO GENERIC BLUFFING: Do not say "Revenue increased" or "Good profit" without providing the exact numbers.
-4. IF DATA IS MISSING: If exact numbers are not available via your Search Grounding, you MUST reply with: "માફ કરજો, આના સત્તાવાર (Official) આંકડા મને અત્યારે મળ્યા નથી. ખોટી માહિતી આપવા કરતા હું ચૂપ રહેવાનું પસંદ કરીશ."
+2. VERIFIED FACTS COMPLIANCE: If [VERIFIED DATA] is provided above for ${querySym || 'the stock'}, you MUST base your analysis, Target, Stoploss, RSI, EMA, and Verdict on these exact numbers. DO NOT invent alternate numbers or contradict the rule-based verdict.
+3. FINANCIAL RESULTS: If the user asks for Q1/Q2/Q3/Q4 results, you MUST provide EXACT figures (Revenue in Crores, Net Profit in Crores, EPS). 
+4. NO GENERIC BLUFFING: Do not say "Revenue increased" or "Good profit" without providing the exact numbers.
+5. IF DATA IS MISSING: If exact numbers are not available via your Search Grounding, you MUST reply with: "માફ કરજો, આના સત્તાવાર (Official) આંકડા મને અત્યારે મળ્યા નથી. ખોટી માહિતી આપવા કરતા હું ચૂપ રહેવાનું પસંદ કરીશ."
 
 ${modularPrompt}
 `;
@@ -973,10 +1003,21 @@ async function _niviModalAsk(question) {
     ? `${sym}: ₹${(d.regularMarketPrice||0).toFixed(2)}, Change: ${(d.regularMarketChangePercent||0).toFixed(2)}%, High: ${(d.regularMarketDayHigh||0).toFixed(2)}, Low: ${(d.regularMarketDayLow||0).toFixed(2)}`
     : `${sym}: No live data`;
 
+  let verifiedFactsBlock = '';
+  if (sym && typeof buildStockFacts === 'function') {
+    try {
+      const facts = await buildStockFacts(sym);
+      if (facts && facts.verdict && facts.verdict !== 'NO_DATA') {
+        verifiedFactsBlock = '\n' + (typeof factsToPromptBlock === 'function' ? factsToPromptBlock(facts) : JSON.stringify(facts)) + '\n';
+      }
+    } catch (e) {}
+  }
+
   const systemPrompt = `[SYSTEM: ELITE FINANCIAL ANALYST — NIVI]
 Today: ${liveDate}
 Stock Context: ${stockCtx}
-Task: Answer about ${sym}. Be concise and actionable. Mix Gujarati/Hindi/English.`;
+${verifiedFactsBlock}
+Task: Answer about ${sym}. Be concise and actionable. Mix Gujarati/Hindi/English. Use verified facts and rule-based verdict if available.`;
 
   const geminiHistory = AppState._niviModalHistory.slice(-10).map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
