@@ -580,7 +580,24 @@ ${modularPrompt}
   const useLiveSearch = _needsLiveSearch(question);
   
   let answer = null;
+  let apiError = null;
   const keys = getGeminiKeys();
+
+  // જો કી જ ના હોય તો સીધો સ્પષ્ટ ગાઇડન્સ મેસેજ આપો
+  if (keys.length === 0) {
+    const tempWrapper = document.getElementById(`wrapper-${streamingMsgId}`);
+    if (tempWrapper) tempWrapper.remove();
+
+    const isGithub = window.location.hostname.includes('github.io');
+    const msg = isGithub
+      ? "⚠️ આ બ્રાઉઝરમાં Gemini API Key નથી મળી!\n\n💡 **મહત્વની નોંધ:** તમે Localhost (`localhost:5500`) પર કી સેવ કરી હશે, પરંતુ **GitHub Pages (`sahaj-droid.github.io`)** નો બ્રાઉઝર સ્ટોરેજ અલગ હોય છે.\n\n👉 કૃપા કરીને ઉપર જમણી બાજુ **👤 Sahaj (પ્રોફાઇલ / Settings)** પર ક્લિક કરી તમારી **Gemini API Key** અહીં પણ પેસ્ટ કરીને Save કરો."
+      : "⚠️ આ બ્રાઉઝરમાં Gemini API Key નથી મળી. કૃપા કરીને ઉપર જમણી બાજુ **👤 Sahaj (પ્રોફાઇલ / Settings)** પર ક્લિક કરી Gemini API Key સેવ કરો.";
+
+    AppState._tabChatHistory.push({ role:'nivi', text: msg, ts: Date.now() });
+    localStorage.setItem('niviTabChat', JSON.stringify(AppState._tabChatHistory.slice(-30)));
+    _tabRenderChat();
+    return;
+  }
 
   // 3. નવો સ્ટ્રીમિંગ API કોલ
   if (keys.length > 0) {
@@ -597,7 +614,11 @@ ${modularPrompt}
       },
       useLiveSearch // સર્ચ પેરામીટર પાસ કર્યો
     );
-    if (r && r.ok) answer = r.answer;
+    if (r && r.ok) {
+      answer = r.answer;
+    } else if (r && r.error) {
+      apiError = r.error;
+    }
   }
 
   // જો Gemini API ફેલ થાય તો જૂનો Fallback
@@ -614,7 +635,9 @@ ${modularPrompt}
   const tempWrapper = document.getElementById(`wrapper-${streamingMsgId}`);
   if (tempWrapper) tempWrapper.remove();
 
-  const fallback = "⚠️ Nivi Universal Brain is currently unresponsive. Please check your Gemini API keys.";
+  const fallback = apiError 
+    ? `⚠️ Gemini API Error: ${apiError}\n\nકૃપા કરીને Google AI Studio માં જઈને API Key અથવા Quota ચેક કરો, અથવા Settings માં નવી કી અપડેટ કરો.`
+    : "⚠️ Nivi Universal Brain is currently unresponsive. Please check your Gemini API keys.";
   AppState._tabChatHistory.push({ role:'nivi', text: answer || fallback, ts:Date.now() });
 
   localStorage.setItem('niviTabChat', JSON.stringify(AppState._tabChatHistory.slice(-30)));

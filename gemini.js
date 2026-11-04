@@ -4,8 +4,20 @@
 // Web Search / Live Price: gemini-2.5-flash-lite, gemini-2.0-flash, gemini-1.5-flash
 // ========================================
 
-const SEARCH_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-const CHAT_MODELS   = ['gemini-3.8', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+const SEARCH_MODELS = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash-lite'
+];
+
+const CHAT_MODELS = [
+    'gemini-2.5-flash',
+    'gemini-3.8-flash',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash-lite',
+    'gemini-3.5-flash-lite'
+];
 
 // ========================================
 // 🔑 KEY HELPERS
@@ -264,8 +276,9 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
     const models = useSearch ? SEARCH_MODELS : CHAT_MODELS;
     const keys = getGeminiKeys();
 
-    if (keys.length === 0) return { ok: false };
+    if (keys.length === 0) return { ok: false, error: 'NO_KEY' };
 
+    let lastError = '';
     const rawContents = [...priorHistory, { role: 'user', parts: [{ text: currentPrompt }] }];
     const contents = sanitizeGeminiContents(rawContents);
 
@@ -295,7 +308,9 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
                 });
 
                 if (!response.ok) {
-                    console.warn(`⚠️ ${modelName} stream failed (${response.status}). Trying next model/key...`);
+                    const errJson = await response.json().catch(() => null);
+                    lastError = errJson?.error?.message || `HTTP ${response.status} (${modelName})`;
+                    console.warn(`⚠️ ${modelName} stream failed (${response.status}): ${lastError}. Trying next model/key...`);
                     continue;
                 }
 
@@ -334,13 +349,16 @@ async function directGeminiCallStreamMultiTurn(priorHistory, currentPrompt, onCh
                     return { ok: true, answer: fullText };
                 }
             } catch (e) {
+                lastError = e.message;
                 console.error(`Stream error (${modelName}):`, e.message);
             }
         }
     }
 
     console.error('❌ All Gemini streaming attempts failed. Falling back to non-stream...');
-    return await directGeminiCallMultiTurn(priorHistory, currentPrompt, useSearch);
+    const fb = await directGeminiCallMultiTurn(priorHistory, currentPrompt, useSearch);
+    if (fb && fb.ok) return fb;
+    return { ok: false, error: lastError || 'All Gemini models and keys exhausted' };
 }
 
 // ========================================
